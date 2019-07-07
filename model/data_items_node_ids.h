@@ -4,6 +4,8 @@
 
 namespace data_items {
 
+constexpr scada::NamespaceIndex kNamespaceIndex = NamespaceIndexes::SCADA;
+
 namespace numeric_id {
 
 const scada::NumericId SimulationSignals = 28;
@@ -13,63 +15,63 @@ const scada::NumericId TsFormats = 27;
 
 namespace id {
 
-const scada::NodeId AnalogConversionDataType{320, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogConversionDataType_EnumStrings{321, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_Aperture{295, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_Clamping{157, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_Conversion{156, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_Deadband{296, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_DisplayFormat{155, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_EngineeringUnits{166, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_EuHi{159, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_EuLo{158, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_IrHi{161, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_IrLo{160, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_LimitHiHi{165, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_LimitHi{163, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_LimitLoLo{164, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType_LimitLo{162, NamespaceIndexes::SCADA};
-const scada::NodeId AnalogItemType{76, NamespaceIndexes::SCADA}; // :DataItemType
-const scada::NodeId DataGroupType_Simulated{292, NamespaceIndexes::SCADA};
-const scada::NodeId DataGroupType{62, NamespaceIndexes::SCADA};
-const scada::NodeId DataItems{24, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_Alias{140, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_Input1{145, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_Input2{146, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_Locked{151, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_OutputCondition{148, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_OutputTwoStaged{309, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_Output{147, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_Severity{144, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_Simulated{143, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_StalePeriod{149, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType_WriteManual{230, NamespaceIndexes::SCADA};
-const scada::NodeId DataItemType{239, NamespaceIndexes::SCADA};
-const scada::NodeId DiscreteItemType_Inversion{153, NamespaceIndexes::SCADA};
-const scada::NodeId DiscreteItemType{72, NamespaceIndexes::SCADA}; // :DataItemType
-const scada::NodeId HasSimulationSignal{150, NamespaceIndexes::SCADA}; // Ref
-const scada::NodeId HasTsFormat{154, NamespaceIndexes::SCADA}; // Ref
-const scada::NodeId Server_CPU{226, NamespaceIndexes::SCADA};
-const scada::NodeId Server_Memory{227, NamespaceIndexes::SCADA};
-const scada::NodeId Server_TotalCPU{228, NamespaceIndexes::SCADA};
-const scada::NodeId Server_TotalMemory{229, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignals{numeric_id::SimulationSignals, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalTypeEnum{326, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalTypeEnum_EnumStrings{327, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalType_Period{173, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalType_Phase{174, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalType_Type{172, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalType_UpdateInterval{175, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalType{67, NamespaceIndexes::SCADA};
-const scada::NodeId TsFormats{numeric_id::TsFormats, NamespaceIndexes::SCADA};
-const scada::NodeId TsFormatType_CloseColor{219, NamespaceIndexes::SCADA};
-const scada::NodeId TsFormatType_CloseLabel{217, NamespaceIndexes::SCADA};
-const scada::NodeId TsFormatType_OpenColor{218, NamespaceIndexes::SCADA};
-const scada::NodeId TsFormatType_OpenLabel{216, NamespaceIndexes::SCADA};
-const scada::NodeId TsFormatType{80, NamespaceIndexes::SCADA};
-const scada::NodeId Aliases{300, NamespaceIndexes::SCADA};
-const scada::NodeId AliasType{301, NamespaceIndexes::SCADA};
-const scada::NodeId AliasOf{302, NamespaceIndexes::SCADA};
+const scada::NodeId AnalogConversionDataType{320, kNamespaceIndex};
+const scada::NodeId AnalogConversionDataType_EnumStrings{321, kNamespaceIndex};
+const scada::NodeId AnalogItemType_Aperture{295, kNamespaceIndex};
+const scada::NodeId AnalogItemType_Clamping{157, kNamespaceIndex};
+const scada::NodeId AnalogItemType_Conversion{156, kNamespaceIndex};
+const scada::NodeId AnalogItemType_Deadband{296, kNamespaceIndex};
+const scada::NodeId AnalogItemType_DisplayFormat{155, kNamespaceIndex};
+const scada::NodeId AnalogItemType_EngineeringUnits{166, kNamespaceIndex};
+const scada::NodeId AnalogItemType_EuHi{159, kNamespaceIndex};
+const scada::NodeId AnalogItemType_EuLo{158, kNamespaceIndex};
+const scada::NodeId AnalogItemType_IrHi{161, kNamespaceIndex};
+const scada::NodeId AnalogItemType_IrLo{160, kNamespaceIndex};
+const scada::NodeId AnalogItemType_LimitHiHi{165, kNamespaceIndex};
+const scada::NodeId AnalogItemType_LimitHi{163, kNamespaceIndex};
+const scada::NodeId AnalogItemType_LimitLoLo{164, kNamespaceIndex};
+const scada::NodeId AnalogItemType_LimitLo{162, kNamespaceIndex};
+const scada::NodeId AnalogItemType{76, kNamespaceIndex}; // :DataItemType
+const scada::NodeId DataGroupType_Simulated{292, kNamespaceIndex};
+const scada::NodeId DataGroupType{62, kNamespaceIndex};
+const scada::NodeId DataItems{24, kNamespaceIndex};
+const scada::NodeId DataItemType_Alias{140, kNamespaceIndex};
+const scada::NodeId DataItemType_Input1{145, kNamespaceIndex};
+const scada::NodeId DataItemType_Input2{146, kNamespaceIndex};
+const scada::NodeId DataItemType_Locked{151, kNamespaceIndex};
+const scada::NodeId DataItemType_OutputCondition{148, kNamespaceIndex};
+const scada::NodeId DataItemType_OutputTwoStaged{309, kNamespaceIndex};
+const scada::NodeId DataItemType_Output{147, kNamespaceIndex};
+const scada::NodeId DataItemType_Severity{144, kNamespaceIndex};
+const scada::NodeId DataItemType_Simulated{143, kNamespaceIndex};
+const scada::NodeId DataItemType_StalePeriod{149, kNamespaceIndex};
+const scada::NodeId DataItemType_WriteManual{230, kNamespaceIndex};
+const scada::NodeId DataItemType{239, kNamespaceIndex};
+const scada::NodeId DiscreteItemType_Inversion{153, kNamespaceIndex};
+const scada::NodeId DiscreteItemType{72, kNamespaceIndex}; // :DataItemType
+const scada::NodeId HasSimulationSignal{150, kNamespaceIndex}; // Ref
+const scada::NodeId HasTsFormat{154, kNamespaceIndex}; // Ref
+const scada::NodeId Server_CPU{226, kNamespaceIndex};
+const scada::NodeId Server_Memory{227, kNamespaceIndex};
+const scada::NodeId Server_TotalCPU{228, kNamespaceIndex};
+const scada::NodeId Server_TotalMemory{229, kNamespaceIndex};
+const scada::NodeId SimulationSignals{numeric_id::SimulationSignals, kNamespaceIndex};
+const scada::NodeId SimulationSignalTypeEnum{326, kNamespaceIndex};
+const scada::NodeId SimulationSignalTypeEnum_EnumStrings{327, kNamespaceIndex};
+const scada::NodeId SimulationSignalType_Period{173, kNamespaceIndex};
+const scada::NodeId SimulationSignalType_Phase{174, kNamespaceIndex};
+const scada::NodeId SimulationSignalType_Type{172, kNamespaceIndex};
+const scada::NodeId SimulationSignalType_UpdateInterval{175, kNamespaceIndex};
+const scada::NodeId SimulationSignalType{67, kNamespaceIndex};
+const scada::NodeId TsFormats{numeric_id::TsFormats, kNamespaceIndex};
+const scada::NodeId TsFormatType_CloseColor{219, kNamespaceIndex};
+const scada::NodeId TsFormatType_CloseLabel{217, kNamespaceIndex};
+const scada::NodeId TsFormatType_OpenColor{218, kNamespaceIndex};
+const scada::NodeId TsFormatType_OpenLabel{216, kNamespaceIndex};
+const scada::NodeId TsFormatType{80, kNamespaceIndex};
+const scada::NodeId Aliases{300, kNamespaceIndex};
+const scada::NodeId AliasType{301, kNamespaceIndex};
+const scada::NodeId AliasOf{302, kNamespaceIndex};
 
 }
 
