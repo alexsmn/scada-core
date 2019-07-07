@@ -4,6 +4,12 @@
 
 namespace devices {
 
+namespace numeric_id {
+
+const scada::NumericId Iec60870DeviceType_InterrogationPeriodGroup1 = 200;
+
+}
+
 namespace id {
 
 const scada::NodeId Devices{30, NamespaceIndexes::SCADA};
