@@ -5,9 +5,11 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 
+namespace {
+
 // WARNING: These names are used as names for tables in the configuration DB and
 // mustn't be modified.
-const char* kNamespaceNames[NamespaceIndexes::END] = {
+constexpr base::StringPiece kNamespaceNames[] = {
     "NS0",          "TS",           "TIT",           "MODBUS_DEVICES",
     "GROUP",        "USER",         "HISTORICAL_DB", "SCADA",
     "EXPR",         "SIM_ITEM",     "IEC_LINK",      "IEC_DEV",
@@ -15,11 +17,15 @@ const char* kNamespaceNames[NamespaceIndexes::END] = {
     "IEC_TRANSMIT", "IEC61850_DEV", "IEC61850_RCB",
 };
 
-const char* GetNamespaceName(scada::NamespaceIndex namespace_index) {
+static_assert(std::size(kNamespaceNames) == NamespaceIndexes::END);
+
+}  // namespace
+
+base::StringPiece GetNamespaceName(scada::NamespaceIndex namespace_index) {
   if (namespace_index >= 0 && namespace_index < NamespaceIndexes::END)
     return kNamespaceNames[namespace_index];
   else
-    return nullptr;
+    return {};
 }
 
 int FindNamespaceIndexByName(base::StringPiece name) {
