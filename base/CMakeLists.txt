@@ -24,3 +24,5 @@ target_link_libraries(scada_base PUBLIC
   Boost::system
 )
 set_property(TARGET scada_base PROPERTY FOLDER ${scada_folder})
+
+add_subdirectory(test)
