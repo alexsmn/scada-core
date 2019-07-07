@@ -1,8 +1,8 @@
 #include <gmock/gmock.h>
 
+#include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "core/node_id.h"
-#include "model/namespaces.h"
 
 TEST(NodeIdUtil, NodeIdFromScadaString) {
   EXPECT_EQ(scada::NodeId(53, NamespaceIndexes::TS),
@@ -22,7 +22,7 @@ TEST(NodeIdUtil, NodeIdToScadaString) {
             "TS.53");
   EXPECT_EQ(
       NodeIdToScadaString(scada::NodeId(15, NamespaceIndexes::IEC60870_DEVICE)),
-      "IEC_DEV.15");
+            "IEC_DEV.15");
   EXPECT_EQ(NodeIdToScadaString(scada::NodeId("MODBUS_PORTS.32!Online", 0)),
             "MODBUS_PORTS.32!Online");
   EXPECT_EQ(NodeIdToScadaString(scada::NodeId("MODBUS_PORTS.32!BIT:4", 0)),

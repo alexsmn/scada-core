@@ -5,11 +5,9 @@
 
 namespace numeric_id {
 
-const scada::NumericId HistoricalDatabases = 12;
 const scada::NumericId Iec60870DeviceType_InterrogationPeriodGroup1 = 200;
 const scada::NumericId SimulationSignals = 28;
 const scada::NumericId TsFormats = 27;
-const scada::NumericId Users = 29;
 
 } // numeric_id
 
@@ -66,13 +64,6 @@ const scada::NodeId HasSimulationSignal{150, NamespaceIndexes::SCADA}; // Ref
 const scada::NodeId HasTransmissionSource{221, NamespaceIndexes::SCADA};
 const scada::NodeId HasTransmissionTarget{224, NamespaceIndexes::SCADA}; // Ref
 const scada::NodeId HasTsFormat{154, NamespaceIndexes::SCADA}; // Ref
-const scada::NodeId HistoricalDatabases{numeric_id::HistoricalDatabases, NamespaceIndexes::SCADA};
-const scada::NodeId HistoricalDatabaseType_Depth{171, NamespaceIndexes::SCADA};
-const scada::NodeId HistoricalDatabaseType_EventCleanupDuration{242, NamespaceIndexes::SCADA};
-const scada::NodeId HistoricalDatabaseType_PendingTaskCount{241, NamespaceIndexes::SCADA};
-const scada::NodeId HistoricalDatabaseType_ValueCleanupDuration{243, NamespaceIndexes::SCADA};
-const scada::NodeId HistoricalDatabaseType_WriteValueDuration{240, NamespaceIndexes::SCADA};
-const scada::NodeId HistoricalDatabaseType{20, NamespaceIndexes::SCADA};
 const scada::NodeId Iec60870DeviceType_Address{193, NamespaceIndexes::SCADA};
 const scada::NodeId Iec60870DeviceType_ClockSyncPeriod{198, NamespaceIndexes::SCADA};
 const scada::NodeId Iec60870DeviceType_InterrogationPeriodGroup10{209, NamespaceIndexes::SCADA};
@@ -146,7 +137,6 @@ const scada::NodeId ModbusLinkProtocol_EnumStrings{303, NamespaceIndexes::SCADA}
 const scada::NodeId ModbusLinkType_Protocol{167, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusLinkType_RequestDelay{299, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusLinkType{108, NamespaceIndexes::SCADA};
-const scada::NodeId RootUser{234, NamespaceIndexes::SCADA};
 const scada::NodeId Server_CPU{226, NamespaceIndexes::SCADA};
 const scada::NodeId Server_Memory{227, NamespaceIndexes::SCADA};
 const scada::NodeId Server_TotalCPU{228, NamespaceIndexes::SCADA};
@@ -159,7 +149,6 @@ const scada::NodeId SimulationSignalType_Phase{174, NamespaceIndexes::SCADA};
 const scada::NodeId SimulationSignalType_Type{172, NamespaceIndexes::SCADA};
 const scada::NodeId SimulationSignalType_UpdateInterval{175, NamespaceIndexes::SCADA};
 const scada::NodeId SimulationSignalType{67, NamespaceIndexes::SCADA};
-const scada::NodeId SystemDatabase{233, NamespaceIndexes::SCADA};
 const scada::NodeId TransmissionItems{33, NamespaceIndexes::SCADA};
 const scada::NodeId TransmissionItemType_SourceAddress{225, NamespaceIndexes::SCADA};
 const scada::NodeId TransmissionItemType{34, NamespaceIndexes::SCADA};
@@ -169,17 +158,9 @@ const scada::NodeId TsFormatType_CloseLabel{217, NamespaceIndexes::SCADA};
 const scada::NodeId TsFormatType_OpenColor{218, NamespaceIndexes::SCADA};
 const scada::NodeId TsFormatType_OpenLabel{216, NamespaceIndexes::SCADA};
 const scada::NodeId TsFormatType{80, NamespaceIndexes::SCADA};
-const scada::NodeId Users{numeric_id::Users, NamespaceIndexes::SCADA};
-const scada::NodeId UserType_AccessRights{170, NamespaceIndexes::SCADA};
-const scada::NodeId UserType{16, NamespaceIndexes::SCADA};
 const scada::NodeId Aliases{300, NamespaceIndexes::SCADA};
 const scada::NodeId AliasType{301, NamespaceIndexes::SCADA};
 const scada::NodeId AliasOf{302, NamespaceIndexes::SCADA};
-const scada::NodeId FileSystem{304, NamespaceIndexes::SCADA};
-const scada::NodeId FileDirectoryType{305, NamespaceIndexes::SCADA};
-const scada::NodeId FileType{306, NamespaceIndexes::SCADA};
-const scada::NodeId FileType_LastUpdateTime{307, NamespaceIndexes::SCADA};
-const scada::NodeId FileType_Size{308, NamespaceIndexes::SCADA};
 const scada::NodeId PropertyCategories{310, NamespaceIndexes::SCADA};
 const scada::NodeId HasPropertyCategory{311, NamespaceIndexes::SCADA};
 const scada::NodeId PropertyCategories_General{312, NamespaceIndexes::SCADA};
