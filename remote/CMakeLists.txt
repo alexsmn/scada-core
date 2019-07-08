@@ -22,13 +22,13 @@ target_link_libraries(scada_core_remote PUBLIC
   protobuf::libprotobuf
   net
   scada_core
-  address_space
 )
 
 add_executable(scada_core_remote_unittests ${unittests})
 add_test(NAME scada_core_remote_unittests COMMAND scada_core_remote_unittests)
 target_link_libraries(scada_core_remote_unittests PUBLIC
   scada_core_remote
+  scada_model
   gmock_main
 )
 

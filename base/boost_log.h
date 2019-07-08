@@ -7,7 +7,8 @@
 
 enum class BoostLogSeverity { Debug, Info, Warning, Error, Critical, Count };
 
-using BoostLogger = boost::log::sources::severity_channel_logger_mt<BoostLogSeverity>;
+using BoostLogger =
+    boost::log::sources::severity_channel_logger_mt<BoostLogSeverity>;
 
 #define LOG_DEBUG(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Debug)
 #define LOG_INFO(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Info)
@@ -18,6 +19,8 @@ using BoostLogger = boost::log::sources::severity_channel_logger_mt<BoostLogSeve
 #define LOG_TAG(name, value) boost::log::add_value(name, value)
 #define LOG_SCOPED_TAG(logger, name, value) \
   BOOST_LOG_SCOPED_LOGGER_TAG(logger, name, value)
+#define LOG_BIND_TAG(logger, name, value) \
+  (logger).add_attribute((name), boost::log::attributes::make_constant(value))
 
 #define LOG_NAME(name) boost::log::keywords::channel = (name)
 

@@ -15,11 +15,11 @@ base::string16 WideFormat(double value);
 std::string Format(float value);
 base::string16 WideFormat(float value);
 
-std::string Format(int value);
-base::string16 WideFormat(int value);
+std::string Format(int32_t value);
+base::string16 WideFormat(int32_t value);
 
-std::string Format(unsigned int value);
-base::string16 WideFormat(unsigned int value);
+std::string Format(uint32_t value);
+base::string16 WideFormat(uint32_t value);
 
 std::string Format(int64_t value);
 base::string16 WideFormat(int64_t value);
@@ -30,11 +30,11 @@ base::string16 WideFormat(uint64_t value);
 std::string Format(bool value);
 base::string16 WideFormat(bool value);
 
-std::string Format(unsigned char value);
-base::string16 WideFormat(unsigned char value);
+std::string Format(uint8_t value);
+base::string16 WideFormat(uint8_t value);
 
-std::string Format(unsigned short value);
-base::string16 WideFormat(unsigned short value);
+std::string Format(uint16_t value);
+base::string16 WideFormat(uint16_t value);
 
 std::string Format(base::StringPiece value);
 base::string16 WideFormat(base::StringPiece value);
