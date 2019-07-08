@@ -66,11 +66,10 @@ void ViewServiceProxy::Browse(
   });
 }
 
-void ViewServiceProxy::TranslateBrowsePath(
-    const scada::NodeId& starting_node_id,
-    const scada::RelativePath& relative_path,
-    const scada::TranslateBrowsePathCallback& callback) {
-  callback(scada::StatusCode::Bad, {}, 0);
+void ViewServiceProxy::TranslateBrowsePaths(
+    const std::vector<scada::BrowsePath>& browse_paths,
+    const scada::TranslateBrowsePathsCallback& callback) {
+  callback(scada::StatusCode::Bad, {});
 }
 
 void ViewServiceProxy::Subscribe(scada::ViewEvents& events) {

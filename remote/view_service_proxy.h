@@ -8,7 +8,7 @@
 namespace protocol {
 class BrowseResult;
 class Notification;
-}
+}  // namespace protocol
 
 class Logger;
 class MessageSender;
@@ -23,9 +23,11 @@ class ViewServiceProxy : public scada::ViewService {
   void OnChannelClosed();
 
   // scada::ViewService
-  virtual void Browse(const std::vector<scada::BrowseDescription>& nodes, const scada::BrowseCallback& callback) override;
-  virtual void TranslateBrowsePath(const scada::NodeId& starting_node_id, const scada::RelativePath& relative_path,
-      const scada::TranslateBrowsePathCallback& callback) override;
+  virtual void Browse(const std::vector<scada::BrowseDescription>& nodes,
+                      const scada::BrowseCallback& callback) override;
+  virtual void TranslateBrowsePaths(
+      const std::vector<scada::BrowsePath>& browse_paths,
+      const scada::TranslateBrowsePathsCallback& callback) override;
   virtual void Subscribe(scada::ViewEvents& events) override;
   virtual void Unsubscribe(scada::ViewEvents& events) override;
 

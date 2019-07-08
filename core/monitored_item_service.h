@@ -23,7 +23,7 @@ class MonitoredItemService {
   virtual ~MonitoredItemService() {}
 
   virtual std::unique_ptr<MonitoredItem> CreateMonitoredItem(
-      const ReadValueId& read_value_id,
+      const ReadValueId& value_id,
       const MonitoringParameters& params) = 0;
 };
 

@@ -81,10 +81,9 @@ class ViewEvents {
 
 using BrowseCallback =
     std::function<void(Status&& status, std::vector<BrowseResult>&& results)>;
-using TranslateBrowsePathCallback =
+using TranslateBrowsePathsCallback =
     std::function<void(Status&& status,
-                       std::vector<NodeId>&& target_ids,
-                       size_t remaining_path_index)>;
+                       std::vector<BrowsePathResult>&& results)>;
 
 class ViewService {
  public:
@@ -93,10 +92,9 @@ class ViewService {
   virtual void Browse(const std::vector<BrowseDescription>& descriptions,
                       const BrowseCallback& callback) = 0;
 
-  virtual void TranslateBrowsePath(
-      const NodeId& starting_node_id,
-      const RelativePath& relative_path,
-      const TranslateBrowsePathCallback& callback) = 0;
+  virtual void TranslateBrowsePaths(
+      const std::vector<BrowsePath>& browse_paths,
+      const TranslateBrowsePathsCallback& callback) = 0;
 
   virtual void Subscribe(ViewEvents& events) = 0;
   virtual void Unsubscribe(ViewEvents& events) = 0;
