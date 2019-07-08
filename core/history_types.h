@@ -23,18 +23,22 @@ struct HistoryReadRawDetails {
 };
 
 struct ItemInfo {
-  NodeId item;
-  DataValue tvq;
+  NodeId node_id;
+  DataValue data_value;
   base::Time change_time;
 };
 
 using ItemInfosCallback =
     std::function<void(std::vector<ItemInfo>&& item_infos)>;
 
+struct HistoryReadRawResult {
+  Status status;
+  std::vector<DataValue> values;
+  ByteString continuation_point;
+};
+
 using HistoryReadRawCallback =
-    std::function<void(Status&&,
-                       std::vector<DataValue>&& values,
-                       ByteString&& continuation_point)>;
+    std::function<void(HistoryReadRawResult&& result)>;
 
 using HistoryReadEventsCallback =
     std::function<void(Status&& status, std::vector<Event>&& events)>;

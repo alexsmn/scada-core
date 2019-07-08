@@ -33,17 +33,17 @@ void HistoryProxy::HistoryReadRaw(
             *history_read_raw.mutable_continuation_point());
   }
 
-  sender_->Request(
-      request, [this, callback](const protocol::Response& response) {
-        if (!callback)
-          return;
+  sender_->Request(request, [this,
+                             callback](const protocol::Response& response) {
+    if (!callback)
+      return;
 
-        callback(FromProto(response.status()),
-                 VectorFromProto<scada::DataValue>(
-                     response.history_read_raw_result().value()),
-                 FromProto<scada::ByteString>(
-                     response.history_read_raw_result().continuation_point()));
-      });
+    callback({FromProto(response.status()),
+              VectorFromProto<scada::DataValue>(
+                  response.history_read_raw_result().value()),
+              FromProto<scada::ByteString>(
+                  response.history_read_raw_result().continuation_point())});
+  });
 }
 
 void HistoryProxy::HistoryReadEvents(
