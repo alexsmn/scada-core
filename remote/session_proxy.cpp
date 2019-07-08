@@ -242,6 +242,10 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
   }
 
   for (auto& notification : message.notifications()) {
+    auto status = notification.has_status()
+                      ? FromProto(notification.status())
+                      : scada::Status{scada::StatusCode::Good};
+
     for (auto& data_change : notification.data_changes()) {
       subscription_->OnDataChange(data_change.monitored_item_id(),
                                   FromProto(data_change.data_value()));
@@ -250,9 +254,7 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
     view_service_proxy_->OnNotification(notification);
 
     for (auto& event : notification.events()) {
-      auto status = event.has_status() ? FromProto(event.status())
-                                       : scada::Status{scada::StatusCode::Good};
-      subscription_->OnEvent(event.monitored_item_id(), status,
+      subscription_->OnEvent(notification.monitored_item_id(), status,
                              FromProto(event));
     }
 

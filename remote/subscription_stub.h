@@ -34,7 +34,7 @@ class SubscriptionStub {
                     const scada::DataValue& data_value);
   void OnEvent(MonitoredItemId monitored_item_id,
                const scada::Status& status,
-               const scada::Event& event);
+               const std::any& event);
 
   MessageSender& sender_;
   scada::MonitoredItemService& monitored_item_service_;

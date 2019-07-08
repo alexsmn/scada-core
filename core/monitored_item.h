@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <functional>
 
 #include "core/configuration_types.h"
@@ -11,7 +12,7 @@ class Event;
 class Status;
 
 typedef std::function<void(const DataValue& data_value)> DataChangeHandler;
-typedef std::function<void(const Status& status, const Event& event)>
+typedef std::function<void(const Status& status, const std::any& event)>
     EventHandler;
 
 class MonitoredItem {
@@ -32,7 +33,7 @@ class MonitoredItem {
   virtual void Subscribe() = 0;
 
   void ForwardData(const DataValue& data_value);
-  void ForwardEvent(const Status& status, const Event& event);
+  void ForwardEvent(const Status& status, const std::any& event);
 
  protected:
   DataChangeHandler data_change_handler_;
