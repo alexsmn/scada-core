@@ -5,13 +5,14 @@
 
 #include "core/configuration_types.h"
 #include "core/debug_util.h"
-#include "core/model_change_event.h"
+#include "core/expanded_node_id.h"
 #include "core/node_class.h"
-#include "core/node_id.h"
 #include "core/qualified_name.h"
 #include "core/status.h"
 
 namespace scada {
+
+struct ModelChangeEvent;
 
 enum class BrowseDirection {
   Forward = 0,
@@ -45,24 +46,30 @@ struct BrowseResult {
   ReferenceDescriptions references;
 };
 
-struct BrowseNode {
-  NodeId parent_id;
-  NodeId reference_type_id;
-  NodeId node_id;
-  NodeClass node_class;
-  NodeId type_id;
-  QualifiedName browse_name;
-  LocalizedText display_name;
-  NodeId data_type_id;
-  Variant value;
-};
-
 struct RelativePathElement {
   NodeId reference_type_id;
+  bool inverse;
+  bool include_subtypes;
   QualifiedName target_name;
 };
 
 using RelativePath = std::vector<RelativePathElement>;
+
+struct BrowsePath {
+  // Must be named |node_id| for generalization.
+  scada::NodeId node_id;
+  RelativePath relative_path;
+};
+
+struct BrowsePathTarget {
+  ExpandedNodeId target_id;
+  size_t remaining_path_index;
+};
+
+struct BrowsePathResult {
+  scada::StatusCode status_code;
+  std::vector<BrowsePathTarget> targets;
+};
 
 class ViewEvents {
  public:
@@ -145,3 +152,30 @@ inline std::ostream& operator<<(std::ostream& stream,
   return stream << "{status_code: " << v.status_code
                 << ", references: " << v.references << "}";
 }
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const scada::RelativePathElement& v) {
+  return stream << "{reference_type_id: " << v.reference_type_id
+                << ", inverse: " << v.inverse << ", "
+                << ", include_subtypes: " << v.include_subtypes << ", "
+                << ", target_name: " << v.target_name << "}";
+}
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const scada::BrowsePath& v) {
+  return stream << "{node_id: " << v.node_id
+                << ", relative_path: " << v.relative_path << "}";
+}
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const scada::BrowsePathTarget& v) {
+  return stream << "{target_id: " << v.target_id
+                << ", remaining_path_index: " << v.remaining_path_index << "}";
+}
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const scada::BrowsePathResult& v) {
+  return stream << "{status_code: " << v.status_code
+                << ", targets: " << v.targets << "}";
+}
+
