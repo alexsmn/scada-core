@@ -3,6 +3,7 @@
 #include "core/attribute_ids.h"
 #include "core/configuration_types.h"
 #include "core/data_value.h"
+#include "core/node_class.h"
 #include "core/write_flags.h"
 
 #include <cassert>
@@ -16,6 +17,13 @@ class Status;
 using StatusCallback = std::function<void(Status&&)>;
 using ReadCallback =
     std::function<void(Status&&, std::vector<DataValue>&& values)>;
+
+struct WriteValue {
+  NodeId node_id;
+  AttributeId attribute_id;
+  Variant value;
+  WriteFlags flags;
+};
 
 class AttributeService {
  public:
@@ -33,6 +41,10 @@ template <class T>
 inline DataValue MakeReadResult(T&& value) {
   const auto timestamp = base::Time::Now();
   return DataValue{std::forward<T>(value), {}, timestamp, timestamp};
+}
+
+inline DataValue MakeReadResult(scada::NodeClass node_class) {
+  return MakeReadResult(static_cast<int>(node_class));
 }
 
 inline DataValue MakeReadError(scada::StatusCode status_code) {

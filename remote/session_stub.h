@@ -26,6 +26,8 @@ class NodeManagementService;
 class MonitoredItemService;
 class ViewService;
 struct MonitoringParameters;
+struct ReadValueId;
+struct WriteValue;
 }  // namespace scada
 
 class Connection;

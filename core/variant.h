@@ -236,7 +236,6 @@ inline T Variant::get_or(T or_value) const {
 
 scada::Variant::Type ParseBuiltInDataType(std::string_view str);
 
-
 NodeId ToNodeId(Variant::Type type);
 Variant::Type ToBuiltInDataType(const NodeId& node_id);
 
