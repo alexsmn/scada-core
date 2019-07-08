@@ -50,8 +50,7 @@ class ExtensionObject {
 inline std::ostream& operator<<(std::ostream& stream,
                                 const ExtensionObject& extension_object) {
   return stream << "{"
-                << "data_type_id: " << extension_object.data_type_id()
-                << "}";
+                << "data_type_id: " << extension_object.data_type_id() << "}";
 }
 
 }  // namespace scada

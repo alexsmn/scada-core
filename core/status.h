@@ -88,36 +88,41 @@ enum class StatusLimit {
   Constant,
 };
 
-inline StatusSeverity GetSeverity(StatusCode code) noexcept {
+inline constexpr StatusSeverity GetSeverity(StatusCode code) noexcept {
   return static_cast<StatusSeverity>(static_cast<unsigned>(code) >> 14);
 }
-inline bool IsGood(StatusCode code) noexcept {
+inline constexpr bool IsGood(StatusCode code) noexcept {
   return GetSeverity(code) == StatusSeverity::Good;
 }
 
-inline bool IsBad(StatusCode code) noexcept {
+inline constexpr bool IsBad(StatusCode code) noexcept {
   return GetSeverity(code) == StatusSeverity::Bad;
 }
 
 class Status {
  public:
+  constexpr Status() noexcept : Status{scada::StatusCode::Good} {}
   constexpr Status(StatusCode code) noexcept
       : full_code_(static_cast<unsigned>(code) << 16) {}
 
   static Status FromFullCode(unsigned full_code);
 
-  explicit operator bool() const noexcept { return !bad(); }
-  bool operator!() const noexcept { return bad(); }
+  explicit constexpr operator bool() const noexcept { return !bad(); }
+  constexpr bool operator!() const noexcept { return bad(); }
 
-  StatusSeverity severity() const noexcept {
+  constexpr StatusSeverity severity() const noexcept {
     return static_cast<StatusSeverity>(full_code_ >> 30);
   }
 
-  bool good() const noexcept { return severity() == StatusSeverity::Good; }
-  bool uncertain() const noexcept {
+  constexpr bool good() const noexcept {
+    return severity() == StatusSeverity::Good;
+  }
+  constexpr bool uncertain() const noexcept {
     return severity() == StatusSeverity::Uncertain;
   }
-  bool bad() const noexcept { return severity() == StatusSeverity::Bad; }
+  constexpr bool bad() const noexcept {
+    return severity() == StatusSeverity::Bad;
+  }
 
   StatusLimit limit() const noexcept {
     return static_cast<StatusLimit>(full_code_ & 3);
@@ -128,11 +133,11 @@ class Status {
     full_code_ |= static_cast<unsigned>(limit);
   }
 
-  StatusCode code() const noexcept {
+  constexpr StatusCode code() const noexcept {
     return static_cast<StatusCode>(full_code_ >> 16);
   }
 
-  unsigned full_code() const noexcept { return full_code_; }
+  constexpr unsigned full_code() const noexcept { return full_code_; }
 
  private:
   unsigned full_code_;
@@ -143,5 +148,15 @@ class Status {
 std::string ToString(scada::StatusCode status_code);
 base::string16 ToString16(scada::StatusCode status_code);
 
+inline std::ostream& operator<<(std::ostream& stream,
+                                scada::StatusCode status_code) {
+  return stream << ToString(status_code);
+}
+
 std::string ToString(const scada::Status& status);
 base::string16 ToString16(const scada::Status& status);
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const scada::Status status) {
+  return stream << ToString(status);
+}

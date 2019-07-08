@@ -12,27 +12,27 @@ namespace scada {
 
 namespace {
 
-const char* kBuiltInTypeNames[] = {"EMPTY",
-                                   "BOOL",
-                                   "INT8",
-                                   "UINT8",
-                                   "INT16",
-                                   "UINT16",
-                                   "INT32",
-                                   "UINT32",
-                                   "UINT64",
-                                   "INT64",
-                                   "DOUBLE",
-                                   "BYTE_STRING",
-                                   "STRING",
-                                   "QUALIFIED_NAME",
-                                   "LOCALIZED_TEXT",
-                                   "NODE_ID",
-                                   "EXPANDED_NODE_ID",
-                                   "EXTENSION_OBJECT",
-                                   "DATE_TIME"};
+const char* kBuiltInDataTypeNames[] = {"EMPTY",
+                                       "BOOL",
+                                       "INT8",
+                                       "UINT8",
+                                       "INT16",
+                                       "UINT16",
+                                       "INT32",
+                                       "UINT32",
+                                       "UINT64",
+                                       "INT64",
+                                       "DOUBLE",
+                                       "BYTE_STRING",
+                                       "STRING",
+                                       "QUALIFIED_NAME",
+                                       "LOCALIZED_TEXT",
+                                       "NODE_ID",
+                                       "EXPANDED_NODE_ID",
+                                       "EXTENSION_OBJECT",
+                                       "DATE_TIME"};
 
-static_assert(std::size(kBuiltInTypeNames) ==
+static_assert(std::size(kBuiltInDataTypeNames) ==
               static_cast<size_t>(scada::Variant::COUNT));
 
 }  // namespace
@@ -42,15 +42,6 @@ const LocalizedText Variant::kFalseString = base::WideToUTF16(L"Нет");
 
 void Variant::clear() {
   data_ = std::monostate{};
-}
-
-Variant& Variant::operator=(Variant&& source) {
-  data_ = std::move(source.data_);
-  return *this;
-}
-
-bool Variant::operator==(const Variant& other) const {
-  return data_ == other.data_;
 }
 
 bool Variant::get(bool& value) const {
@@ -68,6 +59,16 @@ bool Variant::get(bool& value) const {
 
   value = int64_value != 0;
   return true;
+}
+
+template <class T>
+bool Variant::get_int(T& value) const {
+  Int64 int64_value;
+  if (!get(int64_value))
+    return false;
+
+  value = static_cast<T>(int64_value);
+  return static_cast<Int64>(value) == int64_value;
 }
 
 bool Variant::get(Int64& value) const {
@@ -245,6 +246,8 @@ bool Variant::get(NodeId& node_id) const {
 }
 
 bool Variant::ChangeType(Variant::Type new_type) {
+  assert(new_type != Variant::Type::EMPTY);
+
   if (!is_scalar())
     return false;
 
@@ -259,9 +262,13 @@ bool Variant::ChangeType(Variant::Type new_type) {
     case UINT16:
       return ChangeTypeTo<UInt16>();
     case INT32:
-      return ChangeTypeTo<int32_t>();
+      return ChangeTypeTo<Int32>();
+    case UINT32:
+      return ChangeTypeTo<UInt32>();
     case INT64:
-      return ChangeTypeTo<int64_t>();
+      return ChangeTypeTo<Int64>();
+    case UINT64:
+      return ChangeTypeTo<UInt64>();
     case DOUBLE:
       return ChangeTypeTo<double>();
     case STRING:
@@ -284,17 +291,7 @@ NodeId Variant::data_type_id() const {
   if (type() == Type::EXTENSION_OBJECT)
     return get<ExtensionObject>().data_type_id().node_id();
 
-  const scada::NumericId kNodeIds[] = {
-      0,          id::Boolean,        id::SByte,
-      id::Byte,   id::Int16,          id::UInt16,
-      id::Int32,  id::UInt32,         id::Int64,
-      id::UInt64, id::Double,         id::ByteString,
-      id::String, id::QualifiedName,  id::LocalizedText,
-      id::NodeId, id::ExpandedNodeId, id::DateTime,
-  };
-
-  assert(static_cast<size_t>(type()) < std::size(kNodeIds));
-  return kNodeIds[static_cast<size_t>(type())];
+  return ToNodeId(type());
 }
 
 template <class T>
@@ -328,20 +325,48 @@ void Variant::Dump(std::ostream& stream) const {
 }
 
 scada::Variant::Type ParseBuiltInType(std::string_view str) {
-  auto i = std::find(std::begin(kBuiltInTypeNames), std::end(kBuiltInTypeNames),
-                     str);
-  return i != std::end(kBuiltInTypeNames)
-             ? static_cast<scada::Variant::Type>(i -
-                                                 std::begin(kBuiltInTypeNames))
+  auto i = std::find(std::begin(kBuiltInDataTypeNames),
+                     std::end(kBuiltInDataTypeNames), str);
+  return i != std::end(kBuiltInDataTypeNames)
+             ? static_cast<scada::Variant::Type>(
+                   i - std::begin(kBuiltInDataTypeNames))
              : scada::Variant::COUNT;
+}
+
+const scada::NumericId kBuiltInDataTypeNodeIds[] = {
+    0,          id::Boolean,        id::SByte,
+    id::Byte,   id::Int16,          id::UInt16,
+    id::Int32,  id::UInt32,         id::Int64,
+    id::UInt64, id::Double,         id::ByteString,
+    id::String, id::QualifiedName,  id::LocalizedText,
+    id::NodeId, id::ExpandedNodeId, id::DateTime,
+};
+
+NodeId ToNodeId(Variant::Type type) {
+  assert(static_cast<size_t>(type) < std::size(kBuiltInDataTypeNodeIds));
+  return kBuiltInDataTypeNodeIds[static_cast<size_t>(type)];
+}
+
+Variant::Type ToBuiltInDataType(const NodeId& node_id) {
+  if (node_id.namespace_index() != 0 ||
+      node_id.type() != scada::NodeIdType::Numeric)
+    return Variant::Type::COUNT;
+
+  auto i = std::find(std::begin(kBuiltInDataTypeNodeIds),
+                     std::end(kBuiltInDataTypeNodeIds), node_id);
+  if (i == std::end(kBuiltInDataTypeNodeIds))
+    return Variant::Type::COUNT;
+
+  auto index = i - std::begin(kBuiltInDataTypeNodeIds);
+  return static_cast<Variant::Type>(index);
 }
 
 }  // namespace scada
 
 std::string ToString(scada::Variant::Type type) {
   size_t index = static_cast<size_t>(type);
-  return index < std::size(scada::kBuiltInTypeNames)
-             ? scada::kBuiltInTypeNames[index]
+  return index < std::size(scada::kBuiltInDataTypeNames)
+             ? scada::kBuiltInDataTypeNames[index]
              : "(Unknown)";
 }
 
