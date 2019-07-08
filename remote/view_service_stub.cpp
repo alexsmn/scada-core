@@ -1,6 +1,6 @@
 #include "remote/view_service_stub.h"
 
-#include "core/model_change_event.h"
+#include "core/event.h"
 #include "core/status.h"
 #include "core/view_service.h"
 #include "model/node_id_util.h"

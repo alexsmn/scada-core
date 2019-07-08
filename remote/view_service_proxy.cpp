@@ -1,7 +1,7 @@
 #include "remote/view_service_proxy.h"
 
 #include "base/logger.h"
-#include "core/model_change_event.h"
+#include "core/event.h"
 #include "core/standard_node_ids.h"
 #include "core/status.h"
 #include "model/node_id_util.h"

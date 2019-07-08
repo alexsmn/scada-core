@@ -67,9 +67,9 @@ void HistoryProxy::HistoryReadEvents(
 
   if (filter.types) {
     auto& proto_filter = *history_read_events.mutable_filter();
-    if (filter.types & scada::Event::ACKED)
+    if (filter.types & scada::EventFilter::ACKED)
       proto_filter.set_acked(true);
-    if (filter.types & scada::Event::UNACKED)
+    if (filter.types & scada::EventFilter::UNACKED)
       proto_filter.set_unacked(true);
   }
 

@@ -49,6 +49,11 @@ const NumericId TypesFolder = 86;
 const NumericId ModellingRules = 87;
 const NumericId ModellingRule_Mandatory = 78;
 
+const NumericId BaseEventType = 2041;
+const NumericId SystemEventType = 2130;
+const NumericId GeneralModelChangeEventType = 2133;
+const NumericId SemanticChangeEventType = 2738;
+
 const NumericId AggregateFunction_Average = 2342;
 const NumericId AggregateFunction_Total = 2344;
 const NumericId AggregateFunction_Minimum = 2346;

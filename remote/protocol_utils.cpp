@@ -2,7 +2,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "core/model_change_event.h"
+#include "core/event.h"
 #include "core/standard_node_ids.h"
 
 scada::NodeId FromProto(const protocol::NodeId& source) {
