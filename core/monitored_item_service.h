@@ -22,7 +22,7 @@ class MonitoredItemService {
  public:
   virtual ~MonitoredItemService() {}
 
-  virtual std::unique_ptr<MonitoredItem> CreateMonitoredItem(
+  virtual std::shared_ptr<MonitoredItem> CreateMonitoredItem(
       const ReadValueId& value_id,
       const MonitoringParameters& params) = 0;
 };

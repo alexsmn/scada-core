@@ -8,7 +8,7 @@ class MockMonitoredItemService : public MonitoredItemService {
  public:
   MOCK_METHOD2(
       CreateMonitoredItem,
-      std::unique_ptr<MonitoredItem>(const ReadValueId& value_id,
+      std::shared_ptr<MonitoredItem>(const ReadValueId& value_id,
                                      const MonitoringParameters& params));
 };
 

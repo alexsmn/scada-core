@@ -41,5 +41,5 @@ class SubscriptionStub {
   int subscription_id_;
 
   MonitoredItemId next_monitored_item_id_ = 1;
-  std::map<MonitoredItemId, std::unique_ptr<scada::MonitoredItem>> channels_;
+  std::map<MonitoredItemId, std::shared_ptr<scada::MonitoredItem>> channels_;
 };

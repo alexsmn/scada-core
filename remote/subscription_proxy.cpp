@@ -21,12 +21,14 @@ class SubscriptionProxy::MonitoredItemProxy : public scada::MonitoredItem {
                      scada::MonitoringParameters params);
   virtual ~MonitoredItemProxy();
 
-  virtual void Subscribe() override;
+  virtual void SubscribeData(scada::DataChangeHandler handler) override;
+  virtual void SubscribeEvents(scada::EventHandler handler) override;
 
   void OnChannelOpened();
   void OnChannelClosed();
 
   void UpdateAndForwardData(const scada::DataValue& value);
+  void ForwardEvent(const scada::Status& status, const std::any& event);
 
   void Delete();
 
@@ -48,6 +50,9 @@ class SubscriptionProxy::MonitoredItemProxy : public scada::MonitoredItem {
 
   enum State { DELETED, CREATING, CREATED };
   State state_ = DELETED;
+
+  scada::DataChangeHandler data_change_handler_;
+  scada::EventHandler event_handler_;
 
   scada::DataValue current_data_;
 
@@ -71,14 +76,27 @@ SubscriptionProxy::MonitoredItemProxy::~MonitoredItemProxy() {
     subscription_->RemoveMonitoredItem(*this);
 }
 
-void SubscriptionProxy::MonitoredItemProxy::Subscribe() {
+void SubscriptionProxy::MonitoredItemProxy::SubscribeData(
+    scada::DataChangeHandler handler) {
   assert(subscription_);
   assert(state_ == DELETED);
 
   subscription_->AddMonitoredItem(*this);
 
+  data_change_handler_ = std::move(handler);
+
   if (!current_data_.is_null())
-    ForwardData(current_data_);
+    data_change_handler_(current_data_);
+}
+
+void SubscriptionProxy::MonitoredItemProxy::SubscribeEvents(
+    scada::EventHandler handler) {
+  assert(subscription_);
+  assert(state_ == DELETED);
+
+  event_handler_ = std::move(handler);
+
+  subscription_->AddMonitoredItem(*this);
 }
 
 void SubscriptionProxy::MonitoredItemProxy::CreateStub() {
@@ -134,11 +152,13 @@ void SubscriptionProxy::MonitoredItemProxy::OnChannelOpened() {
   assert(subscription_);
   assert(state_ == DELETED);
 
-  scada::DataValue tvq;
-  tvq.server_timestamp = base::Time::Now();
-  tvq.qualifier = scada::Qualifier::OFFLINE;
-  current_data_ = tvq;
-  ForwardData(tvq);
+  if (data_change_handler_) {
+    scada::DataValue tvq;
+    tvq.server_timestamp = base::Time::Now();
+    tvq.qualifier = scada::Qualifier::OFFLINE;
+    current_data_ = tvq;
+    data_change_handler_(tvq);
+  }
 
   CreateStub();
 }
@@ -175,6 +195,7 @@ void SubscriptionProxy::MonitoredItemProxy::OnCreateMonitoredItemResult(
 void SubscriptionProxy::MonitoredItemProxy::UpdateAndForwardData(
     const scada::DataValue& value) {
   assert(subscription_);
+  assert(data_change_handler_);
 
   if (value == current_data_)
     return;
@@ -184,7 +205,15 @@ void SubscriptionProxy::MonitoredItemProxy::UpdateAndForwardData(
     current_data_ = value;
 
   // But any data shall be notified to delegate.
-  ForwardData(value);
+  data_change_handler_(value);
+}
+
+void SubscriptionProxy::MonitoredItemProxy::ForwardEvent(
+    const scada::Status& status,
+    const std::any& event) {
+  assert(event_handler_);
+
+  event_handler_(status, event);
 }
 
 void SubscriptionProxy::MonitoredItemProxy::Delete() {
@@ -197,6 +226,9 @@ void SubscriptionProxy::MonitoredItemProxy::Delete() {
 
 void SubscriptionProxy::MonitoredItemProxy::UpdateQualifier(unsigned remove,
                                                             unsigned add) {
+  if (!data_change_handler_)
+    return;
+
   scada::Qualifier new_qualifier = current_data_.qualifier;
   new_qualifier.Update(remove, add);
   if (current_data_.qualifier == new_qualifier)
@@ -205,7 +237,7 @@ void SubscriptionProxy::MonitoredItemProxy::UpdateQualifier(unsigned remove,
   current_data_.qualifier = new_qualifier;
 
   auto data = current_data_;
-  ForwardData(data);
+  data_change_handler_(data);
 }
 
 // SubscriptionProxy
@@ -263,7 +295,7 @@ void SubscriptionProxy::OnDataChange(int monitored_item_id,
 
 void SubscriptionProxy::OnEvent(int monitored_item_id,
                                 const scada::Status& status,
-                                const scada::Event& event) {
+                                const std::any& event) {
   auto i = monitored_item_ids_.find(monitored_item_id);
   if (i != monitored_item_ids_.end())
     i->second->ForwardEvent(status, event);

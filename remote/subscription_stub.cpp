@@ -56,20 +56,18 @@ void SubscriptionStub::OnCreateMonitoredItem(
   }
 
   if (read_value_id.attribute_id == scada::AttributeId::Value) {
-    channel_ptr->set_data_change_handler(
+    channel_ptr->SubscribeData(
         [this, monitored_item_id](const scada::DataValue& data_value) {
           OnDataChange(monitored_item_id, data_value);
         });
 
   } else if (read_value_id.attribute_id == scada::AttributeId::EventNotifier) {
-    channel_ptr->set_event_handler(
+    channel_ptr->SubscribeEvents(
         [this, monitored_item_id](const scada::Status& status,
                                   const std::any& event) {
           OnEvent(monitored_item_id, status, event);
         });
   }
-
-  channel_ptr->Subscribe();
 }
 
 void SubscriptionStub::OnDeleteMonitoredItem(int request_id,
