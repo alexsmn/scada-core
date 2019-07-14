@@ -1,7 +1,6 @@
 #include "remote/view_service_proxy.h"
 
 #include "base/logger.h"
-#include "core/event.h"
 #include "core/standard_node_ids.h"
 #include "core/status.h"
 #include "model/node_id_util.h"
@@ -32,17 +31,18 @@ void ViewServiceProxy::Browse(
   auto& browse = *request.mutable_browse();
   for (auto& node : nodes) {
     auto& browse_node = *browse.add_nodes();
-    ToProto(node.node_id, *browse_node.mutable_node_id());
+    Convert(node.node_id, *browse_node.mutable_node_id());
     if (node.direction != scada::BrowseDirection::Both)
-      browse_node.set_direction(ToProto(node.direction));
-    ToProto(node.reference_type_id, *browse_node.mutable_reference_type_id());
+      browse_node.set_direction(
+          Convert<protocol::BrowseDirection>(node.direction));
+    Convert(node.reference_type_id, *browse_node.mutable_reference_type_id());
     if (node.include_subtypes)
       browse_node.set_include_subtypes(true);
   }
 
   sender_->Request(request, [callback](const protocol::Response& response) {
-    callback(FromProto(response.status()),
-             VectorFromProto<scada::BrowseResult>(
+    callback(Convert<scada::Status>(response.status()),
+             Convert<std::vector<scada::BrowseResult>>(
                  response.browse_result().results()));
   });
 }

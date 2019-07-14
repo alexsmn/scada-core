@@ -9,12 +9,13 @@ namespace scada {
 class Event;
 class MonitoredItem;
 class MonitoredItemService;
-struct ReadValueId;
+
+struct EventFilter;
 struct MonitoringParameters;
+struct ReadValueId;
 }  // namespace scada
 
 class MessageSender;
-struct DataItemUpdate;
 
 class SubscriptionStub {
  public:

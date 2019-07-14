@@ -48,7 +48,7 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   auto& history_read_raw = request.history_read_raw();
 
   auto continuation_point =
-      FromProto<scada::ByteString>(history_read_raw.continuation_point());
+      Convert<scada::ByteString>(history_read_raw.continuation_point());
 
   scada::HistoryReadRawDetails details;
 
@@ -67,7 +67,7 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   details.continuation_point = std::move(continuation_point);
 
   if (!ignore_params) {
-    details.node_id = FromProto(history_read_raw.node_id());
+    details.node_id = Convert<scada::NodeId>(history_read_raw.node_id());
     details.from =
         history_read_raw.has_from_time()
             ? base::Time::FromInternalValue(history_read_raw.from_time())
@@ -77,7 +77,8 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
                      : base::Time();
     details.max_count = history_read_raw.max_count();
     details.aggregation = history_read_raw.has_aggregate_filter()
-                              ? FromProto(history_read_raw.aggregate_filter())
+                              ? Convert<scada::AggregateFilter>(
+                                    history_read_raw.aggregate_filter())
                               : scada::AggregateFilter{};
   }
 
@@ -101,13 +102,13 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(result.status, *response.mutable_status());
+        Convert(result.status, *response.mutable_status());
         if (!result.values.empty()) {
-          ToProto(std::move(result.values),
+          Convert(std::move(result.values),
                   *response.mutable_history_read_raw_result()->mutable_value());
         }
         if (!result.continuation_point.empty()) {
-          ToProto(std::move(result.continuation_point),
+          Convert(std::move(result.continuation_point),
                   *response.mutable_history_read_raw_result()
                        ->mutable_continuation_point());
         }
@@ -118,7 +119,7 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
 void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   auto request_id = request.request_id();
   auto& history_read_events = request.history_read_events();
-  const auto node_id = FromProto(history_read_events.node_id());
+  const auto node_id = Convert<scada::NodeId>(history_read_events.node_id());
   auto from =
       history_read_events.has_from_time()
           ? base::Time::FromInternalValue(history_read_events.from_time())
@@ -127,13 +128,8 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
                 ? base::Time::FromInternalValue(history_read_events.to_time())
                 : base::Time();
   scada::EventFilter filter;
-  if (history_read_events.has_filter()) {
-    auto& proto_filter = history_read_events.filter();
-    if (proto_filter.acked())
-      filter.types |= scada::EventFilter::ACKED;
-    if (proto_filter.unacked())
-      filter.types |= scada::EventFilter::UNACKED;
-  }
+  if (history_read_events.has_filter())
+    Convert(history_read_events.filter(), filter);
 
   logger_->WriteF(LogSeverity::Normal, "History read events request %u node %s",
                   request_id, NodeIdToScadaString(node_id).c_str());
@@ -154,9 +150,9 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(status, *response.mutable_status());
+        Convert(status, *response.mutable_status());
         if (!events.empty()) {
-          ToProto(
+          Convert(
               std::move(events),
               *response.mutable_history_read_events_result()->mutable_event());
         }

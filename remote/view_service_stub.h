@@ -1,9 +1,8 @@
 #pragma once
 
 #include "base/logger.h"
-#include "base/timer.h"
 #include "base/memory/weak_ptr.h"
-#include "core/view_service.h"
+#include "base/timer.h"
 
 #include <memory>
 
@@ -11,6 +10,11 @@ namespace protocol {
 class Reference;
 class Request;
 }  // namespace protocol
+
+namespace scada {
+class ViewService;
+struct BrowseDescription;
+}
 
 class MessageSender;
 

@@ -3,7 +3,8 @@
 #include <map>
 #include <memory>
 
-#include "core/configuration_types.h"
+#include "core/attribute_service.h"
+#include "core/event.h"
 #include "remote/message_sender.h"
 #include "remote/subscription.h"
 
@@ -26,8 +27,6 @@ class NodeManagementService;
 class MonitoredItemService;
 class ViewService;
 struct MonitoringParameters;
-struct ReadValueId;
-struct WriteValue;
 }  // namespace scada
 
 class Connection;

@@ -38,20 +38,20 @@ void NodeManagementProxy::CreateNode(const scada::NodeId& requested_id,
 
   protocol::Request request;
   auto& create_node = *request.mutable_create_node();
-  create_node.set_node_class(ToProto(node_class));
+  create_node.set_node_class(Convert<protocol::NodeClass>(node_class));
   if (!requested_id.is_null())
-    ToProto(requested_id, *create_node.mutable_requested_node_id());
-  ToProto(parent_id, *create_node.mutable_parent_id());
-  ToProto(type_id, *create_node.mutable_type_definition_id());
+    Convert(requested_id, *create_node.mutable_requested_node_id());
+  Convert(parent_id, *create_node.mutable_parent_id());
+  Convert(type_id, *create_node.mutable_type_definition_id());
   if (!attributes.empty())
-    ToProto(std::move(attributes), *create_node.mutable_attributes());
+    Convert(std::move(attributes), *create_node.mutable_attributes());
 
   sender_->Request(request, [this,
                              callback](const protocol::Response& response) {
-    auto status = FromProto(response.status());
+    auto status = Convert<scada::Status>(response.status());
     scada::NodeId node_id;
     if (response.has_create_node_result())
-      node_id = FromProto(response.create_node_result().node_id());
+      node_id = Convert<scada::NodeId>(response.create_node_result().node_id());
 
     logger().WriteF(
         LogSeverity::Normal, "CreateNode response [status='%ls', node_id=%s]",
@@ -82,15 +82,15 @@ void NodeManagementProxy::ModifyNodes(
     // TODO: Fix it.
     // assert(!attribute.empty());
     auto& modify_node = *request.add_modify_node();
-    ToProto(node_id, *modify_node.mutable_node_id());
-    ToProto(std::move(attribute), *modify_node.mutable_attributes());
+    Convert(node_id, *modify_node.mutable_node_id());
+    Convert(std::move(attribute), *modify_node.mutable_attributes());
   }
 
   sender_->Request(request, [this,
                              callback](const protocol::Response& response) {
-    auto status = FromProto(response.status());
+    auto status = Convert<scada::Status>(response.status());
     auto results =
-        VectorFromProto<scada::Status>(response.modify_node_result());
+        Convert<std::vector<scada::Status>>(response.modify_node_result());
 
     logger().WriteF(LogSeverity::Normal, "ModifyNodes response [status='%ls']",
                     ToString16(status).c_str());
@@ -113,14 +113,14 @@ void NodeManagementProxy::DeleteNode(
 
   protocol::Request request;
   auto& delete_node = *request.mutable_delete_node();
-  ToProto(node_id, *delete_node.mutable_node_id());
+  Convert(node_id, *delete_node.mutable_node_id());
   if (return_dependencies)
     delete_node.set_return_dependencies(true);
 
   sender_->Request(request, [this,
                              callback](const protocol::Response& response) {
-    auto status = FromProto(response.status());
-    auto dependencies = VectorFromProto<scada::NodeId>(
+    auto status = Convert<scada::Status>(response.status());
+    auto dependencies = Convert<std::vector<scada::NodeId>>(
         response.delete_node_result().dependencies());
 
     logger().WriteF(LogSeverity::Normal, "DeleteNode response [status='%ls']",
@@ -141,7 +141,7 @@ void NodeManagementProxy::ChangeUserPassword(
 
   protocol::Request request;
   auto& change_password = *request.mutable_change_password();
-  ToProto(user_node_id, *change_password.mutable_user_node_id());
+  Convert(user_node_id, *change_password.mutable_user_node_id());
   change_password.set_current_password_utf8(
       base::UTF16ToUTF8(current_password));
   change_password.set_new_password_utf8(base::UTF16ToUTF8(new_password));
@@ -149,7 +149,7 @@ void NodeManagementProxy::ChangeUserPassword(
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
                      if (callback)
-                       callback(FromProto(response.status()));
+                       callback(Convert<scada::Status>(response.status()));
                    });
 }
 
@@ -169,14 +169,14 @@ void NodeManagementProxy::AddReference(const scada::NodeId& reference_type_id,
 
   protocol::Request request;
   auto& add_reference = *request.mutable_add_reference();
-  ToProto(reference_type_id, *add_reference.mutable_reference_type_id());
-  ToProto(source_id, *add_reference.mutable_source_id());
-  ToProto(target_id, *add_reference.mutable_target_id());
+  Convert(reference_type_id, *add_reference.mutable_reference_type_id());
+  Convert(source_id, *add_reference.mutable_source_id());
+  Convert(target_id, *add_reference.mutable_target_id());
 
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
                      if (callback)
-                       callback(FromProto(response.status()));
+                       callback(Convert<scada::Status>(response.status()));
                    });
 }
 
@@ -197,13 +197,13 @@ void NodeManagementProxy::DeleteReference(
 
   protocol::Request request;
   auto& delete_reference = *request.mutable_delete_reference();
-  ToProto(reference_type_id, *delete_reference.mutable_reference_type_id());
-  ToProto(source_id, *delete_reference.mutable_source_id());
-  ToProto(target_id, *delete_reference.mutable_target_id());
+  Convert(reference_type_id, *delete_reference.mutable_reference_type_id());
+  Convert(source_id, *delete_reference.mutable_source_id());
+  Convert(target_id, *delete_reference.mutable_target_id());
 
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
                      if (callback)
-                       callback(FromProto(response.status()));
+                       callback(Convert<scada::Status>(response.status()));
                    });
 }

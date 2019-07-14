@@ -19,39 +19,43 @@ NodeManagementStub::NodeManagementStub(MessageSender& sender,
 void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
   if (request.has_create_node()) {
     auto& create_node = request.create_node();
-    OnCreateNode(
-        request.request_id(),
-        create_node.has_requested_node_id()
-            ? FromProto(create_node.requested_node_id())
-            : scada::NodeId(),
-        FromProto(create_node.parent_id()), FromProto(create_node.node_class()),
-        FromProto(create_node.type_definition_id()),
-        create_node.has_attributes() ? FromProto(create_node.attributes())
-                                     : scada::NodeAttributes());
+    OnCreateNode(request.request_id(),
+                 create_node.has_requested_node_id()
+                     ? Convert<scada::NodeId>(create_node.requested_node_id())
+                     : scada::NodeId(),
+                 Convert<scada::NodeId>(create_node.parent_id()),
+                 Convert<scada::NodeClass>(create_node.node_class()),
+                 Convert<scada::NodeId>(create_node.type_definition_id()),
+                 create_node.has_attributes()
+                     ? Convert<scada::NodeAttributes>(create_node.attributes())
+                     : scada::NodeAttributes());
   }
 
   if (request.modify_node_size() != 0) {
     std::vector<std::pair<scada::NodeId, scada::NodeAttributes>> nodes;
     nodes.reserve(request.modify_node_size());
     for (auto& modify_node : request.modify_node()) {
-      nodes.emplace_back(FromProto(modify_node.node_id()),
-                         FromProto(modify_node.attributes()));
+      nodes.emplace_back(
+          Convert<scada::NodeId>(modify_node.node_id()),
+          Convert<scada::NodeAttributes>(modify_node.attributes()));
     }
     OnModifyNodes(request.request_id(), std::move(nodes));
   }
 
   if (request.has_delete_node()) {
     auto& delete_node = request.delete_node();
-    OnDeleteNode(request.request_id(), FromProto(delete_node.node_id()),
+    OnDeleteNode(request.request_id(),
+                 Convert<scada::NodeId>(delete_node.node_id()),
                  delete_node.return_dependencies());
   }
 
   if (request.has_change_password()) {
     auto& change_password = request.change_password();
     OnChangeUserPassword(
-        request.request_id(), FromProto(change_password.user_node_id()),
-        base::UTF8ToUTF16(change_password.current_password_utf8()),
-        base::UTF8ToUTF16(change_password.new_password_utf8()));
+        request.request_id(),
+        Convert<scada::NodeId>(change_password.user_node_id()),
+        Convert<scada::LocalizedText>(change_password.current_password_utf8()),
+        Convert<scada::LocalizedText>(change_password.new_password_utf8()));
   }
 
   if (request.has_add_reference())
@@ -69,7 +73,7 @@ void NodeManagementStub::OnDeleteNode(unsigned request_id,
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
     auto& delete_node_result = *response.mutable_delete_node_result();
-    ToProto(scada::StatusCode::Bad_CantDeleteOwnUser,
+    Convert(scada::StatusCode::Bad_CantDeleteOwnUser,
             *response.mutable_status());
     sender_.Send(message);
     return;
@@ -88,10 +92,9 @@ void NodeManagementStub::OnDeleteNode(unsigned request_id,
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         auto& delete_node_result = *response.mutable_delete_node_result();
-        ToProto(status, *response.mutable_status());
+        Convert(status, *response.mutable_status());
         if (!dependencies.empty())
-          ContainerToProto(dependencies,
-                           *delete_node_result.mutable_dependencies());
+          Convert(dependencies, *delete_node_result.mutable_dependencies());
         ptr->sender_.Send(message);
       });
 }
@@ -115,8 +118,8 @@ void NodeManagementStub::OnCreateNode(unsigned request_id,
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         auto& create_node_result = *response.mutable_create_node_result();
-        ToProto(status, *response.mutable_status());
-        ToProto(node_id, *create_node_result.mutable_node_id());
+        Convert(status, *response.mutable_status());
+        Convert(node_id, *create_node_result.mutable_node_id());
         ptr->sender_.Send(message);
       });
 }
@@ -135,8 +138,8 @@ void NodeManagementStub::OnModifyNodes(
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(status, *response.mutable_status());
-        ContainerToProto(results, *response.mutable_modify_node_result());
+        Convert(status, *response.mutable_status());
+        Convert(results, *response.mutable_modify_node_result());
         ptr->sender_.Send(message);
       });
 }
@@ -157,7 +160,7 @@ void NodeManagementStub::OnChangeUserPassword(
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(status, *response.mutable_status());
+        Convert(status, *response.mutable_status());
         ptr->sender_.Send(message);
       });
 }
@@ -165,9 +168,9 @@ void NodeManagementStub::OnChangeUserPassword(
 void NodeManagementStub::OnAddReference(unsigned request_id,
                                         const protocol::Reference& request) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.AddReference(FromProto(request.reference_type_id()),
-                        FromProto(request.source_id()),
-                        FromProto(request.target_id()),
+  service_.AddReference(Convert<scada::NodeId>(request.reference_type_id()),
+                        Convert<scada::NodeId>(request.source_id()),
+                        Convert<scada::NodeId>(request.target_id()),
                         [weak_ptr, request_id](const scada::Status& status) {
                           auto ptr = weak_ptr.get();
                           if (!ptr)
@@ -176,7 +179,7 @@ void NodeManagementStub::OnAddReference(unsigned request_id,
                           protocol::Message message;
                           auto& response = *message.add_responses();
                           response.set_request_id(request_id);
-                          ToProto(status, *response.mutable_status());
+                          Convert(status, *response.mutable_status());
                           ptr->sender_.Send(message);
                         });
 }
@@ -184,9 +187,9 @@ void NodeManagementStub::OnAddReference(unsigned request_id,
 void NodeManagementStub::OnDeleteReference(unsigned request_id,
                                            const protocol::Reference& request) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.DeleteReference(FromProto(request.reference_type_id()),
-                           FromProto(request.source_id()),
-                           FromProto(request.target_id()),
+  service_.DeleteReference(Convert<scada::NodeId>(request.reference_type_id()),
+                           Convert<scada::NodeId>(request.source_id()),
+                           Convert<scada::NodeId>(request.target_id()),
                            [weak_ptr, request_id](const scada::Status& status) {
                              auto ptr = weak_ptr.get();
                              if (!ptr)
@@ -195,7 +198,7 @@ void NodeManagementStub::OnDeleteReference(unsigned request_id,
                              protocol::Message message;
                              auto& response = *message.add_responses();
                              response.set_request_id(request_id);
-                             ToProto(status, *response.mutable_status());
+                             Convert(status, *response.mutable_status());
                              ptr->sender_.Send(message);
                            });
 }

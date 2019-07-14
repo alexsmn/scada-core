@@ -2,7 +2,6 @@
 
 #include <gmock/gmock.h>
 
-//#include "common/node_state.h"
 //#include "core/test/test_address_space.h"
 #include "protocol.h"
 #include "protocol_utils.h"
