@@ -14,19 +14,6 @@ class Request;
 
 class MessageSender;
 
-class ViewEventQueue {
- public:
-  using Event = std::variant<scada::ModelChangeEvent, scada::NodeId>;
-
-  void AddModelChange(const scada::ModelChangeEvent& event);
-  void AddNodeSemanticChange(const scada::NodeId& node_id);
-
-  std::vector<Event> GetEvents();
-
- private:
-  std::vector<Event> queue_;
-};
-
 struct ViewServiceStubContext {
   const std::shared_ptr<Logger> logger_;
   boost::asio::io_context& io_context_;
@@ -34,7 +21,7 @@ struct ViewServiceStubContext {
   scada::ViewService& service_;
 };
 
-class ViewServiceStub final : private ViewServiceStubContext, private scada::ViewEvents {
+class ViewServiceStub final : private ViewServiceStubContext {
  public:
   explicit ViewServiceStub(ViewServiceStubContext&& context);
   ~ViewServiceStub();
@@ -44,15 +31,6 @@ class ViewServiceStub final : private ViewServiceStubContext, private scada::Vie
  private:
   void OnBrowse(unsigned request_id,
                 const std::vector<scada::BrowseDescription>& nodes);
-
-  void ScheduleSendEvents();
-  void SendEvents();
-
-  // scada::ViewEvents
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeSemanticsChanged(const scada::NodeId& node_id) override;
-
-  ViewEventQueue events_;
 
   Timer timer_;
 

@@ -95,9 +95,6 @@ class ViewService {
   virtual void TranslateBrowsePaths(
       const std::vector<BrowsePath>& browse_paths,
       const TranslateBrowsePathsCallback& callback) = 0;
-
-  virtual void Subscribe(ViewEvents& events) = 0;
-  virtual void Unsubscribe(ViewEvents& events) = 0;
 };
 
 class LocalViewService {

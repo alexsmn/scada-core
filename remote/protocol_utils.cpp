@@ -313,6 +313,29 @@ void ToProto(const scada::Event& source, protocol::Event& target) {
   target.set_acknowledge_id(source.acknowledge_id);
 }
 
+scada::EventFilter FromProto(const protocol::EventFilter& source) {
+  unsigned types = 0;
+  if (source.acked())
+    types |= scada::EventFilter::ACKED;
+  if (source.unacked())
+    types |= scada::EventFilter::UNACKED;
+
+  auto of_type = VectorFromProto<scada::NodeId>(source.of_type());
+  auto child_of = VectorFromProto<scada::NodeId>(source.child_of());
+
+  return {types, std::move(of_type), std::move(child_of)};
+}
+
+void ToProto(const scada::EventFilter& source, protocol::EventFilter& target) {
+  if (source.types & scada::EventFilter::ACKED)
+    target.set_acked(true);
+  if (source.types & scada::EventFilter::UNACKED)
+    target.set_unacked(true);
+
+  ToProto(source.of_type, *target.mutable_of_type());
+  ToProto(source.child_of, *target.mutable_child_of());
+}
+
 scada::NodeClass FromProto(const protocol::NodeClass source) {
   return static_cast<scada::NodeClass>(static_cast<int>(source));
 }
@@ -485,6 +508,9 @@ void ToProto(const scada::MonitoringParameters& source,
   if (auto* aggregate_filter =
           std::get_if<scada::AggregateFilter>(&source.filter)) {
     ToProto(*aggregate_filter, *target.mutable_aggregate_filter());
+  } else if (auto* event_filter =
+                 std::get_if<scada::EventFilter>(&source.filter)) {
+    ToProto(*event_filter, *target.mutable_event_filter());
   }
 }
 

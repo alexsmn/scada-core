@@ -251,7 +251,17 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
                                   FromProto(data_change.data_value()));
     }
 
-    view_service_proxy_->OnNotification(notification);
+    for (auto& model_change : notification.model_change()) {
+      const auto event = FromProto(model_change);
+      subscription_->OnEvent(notification.monitored_item_id(), status, event);
+    }
+
+    for (auto& semantics_changed_node_id :
+         notification.semantics_changed_node_id()) {
+      const auto node_id = FromProto(semantics_changed_node_id);
+      subscription_->OnEvent(notification.monitored_item_id(), status,
+                             scada::SemanticChangeEvent{node_id});
+    }
 
     for (auto& event : notification.events()) {
       subscription_->OnEvent(notification.monitored_item_id(), status,

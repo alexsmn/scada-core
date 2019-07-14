@@ -28,6 +28,9 @@ void ToProto(const scada::Status& source, protocol::Status& target);
 scada::Event FromProto(const protocol::Event& source);
 void ToProto(const scada::Event& source, protocol::Event& target);
 
+scada::EventFilter FromProto(const protocol::EventFilter& source);
+void ToProto(const scada::EventFilter& source, protocol::EventFilter& target);
+
 scada::NodeClass FromProto(const protocol::NodeClass source);
 protocol::NodeClass ToProto(const scada::NodeClass source);
 

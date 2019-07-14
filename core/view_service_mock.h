@@ -6,12 +6,15 @@
 
 namespace scada {
 
-class ViewServiceMock : public ViewService {
+class MockViewService : public ViewService {
  public:
-  MOCK_METHOD2(Browse, void(const std::vector<BrowseDescription>& descriptions, const BrowseCallback& callback));
+  MOCK_METHOD2(Browse,
+               void(const std::vector<BrowseDescription>& descriptions,
+                    const BrowseCallback& callback));
 
-  MOCK_METHOD1(Subscribe, void(ViewEvents& events));
-  MOCK_METHOD1(Unsubscribe, void(ViewEvents& events));
+  MOCK_METHOD2(TranslateBrowsePaths,
+               void(const std::vector<BrowsePath>& browse_paths,
+                    const TranslateBrowsePathsCallback& callback));
 };
 
-} // namespace scada
+}  // namespace scada

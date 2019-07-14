@@ -22,25 +22,6 @@ void ViewServiceProxy::OnChannelClosed() {
   sender_ = nullptr;
 }
 
-void ViewServiceProxy::OnNotification(
-    const protocol::Notification& notification) {
-  // Notification should contain only one type changes.
-  // But it can be addition on complex object.
-
-  for (auto& model_change : notification.model_change()) {
-    const auto event = FromProto(model_change);
-    for (auto& e : events_)
-      e.OnModelChanged(event);
-  }
-
-  for (auto& semantics_changed_node_id :
-       notification.semantics_changed_node_id()) {
-    const auto node_id = FromProto(semantics_changed_node_id);
-    for (auto& e : events_)
-      e.OnNodeSemanticsChanged(node_id);
-  }
-}
-
 void ViewServiceProxy::Browse(
     const std::vector<scada::BrowseDescription>& nodes,
     const scada::BrowseCallback& callback) {
@@ -70,12 +51,4 @@ void ViewServiceProxy::TranslateBrowsePaths(
     const std::vector<scada::BrowsePath>& browse_paths,
     const scada::TranslateBrowsePathsCallback& callback) {
   callback(scada::StatusCode::Bad, {});
-}
-
-void ViewServiceProxy::Subscribe(scada::ViewEvents& events) {
-  events_.AddObserver(&events);
-}
-
-void ViewServiceProxy::Unsubscribe(scada::ViewEvents& events) {
-  events_.RemoveObserver(&events);
 }
