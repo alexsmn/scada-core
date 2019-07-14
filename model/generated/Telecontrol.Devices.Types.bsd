@@ -1,0 +1,30 @@
+<opc:TypeDictionary
+  xmlns:scada="http://telecontrol.ru/opcua/scada"
+  xmlns:opc="http://opcfoundation.org/BinarySchema/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:ua="http://opcfoundation.org/UA/"
+  xmlns:tns="http://telecontrol.ru/opcua/devices"
+  DefaultByteOrder="LittleEndian"
+  TargetNamespace="http://telecontrol.ru/opcua/devices"
+>
+  <opc:Import Namespace="http://opcfoundation.org/UA/" Location="Opc.Ua.BinarySchema.bsd"/>
+  <opc:Import Namespace="http://telecontrol.ru/opcua/scada" Location="Telecontrol.Scada.BinarySchema.bsd"/>
+
+  <opc:EnumeratedType Name="Iec60870ProtocolDataType" LengthInBits="32">
+    <opc:EnumeratedValue Name="IEC-60870-104" Value="0" />
+    <opc:EnumeratedValue Name="IEC-60870-101" Value="1" />
+  </opc:EnumeratedType>
+
+  <opc:EnumeratedType Name="Iec60870ModeDataType" LengthInBits="32">
+    <opc:EnumeratedValue Name="Client" Value="0" />
+    <opc:EnumeratedValue Name="Server" Value="1" />
+    <opc:EnumeratedValue Name="Passive Client" Value="2" />
+  </opc:EnumeratedType>
+
+  <opc:EnumeratedType Name="ModbusLinkProtocol" LengthInBits="32">
+    <opc:EnumeratedValue Name="RTU" Value="0" />
+    <opc:EnumeratedValue Name="ASCII" Value="1" />
+    <opc:EnumeratedValue Name="TCP" Value="2" />
+  </opc:EnumeratedType>
+
+</opc:TypeDictionary>

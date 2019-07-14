@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<opc:ModelDesign
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:opc="http://opcfoundation.org/UA/ModelDesign.xsd"
+	xmlns:ua="http://opcfoundation.org/UA/"
+	xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+  xmlns:scada="http://telecontrol.ru/opcua/scada"
+	xmlns="http://telecontrol.ru/opcua/security"
+	TargetNamespace="http://telecontrol.ru/opcua/security"
+>
+  <opc:Namespaces>
+    <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd">http://opcfoundation.org/UA/</opc:Namespace>
+    <opc:Namespace Name="TelecontrolScada" Prefix="Telecontrol.Scada" XmlPrefix="scada" FilePath="scada_model">http://telecontrol.ru/opcua/scada</opc:Namespace>
+    <opc:Namespace Name="TelecontrolSecurity" Prefix="Telecontrol.Security">http://telecontrol.ru/opcua/security</opc:Namespace>
+  </opc:Namespaces>
+
+  <opc:Object SymbolicName="Users" TypeDefinition="ua:FolderType">
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:Object>
+
+  <opc:ObjectType SymbolicName="UserType" BaseType="ua:BaseObjectType">
+    <opc:Children>
+      <opc:Property SymbolicName="AccessRights" DataType="ua:UInt32">
+        <opc:DefaultValue>
+          <uax:UInt32>0</uax:UInt32>
+        </opc:DefaultValue>
+      </opc:Property>
+    </opc:Children>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>scada:Creates</opc:ReferenceType>
+        <opc:TargetId>Users</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:ObjectType>
+
+  <opc:Object SymbolicName="RootUser" TypeDefinition="UserType">
+    <opc:BrowseName>root</opc:BrowseName>
+    <opc:Children>
+      <opc:Property SymbolicName="AccessRights">
+        <opc:DefaultValue>
+          <uax:UInt32>3</uax:UInt32>
+        </opc:DefaultValue>
+      </opc:Property>
+    </opc:Children>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>Users</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:Object>
+
+</opc:ModelDesign>

@@ -1,0 +1,59 @@
+<xs:schema
+  xmlns:scada="http://telecontrol.ru/opcua/scada"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
+  xmlns:tns="http://telecontrol.ru/opcua/devices"
+  targetNamespace="http://telecontrol.ru/opcua/devices"
+  elementFormDefault="qualified"
+>
+  <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd" />
+  <xs:import namespace="http://telecontrol.ru/opcua/scada" />
+
+  <xs:simpleType  name="Iec60870ProtocolDataType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="IEC-60870-104_0" />
+      <xs:enumeration value="IEC-60870-101_1" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="Iec60870ProtocolDataType" type="tns:Iec60870ProtocolDataType" />
+
+  <xs:complexType name="ListOfIec60870ProtocolDataType">
+    <xs:sequence>
+      <xs:element name="Iec60870ProtocolDataType" type="tns:Iec60870ProtocolDataType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ListOfIec60870ProtocolDataType" type="tns:ListOfIec60870ProtocolDataType" nillable="true"></xs:element>
+
+  <xs:simpleType  name="Iec60870ModeDataType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Client_0" />
+      <xs:enumeration value="Server_1" />
+      <xs:enumeration value="Passive Client_2" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="Iec60870ModeDataType" type="tns:Iec60870ModeDataType" />
+
+  <xs:complexType name="ListOfIec60870ModeDataType">
+    <xs:sequence>
+      <xs:element name="Iec60870ModeDataType" type="tns:Iec60870ModeDataType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ListOfIec60870ModeDataType" type="tns:ListOfIec60870ModeDataType" nillable="true"></xs:element>
+
+  <xs:simpleType  name="ModbusLinkProtocol">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="RTU_0" />
+      <xs:enumeration value="ASCII_1" />
+      <xs:enumeration value="TCP_2" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="ModbusLinkProtocol" type="tns:ModbusLinkProtocol" />
+
+  <xs:complexType name="ListOfModbusLinkProtocol">
+    <xs:sequence>
+      <xs:element name="ModbusLinkProtocol" type="tns:ModbusLinkProtocol" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ListOfModbusLinkProtocol" type="tns:ListOfModbusLinkProtocol" nillable="true"></xs:element>
+
+</xs:schema>

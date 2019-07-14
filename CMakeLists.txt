@@ -12,6 +12,8 @@ add_subdirectory("${deps}/net" net)
 add_subdirectory(base)
 add_subdirectory(core)
 add_subdirectory(model)
+set(OPCUA_PREDEFINED_NODES ${OPCUA_PREDEFINED_NODES} PARENT_SCOPE)
+
 add_subdirectory(remote)
 
 if(WIN32)

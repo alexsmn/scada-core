@@ -1,0 +1,47 @@
+<xs:schema
+  xmlns:scada="http://telecontrol.ru/opcua/scada"
+  xmlns:history="http://telecontrol.ru/opcua/history"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd"
+  xmlns:tns="http://telecontrol.ru/opcua/data_items"
+  targetNamespace="http://telecontrol.ru/opcua/data_items"
+  elementFormDefault="qualified"
+>
+  <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd" />
+  <xs:import namespace="http://telecontrol.ru/opcua/scada" />
+  <xs:import namespace="http://telecontrol.ru/opcua/history" />
+
+  <xs:simpleType  name="AnalogConversionDataType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="None_0" />
+      <xs:enumeration value="Linear_1" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="AnalogConversionDataType" type="tns:AnalogConversionDataType" />
+
+  <xs:complexType name="ListOfAnalogConversionDataType">
+    <xs:sequence>
+      <xs:element name="AnalogConversionDataType" type="tns:AnalogConversionDataType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ListOfAnalogConversionDataType" type="tns:ListOfAnalogConversionDataType" nillable="true"></xs:element>
+
+  <xs:simpleType  name="SimulationFunctionDataType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Random_0" />
+      <xs:enumeration value="Ramp_1" />
+      <xs:enumeration value="Step_2" />
+      <xs:enumeration value="Sin_3" />
+      <xs:enumeration value="Cos_4" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="SimulationFunctionDataType" type="tns:SimulationFunctionDataType" />
+
+  <xs:complexType name="ListOfSimulationFunctionDataType">
+    <xs:sequence>
+      <xs:element name="SimulationFunctionDataType" type="tns:SimulationFunctionDataType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ListOfSimulationFunctionDataType" type="tns:ListOfSimulationFunctionDataType" nillable="true"></xs:element>
+
+</xs:schema>

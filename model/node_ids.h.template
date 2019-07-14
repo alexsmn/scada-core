@@ -1,0 +1,30 @@
+#pragma once
+
+#include "core/standard_node_ids.h"
+#include "model/namespaces.h"
+
+{% if namespace|length %}
+namespace {{namespace}} {
+
+constexpr scada::NamespaceIndex kNamespaceIndex = NamespaceIndexes::{{namespace|upper}};
+
+{% endif %}
+namespace numeric_id {
+
+{% for item in items %}
+constexpr scada::NumericId {{item.name}} = {{item.id}}; // {{item.type}}
+{% endfor %}
+
+} //  namespace numeric_id
+
+namespace id {
+
+{% for item in items %}
+const scada::NodeId {{item.name}}{numeric_id::{{item.name}}, kNamespaceIndex}; // {{item.type}}
+{% endfor %}
+
+} //  namespace id
+{% if namespace|length %}
+
+} //  namespace {{namespace}}
+{% endif %}

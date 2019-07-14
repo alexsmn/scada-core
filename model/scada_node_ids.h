@@ -7,22 +7,23 @@ namespace scada {
 
 constexpr scada::NamespaceIndex kNamespaceIndex = NamespaceIndexes::SCADA;
 
+namespace numeric_id {
+
+constexpr scada::NumericId Creates = 23; // ReferenceType
+constexpr scada::NumericId HasPropertyCategory = 15028; // ReferenceType
+constexpr scada::NumericId PropertyCategories = 15029; // Object
+constexpr scada::NumericId PropertyCategories_General = 15030; // Object
+
+} //  namespace numeric_id
+
 namespace id {
 
-const scada::NodeId Creates{297, kNamespaceIndex}; // Ref
-const scada::NodeId PropertyCategories{310, kNamespaceIndex};
-const scada::NodeId HasPropertyCategory{311, kNamespaceIndex};
-const scada::NodeId PropertyCategories_General{312, kNamespaceIndex};
-const scada::NodeId PropertyCategories_Channels{313, kNamespaceIndex};
-const scada::NodeId PropertyCategories_Conversion{314, kNamespaceIndex};
-const scada::NodeId PropertyCategories_Filtering{315, kNamespaceIndex};
-const scada::NodeId PropertyCategories_Display{316, kNamespaceIndex};
-const scada::NodeId PropertyCategories_History{317, kNamespaceIndex};
-const scada::NodeId PropertyCategories_Simulation{318, kNamespaceIndex};
-const scada::NodeId PropertyCategories_Limits{319, kNamespaceIndex};
+const scada::NodeId Creates{numeric_id::Creates, kNamespaceIndex}; // ReferenceType
+const scada::NodeId HasPropertyCategory{numeric_id::HasPropertyCategory, kNamespaceIndex}; // ReferenceType
+const scada::NodeId PropertyCategories{numeric_id::PropertyCategories, kNamespaceIndex}; // Object
+const scada::NodeId PropertyCategories_General{numeric_id::PropertyCategories_General, kNamespaceIndex}; // Object
 
-const scada::NodeId NextId{328, kNamespaceIndex};
+} //  namespace id
 
-} // namespace id
+} //  namespace scada
 
-} // namespace scada

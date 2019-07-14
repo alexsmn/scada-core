@@ -1,0 +1,205 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UANodeSet xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+  <NamespaceUris>
+    <Uri>http://telecontrol.ru/opcua/history</Uri>
+    <Uri>http://telecontrol.ru/opcua/scada</Uri>
+  </NamespaceUris>
+  <Models>
+    <Model ModelUri="http://telecontrol.ru/opcua/history">
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05" PublicationDate="2019-05-01T00:00:00Z" />
+      <RequiredModel ModelUri="http://telecontrol.ru/opcua/scada" />
+    </Model>
+  </Models>
+  <Aliases>
+    <Alias Alias="Boolean">i=1</Alias>
+    <Alias Alias="SByte">i=2</Alias>
+    <Alias Alias="Byte">i=3</Alias>
+    <Alias Alias="Int16">i=4</Alias>
+    <Alias Alias="UInt16">i=5</Alias>
+    <Alias Alias="Int32">i=6</Alias>
+    <Alias Alias="UInt32">i=7</Alias>
+    <Alias Alias="Int64">i=8</Alias>
+    <Alias Alias="UInt64">i=9</Alias>
+    <Alias Alias="Float">i=10</Alias>
+    <Alias Alias="Double">i=11</Alias>
+    <Alias Alias="DateTime">i=13</Alias>
+    <Alias Alias="String">i=12</Alias>
+    <Alias Alias="ByteString">i=15</Alias>
+    <Alias Alias="Guid">i=14</Alias>
+    <Alias Alias="XmlElement">i=16</Alias>
+    <Alias Alias="NodeId">i=17</Alias>
+    <Alias Alias="ExpandedNodeId">i=18</Alias>
+    <Alias Alias="QualifiedName">i=20</Alias>
+    <Alias Alias="LocalizedText">i=21</Alias>
+    <Alias Alias="StatusCode">i=19</Alias>
+    <Alias Alias="Structure">i=22</Alias>
+    <Alias Alias="Number">i=26</Alias>
+    <Alias Alias="Integer">i=27</Alias>
+    <Alias Alias="UInteger">i=28</Alias>
+    <Alias Alias="HasComponent">i=47</Alias>
+    <Alias Alias="HasProperty">i=46</Alias>
+    <Alias Alias="Organizes">i=35</Alias>
+    <Alias Alias="HasEventSource">i=36</Alias>
+    <Alias Alias="HasNotifier">i=48</Alias>
+    <Alias Alias="HasSubtype">i=45</Alias>
+    <Alias Alias="HasTypeDefinition">i=40</Alias>
+    <Alias Alias="HasModellingRule">i=37</Alias>
+    <Alias Alias="HasEncoding">i=38</Alias>
+    <Alias Alias="HasDescription">i=39</Alias>
+  </Aliases>
+  <UAReferenceType NodeId="ns=1;i=15001" BrowseName="1:HasHistoricalDatabase">
+    <DisplayName>HasHistoricalDatabase</DisplayName>
+    <Description>The Data Item is historized into the specified Historical Database.</Description>
+    <References>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=32</Reference>
+    </References>
+    <InverseName>HistoricalDatabaseOf</InverseName>
+  </UAReferenceType>
+  <UAObject NodeId="ns=1;i=12" BrowseName="1:HistoricalDatabases">
+    <DisplayName>HistoricalDatabases</DisplayName>
+    <References>
+      <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=61</Reference>
+    </References>
+  </UAObject>
+  <UAObjectType NodeId="ns=1;i=20" BrowseName="1:HistoricalDatabaseType">
+    <DisplayName>HistoricalDatabaseType</DisplayName>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=36</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=15021</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=15002</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=15022</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=50</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=51</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=52</Reference>
+      <Reference ReferenceType="ns=2;i=23" IsForward="false">ns=1;i=12</Reference>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=58</Reference>
+    </References>
+  </UAObjectType>
+  <UAVariable NodeId="ns=1;i=36" BrowseName="1:Depth" ParentNodeId="ns=1;i=20" DataType="UInt32">
+    <DisplayName>Depth</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=20</Reference>
+    </References>
+    <Value>
+      <UInt32 xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">1</UInt32>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=15021" BrowseName="1:WrittenValueCount" ParentNodeId="ns=1;i=20" DataType="UInt32">
+    <DisplayName>WrittenValueCount</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=20</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=15002" BrowseName="1:WriteValueDuration" ParentNodeId="ns=1;i=20" DataType="UInt32">
+    <DisplayName>WriteValueDuration</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=20</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=15022" BrowseName="1:WrittenEventCount" ParentNodeId="ns=1;i=20" DataType="UInt32">
+    <DisplayName>WrittenEventCount</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=20</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=50" BrowseName="1:PendingTaskCount" ParentNodeId="ns=1;i=20" DataType="UInt32">
+    <DisplayName>PendingTaskCount</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=20</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=51" BrowseName="1:EventCleanupDuration" ParentNodeId="ns=1;i=20" DataType="UInt32">
+    <DisplayName>EventCleanupDuration</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=20</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=52" BrowseName="1:ValueCleanupDuration" ParentNodeId="ns=1;i=20" DataType="UInt32">
+    <DisplayName>ValueCleanupDuration</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=20</Reference>
+    </References>
+  </UAVariable>
+  <UAObject NodeId="ns=1;i=13" BrowseName="1:System" SymbolicName="SystemDatabase">
+    <DisplayName>System</DisplayName>
+    <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=37</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=15023</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=15003</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=15024</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=54</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=55</Reference>
+      <Reference ReferenceType="HasComponent">ns=1;i=56</Reference>
+      <Reference ReferenceType="ns=2;i=23" IsForward="false">ns=1;i=12</Reference>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=1;i=12</Reference>
+      <Reference ReferenceType="HasTypeDefinition">ns=1;i=20</Reference>
+    </References>
+  </UAObject>
+  <UAVariable NodeId="ns=1;i=37" BrowseName="1:Depth" ParentNodeId="ns=1;i=13" DataType="UInt32">
+    <DisplayName>Depth</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=13</Reference>
+    </References>
+    <Value>
+      <UInt32 xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">30</UInt32>
+    </Value>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=15023" BrowseName="1:WrittenValueCount" ParentNodeId="ns=1;i=13" DataType="UInt32">
+    <DisplayName>WrittenValueCount</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=13</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=15003" BrowseName="1:WriteValueDuration" ParentNodeId="ns=1;i=13" DataType="UInt32">
+    <DisplayName>WriteValueDuration</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=13</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=15024" BrowseName="1:WrittenEventCount" ParentNodeId="ns=1;i=13" DataType="UInt32">
+    <DisplayName>WrittenEventCount</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=13</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=54" BrowseName="1:PendingTaskCount" ParentNodeId="ns=1;i=13" DataType="UInt32">
+    <DisplayName>PendingTaskCount</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=13</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=55" BrowseName="1:EventCleanupDuration" ParentNodeId="ns=1;i=13" DataType="UInt32">
+    <DisplayName>EventCleanupDuration</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=13</Reference>
+    </References>
+  </UAVariable>
+  <UAVariable NodeId="ns=1;i=56" BrowseName="1:ValueCleanupDuration" ParentNodeId="ns=1;i=13" DataType="UInt32">
+    <DisplayName>ValueCleanupDuration</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=13</Reference>
+    </References>
+  </UAVariable>
+</UANodeSet>
