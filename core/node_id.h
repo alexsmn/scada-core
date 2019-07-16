@@ -128,8 +128,9 @@ inline constexpr bool operator!=(NumericId a, const NodeId& b) noexcept {
   return !operator==(a, b);
 }
 
-inline std::ostream& operator<<(std::ostream& stream, const NodeId& node_id) {
+}  // namespace scada
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const scada::NodeId& node_id) {
   return stream << "\"" << node_id.ToString() << "\"";
 }
-
-}  // namespace scada

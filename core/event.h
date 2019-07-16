@@ -75,12 +75,6 @@ inline bool operator==(const ModelChangeEvent& a, const ModelChangeEvent& b) {
          a.type_definition_id == b.type_definition_id && a.verb == b.verb;
 }
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                const ModelChangeEvent& e) {
-  return stream << "{" << e.node_id << ", " << e.type_definition_id << ", "
-                << static_cast<unsigned>(e.verb) << "}";
-}
-
 struct EventFilter {
   enum EventType { ACKED = 1, UNACKED = 2 };
   unsigned types = 0;
@@ -90,3 +84,9 @@ struct EventFilter {
 };
 
 }  // namespace scada
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const scada::ModelChangeEvent& e) {
+  return stream << "{" << e.node_id << ", " << e.type_definition_id << ", "
+                << static_cast<unsigned>(e.verb) << "}";
+}
