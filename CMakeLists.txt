@@ -17,6 +17,11 @@ set(OPCUA_PREDEFINED_NODES ${OPCUA_PREDEFINED_NODES} PARENT_SCOPE)
 add_subdirectory(remote)
 
 if(WIN32)
+  file(GLOB VC_REDIST_FILES "${VC_REDIST}/*")
+  install(FILES ${VC_REDIST_FILES}
+    DESTINATION bin
+    COMPONENT Common)
+
   set(BOOST_COMPONENTS thread log log_setup filesystem date_time regex program_options)
   find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
@@ -37,3 +42,10 @@ if(WIN32)
     DESTINATION bin
     COMPONENT Common)
 endif()
+
+
+# CPack
+
+set(CPACK_COMPONENT_COMMON_DISPLAY_NAME "Общие компоненты" PARENT_SCOPE)
+
+set(CPACK_COMPONENTS_ALL ${CPACK_COMPONENTS_ALL} Common PARENT_SCOPE)
