@@ -27,11 +27,12 @@ if(WIN32)
 
   set(BOOST_DEBUG_SUFFIX "vc142-mt-gd-x32-${Boost_LIB_VERSION}")
   set(BOOST_RELEASE_SUFFIX "vc142-mt-x32-${Boost_LIB_VERSION}")
+  set(BOOST_SUFFIX "$<IF:$<CONFIG:Debug>,${BOOST_DEBUG_SUFFIX},${BOOST_RELEASE_SUFFIX}>")
+  # TODO: Remove Vcpkg dependency.
+  set(BOOST_DLL_DIR "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}$<$<CONFIG:Debug>:/debug>/bin")
 
   foreach(BOOST_COMPONENT ${BOOST_COMPONENTS})
-    install(FILES
-        "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/boost_${BOOST_COMPONENT}-${BOOST_DEBUG_SUFFIX}.dll>"
-        "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/boost_${BOOST_COMPONENT}-${BOOST_RELEASE_SUFFIX}.dll>"
+    install(FILES "${BOOST_DLL_DIR}/boost_${BOOST_COMPONENT}-${BOOST_SUFFIX}.dll"
       DESTINATION bin
       COMPONENT Common)
   endforeach()
