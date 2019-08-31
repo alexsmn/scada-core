@@ -8,13 +8,18 @@
 namespace {
 
 scada::NodeId ScadaStringToNumericNodeId(base::StringPiece scada_string) {
-  auto p = scada_string.find('.');
+  const auto p = scada_string.find('.');
   if (p == base::StringPiece::npos)
     return scada::NodeId{};
 
-  int namespace_index = FindNamespaceIndexByName(scada_string.substr(0, p));
-  if (namespace_index == -1)
-    return scada::NodeId{};
+  const auto namespace_name = scada_string.substr(0, p);
+  int namespace_index = FindNamespaceIndexByName(namespace_name);
+  if (namespace_index == -1) {
+    if (!namespace_name.starts_with("NS"))
+      return scada::NodeId{};
+    if (!base::StringToInt(namespace_name.substr(2), &namespace_index))
+      return scada::NodeId{};
+  }
 
   unsigned numeric_id = 0;
   if (!base::StringToUint(scada_string.substr(p + 1), &numeric_id))
@@ -82,23 +87,27 @@ bool GetNestedSubName(const scada::NodeId& node_id,
 }
 
 std::string NodeIdToScadaString(const scada::NodeId& node_id) {
-  std::string result;
-
   switch (node_id.type()) {
-    case scada::NodeIdType::Numeric:
-      result = base::StrCat({GetNamespaceName(node_id.namespace_index()), ".",
-                             base::NumberToString(node_id.numeric_id())});
-      break;
+    case scada::NodeIdType::Numeric: {
+      const auto namespace_name = GetNamespaceName(node_id.namespace_index());
+      if (namespace_name.empty()) {
+        return base::StrCat({"NS",
+                             base::NumberToString(node_id.namespace_index()),
+                             ".", base::NumberToString(node_id.numeric_id())});
+      } else {
+        return base::StrCat(
+            {namespace_name, ".", base::NumberToString(node_id.numeric_id())});
+      }
+    }
 
     case scada::NodeIdType::String:
-      result = node_id.string_id();
-      break;
+      assert(node_id.namespace_index() == 0);
+      return node_id.string_id();
 
     default:
       assert(false);
+      return {};
   }
-
-  return result;
 }
 
 scada::NodeId NodeIdFromScadaString(base::StringPiece scada_string) {
