@@ -25,3 +25,4 @@ using BoostLogger =
 #define LOG_NAME(name) boost::log::keywords::channel = (name)
 
 void InitBoostLogging(const std::filesystem::path& path, bool console);
+void ShutdownBoostLogging();
