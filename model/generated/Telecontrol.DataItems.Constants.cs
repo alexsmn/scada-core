@@ -83,44 +83,39 @@ namespace Telecontrol.DataItems
     public static partial class Objects
     {
         /// <summary>
-        /// The identifier for the PropertyCategories Object.
+        /// The identifier for the ChannelsPropertyCategory Object.
         /// </summary>
-        public const uint PropertyCategories = 15011;
+        public const uint ChannelsPropertyCategory = 15028;
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Channels Object.
+        /// The identifier for the ConversionPropertyCategory Object.
         /// </summary>
-        public const uint PropertyCategories_Channels = 15012;
+        public const uint ConversionPropertyCategory = 15029;
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Conversion Object.
+        /// The identifier for the FilteringPropertyCategory Object.
         /// </summary>
-        public const uint PropertyCategories_Conversion = 15013;
+        public const uint FilteringPropertyCategory = 15030;
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Filtering Object.
+        /// The identifier for the DisplayPropertyCategory Object.
         /// </summary>
-        public const uint PropertyCategories_Filtering = 15014;
+        public const uint DisplayPropertyCategory = 15031;
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Display Object.
+        /// The identifier for the HistoryPropertyCategory Object.
         /// </summary>
-        public const uint PropertyCategories_Display = 15015;
+        public const uint HistoryPropertyCategory = 15032;
 
         /// <summary>
-        /// The identifier for the PropertyCategories_History Object.
+        /// The identifier for the SimulationPropertyCategory Object.
         /// </summary>
-        public const uint PropertyCategories_History = 15016;
+        public const uint SimulationPropertyCategory = 15033;
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Simulation Object.
+        /// The identifier for the LimitsPropertyCategory Object.
         /// </summary>
-        public const uint PropertyCategories_Simulation = 15017;
-
-        /// <summary>
-        /// The identifier for the PropertyCategories_Limits Object.
-        /// </summary>
-        public const uint PropertyCategories_Limits = 15018;
+        public const uint LimitsPropertyCategory = 15034;
 
         /// <summary>
         /// The identifier for the Statistics Object.
@@ -513,44 +508,39 @@ namespace Telecontrol.DataItems
     public static partial class ObjectIds
     {
         /// <summary>
-        /// The identifier for the PropertyCategories Object.
+        /// The identifier for the ChannelsPropertyCategory Object.
         /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories = new ExpandedNodeId(Telecontrol.DataItems.Objects.PropertyCategories, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
+        public static readonly ExpandedNodeId ChannelsPropertyCategory = new ExpandedNodeId(Telecontrol.DataItems.Objects.ChannelsPropertyCategory, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Channels Object.
+        /// The identifier for the ConversionPropertyCategory Object.
         /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories_Channels = new ExpandedNodeId(Telecontrol.DataItems.Objects.PropertyCategories_Channels, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
+        public static readonly ExpandedNodeId ConversionPropertyCategory = new ExpandedNodeId(Telecontrol.DataItems.Objects.ConversionPropertyCategory, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Conversion Object.
+        /// The identifier for the FilteringPropertyCategory Object.
         /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories_Conversion = new ExpandedNodeId(Telecontrol.DataItems.Objects.PropertyCategories_Conversion, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
+        public static readonly ExpandedNodeId FilteringPropertyCategory = new ExpandedNodeId(Telecontrol.DataItems.Objects.FilteringPropertyCategory, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Filtering Object.
+        /// The identifier for the DisplayPropertyCategory Object.
         /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories_Filtering = new ExpandedNodeId(Telecontrol.DataItems.Objects.PropertyCategories_Filtering, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
+        public static readonly ExpandedNodeId DisplayPropertyCategory = new ExpandedNodeId(Telecontrol.DataItems.Objects.DisplayPropertyCategory, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Display Object.
+        /// The identifier for the HistoryPropertyCategory Object.
         /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories_Display = new ExpandedNodeId(Telecontrol.DataItems.Objects.PropertyCategories_Display, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
+        public static readonly ExpandedNodeId HistoryPropertyCategory = new ExpandedNodeId(Telecontrol.DataItems.Objects.HistoryPropertyCategory, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
 
         /// <summary>
-        /// The identifier for the PropertyCategories_History Object.
+        /// The identifier for the SimulationPropertyCategory Object.
         /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories_History = new ExpandedNodeId(Telecontrol.DataItems.Objects.PropertyCategories_History, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
+        public static readonly ExpandedNodeId SimulationPropertyCategory = new ExpandedNodeId(Telecontrol.DataItems.Objects.SimulationPropertyCategory, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
 
         /// <summary>
-        /// The identifier for the PropertyCategories_Simulation Object.
+        /// The identifier for the LimitsPropertyCategory Object.
         /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories_Simulation = new ExpandedNodeId(Telecontrol.DataItems.Objects.PropertyCategories_Simulation, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
-
-        /// <summary>
-        /// The identifier for the PropertyCategories_Limits Object.
-        /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories_Limits = new ExpandedNodeId(Telecontrol.DataItems.Objects.PropertyCategories_Limits, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
+        public static readonly ExpandedNodeId LimitsPropertyCategory = new ExpandedNodeId(Telecontrol.DataItems.Objects.LimitsPropertyCategory, Telecontrol.DataItems.Namespaces.TelecontrolDataItems);
 
         /// <summary>
         /// The identifier for the Statistics Object.
@@ -942,9 +932,9 @@ namespace Telecontrol.DataItems
         public const string Aperture = "Aperture";
 
         /// <summary>
-        /// The BrowseName for the Channels component.
+        /// The BrowseName for the ChannelsPropertyCategory component.
         /// </summary>
-        public const string Channels = "Channels";
+        public const string ChannelsPropertyCategory = "ChannelsPropertyCategory";
 
         /// <summary>
         /// The BrowseName for the Clamping component.
@@ -965,6 +955,11 @@ namespace Telecontrol.DataItems
         /// The BrowseName for the Conversion component.
         /// </summary>
         public const string Conversion = "Conversion";
+
+        /// <summary>
+        /// The BrowseName for the ConversionPropertyCategory component.
+        /// </summary>
+        public const string ConversionPropertyCategory = "ConversionPropertyCategory";
 
         /// <summary>
         /// The BrowseName for the DataGroupType component.
@@ -992,14 +987,14 @@ namespace Telecontrol.DataItems
         public const string DiscreteItemType = "DiscreteItemType";
 
         /// <summary>
-        /// The BrowseName for the Display component.
-        /// </summary>
-        public const string Display = "Display";
-
-        /// <summary>
         /// The BrowseName for the DisplayFormat component.
         /// </summary>
         public const string DisplayFormat = "DisplayFormat";
+
+        /// <summary>
+        /// The BrowseName for the DisplayPropertyCategory component.
+        /// </summary>
+        public const string DisplayPropertyCategory = "DisplayPropertyCategory";
 
         /// <summary>
         /// The BrowseName for the EngineeringUnits component.
@@ -1017,9 +1012,9 @@ namespace Telecontrol.DataItems
         public const string EuLo = "EuLo";
 
         /// <summary>
-        /// The BrowseName for the Filtering component.
+        /// The BrowseName for the FilteringPropertyCategory component.
         /// </summary>
-        public const string Filtering = "Filtering";
+        public const string FilteringPropertyCategory = "FilteringPropertyCategory";
 
         /// <summary>
         /// The BrowseName for the Function component.
@@ -1037,9 +1032,9 @@ namespace Telecontrol.DataItems
         public const string HasTsFormat = "HasTsFormat";
 
         /// <summary>
-        /// The BrowseName for the History component.
+        /// The BrowseName for the HistoryPropertyCategory component.
         /// </summary>
-        public const string History = "History";
+        public const string HistoryPropertyCategory = "HistoryPropertyCategory";
 
         /// <summary>
         /// The BrowseName for the Input1 component.
@@ -1087,9 +1082,9 @@ namespace Telecontrol.DataItems
         public const string LimitLoLo = "LimitLoLo";
 
         /// <summary>
-        /// The BrowseName for the Limits component.
+        /// The BrowseName for the LimitsPropertyCategory component.
         /// </summary>
-        public const string Limits = "Limits";
+        public const string LimitsPropertyCategory = "LimitsPropertyCategory";
 
         /// <summary>
         /// The BrowseName for the Locked component.
@@ -1132,11 +1127,6 @@ namespace Telecontrol.DataItems
         public const string Phase = "Phase";
 
         /// <summary>
-        /// The BrowseName for the PropertyCategories component.
-        /// </summary>
-        public const string PropertyCategories = "PropertyCategories";
-
-        /// <summary>
         /// The BrowseName for the ServerCPUUsage component.
         /// </summary>
         public const string ServerCPUUsage = "ServerCPUUsage";
@@ -1157,14 +1147,14 @@ namespace Telecontrol.DataItems
         public const string Simulated = "Simulated";
 
         /// <summary>
-        /// The BrowseName for the Simulation component.
-        /// </summary>
-        public const string Simulation = "Simulation";
-
-        /// <summary>
         /// The BrowseName for the SimulationFunctionDataType component.
         /// </summary>
         public const string SimulationFunctionDataType = "SimulationFunctionDataType";
+
+        /// <summary>
+        /// The BrowseName for the SimulationPropertyCategory component.
+        /// </summary>
+        public const string SimulationPropertyCategory = "SimulationPropertyCategory";
 
         /// <summary>
         /// The BrowseName for the SimulationSignals component.

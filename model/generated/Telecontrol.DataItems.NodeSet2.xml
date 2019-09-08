@@ -7,7 +7,7 @@
   </NamespaceUris>
   <Models>
     <Model ModelUri="http://telecontrol.ru/opcua/data_items">
-      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05" PublicationDate="2019-05-01T00:00:00Z" />
+      <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05" PublicationDate="2019-07-23T00:00:00Z" />
       <RequiredModel ModelUri="http://telecontrol.ru/opcua/scada" />
       <RequiredModel ModelUri="http://telecontrol.ru/opcua/history" />
     </Model>
@@ -49,67 +49,53 @@
     <Alias Alias="HasEncoding">i=38</Alias>
     <Alias Alias="HasDescription">i=39</Alias>
   </Aliases>
-  <UAObject NodeId="ns=1;i=15011" BrowseName="1:PropertyCategories">
-    <DisplayName>PropertyCategories</DisplayName>
+  <UAObject NodeId="ns=1;i=15028" BrowseName="1:ChannelsPropertyCategory">
+    <DisplayName>ChannelsPropertyCategory</DisplayName>
     <References>
-      <Reference ReferenceType="HasComponent">ns=1;i=15012</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;i=15013</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;i=15014</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;i=15015</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;i=15016</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;i=15017</Reference>
-      <Reference ReferenceType="HasComponent">ns=1;i=15018</Reference>
-      <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
-      <Reference ReferenceType="HasTypeDefinition">i=61</Reference>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=2;i=15029</Reference>
+      <Reference ReferenceType="HasTypeDefinition">i=58</Reference>
     </References>
   </UAObject>
-  <UAObject NodeId="ns=1;i=15012" BrowseName="1:Channels" ParentNodeId="ns=1;i=15011">
-    <DisplayName>Channels</DisplayName>
+  <UAObject NodeId="ns=1;i=15029" BrowseName="1:ConversionPropertyCategory">
+    <DisplayName>ConversionPropertyCategory</DisplayName>
     <References>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=2;i=15029</Reference>
       <Reference ReferenceType="HasTypeDefinition">i=58</Reference>
-      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=15011</Reference>
     </References>
   </UAObject>
-  <UAObject NodeId="ns=1;i=15013" BrowseName="1:Conversion" ParentNodeId="ns=1;i=15011">
-    <DisplayName>Conversion</DisplayName>
+  <UAObject NodeId="ns=1;i=15030" BrowseName="1:FilteringPropertyCategory">
+    <DisplayName>FilteringPropertyCategory</DisplayName>
     <References>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=2;i=15029</Reference>
       <Reference ReferenceType="HasTypeDefinition">i=58</Reference>
-      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=15011</Reference>
     </References>
   </UAObject>
-  <UAObject NodeId="ns=1;i=15014" BrowseName="1:Filtering" ParentNodeId="ns=1;i=15011">
-    <DisplayName>Filtering</DisplayName>
+  <UAObject NodeId="ns=1;i=15031" BrowseName="1:DisplayPropertyCategory">
+    <DisplayName>DisplayPropertyCategory</DisplayName>
     <References>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=2;i=15029</Reference>
       <Reference ReferenceType="HasTypeDefinition">i=58</Reference>
-      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=15011</Reference>
     </References>
   </UAObject>
-  <UAObject NodeId="ns=1;i=15015" BrowseName="1:Display" ParentNodeId="ns=1;i=15011">
-    <DisplayName>Display</DisplayName>
+  <UAObject NodeId="ns=1;i=15032" BrowseName="1:HistoryPropertyCategory">
+    <DisplayName>HistoryPropertyCategory</DisplayName>
     <References>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=2;i=15029</Reference>
       <Reference ReferenceType="HasTypeDefinition">i=58</Reference>
-      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=15011</Reference>
     </References>
   </UAObject>
-  <UAObject NodeId="ns=1;i=15016" BrowseName="1:History" ParentNodeId="ns=1;i=15011">
-    <DisplayName>History</DisplayName>
+  <UAObject NodeId="ns=1;i=15033" BrowseName="1:SimulationPropertyCategory">
+    <DisplayName>SimulationPropertyCategory</DisplayName>
     <References>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=2;i=15029</Reference>
       <Reference ReferenceType="HasTypeDefinition">i=58</Reference>
-      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=15011</Reference>
     </References>
   </UAObject>
-  <UAObject NodeId="ns=1;i=15017" BrowseName="1:Simulation" ParentNodeId="ns=1;i=15011">
-    <DisplayName>Simulation</DisplayName>
+  <UAObject NodeId="ns=1;i=15034" BrowseName="1:LimitsPropertyCategory">
+    <DisplayName>LimitsPropertyCategory</DisplayName>
     <References>
+      <Reference ReferenceType="Organizes" IsForward="false">ns=2;i=15029</Reference>
       <Reference ReferenceType="HasTypeDefinition">i=58</Reference>
-      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=15011</Reference>
-    </References>
-  </UAObject>
-  <UAObject NodeId="ns=1;i=15018" BrowseName="1:Limits" ParentNodeId="ns=1;i=15011">
-    <DisplayName>Limits</DisplayName>
-    <References>
-      <Reference ReferenceType="HasTypeDefinition">i=58</Reference>
-      <Reference ReferenceType="HasComponent" IsForward="false">ns=1;i=15011</Reference>
     </References>
   </UAObject>
   <UAObject NodeId="ns=1;i=363" BrowseName="1:Statistics">
@@ -169,7 +155,7 @@
   <UAVariable NodeId="ns=1;i=63" BrowseName="1:Simulated" ParentNodeId="ns=1;i=62" DataType="Boolean">
     <DisplayName>Simulated</DisplayName>
     <References>
-      <Reference ReferenceType="ns=2;i=15028">ns=1;i=15017</Reference>
+      <Reference ReferenceType="ns=2;i=15028">ns=1;i=15033</Reference>
       <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
       <Reference ReferenceType="HasModellingRule">i=78</Reference>
       <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=62</Reference>

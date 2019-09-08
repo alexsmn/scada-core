@@ -76,14 +76,6 @@ TelecontrolDataItems_XmlSchema,15007,Variable
 TelecontrolDataItems_XmlSchema_DataTypeVersion,15008,Variable
 TelecontrolDataItems_XmlSchema_NamespaceUri,15009,Variable
 TelecontrolDataItems_XmlSchema_Deprecated,15010,Variable
-PropertyCategories,15011,Object
-PropertyCategories_Channels,15012,Object
-PropertyCategories_Conversion,15013,Object
-PropertyCategories_Filtering,15014,Object
-PropertyCategories_Display,15015,Object
-PropertyCategories_History,15016,Object
-PropertyCategories_Simulation,15017,Object
-PropertyCategories_Limits,15018,Object
 Aliases,15019,Object
 AliasOf,15020,ReferenceType
 AliasType,15021,ObjectType
@@ -93,5 +85,12 @@ SimulationSignalType_Function,15024,Variable
 DataItemType_OutputTwoStaged,15025,Variable
 DiscreteItemType_OutputTwoStaged,15026,Variable
 AnalogItemType_OutputTwoStaged,15027,Variable
+ChannelsPropertyCategory,15028,Object
+ConversionPropertyCategory,15029,Object
+FilteringPropertyCategory,15030,Object
+DisplayPropertyCategory,15031,Object
+HistoryPropertyCategory,15032,Object
+SimulationPropertyCategory,15033,Object
+LimitsPropertyCategory,15034,Object
 AnalogConversionDataType,15038,DataType
 AnalogConversionDataType_EnumStrings,15039,Variable

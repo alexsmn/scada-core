@@ -40,6 +40,8 @@ constexpr scada::NumericId AnalogItemType_Severity = 288; // Variable
 constexpr scada::NumericId AnalogItemType_Simulated = 294; // Variable
 constexpr scada::NumericId AnalogItemType_StalePeriod = 293; // Variable
 constexpr scada::NumericId AnalogItemType_WriteManual = 296; // Method
+constexpr scada::NumericId ChannelsPropertyCategory = 15028; // Object
+constexpr scada::NumericId ConversionPropertyCategory = 15029; // Object
 constexpr scada::NumericId DataGroupType = 62; // ObjectType
 constexpr scada::NumericId DataGroupType_Simulated = 63; // Variable
 constexpr scada::NumericId DataItemType = 18; // VariableType
@@ -69,18 +71,15 @@ constexpr scada::NumericId DiscreteItemType_Severity = 181; // Variable
 constexpr scada::NumericId DiscreteItemType_Simulated = 74; // Variable
 constexpr scada::NumericId DiscreteItemType_StalePeriod = 186; // Variable
 constexpr scada::NumericId DiscreteItemType_WriteManual = 286; // Method
+constexpr scada::NumericId DisplayPropertyCategory = 15031; // Object
+constexpr scada::NumericId FilteringPropertyCategory = 15030; // Object
 constexpr scada::NumericId HasSimulationSignal = 69; // ReferenceType
 constexpr scada::NumericId HasTsFormat = 71; // ReferenceType
-constexpr scada::NumericId PropertyCategories = 15011; // Object
-constexpr scada::NumericId PropertyCategories_Channels = 15012; // Object
-constexpr scada::NumericId PropertyCategories_Conversion = 15013; // Object
-constexpr scada::NumericId PropertyCategories_Display = 15015; // Object
-constexpr scada::NumericId PropertyCategories_Filtering = 15014; // Object
-constexpr scada::NumericId PropertyCategories_History = 15016; // Object
-constexpr scada::NumericId PropertyCategories_Limits = 15018; // Object
-constexpr scada::NumericId PropertyCategories_Simulation = 15017; // Object
+constexpr scada::NumericId HistoryPropertyCategory = 15032; // Object
+constexpr scada::NumericId LimitsPropertyCategory = 15034; // Object
 constexpr scada::NumericId SimulationFunctionDataType = 15022; // DataType
 constexpr scada::NumericId SimulationFunctionDataType_EnumStrings = 15023; // Variable
+constexpr scada::NumericId SimulationPropertyCategory = 15033; // Object
 constexpr scada::NumericId SimulationSignalType = 67; // VariableType
 constexpr scada::NumericId SimulationSignalType_Function = 15024; // Variable
 constexpr scada::NumericId SimulationSignalType_Period = 230; // Variable
@@ -142,6 +141,8 @@ const scada::NodeId AnalogItemType_Severity{numeric_id::AnalogItemType_Severity,
 const scada::NodeId AnalogItemType_Simulated{numeric_id::AnalogItemType_Simulated, kNamespaceIndex}; // Variable
 const scada::NodeId AnalogItemType_StalePeriod{numeric_id::AnalogItemType_StalePeriod, kNamespaceIndex}; // Variable
 const scada::NodeId AnalogItemType_WriteManual{numeric_id::AnalogItemType_WriteManual, kNamespaceIndex}; // Method
+const scada::NodeId ChannelsPropertyCategory{numeric_id::ChannelsPropertyCategory, kNamespaceIndex}; // Object
+const scada::NodeId ConversionPropertyCategory{numeric_id::ConversionPropertyCategory, kNamespaceIndex}; // Object
 const scada::NodeId DataGroupType{numeric_id::DataGroupType, kNamespaceIndex}; // ObjectType
 const scada::NodeId DataGroupType_Simulated{numeric_id::DataGroupType_Simulated, kNamespaceIndex}; // Variable
 const scada::NodeId DataItemType{numeric_id::DataItemType, kNamespaceIndex}; // VariableType
@@ -171,18 +172,15 @@ const scada::NodeId DiscreteItemType_Severity{numeric_id::DiscreteItemType_Sever
 const scada::NodeId DiscreteItemType_Simulated{numeric_id::DiscreteItemType_Simulated, kNamespaceIndex}; // Variable
 const scada::NodeId DiscreteItemType_StalePeriod{numeric_id::DiscreteItemType_StalePeriod, kNamespaceIndex}; // Variable
 const scada::NodeId DiscreteItemType_WriteManual{numeric_id::DiscreteItemType_WriteManual, kNamespaceIndex}; // Method
+const scada::NodeId DisplayPropertyCategory{numeric_id::DisplayPropertyCategory, kNamespaceIndex}; // Object
+const scada::NodeId FilteringPropertyCategory{numeric_id::FilteringPropertyCategory, kNamespaceIndex}; // Object
 const scada::NodeId HasSimulationSignal{numeric_id::HasSimulationSignal, kNamespaceIndex}; // ReferenceType
 const scada::NodeId HasTsFormat{numeric_id::HasTsFormat, kNamespaceIndex}; // ReferenceType
-const scada::NodeId PropertyCategories{numeric_id::PropertyCategories, kNamespaceIndex}; // Object
-const scada::NodeId PropertyCategories_Channels{numeric_id::PropertyCategories_Channels, kNamespaceIndex}; // Object
-const scada::NodeId PropertyCategories_Conversion{numeric_id::PropertyCategories_Conversion, kNamespaceIndex}; // Object
-const scada::NodeId PropertyCategories_Display{numeric_id::PropertyCategories_Display, kNamespaceIndex}; // Object
-const scada::NodeId PropertyCategories_Filtering{numeric_id::PropertyCategories_Filtering, kNamespaceIndex}; // Object
-const scada::NodeId PropertyCategories_History{numeric_id::PropertyCategories_History, kNamespaceIndex}; // Object
-const scada::NodeId PropertyCategories_Limits{numeric_id::PropertyCategories_Limits, kNamespaceIndex}; // Object
-const scada::NodeId PropertyCategories_Simulation{numeric_id::PropertyCategories_Simulation, kNamespaceIndex}; // Object
+const scada::NodeId HistoryPropertyCategory{numeric_id::HistoryPropertyCategory, kNamespaceIndex}; // Object
+const scada::NodeId LimitsPropertyCategory{numeric_id::LimitsPropertyCategory, kNamespaceIndex}; // Object
 const scada::NodeId SimulationFunctionDataType{numeric_id::SimulationFunctionDataType, kNamespaceIndex}; // DataType
 const scada::NodeId SimulationFunctionDataType_EnumStrings{numeric_id::SimulationFunctionDataType_EnumStrings, kNamespaceIndex}; // Variable
+const scada::NodeId SimulationPropertyCategory{numeric_id::SimulationPropertyCategory, kNamespaceIndex}; // Object
 const scada::NodeId SimulationSignalType{numeric_id::SimulationSignalType, kNamespaceIndex}; // VariableType
 const scada::NodeId SimulationSignalType_Function{numeric_id::SimulationSignalType_Function, kNamespaceIndex}; // Variable
 const scada::NodeId SimulationSignalType_Period{numeric_id::SimulationSignalType_Period, kNamespaceIndex}; // Variable

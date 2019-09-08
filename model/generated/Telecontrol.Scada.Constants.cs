@@ -51,9 +51,9 @@ namespace Telecontrol.Scada
         public const uint PropertyCategories = 15029;
 
         /// <summary>
-        /// The identifier for the PropertyCategories_General Object.
+        /// The identifier for the GeneralPropertyCategory Object.
         /// </summary>
-        public const uint PropertyCategories_General = 15030;
+        public const uint GeneralPropertyCategory = 15001;
     }
     #endregion
 
@@ -91,9 +91,9 @@ namespace Telecontrol.Scada
         public static readonly ExpandedNodeId PropertyCategories = new ExpandedNodeId(Telecontrol.Scada.Objects.PropertyCategories, Telecontrol.Scada.Namespaces.TelecontrolScada);
 
         /// <summary>
-        /// The identifier for the PropertyCategories_General Object.
+        /// The identifier for the GeneralPropertyCategory Object.
         /// </summary>
-        public static readonly ExpandedNodeId PropertyCategories_General = new ExpandedNodeId(Telecontrol.Scada.Objects.PropertyCategories_General, Telecontrol.Scada.Namespaces.TelecontrolScada);
+        public static readonly ExpandedNodeId GeneralPropertyCategory = new ExpandedNodeId(Telecontrol.Scada.Objects.GeneralPropertyCategory, Telecontrol.Scada.Namespaces.TelecontrolScada);
     }
     #endregion
 
@@ -130,9 +130,9 @@ namespace Telecontrol.Scada
         public const string Creates = "Creates";
 
         /// <summary>
-        /// The BrowseName for the General component.
+        /// The BrowseName for the GeneralPropertyCategory component.
         /// </summary>
-        public const string General = "General";
+        public const string GeneralPropertyCategory = "GeneralPropertyCategory";
 
         /// <summary>
         /// The BrowseName for the HasPropertyCategory component.

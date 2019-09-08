@@ -96,7 +96,7 @@ namespace Telecontrol.DataItems
            "cm9sLnJ1L29wY3VhL2hpc3RvcnkmAAAAaHR0cDovL3RlbGVjb250cm9sLnJ1L29wY3VhL2RhdGFfaXRl" +
            "bXP/////BGCAAgEAAAADABUAAABEYXRhR3JvdXBUeXBlSW5zdGFuY2UBAz4AAQM+AD4AAAACAAAAAQEX" +
            "AAEBAz4AAQEXAAEBAxgAAQAAABVgiQoCAAAAAwAJAAAAU2ltdWxhdGVkAQM/AAAuAEQ/AAAAAAH/////" +
-           "AQEBAAAAAQG0OgABA6k6AAAAAA==";
+           "AQEBAAAAAQG0OgABA7k6AAAAAA==";
         #endregion
         #endif
         #endregion

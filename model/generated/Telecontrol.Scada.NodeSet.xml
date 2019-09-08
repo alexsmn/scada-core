@@ -46,6 +46,47 @@
         <Text>CreatableIn</Text>
       </InverseName>
     </Node>
+    <Node i:type="ObjectNode">
+      <NodeId>
+        <Identifier>ns=1;i=15001</Identifier>
+      </NodeId>
+      <NodeClass>Object_1</NodeClass>
+      <BrowseName>
+        <NamespaceIndex>1</NamespaceIndex>
+        <Name>GeneralPropertyCategory</Name>
+      </BrowseName>
+      <DisplayName>
+        <Locale></Locale>
+        <Text>GeneralPropertyCategory</Text>
+      </DisplayName>
+      <Description i:nil="true" />
+      <WriteMask>0</WriteMask>
+      <UserWriteMask>0</UserWriteMask>
+      <RolePermissions />
+      <UserRolePermissions />
+      <AccessRestrictions>0</AccessRestrictions>
+      <References>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=40</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
+            <Identifier>i=58</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>i=35</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15029</Identifier>
+          </TargetId>
+        </ReferenceNode>
+      </References>
+      <EventNotifier>0</EventNotifier>
+    </Node>
     <Node i:type="ReferenceTypeNode">
       <NodeId>
         <Identifier>ns=1;i=15028</Identifier>
@@ -126,52 +167,11 @@
         </ReferenceNode>
         <ReferenceNode>
           <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
+            <Identifier>i=35</Identifier>
           </ReferenceTypeId>
           <IsInverse>false</IsInverse>
           <TargetId>
-            <Identifier>ns=1;i=15030</Identifier>
-          </TargetId>
-        </ReferenceNode>
-      </References>
-      <EventNotifier>0</EventNotifier>
-    </Node>
-    <Node i:type="ObjectNode">
-      <NodeId>
-        <Identifier>ns=1;i=15030</Identifier>
-      </NodeId>
-      <NodeClass>Object_1</NodeClass>
-      <BrowseName>
-        <NamespaceIndex>1</NamespaceIndex>
-        <Name>General</Name>
-      </BrowseName>
-      <DisplayName>
-        <Locale></Locale>
-        <Text>General</Text>
-      </DisplayName>
-      <Description i:nil="true" />
-      <WriteMask>0</WriteMask>
-      <UserWriteMask>0</UserWriteMask>
-      <RolePermissions />
-      <UserRolePermissions />
-      <AccessRestrictions>0</AccessRestrictions>
-      <References>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=47</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>true</IsInverse>
-          <TargetId>
-            <Identifier>ns=1;i=15029</Identifier>
-          </TargetId>
-        </ReferenceNode>
-        <ReferenceNode>
-          <ReferenceTypeId>
-            <Identifier>i=40</Identifier>
-          </ReferenceTypeId>
-          <IsInverse>false</IsInverse>
-          <TargetId>
-            <Identifier>i=58</Identifier>
+            <Identifier>ns=1;i=15001</Identifier>
           </TargetId>
         </ReferenceNode>
       </References>

@@ -5,22 +5,22 @@
     <uax:NamespaceUri>http://telecontrol.ru/opcua/history</uax:NamespaceUri>
     <uax:NamespaceUri>http://telecontrol.ru/opcua/data_items</uax:NamespaceUri>
   </uax:NamespaceUris>
-  <PropertyCategories xmlns="http://telecontrol.ru/opcua/data_items">
+  <ChannelsPropertyCategory xmlns="http://telecontrol.ru/opcua/data_items">
     <uax:NodeClass>Object_1</uax:NodeClass>
     <uax:NodeId>
-      <uax:Identifier>ns=3;i=15011</uax:Identifier>
+      <uax:Identifier>ns=3;i=15028</uax:Identifier>
     </uax:NodeId>
     <uax:BrowseName>
       <uax:NamespaceIndex>3</uax:NamespaceIndex>
-      <uax:Name>PropertyCategories</uax:Name>
+      <uax:Name>ChannelsPropertyCategory</uax:Name>
     </uax:BrowseName>
     <uax:ReferenceTypeId>
       <uax:Identifier>i=47</uax:Identifier>
     </uax:ReferenceTypeId>
     <uax:TypeDefinitionId>
-      <uax:Identifier>i=61</uax:Identifier>
+      <uax:Identifier>i=58</uax:Identifier>
     </uax:TypeDefinitionId>
-    <uax:NumericId>15011</uax:NumericId>
+    <uax:NumericId>15028</uax:NumericId>
     <uax:References>
       <uax:Reference>
         <uax:ReferenceTypeId>
@@ -28,130 +28,179 @@
         </uax:ReferenceTypeId>
         <uax:IsInverse>true</uax:IsInverse>
         <uax:TargetId>
-          <uax:Identifier>i=85</uax:Identifier>
+          <uax:Identifier>ns=1;i=15029</uax:Identifier>
         </uax:TargetId>
       </uax:Reference>
     </uax:References>
-    <Channels>
-      <uax:NodeClass>Object_1</uax:NodeClass>
-      <uax:NodeId>
-        <uax:Identifier>ns=3;i=15012</uax:Identifier>
-      </uax:NodeId>
-      <uax:BrowseName>
-        <uax:NamespaceIndex>3</uax:NamespaceIndex>
-        <uax:Name>Channels</uax:Name>
-      </uax:BrowseName>
-      <uax:ReferenceTypeId>
-        <uax:Identifier>i=47</uax:Identifier>
-      </uax:ReferenceTypeId>
-      <uax:TypeDefinitionId>
-        <uax:Identifier>i=58</uax:Identifier>
-      </uax:TypeDefinitionId>
-      <uax:NumericId>15012</uax:NumericId>
-    </Channels>
-    <Conversion>
-      <uax:NodeClass>Object_1</uax:NodeClass>
-      <uax:NodeId>
-        <uax:Identifier>ns=3;i=15013</uax:Identifier>
-      </uax:NodeId>
-      <uax:BrowseName>
-        <uax:NamespaceIndex>3</uax:NamespaceIndex>
-        <uax:Name>Conversion</uax:Name>
-      </uax:BrowseName>
-      <uax:ReferenceTypeId>
-        <uax:Identifier>i=47</uax:Identifier>
-      </uax:ReferenceTypeId>
-      <uax:TypeDefinitionId>
-        <uax:Identifier>i=58</uax:Identifier>
-      </uax:TypeDefinitionId>
-      <uax:NumericId>15013</uax:NumericId>
-    </Conversion>
-    <Filtering>
-      <uax:NodeClass>Object_1</uax:NodeClass>
-      <uax:NodeId>
-        <uax:Identifier>ns=3;i=15014</uax:Identifier>
-      </uax:NodeId>
-      <uax:BrowseName>
-        <uax:NamespaceIndex>3</uax:NamespaceIndex>
-        <uax:Name>Filtering</uax:Name>
-      </uax:BrowseName>
-      <uax:ReferenceTypeId>
-        <uax:Identifier>i=47</uax:Identifier>
-      </uax:ReferenceTypeId>
-      <uax:TypeDefinitionId>
-        <uax:Identifier>i=58</uax:Identifier>
-      </uax:TypeDefinitionId>
-      <uax:NumericId>15014</uax:NumericId>
-    </Filtering>
-    <Display>
-      <uax:NodeClass>Object_1</uax:NodeClass>
-      <uax:NodeId>
-        <uax:Identifier>ns=3;i=15015</uax:Identifier>
-      </uax:NodeId>
-      <uax:BrowseName>
-        <uax:NamespaceIndex>3</uax:NamespaceIndex>
-        <uax:Name>Display</uax:Name>
-      </uax:BrowseName>
-      <uax:ReferenceTypeId>
-        <uax:Identifier>i=47</uax:Identifier>
-      </uax:ReferenceTypeId>
-      <uax:TypeDefinitionId>
-        <uax:Identifier>i=58</uax:Identifier>
-      </uax:TypeDefinitionId>
-      <uax:NumericId>15015</uax:NumericId>
-    </Display>
-    <History>
-      <uax:NodeClass>Object_1</uax:NodeClass>
-      <uax:NodeId>
-        <uax:Identifier>ns=3;i=15016</uax:Identifier>
-      </uax:NodeId>
-      <uax:BrowseName>
-        <uax:NamespaceIndex>3</uax:NamespaceIndex>
-        <uax:Name>History</uax:Name>
-      </uax:BrowseName>
-      <uax:ReferenceTypeId>
-        <uax:Identifier>i=47</uax:Identifier>
-      </uax:ReferenceTypeId>
-      <uax:TypeDefinitionId>
-        <uax:Identifier>i=58</uax:Identifier>
-      </uax:TypeDefinitionId>
-      <uax:NumericId>15016</uax:NumericId>
-    </History>
-    <Simulation>
-      <uax:NodeClass>Object_1</uax:NodeClass>
-      <uax:NodeId>
-        <uax:Identifier>ns=3;i=15017</uax:Identifier>
-      </uax:NodeId>
-      <uax:BrowseName>
-        <uax:NamespaceIndex>3</uax:NamespaceIndex>
-        <uax:Name>Simulation</uax:Name>
-      </uax:BrowseName>
-      <uax:ReferenceTypeId>
-        <uax:Identifier>i=47</uax:Identifier>
-      </uax:ReferenceTypeId>
-      <uax:TypeDefinitionId>
-        <uax:Identifier>i=58</uax:Identifier>
-      </uax:TypeDefinitionId>
-      <uax:NumericId>15017</uax:NumericId>
-    </Simulation>
-    <Limits>
-      <uax:NodeClass>Object_1</uax:NodeClass>
-      <uax:NodeId>
-        <uax:Identifier>ns=3;i=15018</uax:Identifier>
-      </uax:NodeId>
-      <uax:BrowseName>
-        <uax:NamespaceIndex>3</uax:NamespaceIndex>
-        <uax:Name>Limits</uax:Name>
-      </uax:BrowseName>
-      <uax:ReferenceTypeId>
-        <uax:Identifier>i=47</uax:Identifier>
-      </uax:ReferenceTypeId>
-      <uax:TypeDefinitionId>
-        <uax:Identifier>i=58</uax:Identifier>
-      </uax:TypeDefinitionId>
-      <uax:NumericId>15018</uax:NumericId>
-    </Limits>
-  </PropertyCategories>
+  </ChannelsPropertyCategory>
+  <ConversionPropertyCategory xmlns="http://telecontrol.ru/opcua/data_items">
+    <uax:NodeClass>Object_1</uax:NodeClass>
+    <uax:NodeId>
+      <uax:Identifier>ns=3;i=15029</uax:Identifier>
+    </uax:NodeId>
+    <uax:BrowseName>
+      <uax:NamespaceIndex>3</uax:NamespaceIndex>
+      <uax:Name>ConversionPropertyCategory</uax:Name>
+    </uax:BrowseName>
+    <uax:ReferenceTypeId>
+      <uax:Identifier>i=47</uax:Identifier>
+    </uax:ReferenceTypeId>
+    <uax:TypeDefinitionId>
+      <uax:Identifier>i=58</uax:Identifier>
+    </uax:TypeDefinitionId>
+    <uax:NumericId>15029</uax:NumericId>
+    <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>i=35</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:IsInverse>true</uax:IsInverse>
+        <uax:TargetId>
+          <uax:Identifier>ns=1;i=15029</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
+    </uax:References>
+  </ConversionPropertyCategory>
+  <FilteringPropertyCategory xmlns="http://telecontrol.ru/opcua/data_items">
+    <uax:NodeClass>Object_1</uax:NodeClass>
+    <uax:NodeId>
+      <uax:Identifier>ns=3;i=15030</uax:Identifier>
+    </uax:NodeId>
+    <uax:BrowseName>
+      <uax:NamespaceIndex>3</uax:NamespaceIndex>
+      <uax:Name>FilteringPropertyCategory</uax:Name>
+    </uax:BrowseName>
+    <uax:ReferenceTypeId>
+      <uax:Identifier>i=47</uax:Identifier>
+    </uax:ReferenceTypeId>
+    <uax:TypeDefinitionId>
+      <uax:Identifier>i=58</uax:Identifier>
+    </uax:TypeDefinitionId>
+    <uax:NumericId>15030</uax:NumericId>
+    <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>i=35</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:IsInverse>true</uax:IsInverse>
+        <uax:TargetId>
+          <uax:Identifier>ns=1;i=15029</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
+    </uax:References>
+  </FilteringPropertyCategory>
+  <DisplayPropertyCategory xmlns="http://telecontrol.ru/opcua/data_items">
+    <uax:NodeClass>Object_1</uax:NodeClass>
+    <uax:NodeId>
+      <uax:Identifier>ns=3;i=15031</uax:Identifier>
+    </uax:NodeId>
+    <uax:BrowseName>
+      <uax:NamespaceIndex>3</uax:NamespaceIndex>
+      <uax:Name>DisplayPropertyCategory</uax:Name>
+    </uax:BrowseName>
+    <uax:ReferenceTypeId>
+      <uax:Identifier>i=47</uax:Identifier>
+    </uax:ReferenceTypeId>
+    <uax:TypeDefinitionId>
+      <uax:Identifier>i=58</uax:Identifier>
+    </uax:TypeDefinitionId>
+    <uax:NumericId>15031</uax:NumericId>
+    <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>i=35</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:IsInverse>true</uax:IsInverse>
+        <uax:TargetId>
+          <uax:Identifier>ns=1;i=15029</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
+    </uax:References>
+  </DisplayPropertyCategory>
+  <HistoryPropertyCategory xmlns="http://telecontrol.ru/opcua/data_items">
+    <uax:NodeClass>Object_1</uax:NodeClass>
+    <uax:NodeId>
+      <uax:Identifier>ns=3;i=15032</uax:Identifier>
+    </uax:NodeId>
+    <uax:BrowseName>
+      <uax:NamespaceIndex>3</uax:NamespaceIndex>
+      <uax:Name>HistoryPropertyCategory</uax:Name>
+    </uax:BrowseName>
+    <uax:ReferenceTypeId>
+      <uax:Identifier>i=47</uax:Identifier>
+    </uax:ReferenceTypeId>
+    <uax:TypeDefinitionId>
+      <uax:Identifier>i=58</uax:Identifier>
+    </uax:TypeDefinitionId>
+    <uax:NumericId>15032</uax:NumericId>
+    <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>i=35</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:IsInverse>true</uax:IsInverse>
+        <uax:TargetId>
+          <uax:Identifier>ns=1;i=15029</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
+    </uax:References>
+  </HistoryPropertyCategory>
+  <SimulationPropertyCategory xmlns="http://telecontrol.ru/opcua/data_items">
+    <uax:NodeClass>Object_1</uax:NodeClass>
+    <uax:NodeId>
+      <uax:Identifier>ns=3;i=15033</uax:Identifier>
+    </uax:NodeId>
+    <uax:BrowseName>
+      <uax:NamespaceIndex>3</uax:NamespaceIndex>
+      <uax:Name>SimulationPropertyCategory</uax:Name>
+    </uax:BrowseName>
+    <uax:ReferenceTypeId>
+      <uax:Identifier>i=47</uax:Identifier>
+    </uax:ReferenceTypeId>
+    <uax:TypeDefinitionId>
+      <uax:Identifier>i=58</uax:Identifier>
+    </uax:TypeDefinitionId>
+    <uax:NumericId>15033</uax:NumericId>
+    <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>i=35</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:IsInverse>true</uax:IsInverse>
+        <uax:TargetId>
+          <uax:Identifier>ns=1;i=15029</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
+    </uax:References>
+  </SimulationPropertyCategory>
+  <LimitsPropertyCategory xmlns="http://telecontrol.ru/opcua/data_items">
+    <uax:NodeClass>Object_1</uax:NodeClass>
+    <uax:NodeId>
+      <uax:Identifier>ns=3;i=15034</uax:Identifier>
+    </uax:NodeId>
+    <uax:BrowseName>
+      <uax:NamespaceIndex>3</uax:NamespaceIndex>
+      <uax:Name>LimitsPropertyCategory</uax:Name>
+    </uax:BrowseName>
+    <uax:ReferenceTypeId>
+      <uax:Identifier>i=47</uax:Identifier>
+    </uax:ReferenceTypeId>
+    <uax:TypeDefinitionId>
+      <uax:Identifier>i=58</uax:Identifier>
+    </uax:TypeDefinitionId>
+    <uax:NumericId>15034</uax:NumericId>
+    <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>i=35</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:IsInverse>true</uax:IsInverse>
+        <uax:TargetId>
+          <uax:Identifier>ns=1;i=15029</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
+    </uax:References>
+  </LimitsPropertyCategory>
   <Statistics xmlns="http://telecontrol.ru/opcua/data_items">
     <uax:NodeClass>Object_1</uax:NodeClass>
     <uax:NodeId>
@@ -354,7 +403,7 @@
             <uax:Identifier>ns=1;i=15028</uax:Identifier>
           </uax:ReferenceTypeId>
           <uax:TargetId>
-            <uax:Identifier>ns=3;i=15017</uax:Identifier>
+            <uax:Identifier>ns=3;i=15033</uax:Identifier>
           </uax:TargetId>
         </uax:Reference>
       </uax:References>

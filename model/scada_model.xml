@@ -28,13 +28,19 @@
   <!-- Property Categories -->
 
   <opc:Object SymbolicName="PropertyCategories" TypeDefinition="ua:FolderType">
-    <opc:Children>
-      <opc:Object SymbolicName="General" />
-    </opc:Children>
     <opc:References>
       <opc:Reference IsInverse="true">
         <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
         <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:Object>
+
+  <opc:Object SymbolicName="GeneralPropertyCategory">
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>PropertyCategories</opc:TargetId>
       </opc:Reference>
     </opc:References>
   </opc:Object>
