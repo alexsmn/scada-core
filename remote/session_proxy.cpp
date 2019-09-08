@@ -68,7 +68,7 @@ void SessionProxy::Disconnect(const scada::StatusCallback& callback) {
   auto& delete_session = *request.mutable_delete_session();
 
   Request(request, [this, callback](const protocol::Response& response) {
-    auto status = Convert<scada::Status>(response.status());
+    auto status = ConvertTo<scada::Status>(response.status());
     if (status)
       OnSessionDeleted();
 
@@ -243,30 +243,31 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
 
   for (auto& notification : message.notifications()) {
     auto status = notification.has_status()
-                      ? Convert<scada::Status>(notification.status())
+                      ? ConvertTo<scada::Status>(notification.status())
                       : scada::Status{scada::StatusCode::Good};
 
     for (auto& data_change : notification.data_changes()) {
       subscription_->OnDataChange(
           data_change.monitored_item_id(),
-          Convert<scada::DataValue>(data_change.data_value()));
+          ConvertTo<scada::DataValue>(data_change.data_value()));
     }
 
     for (auto& model_change : notification.model_change()) {
       subscription_->OnEvent(notification.monitored_item_id(), status,
-                             Convert<scada::ModelChangeEvent>(model_change));
+                             ConvertTo<scada::ModelChangeEvent>(model_change));
     }
 
     for (auto& semantics_changed_node_id :
          notification.semantics_changed_node_id()) {
-      subscription_->OnEvent(notification.monitored_item_id(), status,
-                             scada::SemanticChangeEvent{Convert<scada::NodeId>(
-                                 semantics_changed_node_id)});
+      subscription_->OnEvent(
+          notification.monitored_item_id(), status,
+          scada::SemanticChangeEvent{
+              ConvertTo<scada::NodeId>(semantics_changed_node_id)});
     }
 
     for (auto& event : notification.events()) {
       subscription_->OnEvent(notification.monitored_item_id(), status,
-                             Convert<scada::Event>(event));
+                             ConvertTo<scada::Event>(event));
     }
 
     if (notification.has_session_deleted()) {
@@ -340,7 +341,7 @@ void SessionProxy::ForwardConnectResult(scada::Status&& status) {
 }
 
 void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
-  auto status = Convert<scada::Status>(response.status());
+  auto status = ConvertTo<scada::Status>(response.status());
   if (!status) {
     OnSessionError(status);
     return;
@@ -373,8 +374,8 @@ void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
 
   Request(request, [this, callback](const protocol::Response& response) {
     if (callback)
-      callback(Convert<scada::Status>(response.status()),
-               Convert<std::vector<scada::DataValue>>(
+      callback(ConvertTo<scada::Status>(response.status()),
+               ConvertTo<std::vector<scada::DataValue>>(
                    response.read_result().value()));
   });
 }
@@ -398,7 +399,7 @@ void SessionProxy::Write(const scada::WriteValue& value,
 
   Request(request, [this, callback](const protocol::Response& response) {
     if (callback)
-      callback(Convert<scada::Status>(response.status()));
+      callback(ConvertTo<scada::Status>(response.status()));
   });
 }
 
@@ -420,7 +421,7 @@ void SessionProxy::Call(const scada::NodeId& node_id,
 
   Request(request, [this, callback](const protocol::Response& response) {
     if (callback)
-      callback(Convert<scada::Status>(response.status()));
+      callback(ConvertTo<scada::Status>(response.status()));
   });
 }
 

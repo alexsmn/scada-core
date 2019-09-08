@@ -38,7 +38,7 @@ void NodeManagementProxy::CreateNode(const scada::NodeId& requested_id,
 
   protocol::Request request;
   auto& create_node = *request.mutable_create_node();
-  create_node.set_node_class(Convert<protocol::NodeClass>(node_class));
+  create_node.set_node_class(ConvertTo<protocol::NodeClass>(node_class));
   if (!requested_id.is_null())
     Convert(requested_id, *create_node.mutable_requested_node_id());
   Convert(parent_id, *create_node.mutable_parent_id());
@@ -48,10 +48,11 @@ void NodeManagementProxy::CreateNode(const scada::NodeId& requested_id,
 
   sender_->Request(request, [this,
                              callback](const protocol::Response& response) {
-    auto status = Convert<scada::Status>(response.status());
+    auto status = ConvertTo<scada::Status>(response.status());
     scada::NodeId node_id;
     if (response.has_create_node_result())
-      node_id = Convert<scada::NodeId>(response.create_node_result().node_id());
+      node_id =
+          ConvertTo<scada::NodeId>(response.create_node_result().node_id());
 
     logger().WriteF(
         LogSeverity::Normal, "CreateNode response [status='%ls', node_id=%s]",
@@ -88,9 +89,9 @@ void NodeManagementProxy::ModifyNodes(
 
   sender_->Request(request, [this,
                              callback](const protocol::Response& response) {
-    auto status = Convert<scada::Status>(response.status());
+    auto status = ConvertTo<scada::Status>(response.status());
     auto results =
-        Convert<std::vector<scada::Status>>(response.modify_node_result());
+        ConvertTo<std::vector<scada::Status>>(response.modify_node_result());
 
     logger().WriteF(LogSeverity::Normal, "ModifyNodes response [status='%ls']",
                     ToString16(status).c_str());
@@ -119,8 +120,8 @@ void NodeManagementProxy::DeleteNode(
 
   sender_->Request(request, [this,
                              callback](const protocol::Response& response) {
-    auto status = Convert<scada::Status>(response.status());
-    auto dependencies = Convert<std::vector<scada::NodeId>>(
+    auto status = ConvertTo<scada::Status>(response.status());
+    auto dependencies = ConvertTo<std::vector<scada::NodeId>>(
         response.delete_node_result().dependencies());
 
     logger().WriteF(LogSeverity::Normal, "DeleteNode response [status='%ls']",
@@ -149,7 +150,7 @@ void NodeManagementProxy::ChangeUserPassword(
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
                      if (callback)
-                       callback(Convert<scada::Status>(response.status()));
+                       callback(ConvertTo<scada::Status>(response.status()));
                    });
 }
 
@@ -176,7 +177,7 @@ void NodeManagementProxy::AddReference(const scada::NodeId& reference_type_id,
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
                      if (callback)
-                       callback(Convert<scada::Status>(response.status()));
+                       callback(ConvertTo<scada::Status>(response.status()));
                    });
 }
 
@@ -204,6 +205,6 @@ void NodeManagementProxy::DeleteReference(
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
                      if (callback)
-                       callback(Convert<scada::Status>(response.status()));
+                       callback(ConvertTo<scada::Status>(response.status()));
                    });
 }

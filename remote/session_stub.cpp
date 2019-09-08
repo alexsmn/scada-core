@@ -62,7 +62,7 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
   if (request.has_read()) {
     auto& read = request.read();
     OnRead(request.request_id(),
-           Convert<std::vector<scada::ReadValueId>>(read.value_id()));
+           ConvertTo<std::vector<scada::ReadValueId>>(read.value_id()));
   }
 
   if (request.has_write()) {
@@ -70,10 +70,11 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
     scada::WriteFlags flags;
     if (write.select())
       flags.set_select();
-    OnWrite(request.request_id(),
-            scada::WriteValue{Convert<scada::NodeId>(write.node_id()),
-                              Convert<scada::AttributeId>(write.attribute_id()),
-                              Convert<scada::Variant>(write.value()), flags});
+    OnWrite(
+        request.request_id(),
+        scada::WriteValue{ConvertTo<scada::NodeId>(write.node_id()),
+                          ConvertTo<scada::AttributeId>(write.attribute_id()),
+                          ConvertTo<scada::Variant>(write.value()), flags});
   }
 
   if (request.has_call()) {
@@ -89,9 +90,9 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
     if (call.has_device_command()) {
       auto& device_command = call.device_command();
       OnCall(request.request_id(),
-             Convert<scada::NodeId>(device_command.node_id()),
-             Convert<scada::NodeId>(device_command.method_id()),
-             Convert<std::vector<scada::Variant>>(device_command.argument()));
+             ConvertTo<scada::NodeId>(device_command.node_id()),
+             ConvertTo<scada::NodeId>(device_command.method_id()),
+             ConvertTo<std::vector<scada::Variant>>(device_command.argument()));
     }
   }
 
@@ -110,10 +111,10 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
     auto& create_monitored_item = request.create_monitored_item();
     OnCreateMonitoredItem(
         request.request_id(), create_monitored_item.subscription_id(),
-        {Convert<scada::NodeId>(create_monitored_item.node_id()),
+        {ConvertTo<scada::NodeId>(create_monitored_item.node_id()),
          static_cast<scada::AttributeId>(create_monitored_item.attribute_id())},
         create_monitored_item.has_monitoring_parameters()
-            ? Convert<scada::MonitoringParameters>(
+            ? ConvertTo<scada::MonitoringParameters>(
                   create_monitored_item.monitoring_parameters())
             : scada::MonitoringParameters{});
   }

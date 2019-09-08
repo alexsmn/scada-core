@@ -34,15 +34,15 @@ void ViewServiceProxy::Browse(
     Convert(node.node_id, *browse_node.mutable_node_id());
     if (node.direction != scada::BrowseDirection::Both)
       browse_node.set_direction(
-          Convert<protocol::BrowseDirection>(node.direction));
+          ConvertTo<protocol::BrowseDirection>(node.direction));
     Convert(node.reference_type_id, *browse_node.mutable_reference_type_id());
     if (node.include_subtypes)
       browse_node.set_include_subtypes(true);
   }
 
   sender_->Request(request, [callback](const protocol::Response& response) {
-    callback(Convert<scada::Status>(response.status()),
-             Convert<std::vector<scada::BrowseResult>>(
+    callback(ConvertTo<scada::Status>(response.status()),
+             ConvertTo<std::vector<scada::BrowseResult>>(
                  response.browse_result().results()));
   });
 }

@@ -1,8 +1,8 @@
 #include "remote/view_service_stub.h"
 
-#include "model/node_id_util.h"
 #include "core/status.h"
 #include "core/view_service.h"
+#include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
@@ -30,12 +30,12 @@ void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
     nodes.reserve(proto_nodes.size());
     for (auto& proto_node : proto_nodes) {
       nodes.push_back({
-          Convert<scada::NodeId>(proto_node.node_id()),
+          ConvertTo<scada::NodeId>(proto_node.node_id()),
           proto_node.has_direction()
-              ? Convert<scada::BrowseDirection>(proto_node.direction())
+              ? ConvertTo<scada::BrowseDirection>(proto_node.direction())
               : scada::BrowseDirection::Both,
           proto_node.has_reference_type_id()
-              ? Convert<scada::NodeId>(proto_node.reference_type_id())
+              ? ConvertTo<scada::NodeId>(proto_node.reference_type_id())
               : scada::NodeId{},
           proto_node.include_subtypes(),
       });

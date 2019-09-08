@@ -123,7 +123,7 @@ void SubscriptionProxy::MonitoredItemProxy::CreateStub() {
           auto& m = response.create_monitored_item_result();
           monitored_item_id = m.monitored_item_id();
         }
-        OnCreateMonitoredItemResult(Convert<scada::Status>(response.status()),
+        OnCreateMonitoredItemResult(ConvertTo<scada::Status>(response.status()),
                                     monitored_item_id);
       });
 }
@@ -319,7 +319,7 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
           auto& m = response.create_subscription_result();
           subscription_id = m.subscription_id();
         }
-        OnCreateSubscriptionResult(Convert<scada::Status>(response.status()),
+        OnCreateSubscriptionResult(ConvertTo<scada::Status>(response.status()),
                                    subscription_id);
       });
 }

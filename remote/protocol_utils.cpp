@@ -4,6 +4,31 @@
 #include "base/strings/utf_string_conversions.h"
 #include "core/standard_node_ids.h"
 
+namespace {
+
+template <class Source, class Target>
+inline void CastConvert(const std::vector<Source>& source,
+                        ::google::protobuf::RepeatedField<Target>& target) {
+  target.Reserve(target.size() + source.size());
+  for (auto& s : source)
+    target.Add(static_cast<Target>(s));
+}
+
+template <class Source, class Target>
+inline void CastConvert(const ::google::protobuf::RepeatedField<Target>& source,
+                        std::vector<Source>& target) {
+  target.insert(target.end(), source.begin(), source.end());
+}
+
+template <class Target, class Source>
+inline Target CastConvertTo(const Source& source) {
+  Target target;
+  CastConvert(source, target);
+  return target;
+}
+
+}  // namespace
+
 void Convert(const protocol::NodeId& source, scada::NodeId& target) {
   auto namespace_index =
       static_cast<scada::NamespaceIndex>(source.namespace_index());
@@ -106,20 +131,20 @@ void Convert(const protocol::Variant& source, scada::Variant& target) {
             base::SysUTF8ToWide(source.string_value_utf8()))};
         break;
       case scada::Variant::QUALIFIED_NAME:
-        target = Convert<scada::QualifiedName>(source.string_value_utf8());
+        target = ConvertTo<scada::QualifiedName>(source.string_value_utf8());
         break;
       case scada::Variant::LOCALIZED_TEXT:
-        target = Convert<scada::LocalizedText>(source.string_value_utf8());
+        target = ConvertTo<scada::LocalizedText>(source.string_value_utf8());
         break;
       case scada::Variant::BYTE_STRING:
-        target = Convert<scada::ByteString>(source.byte_string_value());
+        target = ConvertTo<scada::ByteString>(source.byte_string_value());
         break;
       case scada::Variant::NODE_ID:
-        target = Convert<scada::NodeId>(source.node_id_value());
+        target = ConvertTo<scada::NodeId>(source.node_id_value());
         break;
       case scada::Variant::DATE_TIME:
         target = scada::DateTime::FromDeltaSinceWindowsEpoch(
-            base::TimeDelta::FromMicroseconds(source.time()));
+            base::TimeDelta::FromMicroseconds(source.time_value_time()));
         break;
       default:
         assert(false);
@@ -129,12 +154,42 @@ void Convert(const protocol::Variant& source, scada::Variant& target) {
 
   } else if (source.rank() == 1) {
     switch (static_cast<scada::Variant::Type>(source.data_type())) {
+      case scada::Variant::BOOL:
+        target = ConvertTo<std::vector<scada::Boolean>>(source.bool_array());
+        break;
+      case scada::Variant::INT8:
+        target = CastConvertTo<std::vector<scada::Int8>>(source.int_array());
+        break;
+      case scada::Variant::UINT8:
+        target = CastConvertTo<std::vector<scada::UInt8>>(source.int_array());
+        break;
+      case scada::Variant::INT16:
+        target = CastConvertTo<std::vector<scada::Int16>>(source.int_array());
+        break;
+      case scada::Variant::UINT16:
+        target = CastConvertTo<std::vector<scada::UInt16>>(source.int_array());
+        break;
+      case scada::Variant::INT32:
+        target = CastConvertTo<std::vector<scada::Int32>>(source.int_array());
+        break;
+      case scada::Variant::UINT32:
+        target = CastConvertTo<std::vector<scada::UInt32>>(source.int_array());
+        break;
+      case scada::Variant::INT64:
+        target = CastConvertTo<std::vector<scada::Int64>>(source.int_array());
+        break;
+      case scada::Variant::UINT64:
+        target = CastConvertTo<std::vector<scada::UInt64>>(source.int_array());
+        break;
+      case scada::Variant::DOUBLE:
+        target = ConvertTo<std::vector<scada::Double>>(source.double_array());
+        break;
       case scada::Variant::STRING:
         target =
-            Convert<std::vector<scada::String>>(source.string_array_utf8());
+            ConvertTo<std::vector<scada::String>>(source.string_array_utf8());
         break;
       case scada::Variant::LOCALIZED_TEXT:
-        target = Convert<std::vector<scada::LocalizedText>>(
+        target = ConvertTo<std::vector<scada::LocalizedText>>(
             source.string_array_utf8());
         break;
       case scada::Variant::EXTENSION_OBJECT:
@@ -216,9 +271,9 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
         Convert(source.as_node_id(), *target.mutable_node_id_value());
         break;
       case scada::Variant::DATE_TIME:
-        target.set_time(source.get<scada::DateTime>()
-                            .ToDeltaSinceWindowsEpoch()
-                            .InMicroseconds());
+        target.set_time_value_time(source.get<scada::DateTime>()
+                                       .ToDeltaSinceWindowsEpoch()
+                                       .InMicroseconds());
         break;
       default:
         assert(false);
@@ -228,6 +283,46 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
   } else {
     target.set_rank(1);
     switch (source.type()) {
+      case scada::Variant::BOOL:
+        Convert(source.get<std::vector<scada::Boolean>>(),
+                *target.mutable_bool_array());
+        break;
+      case scada::Variant::INT8:
+        CastConvert(source.get<std::vector<scada::Int8>>(),
+                    *target.mutable_int_array());
+        break;
+      case scada::Variant::UINT8:
+        CastConvert(source.get<std::vector<scada::UInt8>>(),
+                    *target.mutable_int_array());
+        break;
+      case scada::Variant::INT16:
+        CastConvert(source.get<std::vector<scada::Int16>>(),
+                    *target.mutable_int_array());
+        break;
+      case scada::Variant::UINT16:
+        CastConvert(source.get<std::vector<scada::UInt16>>(),
+                    *target.mutable_int_array());
+        break;
+      case scada::Variant::INT32:
+        CastConvert(source.get<std::vector<scada::Int32>>(),
+                    *target.mutable_int_array());
+        break;
+      case scada::Variant::UINT32:
+        CastConvert(source.get<std::vector<scada::UInt32>>(),
+                    *target.mutable_int_array());
+        break;
+      case scada::Variant::INT64:
+        CastConvert(source.get<std::vector<scada::Int64>>(),
+                    *target.mutable_int_array());
+        break;
+      case scada::Variant::UINT64:
+        CastConvert(source.get<std::vector<scada::UInt64>>(),
+                    *target.mutable_int_array());
+        break;
+      case scada::Variant::DOUBLE:
+        Convert(source.get<std::vector<scada::Double>>(),
+                *target.mutable_double_array());
+        break;
       case scada::Variant::STRING:
         Convert(source.get<std::vector<scada::String>>(),
                 *target.mutable_string_array_utf8());
@@ -400,7 +495,8 @@ void Convert(const protocol::ReadValueId& source, scada::ReadValueId& target) {
 
 void Convert(const scada::ReadValueId& source, protocol::ReadValueId& target) {
   Convert(source.node_id, *target.mutable_node_id());
-  target.set_attribute_id(Convert<protocol::AttributeId>(source.attribute_id));
+  target.set_attribute_id(
+      ConvertTo<protocol::AttributeId>(source.attribute_id));
 }
 
 void Convert(protocol::BrowseDirection source, scada::BrowseDirection& target) {
@@ -507,9 +603,10 @@ void Convert(const scada::AggregateFilter& source,
 void Convert(const protocol::MonitoringParameters& source,
              scada::MonitoringParameters& target) {
   if (source.has_aggregate_filter())
-    target.filter = Convert<scada::AggregateFilter>(source.aggregate_filter());
+    target.filter =
+        ConvertTo<scada::AggregateFilter>(source.aggregate_filter());
   else if (source.has_event_filter())
-    target.filter = Convert<scada::EventFilter>(source.event_filter());
+    target.filter = ConvertTo<scada::EventFilter>(source.event_filter());
 }
 
 void Convert(const scada::MonitoringParameters& source,

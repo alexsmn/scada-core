@@ -19,16 +19,17 @@ NodeManagementStub::NodeManagementStub(MessageSender& sender,
 void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
   if (request.has_create_node()) {
     auto& create_node = request.create_node();
-    OnCreateNode(request.request_id(),
-                 create_node.has_requested_node_id()
-                     ? Convert<scada::NodeId>(create_node.requested_node_id())
-                     : scada::NodeId(),
-                 Convert<scada::NodeId>(create_node.parent_id()),
-                 Convert<scada::NodeClass>(create_node.node_class()),
-                 Convert<scada::NodeId>(create_node.type_definition_id()),
-                 create_node.has_attributes()
-                     ? Convert<scada::NodeAttributes>(create_node.attributes())
-                     : scada::NodeAttributes());
+    OnCreateNode(
+        request.request_id(),
+        create_node.has_requested_node_id()
+            ? ConvertTo<scada::NodeId>(create_node.requested_node_id())
+            : scada::NodeId(),
+        ConvertTo<scada::NodeId>(create_node.parent_id()),
+        ConvertTo<scada::NodeClass>(create_node.node_class()),
+        ConvertTo<scada::NodeId>(create_node.type_definition_id()),
+        create_node.has_attributes()
+            ? ConvertTo<scada::NodeAttributes>(create_node.attributes())
+            : scada::NodeAttributes());
   }
 
   if (request.modify_node_size() != 0) {
@@ -36,8 +37,8 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
     nodes.reserve(request.modify_node_size());
     for (auto& modify_node : request.modify_node()) {
       nodes.emplace_back(
-          Convert<scada::NodeId>(modify_node.node_id()),
-          Convert<scada::NodeAttributes>(modify_node.attributes()));
+          ConvertTo<scada::NodeId>(modify_node.node_id()),
+          ConvertTo<scada::NodeAttributes>(modify_node.attributes()));
     }
     OnModifyNodes(request.request_id(), std::move(nodes));
   }
@@ -45,7 +46,7 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
   if (request.has_delete_node()) {
     auto& delete_node = request.delete_node();
     OnDeleteNode(request.request_id(),
-                 Convert<scada::NodeId>(delete_node.node_id()),
+                 ConvertTo<scada::NodeId>(delete_node.node_id()),
                  delete_node.return_dependencies());
   }
 
@@ -53,9 +54,10 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
     auto& change_password = request.change_password();
     OnChangeUserPassword(
         request.request_id(),
-        Convert<scada::NodeId>(change_password.user_node_id()),
-        Convert<scada::LocalizedText>(change_password.current_password_utf8()),
-        Convert<scada::LocalizedText>(change_password.new_password_utf8()));
+        ConvertTo<scada::NodeId>(change_password.user_node_id()),
+        ConvertTo<scada::LocalizedText>(
+            change_password.current_password_utf8()),
+        ConvertTo<scada::LocalizedText>(change_password.new_password_utf8()));
   }
 
   if (request.has_add_reference())
@@ -168,9 +170,9 @@ void NodeManagementStub::OnChangeUserPassword(
 void NodeManagementStub::OnAddReference(unsigned request_id,
                                         const protocol::Reference& request) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.AddReference(Convert<scada::NodeId>(request.reference_type_id()),
-                        Convert<scada::NodeId>(request.source_id()),
-                        Convert<scada::NodeId>(request.target_id()),
+  service_.AddReference(ConvertTo<scada::NodeId>(request.reference_type_id()),
+                        ConvertTo<scada::NodeId>(request.source_id()),
+                        ConvertTo<scada::NodeId>(request.target_id()),
                         [weak_ptr, request_id](const scada::Status& status) {
                           auto ptr = weak_ptr.get();
                           if (!ptr)
@@ -187,18 +189,19 @@ void NodeManagementStub::OnAddReference(unsigned request_id,
 void NodeManagementStub::OnDeleteReference(unsigned request_id,
                                            const protocol::Reference& request) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.DeleteReference(Convert<scada::NodeId>(request.reference_type_id()),
-                           Convert<scada::NodeId>(request.source_id()),
-                           Convert<scada::NodeId>(request.target_id()),
-                           [weak_ptr, request_id](const scada::Status& status) {
-                             auto ptr = weak_ptr.get();
-                             if (!ptr)
-                               return;
+  service_.DeleteReference(
+      ConvertTo<scada::NodeId>(request.reference_type_id()),
+      ConvertTo<scada::NodeId>(request.source_id()),
+      ConvertTo<scada::NodeId>(request.target_id()),
+      [weak_ptr, request_id](const scada::Status& status) {
+        auto ptr = weak_ptr.get();
+        if (!ptr)
+          return;
 
-                             protocol::Message message;
-                             auto& response = *message.add_responses();
-                             response.set_request_id(request_id);
-                             Convert(status, *response.mutable_status());
-                             ptr->sender_.Send(message);
-                           });
+        protocol::Message message;
+        auto& response = *message.add_responses();
+        response.set_request_id(request_id);
+        Convert(status, *response.mutable_status());
+        ptr->sender_.Send(message);
+      });
 }

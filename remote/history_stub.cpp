@@ -48,7 +48,7 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   auto& history_read_raw = request.history_read_raw();
 
   auto continuation_point =
-      Convert<scada::ByteString>(history_read_raw.continuation_point());
+      ConvertTo<scada::ByteString>(history_read_raw.continuation_point());
 
   scada::HistoryReadRawDetails details;
 
@@ -67,7 +67,7 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   details.continuation_point = std::move(continuation_point);
 
   if (!ignore_params) {
-    details.node_id = Convert<scada::NodeId>(history_read_raw.node_id());
+    details.node_id = ConvertTo<scada::NodeId>(history_read_raw.node_id());
     details.from =
         history_read_raw.has_from_time()
             ? base::Time::FromInternalValue(history_read_raw.from_time())
@@ -77,7 +77,7 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
                      : base::Time();
     details.max_count = history_read_raw.max_count();
     details.aggregation = history_read_raw.has_aggregate_filter()
-                              ? Convert<scada::AggregateFilter>(
+                              ? ConvertTo<scada::AggregateFilter>(
                                     history_read_raw.aggregate_filter())
                               : scada::AggregateFilter{};
   }
@@ -119,7 +119,7 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
 void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   auto request_id = request.request_id();
   auto& history_read_events = request.history_read_events();
-  const auto node_id = Convert<scada::NodeId>(history_read_events.node_id());
+  const auto node_id = ConvertTo<scada::NodeId>(history_read_events.node_id());
   auto from =
       history_read_events.has_from_time()
           ? base::Time::FromInternalValue(history_read_events.from_time())

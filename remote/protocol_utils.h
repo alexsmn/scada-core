@@ -75,58 +75,122 @@ void Convert(const protocol::MonitoringParameters& source,
 void Convert(const scada::MonitoringParameters& source,
              protocol::MonitoringParameters& target);
 
-template <typename Target, typename Source>
-inline void Convert(const ::google::protobuf::RepeatedPtrField<Source>& source,
-                    std::vector<Target>& target) {
+// Generalization.
+template <class T>
+inline void Convert(const T& source, T& target) {
+  target = source;
+}
+
+// Convert To/From Repeated
+
+template <typename Target, typename SourceRepeatedField>
+inline void ConvertFromRepeated(const SourceRepeatedField& source,
+                                std::vector<Target>& target) {
   target.reserve(target.size() + source.size());
   for (auto& s : source)
     Convert(s, target.emplace_back());
 }
 
-template <typename Target, typename Container>
-inline void ConvertContainer(
-    const Container& source,
-    ::google::protobuf::RepeatedPtrField<Target>& target) {
-  target.Reserve(target.size() + source.size());
+// It seems std::vector<bool>::emplace_back() doesn't return a writable
+// reference.
+template <typename SourceRepeatedField>
+inline void ConvertFromRepeated(const SourceRepeatedField& source,
+                                std::vector<bool>& target) {
+  target.reserve(target.size() + source.size());
   for (auto& s : source)
+    target.emplace_back(ConvertTo<bool>(s));
+}
+
+template <typename Target, typename SourceRepeatedField>
+inline void ConvertFromRepeated(const SourceRepeatedField& source,
+                                std::set<Target>& target) {
+  target.reserve(target.size() + source.size());
+  for (auto& s : source)
+    target.emplace(Convert<Target>(source));
+}
+
+template <typename TargetRepeatedField, typename Container>
+inline void ConvertToRepeated(const Container& source,
+                              TargetRepeatedField& target) {
+  target.Reserve(target.size() + source.size());
+  for (auto&& s : source)
     Convert(s, *target.Add());
 }
+
+// vector <-> RepeatedField
+
+template <typename Source, typename Target>
+inline void Convert(const std::vector<Source>& sources,
+                    ::google::protobuf::RepeatedField<Target>& targets) {
+  ConvertToRepeated(sources, targets);
+}
+
+template <typename Source, typename Target>
+inline void Convert(const ::google::protobuf::RepeatedField<Target>& sources,
+                    std::vector<Source>& targets) {
+  ConvertFromRepeated(sources, targets);
+}
+
+// set <-> RepeatedField
+
+template <typename Source, typename Target>
+inline void Convert(const std::set<Source>& sources,
+                    ::google::protobuf::RepeatedField<Target>& targets) {
+  ConvertToRepeated(sources, targets);
+}
+
+template <typename Source, typename Target>
+inline void Convert(const ::google::protobuf::RepeatedField<Target>& sources,
+                    std::set<Source>& targets) {
+  ConvertFromRepeated(sources, targets);
+}
+
+// vector <-> RepeatedPtrField
 
 template <typename Source, typename Target>
 inline void Convert(const std::vector<Source>& sources,
                     ::google::protobuf::RepeatedPtrField<Target>& targets) {
-  ConvertContainer(sources, targets);
+  ConvertToRepeated(sources, targets);
 }
+
+template <typename Source, typename Target>
+inline void Convert(const ::google::protobuf::RepeatedPtrField<Target>& sources,
+                    std::vector<Source>& targets) {
+  ConvertFromRepeated(sources, targets);
+}
+
+// set <-> RepeatedPtrField
 
 template <typename Source, typename Target>
 inline void Convert(const std::set<Source>& sources,
                     ::google::protobuf::RepeatedPtrField<Target>& targets) {
-  ConvertContainer(sources, targets);
+  ConvertToRepeated(sources, targets);
 }
 
-template <typename Target, typename Source>
-inline void Convert(const ::google::protobuf::RepeatedPtrField<Source>& source,
-                    std::set<Target>& target) {
-  for (auto& s : source)
-    Convert(s, target.emplace());
+template <typename Source, typename Target>
+inline void Convert(const ::google::protobuf::RepeatedPtrField<Target>& sources,
+                    std::set<Source>& targets) {
+  ConvertFromRepeated(sources, targets);
 }
+
+// ConvertTo
 
 template <class Target, class Source>
-inline Target Convert(const Source& source) {
-  Target target{};
+inline Target ConvertTo(const Source& source) {
+  Target target;
   Convert(source, target);
   return target;
 }
 
 template <>
-inline scada::Status Convert(const protocol::Status& source) {
+inline scada::Status ConvertTo(const protocol::Status& source) {
   scada::Status target{scada::StatusCode::Bad};
   Convert(source, target);
   return target;
 }
 
 template <>
-inline std::vector<scada::Status> Convert(
+inline std::vector<scada::Status> ConvertTo(
     const ::google::protobuf::RepeatedPtrField<protocol::Status>& source) {
   std::vector<scada::Status> target(source.size(), scada::StatusCode::Bad);
   for (size_t i = 0; i < source.size(); ++i)

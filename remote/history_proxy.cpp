@@ -38,10 +38,10 @@ void HistoryProxy::HistoryReadRaw(
     if (!callback)
       return;
 
-    callback({Convert<scada::Status>(response.status()),
-              Convert<std::vector<scada::DataValue>>(
+    callback({ConvertTo<scada::Status>(response.status()),
+              ConvertTo<std::vector<scada::DataValue>>(
                   response.history_read_raw_result().value()),
-              Convert<scada::ByteString>(
+              ConvertTo<scada::ByteString>(
                   response.history_read_raw_result().continuation_point())});
   });
 }
@@ -71,8 +71,8 @@ void HistoryProxy::HistoryReadEvents(
         if (!callback)
           return;
 
-        callback(Convert<scada::Status>(response.status()),
-                 Convert<std::vector<scada::Event>>(
+        callback(ConvertTo<scada::Status>(response.status()),
+                 ConvertTo<std::vector<scada::Event>>(
                      response.history_read_events_result().event()));
       });
 }
