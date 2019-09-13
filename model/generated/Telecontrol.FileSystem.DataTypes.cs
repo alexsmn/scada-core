@@ -33,6 +33,7 @@ using System.Text;
 using System.Xml;
 using System.Runtime.Serialization;
 using Opc.Ua;
+using Telecontrol.Scada;
 
 namespace Telecontrol.FileSystem
 {

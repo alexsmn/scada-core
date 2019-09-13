@@ -34,6 +34,7 @@ using System.Reflection;
 using System.Xml;
 using System.Runtime.Serialization;
 using Opc.Ua;
+using Telecontrol.Scada;
 
 namespace Telecontrol.FileSystem
 {
@@ -217,6 +218,11 @@ namespace Telecontrol.FileSystem
         /// The URI for the OpcUaXsd namespace (.NET code namespace is 'Opc.Ua').
         /// </summary>
         public const string OpcUaXsd = "http://opcfoundation.org/UA/2008/02/Types.xsd";
+
+        /// <summary>
+        /// The URI for the TelecontrolScada namespace (.NET code namespace is 'Telecontrol.Scada').
+        /// </summary>
+        public const string TelecontrolScada = "http://telecontrol.ru/opcua/scada";
 
         /// <summary>
         /// The URI for the TelecontrolFileSystem namespace (.NET code namespace is 'Telecontrol.FileSystem').

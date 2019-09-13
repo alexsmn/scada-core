@@ -33,6 +33,7 @@ using System.Text;
 using System.Xml;
 using System.Runtime.Serialization;
 using Opc.Ua;
+using Telecontrol.Scada;
 
 namespace Telecontrol.FileSystem
 {
@@ -90,8 +91,9 @@ namespace Telecontrol.FileSystem
 
         #region Initialization String
         private const string InitializationString =
-           "AQAAACYAAABodHRwOi8vdGVsZWNvbnRyb2wucnUvb3BjdWEvZmlsZXN5c3Rlbf////8EYIACAQAAAAEA" +
-           "GQAAAEZpbGVEaXJlY3RvcnlUeXBlSW5zdGFuY2UBAak6AQGpOqk6AAD/////AAAAAA==";
+           "AgAAACEAAABodHRwOi8vdGVsZWNvbnRyb2wucnUvb3BjdWEvc2NhZGEmAAAAaHR0cDovL3RlbGVjb250" +
+           "cm9sLnJ1L29wY3VhL2ZpbGVzeXN0ZW3/////BGCAAgEAAAACABkAAABGaWxlRGlyZWN0b3J5VHlwZUlu" +
+           "c3RhbmNlAQKpOgECqTqpOgAAAQAAAAEBFwAAAQKpOgAAAAA=";
         #endregion
         #endif
         #endregion
@@ -178,10 +180,11 @@ namespace Telecontrol.FileSystem
 
         #region Initialization String
         private const string InitializationString =
-           "AQAAACYAAABodHRwOi8vdGVsZWNvbnRyb2wucnUvb3BjdWEvZmlsZXN5c3Rlbf////8VYIkCAgAAAAEA" +
-           "EAAAAEZpbGVUeXBlSW5zdGFuY2UBAao6AQGqOqo6AAAAD/7///8BAf////8CAAAAFWCJCgIAAAABAA4A" +
-           "AABMYXN0VXBkYXRlVGltZQEBqzoALgBEqzoAAAAN/////wEB/////wAAAAAVYIkKAgAAAAEABAAAAFNp" +
-           "emUBAaw6AC4ARKw6AAAACf////8BAf////8AAAAA";
+           "AgAAACEAAABodHRwOi8vdGVsZWNvbnRyb2wucnUvb3BjdWEvc2NhZGEmAAAAaHR0cDovL3RlbGVjb250" +
+           "cm9sLnJ1L29wY3VhL2ZpbGVzeXN0ZW3/////FWCJAgIAAAACABAAAABGaWxlVHlwZUluc3RhbmNlAQKq" +
+           "OgECqjqqOgAAAA/+////AQEBAAAAAQEXAAEBAqk6AgAAABVgiQoCAAAAAgAOAAAATGFzdFVwZGF0ZVRp" +
+           "bWUBAqs6AC4ARKs6AAAADf////8BAf////8AAAAAFWCJCgIAAAACAAQAAABTaXplAQKsOgAuAESsOgAA" +
+           "AAn/////AQH/////AAAAAA==";
         #endregion
         #endif
         #endregion

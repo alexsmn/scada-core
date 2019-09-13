@@ -2,10 +2,12 @@
 <UANodeSet xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
   <NamespaceUris>
     <Uri>http://telecontrol.ru/opcua/filesystem</Uri>
+    <Uri>http://telecontrol.ru/opcua/scada</Uri>
   </NamespaceUris>
   <Models>
     <Model ModelUri="http://telecontrol.ru/opcua/filesystem">
       <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.05" PublicationDate="2019-07-23T00:00:00Z" />
+      <RequiredModel ModelUri="http://telecontrol.ru/opcua/scada" />
     </Model>
   </Models>
   <Aliases>
@@ -48,8 +50,9 @@
   <UAObject NodeId="ns=1;i=15016" BrowseName="1:FileSystem">
     <DisplayName>FileSystem</DisplayName>
     <References>
+      <Reference ReferenceType="ns=2;i=23">ns=1;i=15016</Reference>
       <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
-      <Reference ReferenceType="HasTypeDefinition">i=61</Reference>
+      <Reference ReferenceType="HasTypeDefinition">ns=1;i=15017</Reference>
     </References>
   </UAObject>
   <UAObjectType NodeId="ns=1;i=15017" BrowseName="1:FileDirectoryType">
@@ -63,6 +66,7 @@
     <References>
       <Reference ReferenceType="HasProperty">ns=1;i=15019</Reference>
       <Reference ReferenceType="HasProperty">ns=1;i=15020</Reference>
+      <Reference ReferenceType="ns=2;i=23" IsForward="false">ns=1;i=15017</Reference>
       <Reference ReferenceType="HasSubtype" IsForward="false">i=62</Reference>
     </References>
   </UAVariableType>

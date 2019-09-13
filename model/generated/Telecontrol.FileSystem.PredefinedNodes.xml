@@ -1,25 +1,34 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <uax:ListOfNodeState xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd">
   <uax:NamespaceUris>
+    <uax:NamespaceUri>http://telecontrol.ru/opcua/scada</uax:NamespaceUri>
     <uax:NamespaceUri>http://telecontrol.ru/opcua/filesystem</uax:NamespaceUri>
   </uax:NamespaceUris>
   <FileSystem xmlns="http://telecontrol.ru/opcua/filesystem">
     <uax:NodeClass>Object_1</uax:NodeClass>
     <uax:NodeId>
-      <uax:Identifier>ns=1;i=15016</uax:Identifier>
+      <uax:Identifier>ns=2;i=15016</uax:Identifier>
     </uax:NodeId>
     <uax:BrowseName>
-      <uax:NamespaceIndex>1</uax:NamespaceIndex>
+      <uax:NamespaceIndex>2</uax:NamespaceIndex>
       <uax:Name>FileSystem</uax:Name>
     </uax:BrowseName>
     <uax:ReferenceTypeId>
       <uax:Identifier>i=47</uax:Identifier>
     </uax:ReferenceTypeId>
     <uax:TypeDefinitionId>
-      <uax:Identifier>i=61</uax:Identifier>
+      <uax:Identifier>ns=2;i=15017</uax:Identifier>
     </uax:TypeDefinitionId>
     <uax:NumericId>15016</uax:NumericId>
     <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>ns=1;i=23</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:TargetId>
+          <uax:Identifier>ns=2;i=15016</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
       <uax:Reference>
         <uax:ReferenceTypeId>
           <uax:Identifier>i=35</uax:Identifier>
@@ -34,10 +43,10 @@
   <FileDirectoryType xmlns="http://telecontrol.ru/opcua/filesystem">
     <uax:NodeClass>ObjectType_8</uax:NodeClass>
     <uax:NodeId>
-      <uax:Identifier>ns=1;i=15017</uax:Identifier>
+      <uax:Identifier>ns=2;i=15017</uax:Identifier>
     </uax:NodeId>
     <uax:BrowseName>
-      <uax:NamespaceIndex>1</uax:NamespaceIndex>
+      <uax:NamespaceIndex>2</uax:NamespaceIndex>
       <uax:Name>FileDirectoryType</uax:Name>
     </uax:BrowseName>
     <uax:SuperTypeId>
@@ -47,10 +56,10 @@
   <FileType xmlns="http://telecontrol.ru/opcua/filesystem">
     <uax:NodeClass>VariableType_16</uax:NodeClass>
     <uax:NodeId>
-      <uax:Identifier>ns=1;i=15018</uax:Identifier>
+      <uax:Identifier>ns=2;i=15018</uax:Identifier>
     </uax:NodeId>
     <uax:BrowseName>
-      <uax:NamespaceIndex>1</uax:NamespaceIndex>
+      <uax:NamespaceIndex>2</uax:NamespaceIndex>
       <uax:Name>FileType</uax:Name>
     </uax:BrowseName>
     <uax:SuperTypeId>
@@ -59,13 +68,24 @@
     <uax:DataType>
       <uax:Identifier>i=15</uax:Identifier>
     </uax:DataType>
+    <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>ns=1;i=23</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:IsInverse>true</uax:IsInverse>
+        <uax:TargetId>
+          <uax:Identifier>ns=2;i=15017</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
+    </uax:References>
     <LastUpdateTime>
       <uax:NodeClass>Variable_2</uax:NodeClass>
       <uax:NodeId>
-        <uax:Identifier>ns=1;i=15019</uax:Identifier>
+        <uax:Identifier>ns=2;i=15019</uax:Identifier>
       </uax:NodeId>
       <uax:BrowseName>
-        <uax:NamespaceIndex>1</uax:NamespaceIndex>
+        <uax:NamespaceIndex>2</uax:NamespaceIndex>
         <uax:Name>LastUpdateTime</uax:Name>
       </uax:BrowseName>
       <uax:ReferenceTypeId>
@@ -88,10 +108,10 @@
     <Size>
       <uax:NodeClass>Variable_2</uax:NodeClass>
       <uax:NodeId>
-        <uax:Identifier>ns=1;i=15020</uax:Identifier>
+        <uax:Identifier>ns=2;i=15020</uax:Identifier>
       </uax:NodeId>
       <uax:BrowseName>
-        <uax:NamespaceIndex>1</uax:NamespaceIndex>
+        <uax:NamespaceIndex>2</uax:NamespaceIndex>
         <uax:Name>Size</uax:Name>
       </uax:BrowseName>
       <uax:ReferenceTypeId>
