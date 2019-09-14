@@ -12,8 +12,18 @@ namespace scada {
 enum class NodeClass;
 
 using StatusCallback = std::function<void(Status&&)>;
+
+struct AddNodesItem {
+  NodeId requested_id;
+  NodeId parent_id;
+  NodeClass node_class;
+  NodeId type_definition_id;
+  NodeAttributes attributes;
+};
+
 using ModifyNodesCallback =
     std::function<void(Status&&, std::vector<Status>&&)>;
+
 using DeleteNodeCallback =
     std::function<void(Status&& status,
                        std::vector<scada::NodeId>&& dependencies)>;
