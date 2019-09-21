@@ -8,9 +8,6 @@ bool IsNestedNodeId(const scada::NodeId& node_id,
                     base::StringPiece& nested_name);
 scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
                                base::StringPiece nested_name);
-bool GetNestedSubName(const scada::NodeId& node_id,
-                      const scada::NodeId& nested_id,
-                      base::StringPiece& nested_name);
 
 scada::NodeId NodeIdFromScadaString(base::StringPiece scada_string);
 std::string NodeIdToScadaString(const scada::NodeId& node_id);
