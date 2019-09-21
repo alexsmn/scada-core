@@ -101,6 +101,24 @@
           </ReferenceTypeId>
           <IsInverse>false</IsInverse>
           <TargetId>
+            <Identifier>ns=1;i=15017</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>ns=2;i=23</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>true</IsInverse>
+          <TargetId>
+            <Identifier>ns=1;i=15017</Identifier>
+          </TargetId>
+        </ReferenceNode>
+        <ReferenceNode>
+          <ReferenceTypeId>
+            <Identifier>ns=2;i=23</Identifier>
+          </ReferenceTypeId>
+          <IsInverse>false</IsInverse>
+          <TargetId>
             <Identifier>ns=1;i=15018</Identifier>
           </TargetId>
         </ReferenceNode>

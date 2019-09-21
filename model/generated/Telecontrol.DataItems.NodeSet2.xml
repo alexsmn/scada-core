@@ -148,6 +148,7 @@
     <DisplayName>DataGroupType</DisplayName>
     <References>
       <Reference ReferenceType="HasProperty">ns=1;i=63</Reference>
+      <Reference ReferenceType="ns=2;i=23">ns=1;i=62</Reference>
       <Reference ReferenceType="ns=2;i=23" IsForward="false">ns=1;i=24</Reference>
       <Reference ReferenceType="HasSubtype" IsForward="false">i=58</Reference>
     </References>

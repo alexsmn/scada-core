@@ -52,6 +52,16 @@
     <uax:SuperTypeId>
       <uax:Identifier>i=58</uax:Identifier>
     </uax:SuperTypeId>
+    <uax:References>
+      <uax:Reference>
+        <uax:ReferenceTypeId>
+          <uax:Identifier>ns=1;i=23</uax:Identifier>
+        </uax:ReferenceTypeId>
+        <uax:TargetId>
+          <uax:Identifier>ns=2;i=15017</uax:Identifier>
+        </uax:TargetId>
+      </uax:Reference>
+    </uax:References>
   </FileDirectoryType>
   <FileType xmlns="http://telecontrol.ru/opcua/filesystem">
     <uax:NodeClass>VariableType_16</uax:NodeClass>

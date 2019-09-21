@@ -122,7 +122,7 @@
       </opc:Property>
     </opc:Children>
     <opc:References>
-      <opc:Reference IsInverse="true">
+      <opc:Reference>
         <opc:ReferenceType>scada:Creates</opc:ReferenceType>
         <opc:TargetId>DataGroupType</opc:TargetId>
       </opc:Reference>

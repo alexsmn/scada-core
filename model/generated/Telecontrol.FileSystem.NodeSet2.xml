@@ -58,6 +58,7 @@
   <UAObjectType NodeId="ns=1;i=15017" BrowseName="1:FileDirectoryType">
     <DisplayName>FileDirectoryType</DisplayName>
     <References>
+      <Reference ReferenceType="ns=2;i=23">ns=1;i=15017</Reference>
       <Reference ReferenceType="HasSubtype" IsForward="false">i=58</Reference>
     </References>
   </UAObjectType>
