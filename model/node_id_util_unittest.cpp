@@ -11,9 +11,9 @@ TEST(NodeIdUtil, NodeIdFromScadaString) {
             NodeIdFromScadaString("IEC_DEV.15"));
   EXPECT_EQ(scada::NodeId(12, NamespaceIndexes::IEC60870_DEVICE),
             NodeIdFromScadaString("T11.12"));
-  EXPECT_EQ(scada::NodeId("MODBUS_PORTS.32!Online", 0),
+  EXPECT_EQ(scada::NodeId("32!Online", NamespaceIndexes::MODBUS_PORTS),
             NodeIdFromScadaString("MODBUS_PORTS.32!Online"));
-  EXPECT_EQ(scada::NodeId("MODBUS_PORTS.32!BIT:4", 0),
+  EXPECT_EQ(scada::NodeId("32!BIT:4", NamespaceIndexes::MODBUS_PORTS),
             NodeIdFromScadaString("MODBUS_PORTS.32!BIT:4"));
 }
 
