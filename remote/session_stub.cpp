@@ -267,6 +267,7 @@ void SessionStub::OnWrite(unsigned request_id,
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         Convert(status, *response.mutable_status());
+        Convert(std::move(results), *response.mutable_write_result());
         ptr->Send(message);
       });
 }
