@@ -41,10 +41,6 @@ class NodeManagementService {
                           NodeAttributes attributes,
                           const CreateNodeCallback& callback) = 0;
 
-  virtual void ModifyNodes(
-      const std::vector<std::pair<NodeId, NodeAttributes>>& nodes,
-      const ModifyNodesCallback& callback) = 0;
-
   // Delete record from table. If |return_dependencies| is true and deletion
   // fails, it gets list of related records, which must be deleted before.
   virtual void DeleteNode(const NodeId& node_id,

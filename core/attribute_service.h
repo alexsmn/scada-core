@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/containers/span.h"
 #include "core/attribute_ids.h"
 #include "core/configuration_types.h"
 #include "core/data_value.h"
@@ -15,6 +16,8 @@ class NodeId;
 class Status;
 
 using StatusCallback = std::function<void(Status&&)>;
+using MultiStatusCallback =
+    std::function<void(Status&&, std::vector<Status>&&)>;
 using ReadCallback =
     std::function<void(Status&&, std::vector<DataValue>&& values)>;
 
@@ -32,9 +35,9 @@ class AttributeService {
   virtual void Read(const std::vector<ReadValueId>& value_ids,
                     const ReadCallback& callback) = 0;
 
-  virtual void Write(const WriteValue& value,
+  virtual void Write(base::span<const WriteValue> values,
                      const NodeId& user_id,
-                     const StatusCallback& callback) = 0;
+                     const MultiStatusCallback& callback) = 0;
 };
 
 template <class T>

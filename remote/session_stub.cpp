@@ -65,16 +65,19 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
            ConvertTo<std::vector<scada::ReadValueId>>(read.value_id()));
   }
 
-  if (request.has_write()) {
-    auto& write = request.write();
-    scada::WriteFlags flags;
-    if (write.select())
-      flags.set_select();
-    OnWrite(
-        request.request_id(),
-        scada::WriteValue{ConvertTo<scada::NodeId>(write.node_id()),
-                          ConvertTo<scada::AttributeId>(write.attribute_id()),
-                          ConvertTo<scada::Variant>(write.value()), flags});
+  if (!request.write().empty()) {
+    std::vector<scada::WriteValue> values;
+    values.reserve(request.write().size());
+    for (auto& proto_value : request.write()) {
+      scada::WriteFlags flags;
+      if (proto_value.select())
+        flags.set_select();
+      values.emplace_back(scada::WriteValue{
+          ConvertTo<scada::NodeId>(proto_value.node_id()),
+          ConvertTo<scada::AttributeId>(proto_value.attribute_id()),
+          ConvertTo<scada::Variant>(proto_value.value()), flags});
+    }
+    OnWrite(request.request_id(), values);
   }
 
   if (request.has_call()) {
@@ -249,18 +252,21 @@ void SessionStub::OnRead(
       });
 }
 
-void SessionStub::OnWrite(unsigned request_id, const scada::WriteValue& value) {
+void SessionStub::OnWrite(unsigned request_id,
+                          base::span<const scada::WriteValue> values) {
   std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
-  attribute_service_.Write(value, user_id_,
-                           [weak_ptr, request_id](const scada::Status& status) {
-                             auto ptr = weak_ptr.lock();
-                             if (!ptr)
-                               return;
+  attribute_service_.Write(
+      values, user_id_,
+      [weak_ptr, request_id](scada::Status&& status,
+                             std::vector<scada::Status>&& results) {
+        auto ptr = weak_ptr.lock();
+        if (!ptr)
+          return;
 
-                             protocol::Message message;
-                             auto& response = *message.add_responses();
-                             response.set_request_id(request_id);
-                             Convert(status, *response.mutable_status());
-                             ptr->Send(message);
-                           });
+        protocol::Message message;
+        auto& response = *message.add_responses();
+        response.set_request_id(request_id);
+        Convert(status, *response.mutable_status());
+        ptr->Send(message);
+      });
 }

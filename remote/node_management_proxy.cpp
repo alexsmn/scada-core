@@ -63,45 +63,6 @@ void NodeManagementProxy::CreateNode(const scada::NodeId& requested_id,
   });
 }
 
-void NodeManagementProxy::ModifyNodes(
-    const std::vector<std::pair<scada::NodeId, scada::NodeAttributes>>&
-        attributes,
-    const scada::ModifyNodesCallback& callback) {
-  logger().WriteF(LogSeverity::Normal, "ModifyNodes request [count=%Iu]",
-                  attributes.size());
-
-  // TODO: Log.
-
-  if (!sender_)
-    return callback(scada::StatusCode::Bad_Disconnected, {});
-
-  protocol::Request request;
-  request.mutable_modify_node()->Reserve(attributes.size());
-  for (auto& [node_id, attribute] : attributes) {
-    assert(!node_id.is_null());
-    // Attributes can be empty when writing a null value.
-    // TODO: Fix it.
-    // assert(!attribute.empty());
-    auto& modify_node = *request.add_modify_node();
-    Convert(node_id, *modify_node.mutable_node_id());
-    Convert(std::move(attribute), *modify_node.mutable_attributes());
-  }
-
-  sender_->Request(request, [this,
-                             callback](const protocol::Response& response) {
-    auto status = ConvertTo<scada::Status>(response.status());
-    auto results =
-        ConvertTo<std::vector<scada::Status>>(response.modify_node_result());
-
-    logger().WriteF(LogSeverity::Normal, "ModifyNodes response [status='%ls']",
-                    ToString16(status).c_str());
-    // TODO: Log.
-
-    if (callback)
-      callback(std::move(status), std::move(results));
-  });
-}
-
 void NodeManagementProxy::DeleteNode(
     const scada::NodeId& node_id,
     bool return_dependencies,

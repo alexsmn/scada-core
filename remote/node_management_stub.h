@@ -36,10 +36,6 @@ class NodeManagementStub {
                     scada::NodeClass node_class,
                     const scada::NodeId& type_id,
                     scada::NodeAttributes attributes);
-  void OnModifyNodes(
-      unsigned request_id,
-      const std::vector<std::pair<scada::NodeId, scada::NodeAttributes>>&
-          nodes);
   void OnDeleteNode(unsigned request_id,
                     const scada::NodeId& id,
                     bool return_dependencies);
