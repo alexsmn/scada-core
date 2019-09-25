@@ -42,7 +42,8 @@ std::string NodeIdToScadaString(const scada::NodeId& node_id) {
   std::string namespace_name =
       GetNamespaceName(node_id.namespace_index()).as_string();
   if (namespace_name.empty()) {
-    namespace_name = base::NumberToString(node_id.namespace_index());
+    namespace_name =
+        base::StrCat({"NS", base::NumberToString(node_id.namespace_index())});
   }
 
   std::string identifier;
