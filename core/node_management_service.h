@@ -21,6 +21,9 @@ struct AddNodesItem {
   NodeAttributes attributes;
 };
 
+using CreateNodeCallback =
+    std::function<void(Status&& status, const NodeId& node_id)>;
+
 using ModifyNodesCallback =
     std::function<void(Status&&, std::vector<Status>&&)>;
 
@@ -32,8 +35,7 @@ class NodeManagementService {
  public:
   virtual ~NodeManagementService() {}
 
-  typedef std::function<void(Status&& status, const NodeId& node_id)>
-      CreateNodeCallback;
+  using CreateNodeCallback = scada::CreateNodeCallback;
   virtual void CreateNode(const NodeId& requested_id,
                           const NodeId& parent_id,
                           NodeClass node_class,
