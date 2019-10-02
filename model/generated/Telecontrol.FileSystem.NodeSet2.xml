@@ -65,12 +65,21 @@
   <UAVariableType NodeId="ns=1;i=15018" BrowseName="1:FileType" DataType="ByteString" ValueRank="-2">
     <DisplayName>FileType</DisplayName>
     <References>
+      <Reference ReferenceType="HasProperty">ns=1;i=15001</Reference>
       <Reference ReferenceType="HasProperty">ns=1;i=15019</Reference>
       <Reference ReferenceType="HasProperty">ns=1;i=15020</Reference>
       <Reference ReferenceType="ns=2;i=23" IsForward="false">ns=1;i=15017</Reference>
       <Reference ReferenceType="HasSubtype" IsForward="false">i=62</Reference>
     </References>
   </UAVariableType>
+  <UAVariable NodeId="ns=1;i=15001" BrowseName="1:RelativePath" ParentNodeId="ns=1;i=15018" DataType="LocalizedText">
+    <DisplayName>RelativePath</DisplayName>
+    <References>
+      <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+      <Reference ReferenceType="HasModellingRule">i=78</Reference>
+      <Reference ReferenceType="HasProperty" IsForward="false">ns=1;i=15018</Reference>
+    </References>
+  </UAVariable>
   <UAVariable NodeId="ns=1;i=15019" BrowseName="1:LastUpdateTime" ParentNodeId="ns=1;i=15018" DataType="DateTime">
     <DisplayName>LastUpdateTime</DisplayName>
     <References>

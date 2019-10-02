@@ -182,14 +182,34 @@ namespace Telecontrol.FileSystem
         private const string InitializationString =
            "AgAAACEAAABodHRwOi8vdGVsZWNvbnRyb2wucnUvb3BjdWEvc2NhZGEmAAAAaHR0cDovL3RlbGVjb250" +
            "cm9sLnJ1L29wY3VhL2ZpbGVzeXN0ZW3/////FWCJAgIAAAACABAAAABGaWxlVHlwZUluc3RhbmNlAQKq" +
-           "OgECqjqqOgAAAA/+////AQEBAAAAAQEXAAEBAqk6AgAAABVgiQoCAAAAAgAOAAAATGFzdFVwZGF0ZVRp" +
-           "bWUBAqs6AC4ARKs6AAAADf////8BAf////8AAAAAFWCJCgIAAAACAAQAAABTaXplAQKsOgAuAESsOgAA" +
-           "AAn/////AQH/////AAAAAA==";
+           "OgECqjqqOgAAAA/+////AQEBAAAAAQEXAAEBAqk6AwAAABVgiQoCAAAAAgAMAAAAUmVsYXRpdmVQYXRo" +
+           "AQKZOgAuAESZOgAAABX/////AQH/////AAAAABVgiQoCAAAAAgAOAAAATGFzdFVwZGF0ZVRpbWUBAqs6" +
+           "AC4ARKs6AAAADf////8BAf////8AAAAAFWCJCgIAAAACAAQAAABTaXplAQKsOgAuAESsOgAAAAn/////" +
+           "AQH/////AAAAAA==";
         #endregion
         #endif
         #endregion
 
         #region Public Properties
+        /// <remarks />
+        public PropertyState<LocalizedText> RelativePath
+        {
+            get
+            {
+                return m_relativePath;
+            }
+
+            set
+            {
+                if (!Object.ReferenceEquals(m_relativePath, value))
+                {
+                    ChangeMasks |= NodeStateChangeMasks.Children;
+                }
+
+                m_relativePath = value;
+            }
+        }
+
         /// <remarks />
         public PropertyState<DateTime> LastUpdateTime
         {
@@ -239,6 +259,11 @@ namespace Telecontrol.FileSystem
             ISystemContext context,
             IList<BaseInstanceState> children)
         {
+            if (m_relativePath != null)
+            {
+                children.Add(m_relativePath);
+            }
+
             if (m_lastUpdateTime != null)
             {
                 children.Add(m_lastUpdateTime);
@@ -270,6 +295,27 @@ namespace Telecontrol.FileSystem
 
             switch (browseName.Name)
             {
+                case Telecontrol.FileSystem.BrowseNames.RelativePath:
+                {
+                    if (createOrReplace)
+                    {
+                        if (RelativePath == null)
+                        {
+                            if (replacement == null)
+                            {
+                                RelativePath = new PropertyState<LocalizedText>(this);
+                            }
+                            else
+                            {
+                                RelativePath = (PropertyState<LocalizedText>)replacement;
+                            }
+                        }
+                    }
+
+                    instance = RelativePath;
+                    break;
+                }
+
                 case Telecontrol.FileSystem.BrowseNames.LastUpdateTime:
                 {
                     if (createOrReplace)
@@ -323,6 +369,7 @@ namespace Telecontrol.FileSystem
         #endregion
 
         #region Private Fields
+        private PropertyState<LocalizedText> m_relativePath;
         private PropertyState<DateTime> m_lastUpdateTime;
         private PropertyState<ulong> m_size;
         #endregion

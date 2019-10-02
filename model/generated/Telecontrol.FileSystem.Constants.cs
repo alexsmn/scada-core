@@ -77,6 +77,11 @@ namespace Telecontrol.FileSystem
     public static partial class Variables
     {
         /// <summary>
+        /// The identifier for the FileType_RelativePath Variable.
+        /// </summary>
+        public const uint FileType_RelativePath = 15001;
+
+        /// <summary>
         /// The identifier for the FileType_LastUpdateTime Variable.
         /// </summary>
         public const uint FileType_LastUpdateTime = 15019;
@@ -142,6 +147,11 @@ namespace Telecontrol.FileSystem
     public static partial class VariableIds
     {
         /// <summary>
+        /// The identifier for the FileType_RelativePath Variable.
+        /// </summary>
+        public static readonly ExpandedNodeId FileType_RelativePath = new ExpandedNodeId(Telecontrol.FileSystem.Variables.FileType_RelativePath, Telecontrol.FileSystem.Namespaces.TelecontrolFileSystem);
+
+        /// <summary>
         /// The identifier for the FileType_LastUpdateTime Variable.
         /// </summary>
         public static readonly ExpandedNodeId FileType_LastUpdateTime = new ExpandedNodeId(Telecontrol.FileSystem.Variables.FileType_LastUpdateTime, Telecontrol.FileSystem.Namespaces.TelecontrolFileSystem);
@@ -194,6 +204,11 @@ namespace Telecontrol.FileSystem
         /// The BrowseName for the LastUpdateTime component.
         /// </summary>
         public const string LastUpdateTime = "LastUpdateTime";
+
+        /// <summary>
+        /// The BrowseName for the RelativePath component.
+        /// </summary>
+        public const string RelativePath = "RelativePath";
 
         /// <summary>
         /// The BrowseName for the Size component.

@@ -13,6 +13,7 @@ constexpr scada::NumericId FileDirectoryType = 15017; // ObjectType
 constexpr scada::NumericId FileSystem = 15016; // Object
 constexpr scada::NumericId FileType = 15018; // VariableType
 constexpr scada::NumericId FileType_LastUpdateTime = 15019; // Variable
+constexpr scada::NumericId FileType_RelativePath = 15001; // Variable
 constexpr scada::NumericId FileType_Size = 15020; // Variable
 
 } //  namespace numeric_id
@@ -23,6 +24,7 @@ const scada::NodeId FileDirectoryType{numeric_id::FileDirectoryType, kNamespaceI
 const scada::NodeId FileSystem{numeric_id::FileSystem, kNamespaceIndex}; // Object
 const scada::NodeId FileType{numeric_id::FileType, kNamespaceIndex}; // VariableType
 const scada::NodeId FileType_LastUpdateTime{numeric_id::FileType_LastUpdateTime, kNamespaceIndex}; // Variable
+const scada::NodeId FileType_RelativePath{numeric_id::FileType_RelativePath, kNamespaceIndex}; // Variable
 const scada::NodeId FileType_Size{numeric_id::FileType_Size, kNamespaceIndex}; // Variable
 
 } //  namespace id

@@ -37,6 +37,7 @@
 
   <opc:VariableType SymbolicName="FileType" BaseType="ua:BaseVariableType" DataType="ua:ByteString">
     <opc:Children>
+      <opc:Property SymbolicName="RelativePath" DataType="ua:LocalizedText" />
       <opc:Property SymbolicName="LastUpdateTime" DataType="ua:DateTime" />
       <opc:Property SymbolicName="Size" DataType="ua:UInt64" />
     </opc:Children>
