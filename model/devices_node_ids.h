@@ -193,8 +193,17 @@ constexpr scada::NumericId ModbusLinkType_Transport = 110; // Variable
 constexpr scada::NumericId ModbusLinkType_Write = 269; // Method
 constexpr scada::NumericId ModbusLinkType_WriteParam = 270; // Method
 constexpr scada::NumericId OpcServerType = 15030; // ObjectType
+constexpr scada::NumericId OpcServerType_Disabled = 15027; // Variable
+constexpr scada::NumericId OpcServerType_Enabled = 15029; // Variable
+constexpr scada::NumericId OpcServerType_Interrogate = 15033; // Method
+constexpr scada::NumericId OpcServerType_InterrogateChannel = 15034; // Method
 constexpr scada::NumericId OpcServerType_MachineName = 15031; // Variable
+constexpr scada::NumericId OpcServerType_Online = 15028; // Variable
 constexpr scada::NumericId OpcServerType_ProgId = 15032; // Variable
+constexpr scada::NumericId OpcServerType_Select = 15036; // Method
+constexpr scada::NumericId OpcServerType_SyncClock = 15035; // Method
+constexpr scada::NumericId OpcServerType_Write = 15037; // Method
+constexpr scada::NumericId OpcServerType_WriteParam = 15038; // Method
 constexpr scada::NumericId TelecontrolDevices_BinarySchema = 15001; // Variable
 constexpr scada::NumericId TelecontrolDevices_BinarySchema_DataTypeVersion = 15002; // Variable
 constexpr scada::NumericId TelecontrolDevices_BinarySchema_Deprecated = 15041; // Variable
@@ -395,8 +404,17 @@ const scada::NodeId ModbusLinkType_Transport{numeric_id::ModbusLinkType_Transpor
 const scada::NodeId ModbusLinkType_Write{numeric_id::ModbusLinkType_Write, kNamespaceIndex}; // Method
 const scada::NodeId ModbusLinkType_WriteParam{numeric_id::ModbusLinkType_WriteParam, kNamespaceIndex}; // Method
 const scada::NodeId OpcServerType{numeric_id::OpcServerType, kNamespaceIndex}; // ObjectType
+const scada::NodeId OpcServerType_Disabled{numeric_id::OpcServerType_Disabled, kNamespaceIndex}; // Variable
+const scada::NodeId OpcServerType_Enabled{numeric_id::OpcServerType_Enabled, kNamespaceIndex}; // Variable
+const scada::NodeId OpcServerType_Interrogate{numeric_id::OpcServerType_Interrogate, kNamespaceIndex}; // Method
+const scada::NodeId OpcServerType_InterrogateChannel{numeric_id::OpcServerType_InterrogateChannel, kNamespaceIndex}; // Method
 const scada::NodeId OpcServerType_MachineName{numeric_id::OpcServerType_MachineName, kNamespaceIndex}; // Variable
+const scada::NodeId OpcServerType_Online{numeric_id::OpcServerType_Online, kNamespaceIndex}; // Variable
 const scada::NodeId OpcServerType_ProgId{numeric_id::OpcServerType_ProgId, kNamespaceIndex}; // Variable
+const scada::NodeId OpcServerType_Select{numeric_id::OpcServerType_Select, kNamespaceIndex}; // Method
+const scada::NodeId OpcServerType_SyncClock{numeric_id::OpcServerType_SyncClock, kNamespaceIndex}; // Method
+const scada::NodeId OpcServerType_Write{numeric_id::OpcServerType_Write, kNamespaceIndex}; // Method
+const scada::NodeId OpcServerType_WriteParam{numeric_id::OpcServerType_WriteParam, kNamespaceIndex}; // Method
 const scada::NodeId TelecontrolDevices_BinarySchema{numeric_id::TelecontrolDevices_BinarySchema, kNamespaceIndex}; // Variable
 const scada::NodeId TelecontrolDevices_BinarySchema_DataTypeVersion{numeric_id::TelecontrolDevices_BinarySchema_DataTypeVersion, kNamespaceIndex}; // Variable
 const scada::NodeId TelecontrolDevices_BinarySchema_Deprecated{numeric_id::TelecontrolDevices_BinarySchema_Deprecated, kNamespaceIndex}; // Variable

@@ -2309,7 +2309,7 @@
       <uax:Name>OpcServerType</uax:Name>
     </uax:BrowseName>
     <uax:SuperTypeId>
-      <uax:Identifier>i=58</uax:Identifier>
+      <uax:Identifier>ns=2;i=31</uax:Identifier>
     </uax:SuperTypeId>
     <uax:References>
       <uax:Reference>

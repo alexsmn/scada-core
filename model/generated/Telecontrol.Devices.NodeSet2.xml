@@ -937,7 +937,7 @@
       <Reference ReferenceType="HasProperty">ns=1;i=15031</Reference>
       <Reference ReferenceType="HasProperty">ns=1;i=15032</Reference>
       <Reference ReferenceType="ns=2;i=23" IsForward="false">ns=1;i=30</Reference>
-      <Reference ReferenceType="HasSubtype" IsForward="false">i=58</Reference>
+      <Reference ReferenceType="HasSubtype" IsForward="false">ns=1;i=31</Reference>
     </References>
   </UAObjectType>
   <UAVariable NodeId="ns=1;i=15031" BrowseName="1:MachineName" ParentNodeId="ns=1;i=15030" DataType="LocalizedText">

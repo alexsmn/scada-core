@@ -4691,7 +4691,7 @@ namespace Telecontrol.Devices
     /// </summary>
     /// <exclude />
     [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
-    public partial class OpcServerState : BaseObjectState
+    public partial class OpcServerState : DeviceState
     {
         #region Constructors
         /// <summary>
@@ -4740,9 +4740,16 @@ namespace Telecontrol.Devices
         private const string InitializationString =
            "AgAAACEAAABodHRwOi8vdGVsZWNvbnRyb2wucnUvb3BjdWEvc2NhZGEjAAAAaHR0cDovL3RlbGVjb250" +
            "cm9sLnJ1L29wY3VhL2RldmljZXP/////BGCAAgEAAAACABUAAABPcGNTZXJ2ZXJUeXBlSW5zdGFuY2UB" +
-           "ArY6AQK2OrY6AAABAAAAAQEXAAEBAh4AAgAAABVgiQoCAAAAAgALAAAATWFjaGluZU5hbWUBArc6AC4A" +
-           "RLc6AAAAFf////8BAf////8AAAAAFWCJCgIAAAACAAYAAABQcm9nSWQBArg6AC4ARLg6AAAAFf////8B" +
-           "Af////8AAAAA";
+           "ArY6AQK2OrY6AAABAAAAAQEXAAEBAh4ACwAAABVgiQoCAAAAAgAIAAAARGlzYWJsZWQBArM6AC4ARLM6" +
+           "AAAAAf////8BAf////8AAAAAFWCJCgIAAAACAAYAAABPbmxpbmUBArQ6AC8AP7Q6AAAAAf////8BAf//" +
+           "//8AAAAAFWCJCgIAAAACAAcAAABFbmFibGVkAQK1OgAvAD+1OgAAAAH/////AQH/////AAAAAARhggoE" +
+           "AAAAAgALAAAASW50ZXJyb2dhdGUBArk6AC8BAusAuToAAAEB/////wAAAAAEYYIKBAAAAAIAEgAAAElu" +
+           "dGVycm9nYXRlQ2hhbm5lbAECujoALwECFgG6OgAAAQH/////AAAAAARhggoEAAAAAgAJAAAAU3luY0Ns" +
+           "b2NrAQK7OgAvAQLsALs6AAABAf////8AAAAABGGCCgQAAAACAAYAAABTZWxlY3QBArw6AC8BAgABvDoA" +
+           "AAEB/////wAAAAAEYYIKBAAAAAIABQAAAFdyaXRlAQK9OgAvAQIBAb06AAABAf////8AAAAABGGCCgQA" +
+           "AAACAAoAAABXcml0ZVBhcmFtAQK+OgAvAQICAb46AAABAf////8AAAAAFWCJCgIAAAACAAsAAABNYWNo" +
+           "aW5lTmFtZQECtzoALgBEtzoAAAAV/////wEB/////wAAAAAVYIkKAgAAAAIABgAAAFByb2dJZAECuDoA" +
+           "LgBEuDoAAAAV/////wEB/////wAAAAA=";
         #endregion
         #endif
         #endregion
