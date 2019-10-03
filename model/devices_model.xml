@@ -349,6 +349,21 @@
     </opc:References>
   </opc:ObjectType>
 
+  <!-- OPC Server -->
+
+  <opc:ObjectType SymbolicName="OpcServerType" BaseType="ua:BaseObjectType">
+    <opc:Children>
+      <opc:Property SymbolicName="MachineName" DataType="ua:LocalizedText" />
+      <opc:Property SymbolicName="ProgId" DataType="ua:LocalizedText" />
+    </opc:Children>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>scada:Creates</opc:ReferenceType>
+        <opc:TargetId>Devices</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:ObjectType>
+
   <!-- Transmission Items -->
 
   <opc:Object SymbolicName="TransmissionItems" TypeDefinition="ua:FolderType">

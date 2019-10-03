@@ -202,6 +202,11 @@ namespace Telecontrol.Devices
         public const uint ModbusDeviceType = 118;
 
         /// <summary>
+        /// The identifier for the OpcServerType ObjectType.
+        /// </summary>
+        public const uint OpcServerType = 15030;
+
+        /// <summary>
         /// The identifier for the TransmissionItemType ObjectType.
         /// </summary>
         public const uint TransmissionItemType = 34;
@@ -552,6 +557,16 @@ namespace Telecontrol.Devices
         public const uint ModbusDeviceType_ResponseTimeout = 15009;
 
         /// <summary>
+        /// The identifier for the OpcServerType_MachineName Variable.
+        /// </summary>
+        public const uint OpcServerType_MachineName = 15031;
+
+        /// <summary>
+        /// The identifier for the OpcServerType_ProgId Variable.
+        /// </summary>
+        public const uint OpcServerType_ProgId = 15032;
+
+        /// <summary>
         /// The identifier for the TransmissionItemType_SourceAddress Variable.
         /// </summary>
         public const uint TransmissionItemType_SourceAddress = 35;
@@ -765,6 +780,11 @@ namespace Telecontrol.Devices
         /// The identifier for the ModbusDeviceType ObjectType.
         /// </summary>
         public static readonly ExpandedNodeId ModbusDeviceType = new ExpandedNodeId(Telecontrol.Devices.ObjectTypes.ModbusDeviceType, Telecontrol.Devices.Namespaces.TelecontrolDevices);
+
+        /// <summary>
+        /// The identifier for the OpcServerType ObjectType.
+        /// </summary>
+        public static readonly ExpandedNodeId OpcServerType = new ExpandedNodeId(Telecontrol.Devices.ObjectTypes.OpcServerType, Telecontrol.Devices.Namespaces.TelecontrolDevices);
 
         /// <summary>
         /// The identifier for the TransmissionItemType ObjectType.
@@ -1117,6 +1137,16 @@ namespace Telecontrol.Devices
         public static readonly ExpandedNodeId ModbusDeviceType_ResponseTimeout = new ExpandedNodeId(Telecontrol.Devices.Variables.ModbusDeviceType_ResponseTimeout, Telecontrol.Devices.Namespaces.TelecontrolDevices);
 
         /// <summary>
+        /// The identifier for the OpcServerType_MachineName Variable.
+        /// </summary>
+        public static readonly ExpandedNodeId OpcServerType_MachineName = new ExpandedNodeId(Telecontrol.Devices.Variables.OpcServerType_MachineName, Telecontrol.Devices.Namespaces.TelecontrolDevices);
+
+        /// <summary>
+        /// The identifier for the OpcServerType_ProgId Variable.
+        /// </summary>
+        public static readonly ExpandedNodeId OpcServerType_ProgId = new ExpandedNodeId(Telecontrol.Devices.Variables.OpcServerType_ProgId, Telecontrol.Devices.Namespaces.TelecontrolDevices);
+
+        /// <summary>
         /// The identifier for the TransmissionItemType_SourceAddress Variable.
         /// </summary>
         public static readonly ExpandedNodeId TransmissionItemType_SourceAddress = new ExpandedNodeId(Telecontrol.Devices.Variables.TransmissionItemType_SourceAddress, Telecontrol.Devices.Namespaces.TelecontrolDevices);
@@ -1451,6 +1481,11 @@ namespace Telecontrol.Devices
         public const string LinkType = "LinkType";
 
         /// <summary>
+        /// The BrowseName for the MachineName component.
+        /// </summary>
+        public const string MachineName = "MachineName";
+
+        /// <summary>
         /// The BrowseName for the MessagesIn component.
         /// </summary>
         public const string MessagesIn = "MessagesIn";
@@ -1491,9 +1526,19 @@ namespace Telecontrol.Devices
         public const string Online = "Online";
 
         /// <summary>
+        /// The BrowseName for the OpcServerType component.
+        /// </summary>
+        public const string OpcServerType = "OpcServerType";
+
+        /// <summary>
         /// The BrowseName for the Port component.
         /// </summary>
         public const string Port = "Port";
+
+        /// <summary>
+        /// The BrowseName for the ProgId component.
+        /// </summary>
+        public const string ProgId = "ProgId";
 
         /// <summary>
         /// The BrowseName for the Protocol component.

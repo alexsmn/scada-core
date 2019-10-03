@@ -186,6 +186,9 @@ Iec60870ProtocolDataType,15023,DataType
 Iec60870ProtocolDataType_EnumStrings,15024,Variable
 Iec60870ModeDataType,15025,DataType
 Iec60870ModeDataType_EnumStrings,15026,Variable
+OpcServerType,15030,ObjectType
+OpcServerType_MachineName,15031,Variable
+OpcServerType_ProgId,15032,Variable
 TelecontrolDevices_BinarySchema_NamespaceUri,15040,Variable
 TelecontrolDevices_BinarySchema_Deprecated,15041,Variable
 TelecontrolDevices_XmlSchema,15042,Variable

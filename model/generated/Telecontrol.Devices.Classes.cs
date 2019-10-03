@@ -4684,6 +4684,210 @@ namespace Telecontrol.Devices
     #endif
     #endregion
 
+    #region OpcServerState Class
+    #if (!OPCUA_EXCLUDE_OpcServerState)
+    /// <summary>
+    /// Stores an instance of the OpcServerType ObjectType.
+    /// </summary>
+    /// <exclude />
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Opc.Ua.ModelCompiler", "1.0.0.0")]
+    public partial class OpcServerState : BaseObjectState
+    {
+        #region Constructors
+        /// <summary>
+        /// Initializes the type with its default attribute values.
+        /// </summary>
+        public OpcServerState(NodeState parent) : base(parent)
+        {
+        }
+
+        /// <summary>
+        /// Returns the id of the default type definition node for the instance.
+        /// </summary>
+        protected override NodeId GetDefaultTypeDefinitionId(NamespaceTable namespaceUris)
+        {
+            return Opc.Ua.NodeId.Create(Telecontrol.Devices.ObjectTypes.OpcServerType, Telecontrol.Devices.Namespaces.TelecontrolDevices, namespaceUris);
+        }
+
+        #if (!OPCUA_EXCLUDE_InitializationStrings)
+        /// <summary>
+        /// Initializes the instance.
+        /// </summary>
+        protected override void Initialize(ISystemContext context)
+        {
+            Initialize(context, InitializationString);
+            InitializeOptionalChildren(context);
+        }
+
+        /// <summary>
+        /// Initializes the instance with a node.
+        /// </summary>
+        protected override void Initialize(ISystemContext context, NodeState source)
+        {
+            InitializeOptionalChildren(context);
+            base.Initialize(context, source);
+        }
+
+        /// <summary>
+        /// Initializes the any option children defined for the instance.
+        /// </summary>
+        protected override void InitializeOptionalChildren(ISystemContext context)
+        {
+            base.InitializeOptionalChildren(context);
+        }
+
+        #region Initialization String
+        private const string InitializationString =
+           "AgAAACEAAABodHRwOi8vdGVsZWNvbnRyb2wucnUvb3BjdWEvc2NhZGEjAAAAaHR0cDovL3RlbGVjb250" +
+           "cm9sLnJ1L29wY3VhL2RldmljZXP/////BGCAAgEAAAACABUAAABPcGNTZXJ2ZXJUeXBlSW5zdGFuY2UB" +
+           "ArY6AQK2OrY6AAABAAAAAQEXAAEBAh4AAgAAABVgiQoCAAAAAgALAAAATWFjaGluZU5hbWUBArc6AC4A" +
+           "RLc6AAAAFf////8BAf////8AAAAAFWCJCgIAAAACAAYAAABQcm9nSWQBArg6AC4ARLg6AAAAFf////8B" +
+           "Af////8AAAAA";
+        #endregion
+        #endif
+        #endregion
+
+        #region Public Properties
+        /// <remarks />
+        public PropertyState<LocalizedText> MachineName
+        {
+            get
+            {
+                return m_machineName;
+            }
+
+            set
+            {
+                if (!Object.ReferenceEquals(m_machineName, value))
+                {
+                    ChangeMasks |= NodeStateChangeMasks.Children;
+                }
+
+                m_machineName = value;
+            }
+        }
+
+        /// <remarks />
+        public PropertyState<LocalizedText> ProgId
+        {
+            get
+            {
+                return m_progId;
+            }
+
+            set
+            {
+                if (!Object.ReferenceEquals(m_progId, value))
+                {
+                    ChangeMasks |= NodeStateChangeMasks.Children;
+                }
+
+                m_progId = value;
+            }
+        }
+        #endregion
+
+        #region Overridden Methods
+        /// <summary>
+        /// Populates a list with the children that belong to the node.
+        /// </summary>
+        /// <param name="context">The context for the system being accessed.</param>
+        /// <param name="children">The list of children to populate.</param>
+        public override void GetChildren(
+            ISystemContext context,
+            IList<BaseInstanceState> children)
+        {
+            if (m_machineName != null)
+            {
+                children.Add(m_machineName);
+            }
+
+            if (m_progId != null)
+            {
+                children.Add(m_progId);
+            }
+
+            base.GetChildren(context, children);
+        }
+
+        /// <summary>
+        /// Finds the child with the specified browse name.
+        /// </summary>
+        protected override BaseInstanceState FindChild(
+            ISystemContext context,
+            QualifiedName browseName,
+            bool createOrReplace,
+            BaseInstanceState replacement)
+        {
+            if (QualifiedName.IsNull(browseName))
+            {
+                return null;
+            }
+
+            BaseInstanceState instance = null;
+
+            switch (browseName.Name)
+            {
+                case Telecontrol.Devices.BrowseNames.MachineName:
+                {
+                    if (createOrReplace)
+                    {
+                        if (MachineName == null)
+                        {
+                            if (replacement == null)
+                            {
+                                MachineName = new PropertyState<LocalizedText>(this);
+                            }
+                            else
+                            {
+                                MachineName = (PropertyState<LocalizedText>)replacement;
+                            }
+                        }
+                    }
+
+                    instance = MachineName;
+                    break;
+                }
+
+                case Telecontrol.Devices.BrowseNames.ProgId:
+                {
+                    if (createOrReplace)
+                    {
+                        if (ProgId == null)
+                        {
+                            if (replacement == null)
+                            {
+                                ProgId = new PropertyState<LocalizedText>(this);
+                            }
+                            else
+                            {
+                                ProgId = (PropertyState<LocalizedText>)replacement;
+                            }
+                        }
+                    }
+
+                    instance = ProgId;
+                    break;
+                }
+            }
+
+            if (instance != null)
+            {
+                return instance;
+            }
+
+            return base.FindChild(context, browseName, createOrReplace, replacement);
+        }
+        #endregion
+
+        #region Private Fields
+        private PropertyState<LocalizedText> m_machineName;
+        private PropertyState<LocalizedText> m_progId;
+        #endregion
+    }
+    #endif
+    #endregion
+
     #region TransmissionItemState Class
     #if (!OPCUA_EXCLUDE_TransmissionItemState)
     /// <summary>
