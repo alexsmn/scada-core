@@ -177,7 +177,7 @@ inline void Convert(const ::google::protobuf::RepeatedPtrField<Target>& sources,
 
 template <class Target, class Source>
 inline Target ConvertTo(const Source& source) {
-  Target target;
+  Target target{};
   Convert(source, target);
   return target;
 }

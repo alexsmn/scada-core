@@ -59,7 +59,7 @@ struct ModelChangeEvent {
 
   scada::NodeId node_id;
   scada::NodeId type_definition_id;
-  uint8_t verb;
+  uint8_t verb = 0;
 
   static const NumericId event_type_id = id::GeneralModelChangeEventType;
 };
