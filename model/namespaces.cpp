@@ -35,6 +35,7 @@ constexpr base::StringPiece kNamespaceNames[] = {
     "IEC61850_SERVER",
     "ALIAS",
     "FILESYSTEM_FILE",
+    "OPC_SERVER",
 };
 
 static_assert(std::size(kNamespaceNames) == NamespaceIndexes::END);
