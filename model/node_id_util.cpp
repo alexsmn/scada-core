@@ -30,9 +30,10 @@ scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
                                base::StringPiece nested_name) {
   assert(!parent_id.is_null());
   assert(!nested_name.empty());
-  assert(parent_id.type() == scada::NodeIdType::Numeric);
 
-  auto parent_identifier = base::NumberToString(parent_id.numeric_id());
+  auto parent_identifier = parent_id.type() == scada::NodeIdType::Numeric
+                               ? base::NumberToString(parent_id.numeric_id())
+                               : parent_id.string_id();
   auto identifier = base::StrCat({parent_identifier, "!", nested_name});
 
   return scada::NodeId{std::move(identifier), parent_id.namespace_index()};

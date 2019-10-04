@@ -8,6 +8,10 @@
 #include <memory>
 #include <vector>
 
+namespace base {
+class Value;
+}
+
 namespace boost::asio {
 class io_context;
 }
@@ -23,6 +27,7 @@ struct DataServicesContext {
   boost::asio::io_context& io_context;
   net::TransportFactory& transport_factory;
   scada::ServiceLogParams service_log_params;
+  base::Value& configuration;
 };
 
 using DataServicesFactoryMethod =
