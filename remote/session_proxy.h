@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/nested_logger.h"
+#include "base/boost_log.h"
 #include "base/observer_list.h"
 #include "base/timer.h"
 #include "core/attribute_service.h"
@@ -33,14 +33,12 @@ class ViewService;
 }  // namespace scada
 
 class EventServiceProxy;
-class Logger;
 class NodeManagementProxy;
 class HistoryProxy;
 class SubscriptionProxy;
 class ViewServiceProxy;
 
 struct SessionProxyContext {
-  const std::shared_ptr<Logger> logger_;
   boost::asio::io_context& io_context_;
   net::TransportFactory& transport_factory_;
   const scada::ServiceLogParams service_log_params_;
@@ -103,8 +101,6 @@ class SessionProxy : private SessionProxyContext,
                     const scada::StatusCallback& callback) override;
 
  protected:
-  Logger& logger() { return *logger_; }
-
   // net::Transport::Delegate
   virtual void OnTransportOpened() override;
   virtual void OnTransportClosed(net::Error error) override;
@@ -130,6 +126,8 @@ class SessionProxy : private SessionProxyContext,
   void Ping();
 
   bool IsMessageLogged(const protocol::Message& message) const;
+
+  BoostLogger logger_{LOG_NAME("SessionProxy")};
 
   std::unique_ptr<net::Logger> transport_logger_;
   std::unique_ptr<net::Transport> transport_;

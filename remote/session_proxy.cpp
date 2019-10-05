@@ -1,6 +1,6 @@
 #include "remote/session_proxy.h"
 
-#include "base/net_logger_adapter.h"
+#include "base/net_boost_logger_adapter.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
@@ -42,16 +42,14 @@ std::string MakeConnectionString(base::StringPiece str) {
 
 SessionProxy::SessionProxy(SessionProxyContext&& context)
     : SessionProxyContext{std::move(context)}, ping_timer_{io_context_} {
-  transport_logger_ = std::make_unique<NetLoggerAdapter>(*logger_);
+  transport_logger_ = std::make_unique<NetBoostLoggerAdapter>(logger_);
 
   SubscriptionParams params;
   subscription_ = std::make_unique<SubscriptionProxy>(params);
 
-  view_service_proxy_ = std::make_unique<ViewServiceProxy>(
-      std::make_shared<NestedLogger>(logger_, "ViewService"));
+  view_service_proxy_ = std::make_unique<ViewServiceProxy>();
 
-  node_management_proxy_ = std::make_unique<NodeManagementProxy>(
-      std::make_shared<NestedLogger>(logger_, "NodeManagementService"));
+  node_management_proxy_ = std::make_unique<NodeManagementProxy>();
 
   event_service_proxy_ = std::make_unique<EventServiceProxy>();
 
@@ -78,7 +76,7 @@ void SessionProxy::Disconnect(const scada::StatusCallback& callback) {
 }
 
 void SessionProxy::OnTransportOpened() {
-  logger().Write(LogSeverity::Normal, "Transport opened");
+  LOG_INFO(logger_) << "Transport opened";
 
   protocol::Request request;
   auto& create_session = *request.mutable_create_session();
@@ -113,8 +111,8 @@ void SessionProxy::OnSessionCreated() {
 }
 
 void SessionProxy::OnTransportClosed(net::Error error) {
-  logger().WriteF(LogSeverity::Warning, "Transport closed as %s",
-                  ErrorToString(error).c_str());
+  LOG_WARNING(logger_) << "Transport closed"
+                       << LOG_TAG("Status", ErrorToString(error));
 
   scada::Status status_code(
       error == net::OK ? scada::StatusCode::Bad_SessionForcedLogoff
@@ -213,8 +211,8 @@ void SessionProxy::Send(protocol::Message& message) {
   }
 
   if (IsMessageLogged(message)) {
-    logger_->WriteF(LogSeverity::Normal, "Send: %s",
-                    message.DebugString().c_str());
+    LOG_INFO(logger_) << "Send message"
+                      << LOG_TAG("Message", message.DebugString());
   }
 
   std::string string;
@@ -228,8 +226,8 @@ void SessionProxy::Send(protocol::Message& message) {
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {
   if (IsMessageLogged(message)) {
-    logger_->WriteF(LogSeverity::Normal, "Received: %s",
-                    message.DebugString().c_str());
+    LOG_INFO(logger_) << "Message received"
+                      << LOG_TAG("Message", message.DebugString());
   }
 
   for (auto& response : message.responses()) {
@@ -317,8 +315,8 @@ void SessionProxy::Connect(const std::string& host,
 void SessionProxy::Connect() {
   std::string connection_string = MakeConnectionString(host_);
 
-  logger().WriteF(LogSeverity::Normal, "Connecting as '%s' to '%s'",
-                  user_name_.c_str(), connection_string.c_str());
+  LOG_INFO(logger_) << "Connect" << LOG_TAG("UserName", user_name_)
+                    << LOG_TAG("ConnectionString", connection_string);
 
   auto transport = transport_factory_.CreateTransport(
       net::TransportString(connection_string), transport_logger_.get());
