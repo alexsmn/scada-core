@@ -42,13 +42,17 @@ void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
     }
     OnBrowse(request.request_id(), std::move(nodes));
   }
+
+  if (request.browse_path_size() != 0)
+    OnBrowsePaths(request);
 }
 
 void ViewServiceStub::OnBrowse(
     unsigned request_id,
     const std::vector<scada::BrowseDescription>& nodes) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.Browse(nodes, [=](const scada::Status& status,
+  service_.Browse(nodes, [this, weak_ptr, request_id](
+                             const scada::Status& status,
                              std::vector<scada::BrowseResult> results) {
     if (!weak_ptr)
       return;
@@ -63,4 +67,26 @@ void ViewServiceStub::OnBrowse(
 
     sender_.Send(message);
   });
+}
+
+void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
+  auto inputs =
+      ConvertTo<std::vector<scada::BrowsePath>>(request.browse_path());
+
+  auto weak_ptr = weak_factory_.GetWeakPtr();
+  service_.TranslateBrowsePaths(
+      inputs, [this, weak_ptr, request_id = request.request_id()](
+                  const scada::Status& status,
+                  std::vector<scada::BrowsePathResult> results) {
+        if (!weak_ptr)
+          return;
+
+        protocol::Message message;
+        auto& response = *message.add_responses();
+        response.set_request_id(request_id);
+        Convert(status, *response.mutable_status());
+        Convert(results, *response.mutable_browse_path_result());
+
+        sender_.Send(message);
+      });
 }

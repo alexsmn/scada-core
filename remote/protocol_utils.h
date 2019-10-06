@@ -60,6 +60,24 @@ void Convert(const scada::ReferenceDescription& source,
 void Convert(const protocol::BrowseResult& source, scada::BrowseResult& target);
 void Convert(const scada::BrowseResult& source, protocol::BrowseResult& target);
 
+void Convert(const protocol::BrowsePath& source, scada::BrowsePath& target);
+void Convert(const scada::BrowsePath& source, protocol::BrowsePath& target);
+
+void Convert(const protocol::RelativePathElement& source,
+             scada::RelativePathElement& target);
+void Convert(const scada::RelativePathElement& source,
+             protocol::RelativePathElement& target);
+
+void Convert(const protocol::BrowsePathResult& source,
+             scada::BrowsePathResult& target);
+void Convert(const scada::BrowsePathResult& source,
+             protocol::BrowsePathResult& target);
+
+void Convert(const protocol::BrowsePathTarget& source,
+             scada::BrowsePathTarget& target);
+void Convert(const scada::BrowsePathTarget& source,
+             protocol::BrowsePathTarget& target);
+
 void Convert(const protocol::ModelChangeEvent& source,
              scada::ModelChangeEvent& target);
 void Convert(const scada::ModelChangeEvent& source,

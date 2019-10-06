@@ -534,6 +534,61 @@ void Convert(const scada::BrowseResult& source,
   Convert(source.references, *target.mutable_references());
 }
 
+void Convert(const protocol::BrowsePath& source, scada::BrowsePath& target) {
+  Convert(source.node_id(), target.node_id);
+  Convert(source.relative_path_element(), target.relative_path);
+}
+
+void Convert(const scada::BrowsePath& source, protocol::BrowsePath& target) {
+  Convert(source.node_id, *target.mutable_node_id());
+  Convert(source.relative_path, *target.mutable_relative_path_element());
+}
+
+void Convert(const protocol::RelativePathElement& source,
+             scada::RelativePathElement& target) {
+  Convert(source.reference_type_id(), target.reference_type_id);
+  target.inverse = source.inverse();
+  target.include_subtypes = source.include_subtypes();
+  target.target_name = source.target_name();
+}
+
+void Convert(const scada::RelativePathElement& source,
+             protocol::RelativePathElement& target) {
+  Convert(source.reference_type_id, *target.mutable_reference_type_id());
+  if (source.inverse)
+    target.set_inverse(true);
+  if (source.include_subtypes)
+    target.set_include_subtypes(true);
+  target.set_target_name(source.target_name.name());
+}
+
+void Convert(const protocol::BrowsePathResult& source,
+             scada::BrowsePathResult& target) {
+  target.status_code = static_cast<scada::StatusCode>(source.status_code());
+  Convert(source.target(), target.targets);
+}
+
+void Convert(const scada::BrowsePathResult& source,
+             protocol::BrowsePathResult& target) {
+  if (source.status_code != scada::StatusCode::Good)
+    target.set_status_code(static_cast<uint32_t>(source.status_code));
+  Convert(source.targets, *target.mutable_target());
+}
+
+void Convert(const protocol::BrowsePathTarget& source,
+             scada::BrowsePathTarget& target) {
+  target.target_id = ConvertTo<scada::NodeId>(source.target_id());
+  target.remaining_path_index = source.remaining_path_index();
+}
+
+void Convert(const scada::BrowsePathTarget& source,
+             protocol::BrowsePathTarget& target) {
+  assert(source.target_id.server_index() == 0);
+  assert(source.target_id.namespace_uri().empty());
+  Convert(source.target_id.node_id(), *target.mutable_target_id());
+  target.set_remaining_path_index(source.remaining_path_index);
+}
+
 bool AssertValid(const scada::ModelChangeEvent& event) {
   assert(!event.node_id.is_null());
   assert(event.verb != 0);

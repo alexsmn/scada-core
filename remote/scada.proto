@@ -2,7 +2,7 @@ package protocol;
 
 // Protocol version
 enum ProtocolVersionMajor {
-  PROTOCOL_VERSION_MAJOR = 12;
+  PROTOCOL_VERSION_MAJOR = 13;
 }
 enum ProtocolVersionMinor {
   PROTOCOL_VERSION_MINOR = 0;
@@ -378,6 +378,28 @@ message BrowseResponse {
   repeated BrowseResult results = 2;
 }
 
+message RelativePathElement {
+  optional NodeId reference_type_id = 1;
+  optional bool inverse = 2;
+  optional bool include_subtypes = 3;
+  required string target_name = 4;
+}
+
+message BrowsePath {
+  required NodeId node_id = 1;
+  repeated RelativePathElement relative_path_element = 2;
+}
+
+message BrowsePathTarget {
+  optional NodeId target_id = 1;
+  optional uint32 remaining_path_index = 2;
+}
+
+message BrowsePathResult {
+  optional uint32 status_code = 1;
+  repeated BrowsePathTarget target = 2;
+}
+
 message Ping {
 }
 
@@ -410,6 +432,7 @@ message Request {
   optional ChangePassword change_password = 53;
 
   optional Browse browse = 60;
+  repeated BrowsePath browse_path = 61;
 }
 
 message Response {
@@ -433,6 +456,7 @@ message Response {
   repeated Status modify_node_result = 52;
 
   optional BrowseResponse browse_result = 60;
+  repeated BrowsePathResult browse_path_result = 61;
 }
 
 message DataChange {
