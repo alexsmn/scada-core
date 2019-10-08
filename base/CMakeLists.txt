@@ -2,14 +2,18 @@ if(NOT BOOST_FOUND)
   find_package(Boost REQUIRED COMPONENTS system date_time log log_setup regex)
 endif()
 
-file(GLOB sources "*.cpp" "*.h")
+add_subdirectory(test)
+
+file(GLOB SOURCES "*.cpp" "*.h")
+file(GLOB UNITTESTS "*_unittest.*")
+list(REMOVE_ITEM SOURCES ${UNITTESTS})
 
 if(WIN32)
-  file(GLOB sources_win "win/*.cpp" "win/*.h")
-  list(APPEND sources ${sources_win})
+  file(GLOB SOURCES_WIN "win/*.cpp" "win/*.h")
+  list(APPEND SOURCES ${SOURCES_WIN})
 endif()
 
-add_library(scada_base ${sources})
+add_library(scada_base ${SOURCES})
 
 if(NOT WIN32)
   target_link_libraries(scada_base PUBLIC stdc++fs pthread)
@@ -25,4 +29,12 @@ target_link_libraries(scada_base PUBLIC
 )
 set_property(TARGET scada_base PROPERTY FOLDER ${scada_folder})
 
-add_subdirectory(test)
+# Unit Tests
+
+add_executable(scada_base_unittests ${UNITTESTS})
+target_link_libraries(scada_base_unittests PUBLIC base_unittest)
+
+include(GoogleTest)
+gtest_discover_tests(scada_base_unittests)
+
+set_property(TARGET scada_base_unittests PROPERTY FOLDER ${scada_folder})

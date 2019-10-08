@@ -12,34 +12,42 @@ class SingleThreadExecutor {
   SingleThreadExecutor(const SingleThreadExecutor&) = delete;
   SingleThreadExecutor& operator=(const SingleThreadExecutor&) = delete;
 
-  boost::asio::io_context& io_context() { return io_context_; }
+  boost::asio::io_context& io_context() { return core_->io_context; }
 
   template <class Handler>
   void post(Handler&& handler) {
-    io_context_.post(std::forward<Handler>(handler));
+    core_->io_context.post(std::forward<Handler>(handler));
   }
 
   template <class Handler>
   void dispatch(Handler&& handler) {
-    io_context_.dispatch(std::forward<Handler>(handler));
+    core_->io_context.dispatch(std::forward<Handler>(handler));
   }
 
   template <class Handler>
   auto wrap(Handler&& handler) {
-    return io_context_.wrap(std::forward<Handler>(handler));
+    return core_->io_context.wrap(std::forward<Handler>(handler));
   }
 
  private:
-  boost::asio::io_context io_context_{1};
-  std::optional<boost::asio::io_context::work> io_context_work_{io_context_};
+  struct Core {
+    boost::asio::io_context io_context{1};
+    std::optional<boost::asio::io_context::work> work{io_context};
+  };
+
+  const std::shared_ptr<Core> core_ = std::make_shared<Core>();
   std::thread thread_;
 };
 
 inline SingleThreadExecutor::SingleThreadExecutor() {
-  thread_ = std::thread{[& io_context = io_context_] { io_context.run(); }};
+  thread_ = std::thread{[core = core_] { core->io_context.run(); }};
 }
 
 inline SingleThreadExecutor::~SingleThreadExecutor() {
-  io_context_work_.reset();
-  thread_.join();
+  core_->work.reset();
+
+  if (thread_.get_id() == std::this_thread::get_id())
+    thread_.detach();
+  else
+    thread_.join();
 }
