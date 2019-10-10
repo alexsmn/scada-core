@@ -25,9 +25,6 @@ void SubscriptionStub::OnCreateMonitoredItem(
   auto channel =
       monitored_item_service_.CreateMonitoredItem(read_value_id, params);
   if (!channel) {
-    scada::DataValue data_value;
-    data_value.qualifier.set_failed(true);
-
     protocol::Message message;
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
