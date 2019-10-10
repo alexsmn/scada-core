@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/boost_log.h"
 #include "base/memory/weak_ptr.h"
 #include "core/node_attributes.h"
 #include "core/node_id.h"
@@ -17,15 +18,13 @@ class NodeManagementService;
 enum class NodeClass;
 }  // namespace scada
 
-class Logger;
 class MessageSender;
 
 class NodeManagementStub {
  public:
   NodeManagementStub(MessageSender& sender,
                      scada::NodeManagementService& service,
-                     const scada::NodeId& user_id,
-                     std::shared_ptr<Logger> logger);
+                     scada::NodeId user_id);
 
   void OnRequestReceived(const protocol::Request& request);
 
@@ -48,13 +47,11 @@ class NodeManagementStub {
                          const protocol::Reference& request);
 
   MessageSender& sender_;
-
   scada::NodeManagementService& service_;
-
   // Identifier of logged user for access control.
-  scada::NodeId user_id_;
+  const scada::NodeId user_id_;
 
-  const std::shared_ptr<Logger> logger_;
+  BoostLogger logger_{LOG_NAME("NodeManagementStub")};
 
   base::WeakPtrFactory<NodeManagementStub> weak_factory_{this};
 };

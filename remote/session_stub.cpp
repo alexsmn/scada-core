@@ -19,8 +19,8 @@ SessionStub::SessionStub(SessionContext&& context)
       // inaccessible
       view_service_stub_{new ViewServiceStub{
           ViewServiceStubContext{logger_, io_context_, *this, view_service_}}},
-      node_management_stub_{new NodeManagementStub{
-          *this, node_management_service_, user_id_, logger_}},
+      node_management_stub_{
+          new NodeManagementStub{*this, node_management_service_, user_id_}},
       history_stub_{
           new HistoryStub{history_service_, *this, io_context_, logger_}} {
   logger().Write(LogSeverity::Normal, "Created");

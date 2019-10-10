@@ -28,6 +28,7 @@ enum class AttributeId {
   Historizing = 20,
   Executable = 21,
   UserExecutable = 22,
+  Count,
 };
 
 }  // namespace scada
