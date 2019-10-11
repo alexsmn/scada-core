@@ -1,13 +1,14 @@
 #pragma once
 
-#include <map>
-#include <memory>
-#include <set>
-
 #include "base/strings/string_piece.h"
 #include "core/attribute_ids.h"
 #include "core/status.h"
+#include "remote/monitored_item_router.h"
 #include "remote/subscription.h"
+
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace scada {
 class Event;
@@ -21,13 +22,15 @@ class Response;
 }
 
 class MessageSender;
+class MonitoredItemProxy;
 
-class SubscriptionProxy {
+class SubscriptionProxy
+    : private MonitoredItemRouter,
+      public std::enable_shared_from_this<SubscriptionProxy> {
  public:
-  explicit SubscriptionProxy(const SubscriptionParams& params);
   ~SubscriptionProxy();
 
-  std::unique_ptr<scada::MonitoredItem> CreateMonitoredItem(
+  std::shared_ptr<scada::MonitoredItem> CreateMonitoredItem(
       const scada::ReadValueId& read_value_id,
       const scada::MonitoringParameters& params);
 
@@ -39,23 +42,27 @@ class SubscriptionProxy {
                const std::any& event);
 
  private:
-  class MonitoredItemProxy;
-
-  void AddMonitoredItem(MonitoredItemProxy& item);
-  void RemoveMonitoredItem(MonitoredItemProxy& item);
-
   void OnCreateSubscriptionResult(const scada::Status& status,
                                   int subscription_id);
 
-  MessageSender* sender_;
+  std::vector<std::shared_ptr<MonitoredItemProxy>> CollectMonitoredItems();
 
-  std::set<MonitoredItemProxy*> monitored_items_;
-  std::map<MonitoredItemId, MonitoredItemProxy*> monitored_item_ids_;
+  // MonitoredItemRouter
+  virtual void AddMonitoredItemDataObserver(MonitoredItemId monitored_item_id,
+                                            MonitoredItemProxy& item) override;
+  virtual void RemoveMonitoredItemDataObserver(
+      MonitoredItemId monitored_item_id) override;
 
-  enum State { DELETED, CREATING, CREATED };
-  State state_;
+  MessageSender* sender_ = nullptr;
 
-  int subscription_id_;
+  std::vector<std::weak_ptr<MonitoredItemProxy>> monitored_items_;
 
-  std::shared_ptr<bool> cancelation_;
+  std::unordered_map<MonitoredItemId, MonitoredItemProxy*> monitored_item_ids_;
+
+  enum class State { DELETED, CREATING, CREATED };
+  State state_ = State::DELETED;
+
+  int subscription_id_ = 0;
+
+  friend class MonitoredItemProxy;
 };

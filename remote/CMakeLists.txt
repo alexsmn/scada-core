@@ -24,13 +24,18 @@ target_link_libraries(scada_core_remote PUBLIC
   scada_core
 )
 
+set_property(TARGET scada_core_remote PROPERTY FOLDER ${scada_folder})
+
+# Unit-Tests
+
 add_executable(scada_core_remote_unittests ${unittests})
-add_test(NAME scada_core_remote_unittests COMMAND scada_core_remote_unittests)
 target_link_libraries(scada_core_remote_unittests PUBLIC
   scada_core_remote
   scada_model
   gmock_main
 )
 
-set_property(TARGET scada_core_remote PROPERTY FOLDER ${scada_folder})
+include(GoogleTest)
+gtest_discover_tests(scada_core_remote_unittests)
+
 set_property(TARGET scada_core_remote_unittests PROPERTY FOLDER ${scada_folder})

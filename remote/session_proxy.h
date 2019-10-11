@@ -129,9 +129,14 @@ class SessionProxy : private SessionProxyContext,
 
   BoostLogger logger_{LOG_NAME("SessionProxy")};
 
-  std::unique_ptr<net::Logger> transport_logger_;
-  std::unique_ptr<net::Transport> transport_;
+  const std::unique_ptr<net::Logger> transport_logger_;
+  const std::shared_ptr<SubscriptionProxy> subscription_;
+  const std::unique_ptr<ViewServiceProxy> view_service_proxy_;
+  const std::unique_ptr<NodeManagementProxy> node_management_proxy_;
+  const std::unique_ptr<EventServiceProxy> event_service_proxy_;
+  const std::unique_ptr<HistoryProxy> history_proxy_;
 
+  std::unique_ptr<net::Transport> transport_;
   bool session_created_ = false;
 
   scada::LocalizedText user_name_;
@@ -142,12 +147,6 @@ class SessionProxy : private SessionProxyContext,
   scada::NodeId user_node_id_;
   unsigned user_rights_ = 0;
   std::string session_token_;
-
-  std::unique_ptr<SubscriptionProxy> subscription_;
-  std::unique_ptr<ViewServiceProxy> view_service_proxy_;
-  std::unique_ptr<NodeManagementProxy> node_management_proxy_;
-  std::unique_ptr<EventServiceProxy> event_service_proxy_;
-  std::unique_ptr<HistoryProxy> history_proxy_;
 
   std::map<int /*request_id*/, ResponseHandler> requests_;
 

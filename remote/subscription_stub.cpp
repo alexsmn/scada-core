@@ -1,6 +1,5 @@
 #include "remote/subscription_stub.h"
 
-#include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
@@ -14,7 +13,9 @@ SubscriptionStub::SubscriptionStub(
     const SubscriptionParams& params)
     : sender_{sender},
       monitored_item_service_{monitored_item_service},
-      subscription_id_(subscription_id) {}
+      subscription_id_(subscription_id) {
+  LOG_BIND_TAG(logger_, "SubscriptionId", subscription_id_);
+}
 
 SubscriptionStub::~SubscriptionStub() {}
 
@@ -104,9 +105,14 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
   if (i == channels_.end())
     return;
 
-  if (data_value.qualifier.failed()) {
+  assert(!data_value.qualifier.failed() ||
+         scada::IsBad(data_value.status_code));
+
+  if (scada::IsBad(data_value.status_code)) {
     LOG_WARNING(logger_) << "Monitored item failed"
-                         << LOG_TAG("MonitoredItemId", monitored_item_id);
+                         << LOG_TAG("MonitoredItemId", monitored_item_id)
+                         << LOG_TAG("StatusCode",
+                                    ToString(data_value.status_code));
 
     channels_.erase(i);
   }

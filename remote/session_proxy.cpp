@@ -41,20 +41,14 @@ std::string MakeConnectionString(base::StringPiece str) {
 }  // namespace
 
 SessionProxy::SessionProxy(SessionProxyContext&& context)
-    : SessionProxyContext{std::move(context)}, ping_timer_{io_context_} {
-  transport_logger_ = std::make_unique<NetBoostLoggerAdapter>(logger_);
-
-  SubscriptionParams params;
-  subscription_ = std::make_unique<SubscriptionProxy>(params);
-
-  view_service_proxy_ = std::make_unique<ViewServiceProxy>();
-
-  node_management_proxy_ = std::make_unique<NodeManagementProxy>();
-
-  event_service_proxy_ = std::make_unique<EventServiceProxy>();
-
-  history_proxy_ = std::make_unique<HistoryProxy>();
-}
+    : SessionProxyContext{std::move(context)},
+      ping_timer_{io_context_},
+      transport_logger_{std::make_unique<NetBoostLoggerAdapter>(logger_)},
+      subscription_{std::make_shared<SubscriptionProxy>()},
+      view_service_proxy_{std::make_unique<ViewServiceProxy>()},
+      node_management_proxy_{std::make_unique<NodeManagementProxy>()},
+      event_service_proxy_{std::make_unique<EventServiceProxy>()},
+      history_proxy_{std::make_unique<HistoryProxy>()} {}
 
 SessionProxy::~SessionProxy() {}
 
