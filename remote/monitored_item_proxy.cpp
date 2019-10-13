@@ -12,8 +12,8 @@
 MonitoredItemProxy::MonitoredItemProxy(scada::ReadValueId value_id,
                                        scada::MonitoringParameters params)
     : value_id_{std::move(value_id)}, params_{std::move(params)} {
-  LOG_BIND_TAG(logger_, "NodeId", ToString(value_id.node_id));
-  LOG_BIND_TAG(logger_, "AttributeId", ToString(value_id.attribute_id));
+  LOG_BIND_TAG(logger_, "NodeId", ToString(value_id_.node_id));
+  LOG_BIND_TAG(logger_, "AttributeId", ToString(value_id_.attribute_id));
 }
 
 MonitoredItemProxy::~MonitoredItemProxy() {
@@ -141,7 +141,8 @@ void MonitoredItemProxy::OnChannelClosed() {
   subscription_id_ = 0;
   monitored_item_id_ = 0;
 
-  UpdateQualifier(current_data_.status_code, 0, scada::Qualifier::OFFLINE);
+  if (value_id_.attribute_id != scada::AttributeId::EventNotifier)
+    UpdateQualifier(current_data_.status_code, 0, scada::Qualifier::OFFLINE);
 }
 
 void MonitoredItemProxy::OnCreateMonitoredItemResult(
