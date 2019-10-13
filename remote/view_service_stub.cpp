@@ -17,9 +17,7 @@ const auto kEventConsolidationDelay = 100ms;
 // ViewServiceStub
 
 ViewServiceStub::ViewServiceStub(ViewServiceStubContext&& context)
-    : ViewServiceStubContext{std::move(context)},
-      timer_{io_context_},
-      weak_factory_(this) {}
+    : ViewServiceStubContext{std::move(context)}, timer_{io_context_} {}
 
 ViewServiceStub::~ViewServiceStub() {}
 
@@ -50,11 +48,11 @@ void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
 void ViewServiceStub::OnBrowse(
     unsigned request_id,
     const std::vector<scada::BrowseDescription>& nodes) {
-  auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.Browse(nodes, [this, weak_ptr, request_id](
+  service_.Browse(nodes, [this, weak_ptr = weak_from_this(), request_id](
                              const scada::Status& status,
                              std::vector<scada::BrowseResult> results) {
-    if (!weak_ptr)
+    auto ref = weak_ptr.lock();
+    if (!ref)
       return;
 
     protocol::Message message;
@@ -73,12 +71,13 @@ void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
   auto inputs =
       ConvertTo<std::vector<scada::BrowsePath>>(request.browse_path());
 
-  auto weak_ptr = weak_factory_.GetWeakPtr();
   service_.TranslateBrowsePaths(
-      inputs, [this, weak_ptr, request_id = request.request_id()](
-                  const scada::Status& status,
-                  std::vector<scada::BrowsePathResult> results) {
-        if (!weak_ptr)
+      inputs,
+      [this, weak_ptr = weak_from_this(), request_id = request.request_id()](
+          const scada::Status& status,
+          std::vector<scada::BrowsePathResult> results) {
+        auto ref = weak_ptr.lock();
+        if (!ref)
           return;
 
         protocol::Message message;

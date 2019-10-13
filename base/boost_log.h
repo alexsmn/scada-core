@@ -15,6 +15,10 @@ using BoostLogger =
 #define LOG_WARNING(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Warning)
 #define LOG_ERROR(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Error)
 #define LOG_CRITICAL(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Critical)
+#define LOG_SEV(logger, severity) BOOST_LOG_SEV(logger, severity)
+#define LOG_STATUS(logger, status) \
+  LOG_SEV(logger,                  \
+          status ? ::BoostLogSeverity::Info : ::BoostLogSeverity::Warning)
 
 #define LOG_TAG(name, value) boost::log::add_value(name, value)
 #define LOG_SCOPED_TAG(logger, name, value) \

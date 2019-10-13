@@ -57,3 +57,11 @@ inline DataValue MakeReadError(scada::StatusCode status_code) {
 }
 
 }  // namespace scada
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const scada::WriteValue& write_value) {
+  return stream << "{"
+                << "node_id: " << write_value.node_id
+                << ", attribute_id: " << write_value.attribute_id
+                << ", value: " << write_value.value << "}";
+}

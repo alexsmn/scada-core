@@ -1,12 +1,13 @@
 #pragma once
 
-#include <map>
-#include <memory>
-
+#include "base/boost_log.h"
 #include "core/attribute_service.h"
 #include "core/event.h"
 #include "remote/message_sender.h"
 #include "remote/subscription.h"
+
+#include <memory>
+#include <unordered_map>
 
 namespace boost::asio {
 class io_context;
@@ -30,7 +31,6 @@ struct MonitoringParameters;
 }  // namespace scada
 
 class Connection;
-class Logger;
 class NodeManagementStub;
 class EventServiceStub;
 class HistoryStub;
@@ -40,7 +40,6 @@ class ViewServiceStub;
 
 struct SessionContext {
   boost::asio::io_context& io_context_;
-  const std::shared_ptr<Logger> logger_;
   scada::NodeManagementService& node_management_service_;
   scada::AttributeService& attribute_service_;
   scada::MethodService& method_service_;
@@ -51,20 +50,17 @@ struct SessionContext {
   const scada::NodeId user_id_;
 };
 
-class SessionStub : public std::enable_shared_from_this<SessionStub>,
-                    private MessageSender,
-                    private SessionContext {
+class SessionStub : private MessageSender,
+                    private SessionContext,
+                    public std::enable_shared_from_this<SessionStub> {
  public:
-  virtual ~SessionStub();
+  ~SessionStub();
 
   static std::shared_ptr<SessionStub> Create(SessionContext&& context);
 
   Connection* connection() { return connection_; }
   void SetConnection(Connection* connection);
 
-  Logger& logger() { return *logger_; }
-
-  const std::string& name() const { return name_; }
   const scada::NodeId& user_id() const { return user_id_; }
 
   void ProcessMessage(const protocol::Message& message);
@@ -101,16 +97,16 @@ class SessionStub : public std::enable_shared_from_this<SessionStub>,
   virtual void Request(protocol::Request& request,
                        ResponseHandler response_handler) {}
 
-  std::string name_;
+  BoostLogger logger_{LOG_NAME("SessionStub")};
 
-  Connection* connection_;
+  Connection* connection_ = nullptr;
 
-  std::unique_ptr<ViewServiceStub> view_service_stub_;
-  std::unique_ptr<NodeManagementStub> node_management_stub_;
-  std::unique_ptr<HistoryStub> history_stub_;
+  const std::shared_ptr<ViewServiceStub> view_service_stub_;
+  const std::shared_ptr<NodeManagementStub> node_management_stub_;
+  const std::shared_ptr<HistoryStub> history_stub_;
 
   int next_subscription_id_ = 1;
-  std::map<int /*subscription_id*/, std::unique_ptr<SubscriptionStub>>
+  std::unordered_map<int /*subscription_id*/, std::unique_ptr<SubscriptionStub>>
       subscriptions_;
 
   std::unique_ptr<protocol::Message> send_message_;

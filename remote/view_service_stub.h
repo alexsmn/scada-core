@@ -1,7 +1,5 @@
 #pragma once
 
-#include "base/logger.h"
-#include "base/memory/weak_ptr.h"
 #include "base/timer.h"
 
 #include <memory>
@@ -14,18 +12,19 @@ class Request;
 namespace scada {
 class ViewService;
 struct BrowseDescription;
-}
+}  // namespace scada
 
 class MessageSender;
 
 struct ViewServiceStubContext {
-  const std::shared_ptr<Logger> logger_;
   boost::asio::io_context& io_context_;
   MessageSender& sender_;
   scada::ViewService& service_;
 };
 
-class ViewServiceStub final : private ViewServiceStubContext {
+class ViewServiceStub final
+    : private ViewServiceStubContext,
+      public std::enable_shared_from_this<ViewServiceStub> {
  public:
   explicit ViewServiceStub(ViewServiceStubContext&& context);
   ~ViewServiceStub();
@@ -38,6 +37,4 @@ class ViewServiceStub final : private ViewServiceStubContext {
   void OnBrowsePaths(const protocol::Request& request);
 
   Timer timer_;
-
-  base::WeakPtrFactory<ViewServiceStub> weak_factory_;
 };

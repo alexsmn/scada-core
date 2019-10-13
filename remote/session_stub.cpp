@@ -17,17 +17,21 @@ SessionStub::SessionStub(SessionContext&& context)
       // Can't use std::make_unique:
       // conversion from 'SessionStub *' to 'MessageSender &' exists, but is
       // inaccessible
-      view_service_stub_{new ViewServiceStub{
-          ViewServiceStubContext{logger_, io_context_, *this, view_service_}}},
-      node_management_stub_{
-          new NodeManagementStub{*this, node_management_service_, user_id_}},
+      view_service_stub_{std::make_shared<ViewServiceStub>(
+          ViewServiceStubContext{io_context_, *this, view_service_})},
+      node_management_stub_{std::make_shared<NodeManagementStub>(
+          static_cast<MessageSender&>(*this),
+          node_management_service_,
+          user_id_)},
       history_stub_{
-          new HistoryStub{history_service_, *this, io_context_, logger_}} {
-  logger().Write(LogSeverity::Normal, "Created");
+          std::make_shared<HistoryStub>(history_service_,
+                                        static_cast<MessageSender&>(*this),
+                                        io_context_)} {
+  LOG_INFO(logger_) << "Created";
 }
 
 SessionStub::~SessionStub() {
-  logger().Write(LogSeverity::Normal, "Destroying");
+  LOG_INFO(logger_) << "Destroying";
 
   if (connection_)
     connection_->OnSessionDeleted();
@@ -150,6 +154,9 @@ void SessionStub::Send(protocol::Message& message) {
 void SessionStub::OnCreateSubscription(int request_id) {
   SubscriptionParams params;
 
+  LOG_INFO(logger_) << "Create subscription"
+                    << LOG_TAG("RequestId", request_id);
+
   auto subscription_id = next_subscription_id_++;
   // Can't use std::make_unique:
   // conversion from 'SessionStub *' to 'MessageSender &' exists, but is
@@ -158,25 +165,39 @@ void SessionStub::OnCreateSubscription(int request_id) {
       *this, monitored_item_service_, subscription_id, params}};
   subscriptions_.emplace(subscription_id, std::move(subscription));
 
+  const scada::Status status = scada::StatusCode::Good;
+
+  LOG_STATUS(logger_, status)
+      << "Create subscription completed" << LOG_TAG("RequestId", request_id)
+      << LOG_TAG("SubscriptionId", subscription_id)
+      << LOG_TAG("Status", ToString(status));
+
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
   auto& create_subscription_result =
       *response.mutable_create_subscription_result();
   create_subscription_result.set_subscription_id(subscription_id);
-  Convert(scada::StatusCode::Good, *response.mutable_status());
+  Convert(status, *response.mutable_status());
   Send(message);
 }
 
 void SessionStub::OnDeleteSubscription(int request_id, int subscription_id) {
-  auto result = subscriptions_.erase(subscription_id)
-                    ? scada::StatusCode::Good
-                    : scada::StatusCode::Bad_WrongSubscriptionId;
+  LOG_INFO(logger_) << "Delete subscription" << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("SubscriptionId", subscription_id);
+
+  const scada::Status status = subscriptions_.erase(subscription_id)
+                                   ? scada::StatusCode::Good
+                                   : scada::StatusCode::Bad_WrongSubscriptionId;
+
+  LOG_STATUS(logger_, status)
+      << "Delete subscription completed" << LOG_TAG("RequestId", request_id)
+      << LOG_TAG("Status", ToString(status));
 
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
-  Convert(result, *response.mutable_status());
+  Convert(status, *response.mutable_status());
   Send(message);
 }
 
@@ -215,59 +236,75 @@ void SessionStub::OnCall(unsigned request_id,
                          const scada::NodeId& node_id,
                          const scada::NodeId& method_id,
                          const std::vector<scada::Variant>& arguments) {
-  std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
-  method_service_.Call(node_id, method_id, arguments, user_id_,
-                       [weak_ptr, request_id](const scada::Status& status) {
-                         auto ptr = weak_ptr.lock();
-                         if (!ptr)
-                           return;
+  LOG_INFO(logger_) << "Call" << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("NodeId", ToString(node_id))
+                    << LOG_TAG("MethodId", ToString(node_id));
 
-                         protocol::Message message;
-                         auto& response = *message.add_responses();
-                         response.set_request_id(request_id);
-                         Convert(status, *response.mutable_status());
-                         ptr->Send(message);
-                       });
-}
-
-void SessionStub::OnRead(
-    unsigned request_id,
-    const std::vector<scada::ReadValueId>& read_value_ids) {
-  std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
-  attribute_service_.Read(
-      read_value_ids,
-      [weak_ptr, request_id](scada::Status&& status,
-                             std::vector<scada::DataValue>&& results) {
+  method_service_.Call(
+      node_id, method_id, arguments, user_id_,
+      io_context_.wrap([this, weak_ptr = weak_from_this(),
+                        request_id](const scada::Status& status) {
         auto ptr = weak_ptr.lock();
         if (!ptr)
           return;
 
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(std::move(status), *response.mutable_status());
-        Convert(std::move(results),
-                *response.mutable_read_result()->mutable_value());
-        ptr->Send(message);
-      });
-}
-
-void SessionStub::OnWrite(unsigned request_id,
-                          base::span<const scada::WriteValue> values) {
-  std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
-  attribute_service_.Write(
-      values, user_id_,
-      [weak_ptr, request_id](scada::Status&& status,
-                             std::vector<scada::Status>&& results) {
-        auto ptr = weak_ptr.lock();
-        if (!ptr)
-          return;
+        LOG_STATUS(logger_, status)
+            << "Call completed" << LOG_TAG("RequestId", request_id)
+            << LOG_TAG("Status", ToString(status));
 
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         Convert(status, *response.mutable_status());
-        Convert(std::move(results), *response.mutable_write_result());
-        ptr->Send(message);
-      });
+        Send(message);
+      }));
+}
+
+void SessionStub::OnRead(
+    unsigned request_id,
+    const std::vector<scada::ReadValueId>& read_value_ids) {
+  attribute_service_.Read(
+      read_value_ids,
+      io_context_.wrap(
+          [this, weak_ptr = weak_from_this(), request_id](
+              scada::Status status, std::vector<scada::DataValue> results) {
+            auto ptr = weak_ptr.lock();
+            if (!ptr)
+              return;
+
+            protocol::Message message;
+            auto& response = *message.add_responses();
+            response.set_request_id(request_id);
+            Convert(std::move(status), *response.mutable_status());
+            Convert(std::move(results),
+                    *response.mutable_read_result()->mutable_value());
+            Send(message);
+          }));
+}
+
+void SessionStub::OnWrite(unsigned request_id,
+                          base::span<const scada::WriteValue> values) {
+  LOG_INFO(logger_) << "Write" << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("Count", values.size());
+
+  attribute_service_.Write(
+      values, user_id_,
+      io_context_.wrap(
+          [this, weak_ptr = weak_from_this(), request_id](
+              scada::Status status, std::vector<scada::Status> results) {
+            auto ptr = weak_ptr.lock();
+            if (!ptr)
+              return;
+
+            LOG_STATUS(logger_, status)
+                << "Write completed" << LOG_TAG("RequestId", request_id)
+                << LOG_TAG("Status", ToString(status));
+
+            protocol::Message message;
+            auto& response = *message.add_responses();
+            response.set_request_id(request_id);
+            Convert(status, *response.mutable_status());
+            Convert(std::move(results), *response.mutable_write_result());
+            Send(message);
+          }));
 }
