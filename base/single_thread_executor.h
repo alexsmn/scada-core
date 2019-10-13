@@ -36,18 +36,12 @@ class SingleThreadExecutor {
   };
 
   const std::shared_ptr<Core> core_ = std::make_shared<Core>();
-  std::thread thread_;
 };
 
 inline SingleThreadExecutor::SingleThreadExecutor() {
-  thread_ = std::thread{[core = core_] { core->io_context.run(); }};
+  std::thread{[core = core_] { core->io_context.run(); }}.detach();
 }
 
 inline SingleThreadExecutor::~SingleThreadExecutor() {
   core_->work.reset();
-
-  if (thread_.get_id() == std::this_thread::get_id())
-    thread_.detach();
-  else
-    thread_.join();
 }
