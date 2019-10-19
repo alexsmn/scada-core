@@ -352,7 +352,8 @@ void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
   OnSessionCreated();
 }
 
-void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
+void SessionProxy::Read(const scada::ServiceContext& context,
+                        base::span<const scada::ReadValueId> inputs,
                         const scada::ReadCallback& callback) {
   if (!session_created_) {
     callback(scada::StatusCode::Bad_Disconnected, {});
@@ -361,8 +362,8 @@ void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
 
   protocol::Request request;
   auto& read = *request.mutable_read();
-  for (auto& value_id : value_ids)
-    Convert(value_id, *read.add_value_id());
+  for (auto& input : inputs)
+    Convert(input, *read.add_value_id());
 
   Request(request, [this, callback](const protocol::Response& response) {
     if (callback)
@@ -372,22 +373,22 @@ void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
   });
 }
 
-void SessionProxy::Write(base::span<const scada::WriteValue> values,
-                         const scada::NodeId& user_id,
-                         const scada::MultiStatusCallback& callback) {
+void SessionProxy::Write(const scada::ServiceContext& context,
+                         base::span<const scada::WriteValue> inputs,
+                         const scada::WriteCallback& callback) {
   if (!session_created_) {
     callback(scada::StatusCode::Bad_Disconnected, {});
     return;
   }
 
   protocol::Request request;
-  for (auto& value : values) {
+  for (auto& input : inputs) {
     auto& write = *request.add_write();
-    Convert(value.node_id, *write.mutable_node_id());
-    Convert(value.value, *write.mutable_value());
+    Convert(input.node_id, *write.mutable_node_id());
+    Convert(input.value, *write.mutable_value());
     write.set_attribute_id(
-        static_cast<protocol::AttributeId>(value.attribute_id));
-    if (value.flags.select())
+        static_cast<protocol::AttributeId>(input.attribute_id));
+    if (input.flags.select())
       write.set_select(true);
   }
 

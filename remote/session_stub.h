@@ -99,6 +99,8 @@ class SessionStub : private MessageSender,
 
   BoostLogger logger_{LOG_NAME("SessionStub")};
 
+  const scada::ServiceContext service_context_{user_id_};
+
   Connection* connection_ = nullptr;
 
   const std::shared_ptr<ViewServiceStub> view_service_stub_;

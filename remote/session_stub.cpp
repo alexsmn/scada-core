@@ -70,18 +70,18 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
   }
 
   if (!request.write().empty()) {
-    std::vector<scada::WriteValue> values;
-    values.reserve(request.write().size());
+    std::vector<scada::WriteValue> inputs;
+    inputs.reserve(request.write().size());
     for (auto& proto_value : request.write()) {
       scada::WriteFlags flags;
       if (proto_value.select())
         flags.set_select();
-      values.emplace_back(scada::WriteValue{
+      inputs.emplace_back(scada::WriteValue{
           ConvertTo<scada::NodeId>(proto_value.node_id()),
           ConvertTo<scada::AttributeId>(proto_value.attribute_id()),
           ConvertTo<scada::Variant>(proto_value.value()), flags});
     }
-    OnWrite(request.request_id(), values);
+    OnWrite(request.request_id(), inputs);
   }
 
   if (request.has_call()) {
@@ -242,13 +242,13 @@ void SessionStub::OnCall(unsigned request_id,
 
   method_service_.Call(
       node_id, method_id, arguments, user_id_,
-      io_context_.wrap([this, weak_ptr = weak_from_this(),
+      io_context_.wrap([weak_ptr = weak_from_this(),
                         request_id](const scada::Status& status) {
         auto ptr = weak_ptr.lock();
         if (!ptr)
           return;
 
-        LOG_STATUS(logger_, status)
+        LOG_STATUS(ptr->logger_, status)
             << "Call completed" << LOG_TAG("RequestId", request_id)
             << LOG_TAG("Status", ToString(status));
 
@@ -256,17 +256,16 @@ void SessionStub::OnCall(unsigned request_id,
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         Convert(status, *response.mutable_status());
-        Send(message);
+        ptr->Send(message);
       }));
 }
 
-void SessionStub::OnRead(
-    unsigned request_id,
-    const std::vector<scada::ReadValueId>& read_value_ids) {
+void SessionStub::OnRead(unsigned request_id,
+                         const std::vector<scada::ReadValueId>& inputs) {
   attribute_service_.Read(
-      read_value_ids,
+      service_context_, inputs,
       io_context_.wrap(
-          [this, weak_ptr = weak_from_this(), request_id](
+          [weak_ptr = weak_from_this(), request_id](
               scada::Status status, std::vector<scada::DataValue> results) {
             auto ptr = weak_ptr.lock();
             if (!ptr)
@@ -278,25 +277,25 @@ void SessionStub::OnRead(
             Convert(std::move(status), *response.mutable_status());
             Convert(std::move(results),
                     *response.mutable_read_result()->mutable_value());
-            Send(message);
+            ptr->Send(message);
           }));
 }
 
 void SessionStub::OnWrite(unsigned request_id,
-                          base::span<const scada::WriteValue> values) {
+                          base::span<const scada::WriteValue> inputs) {
   LOG_INFO(logger_) << "Write" << LOG_TAG("RequestId", request_id)
-                    << LOG_TAG("Count", values.size());
+                    << LOG_TAG("Count", inputs.size());
 
   attribute_service_.Write(
-      values, user_id_,
+      service_context_, inputs,
       io_context_.wrap(
-          [this, weak_ptr = weak_from_this(), request_id](
+          [weak_ptr = weak_from_this(), request_id](
               scada::Status status, std::vector<scada::Status> results) {
             auto ptr = weak_ptr.lock();
             if (!ptr)
               return;
 
-            LOG_STATUS(logger_, status)
+            LOG_STATUS(ptr->logger_, status)
                 << "Write completed" << LOG_TAG("RequestId", request_id)
                 << LOG_TAG("Status", ToString(status));
 
@@ -305,6 +304,6 @@ void SessionStub::OnWrite(unsigned request_id,
             response.set_request_id(request_id);
             Convert(status, *response.mutable_status());
             Convert(std::move(results), *response.mutable_write_result());
-            Send(message);
+            ptr->Send(message);
           }));
 }

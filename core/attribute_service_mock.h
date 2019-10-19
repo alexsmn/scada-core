@@ -8,13 +8,14 @@ namespace scada {
 
 class MockAttributeService : public AttributeService {
  public:
-  MOCK_METHOD2(Read,
-               void(const std::vector<ReadValueId>& read_value_ids,
+  MOCK_METHOD3(Read,
+               void(const scada::ServiceContext& context,
+                    base::span<const scada::ReadValueId> inputs,
                     const ReadCallback& callback));
 
   MOCK_METHOD3(Write,
-               void(base::span<const WriteValue> values,
-                    const NodeId& user_id,
+               void(const scada::ServiceContext& context,
+                    base::span<const scada::WriteValue> inputs,
                     const MultiStatusCallback& callback));
 };
 
@@ -24,20 +25,21 @@ class SimpleMockAttributeService : public AttributeService {
 
   MOCK_METHOD2(Write, Status(const WriteValue& value, const NodeId& user_id));
 
-  virtual void Read(const std::vector<ReadValueId>& value_ids,
+  virtual void Read(const scada::ServiceContext& context,
+                    base::span<const scada::ReadValueId> inputs,
                     const ReadCallback& callback) override {
-    std::vector<DataValue> results(value_ids.size());
-    for (size_t i = 0; i < value_ids.size(); ++i)
-      results[i] = Read(value_ids[i]);
+    std::vector<DataValue> results(inputs.size());
+    for (size_t i = 0; i < inputs.size(); ++i)
+      results[i] = Read(inputs[i]);
     callback(StatusCode::Good, std::move(results));
   }
 
-  virtual void Write(base::span<const WriteValue> values,
-                     const scada::NodeId& user_id,
+  virtual void Write(const scada::ServiceContext& context,
+                     base::span<const scada::WriteValue> inputs,
                      const MultiStatusCallback& callback) override {
-    std::vector<Status> results(values.size());
-    for (size_t i = 0; i < values.size(); ++i)
-      results[i] = Write(values[i], user_id);
+    std::vector<Status> results(inputs.size());
+    for (size_t i = 0; i < inputs.size(); ++i)
+      results[i] = Write(inputs[i], context.user_id);
     callback(StatusCode::Good, std::move(results));
   }
 };

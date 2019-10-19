@@ -4,6 +4,7 @@
 #include "core/attribute_ids.h"
 #include "core/data_value.h"
 #include "core/node_class.h"
+#include "core/service.h"
 #include "core/write_flags.h"
 
 #include <cassert>
@@ -39,11 +40,12 @@ class AttributeService {
  public:
   virtual ~AttributeService() {}
 
-  virtual void Read(const std::vector<ReadValueId>& inputs,
+  virtual void Read(const ServiceContext& context,
+                    base::span<const ReadValueId> inputs,
                     const ReadCallback& callback) = 0;
 
-  virtual void Write(base::span<const WriteValueId> inputs,
-                     const NodeId& user_id,
+  virtual void Write(const ServiceContext& context,
+                     base::span<const WriteValueId> inputs,
                      const WriteCallback& callback) = 0;
 };
 
