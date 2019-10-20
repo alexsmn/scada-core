@@ -61,11 +61,12 @@ class SessionProxy : private SessionProxyContext,
   scada::ViewService& GetViewService();
 
   // scada::SessionService
-  virtual void Connect(const std::string& connection_string,
-                       const scada::LocalizedText& user_name,
-                       const scada::LocalizedText& password,
-                       bool allow_remote_logoff,
-                       const scada::StatusCallback& callback) override;
+  virtual void CreateSession(const std::string& connection_string,
+                             const scada::LocalizedText& user_name,
+                             const scada::LocalizedText& password,
+                             bool allow_remote_logoff,
+                             const std::vector<std::string>& locale_ids,
+                             const scada::StatusCallback& callback) override;
   virtual void Reconnect() override;
   virtual void Disconnect(const scada::StatusCallback& callback) override;
   virtual bool IsConnected(base::TimeDelta* ping_delay) const override;
@@ -147,6 +148,7 @@ class SessionProxy : private SessionProxyContext,
   scada::LocalizedText password_;
   std::string host_;
   bool allow_remote_logoff_ = false;
+  std::vector<std::string> locale_ids_;
 
   scada::NodeId user_node_id_;
   unsigned user_rights_ = 0;

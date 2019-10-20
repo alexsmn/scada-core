@@ -80,6 +80,8 @@ void SessionProxy::OnTransportOpened() {
   create_session.set_protocol_version_minor(protocol::PROTOCOL_VERSION_MINOR);
   if (allow_remote_logoff_)
     create_session.set_delete_existing(true);
+  for (const auto& locale_id : locale_ids_)
+    create_session.add_locale_id(locale_id);
 
   Request(request, [this](const protocol::Response& response) {
     OnCreateSessionResult(response);
@@ -287,11 +289,12 @@ void SessionProxy::Request(protocol::Request& request,
   Send(message);
 }
 
-void SessionProxy::Connect(const std::string& host,
-                           const scada::LocalizedText& user_name,
-                           const scada::LocalizedText& password,
-                           bool allow_remote_logoff,
-                           const scada::StatusCallback& callback) {
+void SessionProxy::CreateSession(const std::string& host,
+                                 const scada::LocalizedText& user_name,
+                                 const scada::LocalizedText& password,
+                                 bool allow_remote_logoff,
+                                 const std::vector<std::string>& locale_ids,
+                                 const scada::StatusCallback& callback) {
   assert(!transport_);
 
   if (session_created_)
@@ -302,6 +305,7 @@ void SessionProxy::Connect(const std::string& host,
   host_ = host;
   allow_remote_logoff_ = allow_remote_logoff;
   connect_callback_ = std::move(callback);
+  locale_ids_ = locale_ids;
 
   Reconnect();
 }

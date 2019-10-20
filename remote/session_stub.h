@@ -48,6 +48,7 @@ struct SessionContext {
   scada::ViewService& view_service_;
   scada::HistoryService& history_service_;
   const scada::NodeId user_id_;
+  const std::vector<std::string> locale_ids_;
 };
 
 class SessionStub : private MessageSender,
@@ -99,7 +100,8 @@ class SessionStub : private MessageSender,
   BoostLogger logger_{LOG_NAME("SessionStub")};
 
   const std::shared_ptr<const scada::ServiceContext> service_context_ =
-      std::make_shared<scada::ServiceContext>(scada::ServiceContext{user_id_});
+      std::make_shared<scada::ServiceContext>(
+          scada::ServiceContext{user_id_, locale_ids_});
 
   Connection* connection_ = nullptr;
 

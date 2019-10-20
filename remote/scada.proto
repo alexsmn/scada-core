@@ -155,6 +155,7 @@ message CreateSession {
   required bytes user_name_utf8 = 1;
   optional bytes password_utf8 = 2;
   optional bool delete_existing = 3;
+  repeated string locale_id = 6;
 
   // Assume version 0.0 if it isn't specified.
   required uint32 protocol_version_major = 4;
