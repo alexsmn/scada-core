@@ -87,12 +87,14 @@ class SessionProxy : private SessionProxyContext,
       const scada::MonitoringParameters& params) override;
 
   // scada::AttributeService
-  virtual void Read(const scada::ServiceContext& context,
-                    base::span<const scada::ReadValueId> inputs,
-                    const scada::ReadCallback& callback) override;
-  virtual void Write(const scada::ServiceContext& context,
-                     base::span<const scada::WriteValue> inputs,
-                     const scada::WriteCallback& callback) override;
+  virtual void Read(
+      const std::shared_ptr<const scada::ServiceContext>& context,
+      const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
+      const scada::ReadCallback& callback) override;
+  virtual void Write(
+      const std::shared_ptr<const scada::ServiceContext>& context,
+      const std::shared_ptr<const std::vector<scada::WriteValueId>>& inputs,
+      const scada::WriteCallback& callback) override;
 
   // scada::MethodService
   virtual void Call(const scada::NodeId& node_id,

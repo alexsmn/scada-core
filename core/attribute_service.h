@@ -40,13 +40,15 @@ class AttributeService {
  public:
   virtual ~AttributeService() {}
 
-  virtual void Read(const ServiceContext& context,
-                    base::span<const ReadValueId> inputs,
-                    const ReadCallback& callback) = 0;
+  virtual void Read(
+      const std::shared_ptr<const ServiceContext>& context,
+      const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
+      const ReadCallback& callback) = 0;
 
-  virtual void Write(const ServiceContext& context,
-                     base::span<const WriteValueId> inputs,
-                     const WriteCallback& callback) = 0;
+  virtual void Write(
+      const std::shared_ptr<const ServiceContext>& context,
+      const std::shared_ptr<const std::vector<WriteValueId>>& inputs,
+      const WriteCallback& callback) = 0;
 };
 
 template <class T>

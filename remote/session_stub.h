@@ -82,9 +82,8 @@ class SessionStub : private MessageSender,
                              int subscription_id,
                              int monitored_item_id);
 
-  void OnRead(unsigned request_id,
-              const std::vector<scada::ReadValueId>& read_value_ids);
-  void OnWrite(unsigned request_id, base::span<const scada::WriteValue> values);
+  void OnRead(const protocol::Request& request);
+  void OnWrite(const protocol::Request& request);
   void OnCall(unsigned request_id,
               const scada::NodeId& node_id,
               const scada::NodeId& method_id,
@@ -99,7 +98,8 @@ class SessionStub : private MessageSender,
 
   BoostLogger logger_{LOG_NAME("SessionStub")};
 
-  const scada::ServiceContext service_context_{user_id_};
+  const std::shared_ptr<const scada::ServiceContext> service_context_ =
+      std::make_shared<scada::ServiceContext>(scada::ServiceContext{user_id_});
 
   Connection* connection_ = nullptr;
 

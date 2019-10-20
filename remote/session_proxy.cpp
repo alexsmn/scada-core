@@ -352,9 +352,10 @@ void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
   OnSessionCreated();
 }
 
-void SessionProxy::Read(const scada::ServiceContext& context,
-                        base::span<const scada::ReadValueId> inputs,
-                        const scada::ReadCallback& callback) {
+void SessionProxy::Read(
+    const std::shared_ptr<const scada::ServiceContext>& context,
+    const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
+    const scada::ReadCallback& callback) {
   if (!session_created_) {
     callback(scada::StatusCode::Bad_Disconnected, {});
     return;
@@ -362,10 +363,10 @@ void SessionProxy::Read(const scada::ServiceContext& context,
 
   protocol::Request request;
   auto& read = *request.mutable_read();
-  for (auto& input : inputs)
+  for (auto& input : *inputs)
     Convert(input, *read.add_value_id());
 
-  Request(request, [this, callback](const protocol::Response& response) {
+  Request(request, [callback](const protocol::Response& response) {
     if (callback)
       callback(ConvertTo<scada::Status>(response.status()),
                ConvertTo<std::vector<scada::DataValue>>(
@@ -373,16 +374,17 @@ void SessionProxy::Read(const scada::ServiceContext& context,
   });
 }
 
-void SessionProxy::Write(const scada::ServiceContext& context,
-                         base::span<const scada::WriteValue> inputs,
-                         const scada::WriteCallback& callback) {
+void SessionProxy::Write(
+    const std::shared_ptr<const scada::ServiceContext>& context,
+    const std::shared_ptr<const std::vector<scada::WriteValueId>>& inputs,
+    const scada::WriteCallback& callback) {
   if (!session_created_) {
     callback(scada::StatusCode::Bad_Disconnected, {});
     return;
   }
 
   protocol::Request request;
-  for (auto& input : inputs) {
+  for (auto& input : *inputs) {
     auto& write = *request.add_write();
     Convert(input.node_id, *write.mutable_node_id());
     Convert(input.value, *write.mutable_value());
@@ -392,7 +394,7 @@ void SessionProxy::Write(const scada::ServiceContext& context,
       write.set_select(true);
   }
 
-  Request(request, [this, callback](const protocol::Response& response) {
+  Request(request, [callback](const protocol::Response& response) {
     if (callback)
       callback(ConvertTo<scada::Status>(response.status()),
                ConvertTo<std::vector<scada::Status>>(response.write_result()));
@@ -415,7 +417,7 @@ void SessionProxy::Call(const scada::NodeId& node_id,
   Convert(method_id, *command.mutable_method_id());
   Convert(arguments, *command.mutable_argument());
 
-  Request(request, [this, callback](const protocol::Response& response) {
+  Request(request, [callback](const protocol::Response& response) {
     if (callback)
       callback(ConvertTo<scada::Status>(response.status()));
   });

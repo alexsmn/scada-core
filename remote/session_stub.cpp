@@ -63,25 +63,11 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
     SendResponse(response);
   }
 
-  if (request.has_read()) {
-    auto& read = request.read();
-    OnRead(request.request_id(),
-           ConvertTo<std::vector<scada::ReadValueId>>(read.value_id()));
-  }
+  if (request.has_read())
+    OnRead(request);
 
   if (!request.write().empty()) {
-    std::vector<scada::WriteValue> inputs;
-    inputs.reserve(request.write().size());
-    for (auto& proto_value : request.write()) {
-      scada::WriteFlags flags;
-      if (proto_value.select())
-        flags.set_select();
-      inputs.emplace_back(scada::WriteValue{
-          ConvertTo<scada::NodeId>(proto_value.node_id()),
-          ConvertTo<scada::AttributeId>(proto_value.attribute_id()),
-          ConvertTo<scada::Variant>(proto_value.value()), flags});
-    }
-    OnWrite(request.request_id(), inputs);
+    OnWrite(request);
   }
 
   if (request.has_call()) {
@@ -260,8 +246,11 @@ void SessionStub::OnCall(unsigned request_id,
       }));
 }
 
-void SessionStub::OnRead(unsigned request_id,
-                         const std::vector<scada::ReadValueId>& inputs) {
+void SessionStub::OnRead(const protocol::Request& request) {
+  const auto request_id = request.request_id();
+  const auto inputs = std::make_shared<const std::vector<scada::ReadValueId>>(
+      ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id()));
+
   attribute_service_.Read(
       service_context_, inputs,
       io_context_.wrap(
@@ -281,10 +270,23 @@ void SessionStub::OnRead(unsigned request_id,
           }));
 }
 
-void SessionStub::OnWrite(unsigned request_id,
-                          base::span<const scada::WriteValue> inputs) {
+void SessionStub::OnWrite(const protocol::Request& request) {
+  const auto request_id = request.request_id();
+
+  auto inputs = std::make_shared<std::vector<scada::WriteValue>>();
+  inputs->reserve(request.write().size());
+  for (auto& proto_value : request.write()) {
+    scada::WriteFlags flags;
+    if (proto_value.select())
+      flags.set_select();
+    inputs->emplace_back(scada::WriteValue{
+        ConvertTo<scada::NodeId>(proto_value.node_id()),
+        ConvertTo<scada::AttributeId>(proto_value.attribute_id()),
+        ConvertTo<scada::Variant>(proto_value.value()), flags});
+  }
+
   LOG_INFO(logger_) << "Write" << LOG_TAG("RequestId", request_id)
-                    << LOG_TAG("Count", inputs.size());
+                    << LOG_TAG("Count", inputs->size());
 
   attribute_service_.Write(
       service_context_, inputs,
