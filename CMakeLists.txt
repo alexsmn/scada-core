@@ -15,6 +15,7 @@ add_subdirectory(base)
 add_subdirectory(core)
 add_subdirectory(model)
 set(OPCUA_PREDEFINED_NODES ${OPCUA_PREDEFINED_NODES} PARENT_SCOPE)
+set(SCADA_MODEL_TRANSLATIONS ${SCADA_MODEL_TRANSLATIONS} PARENT_SCOPE)
 
 add_subdirectory(remote)
 
