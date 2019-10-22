@@ -204,7 +204,11 @@
 
   <opc:VariableType SymbolicName="AnalogItemType" BaseType="DataItemType" DataType="ua:Double">
     <opc:Children>
-      <opc:Property SymbolicName="DisplayFormat" DataType="ua:String" />
+      <opc:Property SymbolicName="DisplayFormat" DataType="ua:String">
+        <opc:DefaultValue>
+          <uax:String>0.####</uax:String>
+        </opc:DefaultValue>
+      </opc:Property>
       <opc:Property SymbolicName="Conversion" DataType="AnalogConversionDataType" />
       <opc:Property SymbolicName="Clamping" DataType="ua:Boolean" />
       <opc:Property SymbolicName="EuLo" DataType="ua:Double">

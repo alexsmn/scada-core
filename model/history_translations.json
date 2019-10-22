@@ -1,0 +1,15 @@
+{
+  "ru": {
+    "Depth": "Глубина, дней",
+    "EventCleanupDuration": "Очистка событий, мс",
+    "HasHistoricalDatabase": "База данных",
+    "HistoricalDatabaseType": "База данных",
+    "HistoricalDatabases": "Базы данных",
+    "PendingTaskCount": "Задачи",
+    "SystemDatabase": "Системая база данных",
+    "ValueCleanupDuration": "Очистка значений, мс",
+    "WriteValueDuration": "Запись значений, мс",
+    "WrittenEventCount": "Событий",
+    "WrittenValueCount": "Значений"
+  }
+}
