@@ -16,16 +16,5 @@ set(OPCUA_PREDEFINED_NODES ${OPCUA_PREDEFINED_NODES} PARENT_SCOPE)
 file(GLOB SCADA_MODEL_TRANSLATIONS "*_translations.json")
 set(SCADA_MODEL_TRANSLATIONS ${SCADA_MODEL_TRANSLATIONS} PARENT_SCOPE)
 
-file(GLOB_RECURSE SOURCES "*.cpp" "*.h")
-file(GLOB_RECURSE UNITTESTS "*_unittest.*")
-list(REMOVE_ITEM SOURCES ${UNITTESTS})
-
-add_library(scada_model ${SOURCES})
+scada_module(scada_model)
 target_link_libraries(scada_model PUBLIC scada_core)
-set_property(TARGET scada_model PROPERTY FOLDER ${scada_folder})
-
-add_executable(scada_model_unittests ${UNITTESTS})
-target_link_libraries(scada_model_unittests PUBLIC scada_model base_unittest)
-set_property(TARGET scada_model_unittests PROPERTY FOLDER ${scada_folder})
-include(GoogleTest)
-gtest_discover_tests(scada_model_unittests)

@@ -1,4 +1,5 @@
 include(boost.cmake)
+include(scada_module.cmake)
 
 add_subdirectory("${deps}/googletest" gtest)
 add_subdirectory("${deps}/icu" icu)
