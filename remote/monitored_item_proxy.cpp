@@ -126,7 +126,6 @@ void MonitoredItemProxy::OnChannelOpened(MonitoredItemRouter& router,
 }
 
 void MonitoredItemProxy::OnChannelClosed() {
-  assert(state_ != State::DELETED);
   assert(router_);
   assert(sender_);
   assert(channel_opened_);
@@ -141,8 +140,10 @@ void MonitoredItemProxy::OnChannelClosed() {
   subscription_id_ = 0;
   monitored_item_id_ = 0;
 
-  if (value_id_.attribute_id != scada::AttributeId::EventNotifier)
+  if (state_ != State::DELETED &&
+      value_id_.attribute_id != scada::AttributeId::EventNotifier) {
     UpdateQualifier(current_data_.status_code, 0, scada::Qualifier::OFFLINE);
+  }
 }
 
 void MonitoredItemProxy::OnCreateMonitoredItemResult(
