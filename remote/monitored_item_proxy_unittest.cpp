@@ -17,10 +17,13 @@ class MonitoredItemProxyTest : public Test {
  protected:
   void CreateMonitoredItem();
   void CreateMonitoredItem_OpenChannel_Subscribe();
+  void CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful();
   void
   CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful_DataChange();
   void
   CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful_DataChange_CloseChannel();
+  void
+  CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful_DataChangeFailed_CloseChannel();
 
   StrictMock<DataChangeHandler> data_change_handler_;
   StrictMock<MonitoredItemRouterMock> monitored_item_router_;
@@ -38,6 +41,8 @@ class MonitoredItemProxyTest : public Test {
                                                   {},
                                                   kTimeStamp,
                                                   kTimeStamp};
+  inline static const scada::DataValue kDataValueFailed{scada::StatusCode::Bad,
+                                                        kTimeStamp};
 };
 
 MATCHER(IsCreateMonitoredItemRequest, "IsCreateMonitoredItemRequest") {
@@ -107,7 +112,7 @@ void MonitoredItemProxyTest::CreateMonitoredItem_OpenChannel_Subscribe() {
 }
 
 void MonitoredItemProxyTest::
-    CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful_DataChange() {
+    CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful() {
   CreateMonitoredItem_OpenChannel_Subscribe();
 
   // Create stub successful
@@ -119,6 +124,11 @@ void MonitoredItemProxyTest::
   ASSERT_TRUE(response_handler_);
   response_handler_(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
                                                     kMonitoredItemId));
+}
+
+void MonitoredItemProxyTest::
+    CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful_DataChange() {
+  CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful();
 
   // Data change
 
@@ -137,6 +147,23 @@ void MonitoredItemProxyTest::
               RemoveMonitoredItemDataObserver(kMonitoredItemId));
 
   EXPECT_CALL(data_change_handler_, OnDataChange(IsOnline(false)));
+
+  monitored_item_->OnChannelClosed();
+}
+
+void MonitoredItemProxyTest::
+    CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful_DataChangeFailed_CloseChannel() {
+  CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful();
+
+  // Data change failed
+
+  EXPECT_CALL(monitored_item_router_,
+              RemoveMonitoredItemDataObserver(kMonitoredItemId));
+  EXPECT_CALL(data_change_handler_, OnDataChange(kDataValueFailed));
+
+  monitored_item_->OnDataChange(kDataValueFailed);
+
+  // Close channel
 
   monitored_item_->OnChannelClosed();
 }

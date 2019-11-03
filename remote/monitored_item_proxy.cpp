@@ -133,6 +133,8 @@ void MonitoredItemProxy::OnChannelClosed() {
   if (state_ == State::CREATED)
     router_->RemoveMonitoredItemDataObserver(monitored_item_id_);
 
+  const auto old_state = state_;
+
   channel_opened_ = false;
   router_ = nullptr;
   sender_ = nullptr;
@@ -140,7 +142,7 @@ void MonitoredItemProxy::OnChannelClosed() {
   subscription_id_ = 0;
   monitored_item_id_ = 0;
 
-  if (state_ != State::DELETED &&
+  if (old_state != State::DELETED &&
       value_id_.attribute_id != scada::AttributeId::EventNotifier) {
     UpdateQualifier(current_data_.status_code, 0, scada::Qualifier::OFFLINE);
   }
