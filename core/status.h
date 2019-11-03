@@ -72,6 +72,8 @@ enum class StatusCode : unsigned {
   Bad_WrongNodeClass = Bad | 31,
   Bad_WrongAttributeId = Bad | 32,
   Bad_Iec61850Error = Bad | 33,
+  Bad_NothingToDo = Bad | 34,
+  Bad_BrowseNameInvalid = Bad | 35,
 };
 
 enum class StatusLimit {

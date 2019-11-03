@@ -58,6 +58,8 @@ const Entry kEntries[] = {
     { scada::StatusCode::Bad_WrongReferenceId, "Bad_WrongReferenceId", L"Неправильный тип ссылки" },
     { scada::StatusCode::Bad_WrongNodeClass, "Bad_WrongNodeClass", L"Неправильный класс узла" },
     { scada::StatusCode::Bad_Iec61850Error, "Bad_Iec61850Error", L"Ошибка протокола МЭК-61850" },
+    { scada::StatusCode::Bad_NothingToDo, "Bad_NothingToDo", L"Запрос пуст" },
+    { scada::StatusCode::Bad_BrowseNameInvalid, "Bad_BrowseNameInvalid", L"Имя не найдено" },
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
