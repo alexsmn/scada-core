@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ostream>
 #include <string>
 
 namespace scada {
@@ -28,14 +27,8 @@ enum class AttributeId {
   Historizing = 20,
   Executable = 21,
   UserExecutable = 22,
-  Count,
 };
 
-}  // namespace scada
+} // namespace scada
 
 std::string ToString(scada::AttributeId attribute_id);
-
-inline std::ostream& operator<<(std::ostream& stream,
-                                scada::AttributeId attribute_id) {
-  return stream << ToString(attribute_id);
-}

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/boost_log.h"
 #include "remote/subscription.h"
 
 #include <map>
@@ -10,13 +9,12 @@ namespace scada {
 class Event;
 class MonitoredItem;
 class MonitoredItemService;
-
-struct EventFilter;
-struct MonitoringParameters;
 struct ReadValueId;
+struct MonitoringParameters;
 }  // namespace scada
 
 class MessageSender;
+struct DataItemUpdate;
 
 class SubscriptionStub {
  public:
@@ -36,14 +34,12 @@ class SubscriptionStub {
                     const scada::DataValue& data_value);
   void OnEvent(MonitoredItemId monitored_item_id,
                const scada::Status& status,
-               const std::any& event);
+               const scada::Event& event);
 
   MessageSender& sender_;
   scada::MonitoredItemService& monitored_item_service_;
-  const int subscription_id_;
-
-  BoostLogger logger_{LOG_NAME("SubscriptionStub")};
+  int subscription_id_;
 
   MonitoredItemId next_monitored_item_id_ = 1;
-  std::map<MonitoredItemId, std::shared_ptr<scada::MonitoredItem>> channels_;
+  std::map<MonitoredItemId, std::unique_ptr<scada::MonitoredItem>> channels_;
 };

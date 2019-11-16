@@ -2,8 +2,6 @@
 
 #include "base/strings/string_util.h"
 
-#include <algorithm>
-
 namespace {
 
 DataServicesInfoList& GetMutableDataServicesInfoList() {
@@ -17,17 +15,7 @@ const DataServicesInfoList& GetDataServicesInfoList() {
   return GetMutableDataServicesInfoList();
 }
 
-const DataServicesInfo* FindDataServicesInfo(base::StringPiece name) {
-  for (auto& info : GetDataServicesInfoList()) {
-    if (EqualDataServicesName(info.name, name))
-      return &info;
-  }
-  return nullptr;
-}
-
 void RegisterDataServices(DataServicesInfo info) {
-  assert(!FindDataServicesInfo(info.name));
-
   GetMutableDataServicesInfoList().emplace_back(std::move(info));
 }
 
@@ -38,9 +26,9 @@ bool EqualDataServicesName(base::StringPiece name1, base::StringPiece name2) {
 bool CreateDataServices(base::StringPiece name,
                         const DataServicesContext& context,
                         DataServices& services) {
-  auto* info = FindDataServicesInfo(name);
-  if (!info)
-    return false;
-
-  return info->factory_method(context, services);
+  for (auto& info : GetDataServicesInfoList()) {
+    if (EqualDataServicesName(info.name, name))
+      return info.factory_method(context, services);
+  }
+  return false;
 }

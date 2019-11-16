@@ -11,36 +11,36 @@ class Qualifier {
  public:
   enum Limit {
     LIMIT_NORMAL = 0,
-    LIMIT_LO = 1,
-    LIMIT_HI = 2,
-    LIMIT_LOLO = 3,
-    LIMIT_HIHI = 4,
+    LIMIT_LO     = 1,
+    LIMIT_HI     = 2,
+    LIMIT_LOLO   = 3,
+    LIMIT_HIHI   = 4,
   };
-
+ 
   enum {
-    MANUAL = 0x0002,
+    MANUAL        = 0x0002,
     DELETED_LOCKED = 0x0004,
-    BACKUP = 0x0008,
+    BACKUP        = 0x0008,
 
-    SIMULATED = 0x0100,
-    SPORADIC = 0x0400,
+    SIMULATED     = 0x0100,
+    SPORADIC      = 0x0400,
 
-    BAD = 0x0001,            // Data with invalid flag
-    FAILED = 0x0040,         // Can't connect object on server
-    MISCONFIGURED = 0x0200,  // Configuration is incorrect or device is disabled
-    OFFLINE = 0x0020,        // Device connection is broken
-    STALE = 0x0080,          // Device value is too old
-    GENERAL_BAD = BAD | FAILED | MISCONFIGURED | OFFLINE | STALE,
+    BAD           = 0x0001, // Data with invalid flag
+    FAILED        = 0x0040, // Can't connect object on server
+    MISCONFIGURED = 0x0200, // Configuration is incorrect or device is disabled
+    OFFLINE       = 0x0020, // Device connection is broken
+    STALE         = 0x0080, // Device value is too old
+    GENERAL_BAD   = BAD | FAILED | MISCONFIGURED | OFFLINE | STALE,
 
     // Flags only for current time.
     REALTIME_FLAGS = FAILED | MISCONFIGURED | OFFLINE | STALE | BACKUP,
 
-    LIMIT_MASK = 0x7000,  // 0x1000 | 0x2000 | 0x4000
-    LIMIT_SHIFT = 12,
+    LIMIT_MASK    = 0x7000, // 0x1000 | 0x2000 | 0x4000
+    LIMIT_SHIFT   = 12,
   };
 
-  constexpr Qualifier() noexcept = default;
-  constexpr Qualifier(unsigned qualifier) noexcept : qualifier_{qualifier} {}
+  Qualifier() : qualifier_(0) { }
+  Qualifier(unsigned qualifier) : qualifier_(qualifier) { }
 
   void Update(unsigned remove, unsigned add) {
     qualifier_ = (qualifier_ & ~remove) | add;
@@ -52,64 +52,53 @@ class Qualifier {
     else
       qualifier_ &= ~flag;
   }
-
-  void set_bad(bool set) { set_flag(BAD, set); }
-  void set_manual(bool set) { set_flag(MANUAL, set); }
-  void set_backup(bool set) { set_flag(BACKUP, set); }
-  void set_online(bool set) { set_flag(OFFLINE, !set); }
-  void set_failed(bool set) { set_flag(FAILED, set); }
-  void set_stale(bool set) { set_flag(STALE, set); }
+  
+  void set_bad(bool set)       { set_flag(BAD, set); }
+  void set_manual(bool set)    { set_flag(MANUAL, set); }
+  void set_backup(bool set)    { set_flag(BACKUP, set); }
+  void set_online(bool set)    { set_flag(OFFLINE, !set); }
+  void set_failed(bool set)    { set_flag(FAILED, set); }
+  void set_stale(bool set)     { set_flag(STALE, set); }
   void set_simulated(bool set) { set_flag(SIMULATED, set); }
   void set_misconfigured(bool set) { set_flag(MISCONFIGURED, set); }
-  void set_sporadic(bool set) { set_flag(SPORADIC, set); }
-
+  void set_sporadic(bool set)  { set_flag(SPORADIC, set); }
+  
   void set_limit(Limit limit) {
-    qualifier_ =
-        (qualifier_ & ~LIMIT_MASK) | ((limit << LIMIT_SHIFT) & LIMIT_MASK);
+    qualifier_ = (qualifier_ & ~LIMIT_MASK) |
+                 ((limit << LIMIT_SHIFT) & LIMIT_MASK);
   }
-
-  constexpr bool flag(unsigned flag) const { return (qualifier_ & flag) != 0; }
+  
+  bool flag(unsigned flag) const { return (qualifier_ & flag) != 0; }
 
   // Return raised bad flags.
-  constexpr unsigned general_bad() const { return qualifier_ & GENERAL_BAD; }
+  unsigned general_bad() const { return qualifier_ & GENERAL_BAD; }
+  
+  bool bad() const         { return flag(BAD); }
+  bool good() const        { return !flag(BAD); }
+  bool manual() const			 { return flag(MANUAL); }
+  bool backup() const			 { return flag(BACKUP); }
+  bool offline() const		 { return flag(OFFLINE); }
+  bool online() const      { return !flag(OFFLINE); }
+  bool failed() const			 { return flag(FAILED); }
+  bool stale() const       { return flag(STALE); }
+  bool simulated() const   { return flag(SIMULATED); }
+  bool misconfigured() const { return flag(MISCONFIGURED); }
+  bool sporadic() const    { return flag(SPORADIC); }
 
-  constexpr bool bad() const noexcept { return flag(BAD); }
-  constexpr bool good() const noexcept { return !flag(BAD); }
-  constexpr bool manual() const noexcept { return flag(MANUAL); }
-  constexpr bool backup() const noexcept { return flag(BACKUP); }
-  constexpr bool offline() const noexcept { return flag(OFFLINE); }
-  constexpr bool online() const noexcept { return !flag(OFFLINE); }
-  constexpr bool failed() const noexcept { return flag(FAILED); }
-  constexpr bool stale() const noexcept { return flag(STALE); }
-  constexpr bool simulated() const noexcept { return flag(SIMULATED); }
-  constexpr bool misconfigured() const noexcept { return flag(MISCONFIGURED); }
-  constexpr bool sporadic() const noexcept { return flag(SPORADIC); }
-
-  constexpr Limit limit() const noexcept {
-    return static_cast<Limit>((qualifier_ & LIMIT_MASK) >> LIMIT_SHIFT);
-  }
-
-  constexpr unsigned raw() const noexcept { return qualifier_; }
-
-  constexpr bool operator==(Qualifier other) const noexcept {
-    return qualifier_ == other.qualifier_;
-  }
-  constexpr bool operator!=(Qualifier other) const noexcept {
-    return qualifier_ != other.qualifier_;
-  }
-
-  Qualifier operator|(Qualifier other) const {
-    return Qualifier(qualifier_ | other.qualifier_);
-  }
-  Qualifier& operator|=(Qualifier other) {
-    qualifier_ |= other.qualifier_;
-    return *this;
-  }
+  Limit limit() const { return static_cast<Limit>((qualifier_ & LIMIT_MASK) >> LIMIT_SHIFT); }
+  
+  unsigned raw() const { return qualifier_; }
+  
+  bool operator==(Qualifier other) const { return qualifier_ == other.qualifier_; }
+  bool operator!=(Qualifier other) const { return qualifier_ != other.qualifier_; }
+  
+  Qualifier operator|(Qualifier other) const { return Qualifier(qualifier_ | other.qualifier_); }
+  Qualifier& operator|=(Qualifier other) { qualifier_ |= other.qualifier_; return *this; }
 
   Status ToStatus() const;
 
  private:
-  unsigned qualifier_ = 0;
+  unsigned qualifier_;
 };
 
 inline Status Qualifier::ToStatus() const {
@@ -140,7 +129,7 @@ inline Status Qualifier::ToStatus() const {
   return status;
 }
 
-}  // namespace scada
+} // namespace scada
 
 std::string ToString(scada::Qualifier qualifier);
 base::string16 ToString16(scada::Qualifier qualifier);

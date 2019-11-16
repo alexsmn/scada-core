@@ -8,9 +8,9 @@ namespace scada {
 
 class DataValue {
  public:
-  constexpr DataValue() = default;
+  DataValue() {}
 
-  constexpr DataValue(StatusCode status_code, DateTime server_timestamp)
+  DataValue(StatusCode status_code, DateTime server_timestamp)
       : status_code{status_code}, server_timestamp{server_timestamp} {
     assert(!IsGood(status_code));
   }
@@ -28,12 +28,10 @@ class DataValue {
   DataValue(const DataValue&) = default;
   DataValue& operator=(const DataValue&) = default;
 
-  constexpr DataValue(DataValue&&) = default;
+  DataValue(DataValue&&) = default;
   DataValue& operator=(DataValue&&) = default;
 
-  constexpr bool is_null() const noexcept {
-    return value.is_null() && qualifier.raw() == 0;
-  }
+  bool is_null() const { return value.is_null() && (qualifier.raw() == 0); }
 
   bool operator==(const DataValue& other) const {
     return source_timestamp == other.source_timestamp &&
@@ -58,10 +56,10 @@ inline bool IsUpdate(const DataValue& current_data, const DataValue& new_data) {
 }
 
 }  // namespace scada
-
+  
 inline std::ostream& operator<<(std::ostream& stream,
                                 const scada::DataValue& v) {
-  return stream << "{value: " << v.value << ", qualifier: " << v.qualifier
+  return stream << "{value: " << v.value << ", qualifier: " << v.qualifier.raw()
                 << ", source_timestamp: " << v.source_timestamp
                 << ", server_timestamp: " << v.server_timestamp
                 << ", status_code: " << ToString(v.status_code) << "}";

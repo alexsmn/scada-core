@@ -1,6 +1,6 @@
 #include "remote/session_proxy.h"
 
-#include "base/net_boost_logger_adapter.h"
+#include "base/net_logger_adapter.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
@@ -41,14 +41,22 @@ std::string MakeConnectionString(base::StringPiece str) {
 }  // namespace
 
 SessionProxy::SessionProxy(SessionProxyContext&& context)
-    : SessionProxyContext{std::move(context)},
-      ping_timer_{io_context_},
-      transport_logger_{std::make_unique<NetBoostLoggerAdapter>(logger_)},
-      subscription_{std::make_shared<SubscriptionProxy>()},
-      view_service_proxy_{std::make_unique<ViewServiceProxy>()},
-      node_management_proxy_{std::make_unique<NodeManagementProxy>()},
-      event_service_proxy_{std::make_unique<EventServiceProxy>()},
-      history_proxy_{std::make_unique<HistoryProxy>()} {}
+    : SessionProxyContext{std::move(context)}, ping_timer_{io_context_} {
+  transport_logger_ = std::make_unique<NetLoggerAdapter>(*logger_);
+
+  SubscriptionParams params;
+  subscription_ = std::make_unique<SubscriptionProxy>(params);
+
+  view_service_proxy_ = std::make_unique<ViewServiceProxy>(
+      std::make_shared<NestedLogger>(logger_, "ViewService"));
+
+  node_management_proxy_ = std::make_unique<NodeManagementProxy>(
+      std::make_shared<NestedLogger>(logger_, "NodeManagementService"));
+
+  event_service_proxy_ = std::make_unique<EventServiceProxy>();
+
+  history_proxy_ = std::make_unique<HistoryProxy>();
+}
 
 SessionProxy::~SessionProxy() {}
 
@@ -60,7 +68,7 @@ void SessionProxy::Disconnect(const scada::StatusCallback& callback) {
   auto& delete_session = *request.mutable_delete_session();
 
   Request(request, [this, callback](const protocol::Response& response) {
-    auto status = ConvertTo<scada::Status>(response.status());
+    auto status = FromProto(response.status());
     if (status)
       OnSessionDeleted();
 
@@ -70,7 +78,7 @@ void SessionProxy::Disconnect(const scada::StatusCallback& callback) {
 }
 
 void SessionProxy::OnTransportOpened() {
-  LOG_INFO(logger_) << "Transport opened";
+  logger().Write(LogSeverity::Normal, "Transport opened");
 
   protocol::Request request;
   auto& create_session = *request.mutable_create_session();
@@ -80,8 +88,6 @@ void SessionProxy::OnTransportOpened() {
   create_session.set_protocol_version_minor(protocol::PROTOCOL_VERSION_MINOR);
   if (allow_remote_logoff_)
     create_session.set_delete_existing(true);
-  for (const auto& locale_id : locale_ids_)
-    create_session.add_locale_id(locale_id);
 
   Request(request, [this](const protocol::Response& response) {
     OnCreateSessionResult(response);
@@ -107,8 +113,8 @@ void SessionProxy::OnSessionCreated() {
 }
 
 void SessionProxy::OnTransportClosed(net::Error error) {
-  LOG_WARNING(logger_) << "Transport closed"
-                       << LOG_TAG("Status", ErrorToString(error));
+  logger().WriteF(LogSeverity::Warning, "Transport closed as %s",
+                  ErrorToString(error).c_str());
 
   scada::Status status_code(
       error == net::OK ? scada::StatusCode::Bad_SessionForcedLogoff
@@ -149,7 +155,7 @@ void SessionProxy::OnSessionDeleted() {
   // Cancel all requests.
   {
     protocol::Response response;
-    Convert(scada::StatusCode::Bad_Disconnected, *response.mutable_status());
+    ToProto(scada::StatusCode::Bad_Disconnected, *response.mutable_status());
     auto requests = std::move(requests_);
     for (auto& p : requests) {
       response.set_request_id(p.first);
@@ -207,8 +213,8 @@ void SessionProxy::Send(protocol::Message& message) {
   }
 
   if (IsMessageLogged(message)) {
-    LOG_INFO(logger_) << "Send message"
-                      << LOG_TAG("Message", message.DebugString());
+    logger_->WriteF(LogSeverity::Normal, "Send: %s",
+                    message.DebugString().c_str());
   }
 
   std::string string;
@@ -222,8 +228,8 @@ void SessionProxy::Send(protocol::Message& message) {
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {
   if (IsMessageLogged(message)) {
-    LOG_INFO(logger_) << "Message received"
-                      << LOG_TAG("Message", message.DebugString());
+    logger_->WriteF(LogSeverity::Normal, "Received: %s",
+                    message.DebugString().c_str());
   }
 
   for (auto& response : message.responses()) {
@@ -236,32 +242,18 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
   }
 
   for (auto& notification : message.notifications()) {
-    auto status = notification.has_status()
-                      ? ConvertTo<scada::Status>(notification.status())
-                      : scada::Status{scada::StatusCode::Good};
-
     for (auto& data_change : notification.data_changes()) {
-      subscription_->OnDataChange(
-          data_change.monitored_item_id(),
-          ConvertTo<scada::DataValue>(data_change.data_value()));
+      subscription_->OnDataChange(data_change.monitored_item_id(),
+                                  FromProto(data_change.data_value()));
     }
 
-    for (auto& model_change : notification.model_change()) {
-      subscription_->OnEvent(notification.monitored_item_id(), status,
-                             ConvertTo<scada::ModelChangeEvent>(model_change));
-    }
-
-    for (auto& semantics_changed_node_id :
-         notification.semantics_changed_node_id()) {
-      subscription_->OnEvent(
-          notification.monitored_item_id(), status,
-          scada::SemanticChangeEvent{
-              ConvertTo<scada::NodeId>(semantics_changed_node_id)});
-    }
+    view_service_proxy_->OnNotification(notification);
 
     for (auto& event : notification.events()) {
-      subscription_->OnEvent(notification.monitored_item_id(), status,
-                             ConvertTo<scada::Event>(event));
+      auto status = event.has_status() ? FromProto(event.status())
+                                       : scada::Status{scada::StatusCode::Good};
+      subscription_->OnEvent(event.monitored_item_id(), status,
+                             FromProto(event));
     }
 
     if (notification.has_session_deleted()) {
@@ -289,12 +281,11 @@ void SessionProxy::Request(protocol::Request& request,
   Send(message);
 }
 
-void SessionProxy::CreateSession(const std::string& host,
-                                 const scada::LocalizedText& user_name,
-                                 const scada::LocalizedText& password,
-                                 bool allow_remote_logoff,
-                                 const std::vector<std::string>& locale_ids,
-                                 const scada::StatusCallback& callback) {
+void SessionProxy::Connect(const std::string& host,
+                           const scada::LocalizedText& user_name,
+                           const scada::LocalizedText& password,
+                           bool allow_remote_logoff,
+                           const scada::StatusCallback& callback) {
   assert(!transport_);
 
   if (session_created_)
@@ -305,7 +296,6 @@ void SessionProxy::CreateSession(const std::string& host,
   host_ = host;
   allow_remote_logoff_ = allow_remote_logoff;
   connect_callback_ = std::move(callback);
-  locale_ids_ = locale_ids;
 
   Reconnect();
 }
@@ -313,8 +303,8 @@ void SessionProxy::CreateSession(const std::string& host,
 void SessionProxy::Connect() {
   std::string connection_string = MakeConnectionString(host_);
 
-  LOG_INFO(logger_) << "Connect" << LOG_TAG("UserName", user_name_)
-                    << LOG_TAG("ConnectionString", connection_string);
+  logger().WriteF(LogSeverity::Normal, "Connecting as '%s' to '%s'",
+                  user_name_.c_str(), connection_string.c_str());
 
   auto transport = transport_factory_.CreateTransport(
       net::TransportString(connection_string), transport_logger_.get());
@@ -337,7 +327,7 @@ void SessionProxy::ForwardConnectResult(scada::Status&& status) {
 }
 
 void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
-  auto status = ConvertTo<scada::Status>(response.status());
+  auto status = FromProto(response.status());
   if (!status) {
     OnSessionError(status);
     return;
@@ -350,16 +340,14 @@ void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
 
   auto& create_session_result = response.create_session_result();
   session_token_ = create_session_result.token();
-  Convert(create_session_result.user_node_id(), user_node_id_);
+  user_node_id_ = FromProto(create_session_result.user_node_id());
   user_rights_ = create_session_result.user_rights();
 
   OnSessionCreated();
 }
 
-void SessionProxy::Read(
-    const std::shared_ptr<const scada::ServiceContext>& context,
-    const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
-    const scada::ReadCallback& callback) {
+void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
+                        const scada::ReadCallback& callback) {
   if (!session_created_) {
     callback(scada::StatusCode::Bad_Disconnected, {});
     return;
@@ -367,41 +355,37 @@ void SessionProxy::Read(
 
   protocol::Request request;
   auto& read = *request.mutable_read();
-  for (auto& input : *inputs)
-    Convert(input, *read.add_value_id());
+  for (auto& value_id : value_ids)
+    ToProto(value_id, *read.add_value_id());
 
-  Request(request, [callback](const protocol::Response& response) {
+  Request(request, [this, callback](const protocol::Response& response) {
     if (callback)
-      callback(ConvertTo<scada::Status>(response.status()),
-               ConvertTo<std::vector<scada::DataValue>>(
-                   response.read_result().value()));
+      callback(
+          FromProto(response.status()),
+          VectorFromProto<scada::DataValue>(response.read_result().value()));
   });
 }
 
-void SessionProxy::Write(
-    const std::shared_ptr<const scada::ServiceContext>& context,
-    const std::shared_ptr<const std::vector<scada::WriteValueId>>& inputs,
-    const scada::WriteCallback& callback) {
+void SessionProxy::Write(const scada::WriteValue& value,
+                         const scada::NodeId& user_id,
+                         const scada::StatusCallback& callback) {
   if (!session_created_) {
-    callback(scada::StatusCode::Bad_Disconnected, {});
+    callback(scada::StatusCode::Bad_Disconnected);
     return;
   }
 
   protocol::Request request;
-  for (auto& input : *inputs) {
-    auto& write = *request.add_write();
-    Convert(input.node_id, *write.mutable_node_id());
-    Convert(input.value, *write.mutable_value());
-    write.set_attribute_id(
-        static_cast<protocol::AttributeId>(input.attribute_id));
-    if (input.flags.select())
-      write.set_select(true);
-  }
+  auto& write = *request.mutable_write();
+  ToProto(value.node_id, *write.mutable_node_id());
+  ToProto(value.value, *write.mutable_value());
+  write.set_attribute_id(
+      static_cast<protocol::AttributeId>(value.attribute_id));
+  if (value.flags.select())
+    write.set_select(true);
 
-  Request(request, [callback](const protocol::Response& response) {
+  Request(request, [this, callback](const protocol::Response& response) {
     if (callback)
-      callback(ConvertTo<scada::Status>(response.status()),
-               ConvertTo<std::vector<scada::Status>>(response.write_result()));
+      callback(FromProto(response.status()));
   });
 }
 
@@ -417,17 +401,17 @@ void SessionProxy::Call(const scada::NodeId& node_id,
 
   protocol::Request request;
   auto& command = *request.mutable_call()->mutable_device_command();
-  Convert(node_id, *command.mutable_node_id());
-  Convert(method_id, *command.mutable_method_id());
-  Convert(arguments, *command.mutable_argument());
+  ToProto(node_id, *command.mutable_node_id());
+  ToProto(method_id, *command.mutable_method_id());
+  ContainerToProto(arguments, *command.mutable_argument());
 
-  Request(request, [callback](const protocol::Response& response) {
+  Request(request, [this, callback](const protocol::Response& response) {
     if (callback)
-      callback(ConvertTo<scada::Status>(response.status()));
+      callback(FromProto(response.status()));
   });
 }
 
-std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
+std::unique_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
     const scada::ReadValueId& read_value_id,
     const scada::MonitoringParameters& params) {
   return subscription_->CreateMonitoredItem(read_value_id, params);

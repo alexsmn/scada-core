@@ -44,7 +44,7 @@ struct NodeAttributes {
 
   bool empty() const {
     return browse_name.empty() && display_name.empty() && data_type.is_null() &&
-           !value.has_value();
+           value.has_value();
   }
 
   QualifiedName browse_name;

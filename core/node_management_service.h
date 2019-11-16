@@ -12,21 +12,8 @@ namespace scada {
 enum class NodeClass;
 
 using StatusCallback = std::function<void(Status&&)>;
-
-struct AddNodesItem {
-  NodeId requested_id;
-  NodeId parent_id;
-  NodeClass node_class;
-  NodeId type_definition_id;
-  NodeAttributes attributes;
-};
-
-using CreateNodeCallback =
-    std::function<void(Status&& status, const NodeId& node_id)>;
-
 using ModifyNodesCallback =
     std::function<void(Status&&, std::vector<Status>&&)>;
-
 using DeleteNodeCallback =
     std::function<void(Status&& status,
                        std::vector<scada::NodeId>&& dependencies)>;
@@ -35,13 +22,18 @@ class NodeManagementService {
  public:
   virtual ~NodeManagementService() {}
 
-  using CreateNodeCallback = scada::CreateNodeCallback;
+  typedef std::function<void(Status&& status, const NodeId& node_id)>
+      CreateNodeCallback;
   virtual void CreateNode(const NodeId& requested_id,
                           const NodeId& parent_id,
                           NodeClass node_class,
                           const NodeId& type_id,
                           NodeAttributes attributes,
                           const CreateNodeCallback& callback) = 0;
+
+  virtual void ModifyNodes(
+      const std::vector<std::pair<NodeId, NodeAttributes>>& nodes,
+      const ModifyNodesCallback& callback) = 0;
 
   // Delete record from table. If |return_dependencies| is true and deletion
   // fails, it gets list of related records, which must be deleted before.

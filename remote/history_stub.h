@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/boost_log.h"
+#include "base/memory/weak_ptr.h"
 #include "core/history_types.h"
 
 #include <map>
@@ -17,13 +17,15 @@ namespace scada {
 class HistoryService;
 }
 
+class Logger;
 class MessageSender;
 
-class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
+class HistoryStub {
  public:
   HistoryStub(scada::HistoryService& service,
               MessageSender& sender,
-              boost::asio::io_context& io_context);
+              boost::asio::io_context& io_context,
+              std::shared_ptr<Logger> logger);
   ~HistoryStub();
 
   void OnRequestReceived(const protocol::Request& request);
@@ -35,9 +37,10 @@ class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
   scada::HistoryService& service_;
   MessageSender& sender_;
   boost::asio::io_context& io_context_;
-
-  BoostLogger logger_{LOG_NAME("HistoryStub")};
+  std::shared_ptr<Logger> logger_;
 
   std::map<scada::ByteString, scada::HistoryReadRawDetails>
       continuation_points_;
+
+  base::WeakPtrFactory<HistoryStub> weak_factory_{this};
 };

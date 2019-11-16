@@ -13,205 +13,108 @@
 #include "core/view_service.h"
 #include "remote/protocol.h"
 
-void Convert(const std::string& source, scada::LocalizedText& target);
-void Convert(const scada::LocalizedText& source, std::string& target);
+scada::NodeId FromProto(const protocol::NodeId& source);
+void ToProto(const scada::NodeId& source, protocol::NodeId& target);
 
-void Convert(const std::string& source, scada::ByteString& target);
-void Convert(const scada::ByteString& source, std::string& target);
+scada::Variant FromProto(const protocol::Variant& source);
+void ToProto(const scada::Variant& source, protocol::Variant& target);
 
-void Convert(const protocol::NodeId& source, scada::NodeId& target);
-void Convert(const scada::NodeId& source, protocol::NodeId& target);
+scada::DataValue FromProto(const protocol::DataValue& source);
+void ToProto(const scada::DataValue& source, protocol::DataValue& target);
 
-void Convert(const protocol::Variant& source, scada::Variant& target);
-void Convert(const scada::Variant& source, protocol::Variant& target);
+scada::Status FromProto(const protocol::Status& source);
+void ToProto(const scada::Status& source, protocol::Status& target);
 
-void Convert(const protocol::DataValue& source, scada::DataValue& target);
-void Convert(const scada::DataValue& source, protocol::DataValue& target);
+scada::Event FromProto(const protocol::Event& source);
+void ToProto(const scada::Event& source, protocol::Event& target);
 
-void Convert(const protocol::Status& source, scada::Status& target);
-void Convert(const scada::Status& source, protocol::Status& target);
+scada::NodeClass FromProto(const protocol::NodeClass source);
+protocol::NodeClass ToProto(const scada::NodeClass source);
 
-void Convert(const protocol::Event& source, scada::Event& target);
-void Convert(const scada::Event& source, protocol::Event& target);
+scada::NodeAttributes FromProto(const protocol::Attributes& source);
+void ToProto(const scada::NodeAttributes& source, protocol::Attributes& target);
 
-void Convert(const protocol::EventFilter& source, scada::EventFilter& target);
-void Convert(const scada::EventFilter& source, protocol::EventFilter& target);
+scada::AttributeId FromProto(protocol::AttributeId source);
+protocol::AttributeId ToProto(scada::AttributeId source);
 
-void Convert(const protocol::NodeClass source, scada::NodeClass& target);
-void Convert(const scada::NodeClass source, protocol::NodeClass& target);
+scada::ReadValueId FromProto(const protocol::ReadValueId& source);
+void ToProto(const scada::ReadValueId& source, protocol::ReadValueId& target);
 
-void Convert(const protocol::Attributes& source, scada::NodeAttributes& target);
-void Convert(const scada::NodeAttributes& source, protocol::Attributes& target);
+scada::BrowseDirection FromProto(protocol::BrowseDirection source);
+protocol::BrowseDirection ToProto(scada::BrowseDirection source);
 
-void Convert(protocol::AttributeId source, scada::AttributeId& target);
-void Convert(scada::AttributeId source, protocol::AttributeId& target);
-
-void Convert(const protocol::ReadValueId& source, scada::ReadValueId& target);
-void Convert(const scada::ReadValueId& source, protocol::ReadValueId& target);
-
-void Convert(protocol::BrowseDirection source, scada::BrowseDirection& target);
-void Convert(scada::BrowseDirection source, protocol::BrowseDirection& target);
-
-void Convert(const protocol::ReferenceDescription& source,
-             scada::ReferenceDescription& target);
-void Convert(const scada::ReferenceDescription& source,
+scada::ReferenceDescription FromProto(
+    const protocol::ReferenceDescription& source);
+void ToProto(const scada::ReferenceDescription& source,
              protocol::ReferenceDescription& target);
 
-void Convert(const protocol::BrowseResult& source, scada::BrowseResult& target);
-void Convert(const scada::BrowseResult& source, protocol::BrowseResult& target);
+scada::BrowseResult FromProto(const protocol::BrowseResult& source);
+void ToProto(const scada::BrowseResult& source, protocol::BrowseResult& target);
 
-void Convert(const protocol::BrowsePath& source, scada::BrowsePath& target);
-void Convert(const scada::BrowsePath& source, protocol::BrowsePath& target);
-
-void Convert(const protocol::RelativePathElement& source,
-             scada::RelativePathElement& target);
-void Convert(const scada::RelativePathElement& source,
-             protocol::RelativePathElement& target);
-
-void Convert(const protocol::BrowsePathResult& source,
-             scada::BrowsePathResult& target);
-void Convert(const scada::BrowsePathResult& source,
-             protocol::BrowsePathResult& target);
-
-void Convert(const protocol::BrowsePathTarget& source,
-             scada::BrowsePathTarget& target);
-void Convert(const scada::BrowsePathTarget& source,
-             protocol::BrowsePathTarget& target);
-
-void Convert(const protocol::ModelChangeEvent& source,
-             scada::ModelChangeEvent& target);
-void Convert(const scada::ModelChangeEvent& source,
+scada::ModelChangeEvent FromProto(const protocol::ModelChangeEvent& source);
+void ToProto(const scada::ModelChangeEvent& source,
              protocol::ModelChangeEvent& target);
 
-void Convert(const protocol::AggregateFilter& source,
-             scada::AggregateFilter& target);
-void Convert(const scada::AggregateFilter& source,
+scada::AggregateFilter FromProto(const protocol::AggregateFilter& source);
+void ToProto(const scada::AggregateFilter& source,
              protocol::AggregateFilter& target);
 
-void Convert(const protocol::MonitoringParameters& source,
-             scada::MonitoringParameters& target);
-void Convert(const scada::MonitoringParameters& source,
+scada::MonitoringParameters FromProto(
+    const protocol::MonitoringParameters& source);
+void ToProto(const scada::MonitoringParameters& source,
              protocol::MonitoringParameters& target);
 
-// Generalization.
-template <class T>
-inline void Convert(const T& source, T& target) {
-  target = source;
-}
-
-// Convert To/From Repeated
-
-template <typename Target, typename SourceRepeatedField>
-inline void ConvertFromRepeated(const SourceRepeatedField& source,
-                                std::vector<Target>& target) {
-  target.reserve(target.size() + source.size());
-  for (auto& s : source)
-    Convert(s, target.emplace_back());
-}
-
-// It seems std::vector<bool>::emplace_back() doesn't return a writable
-// reference.
-template <typename SourceRepeatedField>
-inline void ConvertFromRepeated(const SourceRepeatedField& source,
-                                std::vector<bool>& target) {
-  target.reserve(target.size() + source.size());
-  for (auto& s : source)
-    target.emplace_back(ConvertTo<bool>(s));
-}
-
-template <typename Target, typename SourceRepeatedField>
-inline void ConvertFromRepeated(const SourceRepeatedField& source,
-                                std::set<Target>& target) {
-  target.reserve(target.size() + source.size());
-  for (auto& s : source)
-    target.emplace(Convert<Target>(source));
-}
-
-template <typename TargetRepeatedField, typename Container>
-inline void ConvertToRepeated(const Container& source,
-                              TargetRepeatedField& target) {
-  target.Reserve(target.size() + source.size());
-  for (auto&& s : source)
-    Convert(s, *target.Add());
-}
-
-// vector <-> RepeatedField
-
-template <typename Source, typename Target>
-inline void Convert(const std::vector<Source>& sources,
-                    ::google::protobuf::RepeatedField<Target>& targets) {
-  ConvertToRepeated(sources, targets);
-}
-
-template <typename Source, typename Target>
-inline void Convert(const ::google::protobuf::RepeatedField<Target>& sources,
-                    std::vector<Source>& targets) {
-  ConvertFromRepeated(sources, targets);
-}
-
-// set <-> RepeatedField
-
-template <typename Source, typename Target>
-inline void Convert(const std::set<Source>& sources,
-                    ::google::protobuf::RepeatedField<Target>& targets) {
-  ConvertToRepeated(sources, targets);
-}
-
-template <typename Source, typename Target>
-inline void Convert(const ::google::protobuf::RepeatedField<Target>& sources,
-                    std::set<Source>& targets) {
-  ConvertFromRepeated(sources, targets);
-}
-
-// vector <-> RepeatedPtrField
-
-template <typename Source, typename Target>
-inline void Convert(const std::vector<Source>& sources,
-                    ::google::protobuf::RepeatedPtrField<Target>& targets) {
-  ConvertToRepeated(sources, targets);
-}
-
-template <typename Source, typename Target>
-inline void Convert(const ::google::protobuf::RepeatedPtrField<Target>& sources,
-                    std::vector<Source>& targets) {
-  ConvertFromRepeated(sources, targets);
-}
-
-// set <-> RepeatedPtrField
-
-template <typename Source, typename Target>
-inline void Convert(const std::set<Source>& sources,
-                    ::google::protobuf::RepeatedPtrField<Target>& targets) {
-  ConvertToRepeated(sources, targets);
-}
-
-template <typename Source, typename Target>
-inline void Convert(const ::google::protobuf::RepeatedPtrField<Target>& sources,
-                    std::set<Source>& targets) {
-  ConvertFromRepeated(sources, targets);
-}
-
-// ConvertTo
-
 template <class Target, class Source>
-inline Target ConvertTo(const Source& source) {
-  Target target{};
-  Convert(source, target);
-  return target;
+Target FromProto(const Source& source);
+
+void ToProto(const scada::ByteString& source, std::string& target);
+
+template <typename Target, typename Source>
+inline std::vector<Target> VectorFromProto(
+    const ::google::protobuf::RepeatedPtrField<Source>& source) {
+  std::vector<Target> result;
+  result.reserve(source.size());
+  for (auto& p : source)
+    result.emplace_back(FromProto(p));
+  return result;
 }
 
-template <>
-inline scada::Status ConvertTo(const protocol::Status& source) {
-  scada::Status target{scada::StatusCode::Bad};
-  Convert(source, target);
-  return target;
+template <typename Target, typename Source>
+inline std::vector<Target> BrowseVectorFromProto(
+    const ::google::protobuf::RepeatedPtrField<Source>& source) {
+  std::vector<Target> result;
+  result.reserve(source.size());
+  for (auto& p : source)
+    result.emplace_back(BrowseFromProto(p));
+  return result;
 }
 
-template <>
-inline std::vector<scada::Status> ConvertTo(
-    const ::google::protobuf::RepeatedPtrField<protocol::Status>& source) {
-  std::vector<scada::Status> target(source.size(), scada::StatusCode::Bad);
-  for (size_t i = 0; i < source.size(); ++i)
-    Convert(source[i], target[i]);
-  return target;
+template <typename Target, typename Container>
+inline void ContainerToProto(
+    const Container& source,
+    ::google::protobuf::RepeatedPtrField<Target>& target) {
+  target.Reserve(target.size() + source.size());
+  for (auto& s : source)
+    ToProto(s, *target.Add());
+}
+
+template <typename Source, typename Target>
+inline void ToProto(const std::vector<Source>& sources,
+                    ::google::protobuf::RepeatedPtrField<Target>& targets) {
+  ContainerToProto(sources, targets);
+}
+
+template <typename Source, typename Target>
+inline void ToProto(const std::set<Source>& sources,
+                    ::google::protobuf::RepeatedPtrField<Target>& targets) {
+  ContainerToProto(sources, targets);
+}
+
+template <typename Target, typename Source>
+inline std::set<Target> SetFromProto(
+    const ::google::protobuf::RepeatedPtrField<Source>& source) {
+  std::set<Target> result;
+  for (auto& p : source)
+    result.emplace(FromProto(p));
+  return result;
 }

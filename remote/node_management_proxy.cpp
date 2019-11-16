@@ -1,11 +1,15 @@
 #include "remote/node_management_proxy.h"
 
+#include "base/logger.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "model/node_id_util.h"
+#include "common/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+
+NodeManagementProxy::NodeManagementProxy(std::shared_ptr<Logger> logger)
+    : logger_(std::move(logger)) {}
 
 void NodeManagementProxy::OnChannelOpened(MessageSender& sender) {
   sender_ = &sender;
@@ -18,73 +22,113 @@ void NodeManagementProxy::OnChannelClosed() {
 void NodeManagementProxy::CreateNode(const scada::NodeId& requested_id,
                                      const scada::NodeId& parent_id,
                                      scada::NodeClass node_class,
-                                     const scada::NodeId& type_definition_id,
+                                     const scada::NodeId& type_id,
                                      scada::NodeAttributes attributes,
                                      const CreateNodeCallback& callback) {
-  LOG_INFO(logger_) << "CreateNode request"
-                    << LOG_TAG("RequestedId", NodeIdToScadaString(requested_id))
-                    << LOG_TAG("NodeClass", ToString(node_class))
-                    << LOG_TAG("ParentId", NodeIdToScadaString(parent_id))
-                    << LOG_TAG("TypeDefinitionId",
-                               NodeIdToScadaString(type_definition_id));
+  logger().WriteF(LogSeverity::Normal,
+                  "CreateNode request [requested_id=%s, node_class=%s, "
+                  "parent_id=%s, type_id=%s]",
+                  NodeIdToScadaString(requested_id).c_str(),
+                  ToString(node_class).c_str(),
+                  NodeIdToScadaString(parent_id).c_str(),
+                  NodeIdToScadaString(type_id).c_str());
 
   if (!sender_)
     return callback(scada::StatusCode::Bad_Disconnected, {});
 
   protocol::Request request;
   auto& create_node = *request.mutable_create_node();
-  create_node.set_node_class(ConvertTo<protocol::NodeClass>(node_class));
+  create_node.set_node_class(ToProto(node_class));
   if (!requested_id.is_null())
-    Convert(requested_id, *create_node.mutable_requested_node_id());
-  Convert(parent_id, *create_node.mutable_parent_id());
-  Convert(type_definition_id, *create_node.mutable_type_definition_id());
+    ToProto(requested_id, *create_node.mutable_requested_node_id());
+  ToProto(parent_id, *create_node.mutable_parent_id());
+  ToProto(type_id, *create_node.mutable_type_definition_id());
   if (!attributes.empty())
-    Convert(std::move(attributes), *create_node.mutable_attributes());
+    ToProto(std::move(attributes), *create_node.mutable_attributes());
 
-  sender_->Request(
-      request, [this, callback](const protocol::Response& response) {
-        auto status = ConvertTo<scada::Status>(response.status());
-        scada::NodeId node_id;
-        if (response.has_create_node_result())
-          node_id =
-              ConvertTo<scada::NodeId>(response.create_node_result().node_id());
+  sender_->Request(request, [this,
+                             callback](const protocol::Response& response) {
+    auto status = FromProto(response.status());
+    scada::NodeId node_id;
+    if (response.has_create_node_result())
+      node_id = FromProto(response.create_node_result().node_id());
 
-        LOG_INFO(logger_) << "CreateNode response"
-                          << LOG_TAG("Status", ToString(status))
-                          << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
-        if (callback)
-          callback(std::move(status), node_id);
-      });
+    logger().WriteF(
+        LogSeverity::Normal, "CreateNode response [status='%ls', node_id=%s]",
+        ToString16(status).c_str(), NodeIdToScadaString(node_id).c_str());
+
+    if (callback)
+      callback(std::move(status), node_id);
+  });
+}
+
+void NodeManagementProxy::ModifyNodes(
+    const std::vector<std::pair<scada::NodeId, scada::NodeAttributes>>&
+        attributes,
+    const scada::ModifyNodesCallback& callback) {
+  logger().WriteF(LogSeverity::Normal, "ModifyNodes request [count=%Iu]",
+                  attributes.size());
+
+  // TODO: Log.
+
+  if (!sender_)
+    return callback(scada::StatusCode::Bad_Disconnected, {});
+
+  protocol::Request request;
+  request.mutable_modify_node()->Reserve(attributes.size());
+  for (auto& [node_id, attribute] : attributes) {
+    assert(!node_id.is_null());
+    // Attributes can be empty when writing a null value.
+    // TODO: Fix it.
+    // assert(!attribute.empty());
+    auto& modify_node = *request.add_modify_node();
+    ToProto(node_id, *modify_node.mutable_node_id());
+    ToProto(std::move(attribute), *modify_node.mutable_attributes());
+  }
+
+  sender_->Request(request, [this,
+                             callback](const protocol::Response& response) {
+    auto status = FromProto(response.status());
+    auto results =
+        VectorFromProto<scada::Status>(response.modify_node_result());
+
+    logger().WriteF(LogSeverity::Normal, "ModifyNodes response [status='%ls']",
+                    ToString16(status).c_str());
+    // TODO: Log.
+
+    if (callback)
+      callback(std::move(status), std::move(results));
+  });
 }
 
 void NodeManagementProxy::DeleteNode(
     const scada::NodeId& node_id,
     bool return_dependencies,
     const scada::DeleteNodeCallback& callback) {
-  LOG_INFO(logger_) << "DeleteNode request"
-                    << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
+  logger().WriteF(LogSeverity::Normal, "DeleteNode request [node_id=%s]",
+                  NodeIdToScadaString(node_id).c_str());
 
   if (!sender_)
     return callback(scada::StatusCode::Bad_Disconnected, {});
 
   protocol::Request request;
   auto& delete_node = *request.mutable_delete_node();
-  Convert(node_id, *delete_node.mutable_node_id());
+  ToProto(node_id, *delete_node.mutable_node_id());
   if (return_dependencies)
     delete_node.set_return_dependencies(true);
 
-  sender_->Request(request,
-                   [this, callback](const protocol::Response& response) {
-                     auto status = ConvertTo<scada::Status>(response.status());
-                     auto dependencies = ConvertTo<std::vector<scada::NodeId>>(
-                         response.delete_node_result().dependencies());
+  sender_->Request(request, [this,
+                             callback](const protocol::Response& response) {
+    auto status = FromProto(response.status());
+    auto dependencies = VectorFromProto<scada::NodeId>(
+        response.delete_node_result().dependencies());
 
-                     LOG_INFO(logger_) << "DeleteNode response"
-                                       << LOG_TAG("Status", ToString(status));
+    logger().WriteF(LogSeverity::Normal, "DeleteNode response [status='%ls']",
+                    ToString16(status).c_str());
 
-                     if (callback)
-                       callback(std::move(status), std::move(dependencies));
-                   });
+    if (callback)
+      callback(std::move(status), std::move(dependencies));
+  });
 }
 
 void NodeManagementProxy::ChangeUserPassword(
@@ -97,7 +141,7 @@ void NodeManagementProxy::ChangeUserPassword(
 
   protocol::Request request;
   auto& change_password = *request.mutable_change_password();
-  Convert(user_node_id, *change_password.mutable_user_node_id());
+  ToProto(user_node_id, *change_password.mutable_user_node_id());
   change_password.set_current_password_utf8(
       base::UTF16ToUTF8(current_password));
   change_password.set_new_password_utf8(base::UTF16ToUTF8(new_password));
@@ -105,7 +149,7 @@ void NodeManagementProxy::ChangeUserPassword(
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
                      if (callback)
-                       callback(ConvertTo<scada::Status>(response.status()));
+                       callback(FromProto(response.status()));
                    });
 }
 
@@ -113,30 +157,26 @@ void NodeManagementProxy::AddReference(const scada::NodeId& reference_type_id,
                                        const scada::NodeId& source_id,
                                        const scada::NodeId& target_id,
                                        const scada::StatusCallback& callback) {
-  LOG_INFO(logger_) << "AddReference request"
-                    << LOG_TAG("ReferenceTypeId",
-                               NodeIdToScadaString(reference_type_id))
-                    << LOG_TAG("SourceId", NodeIdToScadaString(source_id))
-                    << LOG_TAG("TargetId", NodeIdToScadaString(target_id));
+  logger().WriteF(
+      LogSeverity::Normal,
+      "AddReference request [reference_type_id=%s, source_id=%s, target_id=%s]",
+      NodeIdToScadaString(reference_type_id).c_str(),
+      NodeIdToScadaString(source_id).c_str(),
+      NodeIdToScadaString(target_id).c_str());
 
   if (!sender_)
     return callback(scada::StatusCode::Bad_Disconnected);
 
   protocol::Request request;
   auto& add_reference = *request.mutable_add_reference();
-  Convert(reference_type_id, *add_reference.mutable_reference_type_id());
-  Convert(source_id, *add_reference.mutable_source_id());
-  Convert(target_id, *add_reference.mutable_target_id());
+  ToProto(reference_type_id, *add_reference.mutable_reference_type_id());
+  ToProto(source_id, *add_reference.mutable_source_id());
+  ToProto(target_id, *add_reference.mutable_target_id());
 
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
-                     auto status = ConvertTo<scada::Status>(response.status());
-
-                     LOG_INFO(logger_) << "AddReference response"
-                                       << LOG_TAG("Status", ToString(status));
-
                      if (callback)
-                       callback(std::move(status));
+                       callback(FromProto(response.status()));
                    });
 }
 
@@ -145,29 +185,25 @@ void NodeManagementProxy::DeleteReference(
     const scada::NodeId& source_id,
     const scada::NodeId& target_id,
     const scada::StatusCallback& callback) {
-  LOG_INFO(logger_) << "DeleteReference request"
-                    << LOG_TAG("ReferenceTypeId",
-                               NodeIdToScadaString(reference_type_id))
-                    << LOG_TAG("SourceId", NodeIdToScadaString(source_id))
-                    << LOG_TAG("TargetId", NodeIdToScadaString(target_id));
+  logger().WriteF(LogSeverity::Normal,
+                  "DeleteReference request [reference_type_id=%s, "
+                  "source_id=%s, target_id=%s]",
+                  NodeIdToScadaString(reference_type_id).c_str(),
+                  NodeIdToScadaString(source_id).c_str(),
+                  NodeIdToScadaString(target_id).c_str());
 
   if (!sender_)
     return callback(scada::StatusCode::Bad_Disconnected);
 
   protocol::Request request;
   auto& delete_reference = *request.mutable_delete_reference();
-  Convert(reference_type_id, *delete_reference.mutable_reference_type_id());
-  Convert(source_id, *delete_reference.mutable_source_id());
-  Convert(target_id, *delete_reference.mutable_target_id());
+  ToProto(reference_type_id, *delete_reference.mutable_reference_type_id());
+  ToProto(source_id, *delete_reference.mutable_source_id());
+  ToProto(target_id, *delete_reference.mutable_target_id());
 
   sender_->Request(request,
                    [this, callback](const protocol::Response& response) {
-                     auto status = ConvertTo<scada::Status>(response.status());
-
-                     LOG_INFO(logger_) << "DeleteReference response"
-                                       << LOG_TAG("Status", ToString(status));
-
                      if (callback)
-                       callback(std::move(status));
+                       callback(FromProto(response.status()));
                    });
 }

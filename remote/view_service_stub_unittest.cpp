@@ -2,7 +2,8 @@
 
 #include <gmock/gmock.h>
 
-//#include "core/test/test_address_space.h"
+#include "common/node_state.h"
+#include "core/test/test_address_space.h"
 #include "protocol.h"
 #include "protocol_utils.h"
 
@@ -15,13 +16,13 @@ bool operator==(const NodeAttributes& a, const NodeAttributes& b) {
          std::tie(b.browse_name, b.data_type, b.value);
 }
 
-/*bool operator==(const NodeState& a, const NodeState& b) {
+bool operator==(const NodeState& a, const NodeState& b) {
   return a.node_id == b.node_id && a.node_class == b.node_class &&
          a.type_definition_id == b.type_definition_id &&
          a.parent_id == b.parent_id &&
          a.reference_type_id == b.reference_type_id &&
          a.attributes == b.attributes && a.properties == b.properties;
-}*/
+}
 
 }  // namespace scada
 

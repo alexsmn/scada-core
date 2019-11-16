@@ -40,43 +40,44 @@ class Variant {
     COUNT
   };
 
-  constexpr Variant() noexcept = default;
-  constexpr Variant(bool value) noexcept : data_{value} {}
-  constexpr Variant(Int8 value) noexcept : data_{value} {}
-  constexpr Variant(UInt8 value) noexcept : data_{value} {}
-  constexpr Variant(Int16 value) noexcept : data_{value} {}
-  constexpr Variant(UInt16 value) noexcept : data_{value} {}
-  constexpr Variant(Int32 value) noexcept : data_{value} {}
-  constexpr Variant(UInt32 value) noexcept : data_{value} {}
-  constexpr Variant(Int64 value) noexcept : data_{value} {}
-  constexpr Variant(UInt64 value) noexcept : data_{value} {}
-  constexpr Variant(Double value) noexcept : data_{value} {}
-  Variant(ByteString str) noexcept : data_{std::move(str)} {}
-  Variant(String str) noexcept : data_{std::move(str)} {}
-  Variant(QualifiedName value) noexcept : data_{std::move(value)} {}
-  Variant(LocalizedText str) noexcept : data_{std::move(str)} {}
-  constexpr Variant(DateTime value) noexcept : data_{value} {}
+  Variant() {}
+  Variant(bool value) : data_{value} {}
+  Variant(Int8 value) : data_{value} {}
+  Variant(UInt8 value) : data_{value} {}
+  Variant(Int16 value) : data_{value} {}
+  Variant(UInt16 value) : data_{value} {}
+  Variant(Int32 value) : data_{value} {}
+  Variant(UInt32 value) : data_{value} {}
+  Variant(Int64 value) : data_{value} {}
+  Variant(UInt64 value) : data_{value} {}
+  Variant(Double value) : data_{value} {}
+  Variant(ByteString str) : data_{std::move(str)} {}
+  Variant(String str) : data_{std::move(str)} {}
+  Variant(QualifiedName value) : data_{std::move(value)} {}
+  Variant(LocalizedText str) : data_{std::move(str)} {}
+  Variant(DateTime value) : data_{std::move(value)} {}
   Variant(const char* str) : data_{str ? String{str} : String{}} {}
   Variant(const base::char16* str)
       : data_{str ? LocalizedText{str} : LocalizedText{}} {}
-  Variant(NodeId node_id) noexcept : data_{std::move(node_id)} {}
-  Variant(ExpandedNodeId node_id) noexcept : data_{std::move(node_id)} {}
-  Variant(ExtensionObject source) noexcept : data_{std::move(source)} {}
-  template <class T>
-  Variant(std::vector<T> value) noexcept : data_{std::move(value)} {}
+  Variant(NodeId node_id) : data_{std::move(node_id)} {}
+  Variant(ExpandedNodeId node_id) : data_{std::move(node_id)} {}
+  Variant(ExtensionObject source) : data_{std::move(source)} {}
+  Variant(std::vector<String> value) : data_{std::move(value)} {}
+  Variant(std::vector<LocalizedText> value) : data_{std::move(value)} {}
+  Variant(std::vector<ExtensionObject> value) : data_{std::move(value)} {}
 
-  Variant(const Variant& source) = default;
-  Variant(Variant&& source) noexcept = default;
+  Variant(const Variant& source) : data_{source.data_} {}
+  Variant(Variant&& source) : data_{std::move(source.data_)} {}
 
   ~Variant() { clear(); }
 
   void clear();
 
-  constexpr bool is_null() const noexcept { return type() == EMPTY; }
+  bool is_null() const { return type() == EMPTY; }
 
-  constexpr Type type() const noexcept;
-  constexpr bool is_scalar() const noexcept;
-  constexpr bool is_array() const noexcept { return !is_scalar(); }
+  Type type() const;
+  bool is_scalar() const;
+  bool is_array() const { return !is_scalar(); }
 
   NodeId data_type_id() const;
 
@@ -93,17 +94,15 @@ class Variant {
   const NodeId& as_node_id() const { return std::get<NodeId>(data_); }
 
   template <class T>
-  constexpr const T& get() const {
+  const T& get() const {
     return std::get<T>(data_);
   }
   template <class T>
-  constexpr T& get() {
+  T& get() {
     return std::get<T>(data_);
   }
 
   bool get(bool& bool_value) const;
-  bool get(Int8& value) const { return get_int<Int8>(value); }
-  bool get(UInt8& value) const { return get_int<UInt8>(value); }
   bool get(Int16& value) const { return get_int<Int16>(value); }
   bool get(UInt16& value) const { return get_int<UInt16>(value); }
   bool get(Int32& value) const { return get_int<Int32>(value); }
@@ -123,15 +122,13 @@ class Variant {
   T get_or(T or_value) const;
 
   template <class T>
-  constexpr const T* get_if() const noexcept;
+  const T* get_if() const;
 
   Variant& operator=(const Variant& source) = default;
-  Variant& operator=(Variant&& source) = default;
+  Variant& operator=(Variant&& source);
 
-  constexpr bool operator==(const Variant& other) const noexcept;
-  constexpr bool operator!=(const Variant& other) const noexcept {
-    return !operator==(other);
-  }
+  bool operator==(const Variant& other) const;
+  bool operator!=(const Variant& other) const { return !operator==(other); }
 
   bool ChangeType(Variant::Type new_type);
   template <typename T>
@@ -189,19 +186,15 @@ class Variant {
       data_;
 };
 
-inline constexpr Variant::Type Variant::type() const noexcept {
+inline Variant::Type Variant::type() const {
   if (data_.index() < static_cast<size_t>(Type::COUNT))
     return static_cast<Type>(data_.index());
   else
     return static_cast<Type>(data_.index() - static_cast<size_t>(Type::COUNT));
 }
 
-inline constexpr bool Variant::is_scalar() const noexcept {
+inline bool Variant::is_scalar() const {
   return data_.index() < static_cast<size_t>(Type::COUNT);
-}
-
-inline constexpr bool Variant::operator==(const Variant& other) const noexcept {
-  return data_ == other.data_;
 }
 
 template <class T>
@@ -223,7 +216,7 @@ inline bool Variant::get(T& value) const {
 }
 
 template <class T>
-inline constexpr const T* Variant::get_if() const noexcept {
+inline const T* Variant::get_if() const {
   return std::get_if<T>(&data_);
 }
 
@@ -234,10 +227,17 @@ inline T Variant::get_or(T or_value) const {
   return result;
 }
 
-scada::Variant::Type ParseBuiltInDataType(std::string_view str);
+template<class T>
+inline bool Variant::get_int(T& value) const {
+  Int64 int64_value;
+  if (!get(int64_value))
+    return false;
 
-NodeId ToNodeId(Variant::Type type);
-Variant::Type ToBuiltInDataType(const NodeId& node_id);
+  value = static_cast<T>(int64_value);
+  return static_cast<Int64>(value) == int64_value;
+}
+
+scada::Variant::Type ParseBuiltInType(std::string_view str);
 
 }  // namespace scada
 

@@ -1,6 +1,3 @@
-include(boost.cmake)
-include(scada_module.cmake)
-
 add_subdirectory("${deps}/googletest" gtest)
 add_subdirectory("${deps}/icu" icu)
 
@@ -14,18 +11,41 @@ add_subdirectory("${deps}/net" net)
 
 add_subdirectory(base)
 add_subdirectory(core)
-add_subdirectory(model)
-set(OPCUA_PREDEFINED_NODES ${OPCUA_PREDEFINED_NODES} PARENT_SCOPE)
-set(SCADA_MODEL_TRANSLATIONS ${SCADA_MODEL_TRANSLATIONS} PARENT_SCOPE)
-
 add_subdirectory(remote)
 
 if(WIN32)
-  include(vc-redist.cmake)
+  file(GLOB VC_REDIST_FILES "${VC_REDIST}/*")
+  if(NOT VC_REDIST_FILES)
+    message(FATAL_ERROR "No VC++ redistributives were found in provided VC_REDIST: ${VC_REDIST}")
+  endif()
+  install(FILES ${VC_REDIST_FILES}
+    DESTINATION bin
+    COMPONENT Common)
+
+  set(BOOST_COMPONENTS thread log log_setup filesystem date_time regex program_options)
+  find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+
+  set(BOOST_DEBUG_SUFFIX "vc142-mt-gd-x32-${Boost_LIB_VERSION}")
+  set(BOOST_RELEASE_SUFFIX "vc142-mt-x32-${Boost_LIB_VERSION}")
+
+  foreach(BOOST_COMPONENT ${BOOST_COMPONENTS})
+    install(FILES
+        "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/boost_${BOOST_COMPONENT}-${BOOST_DEBUG_SUFFIX}.dll>"
+        "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/boost_${BOOST_COMPONENT}-${BOOST_RELEASE_SUFFIX}.dll>"
+      DESTINATION bin
+      COMPONENT Common)
+  endforeach()
 
   install(FILES
       "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/libprotobufd.dll>"
       "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/libprotobuf.dll>"
+      "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/OPCUA.dll>"
+      "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/OPCUA.dll>"
+      "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/libeay32.dll>"
+      "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/libeay32.dll>"
+      "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/ssleay32.dll>"
+      "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/ssleay32.dll>"
     DESTINATION bin
     COMPONENT Common)
-endif()
+
+endif(WIN32)

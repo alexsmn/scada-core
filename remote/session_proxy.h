@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/boost_log.h"
+#include "base/nested_logger.h"
 #include "base/observer_list.h"
 #include "base/timer.h"
 #include "core/attribute_service.h"
@@ -33,12 +33,14 @@ class ViewService;
 }  // namespace scada
 
 class EventServiceProxy;
+class Logger;
 class NodeManagementProxy;
 class HistoryProxy;
 class SubscriptionProxy;
 class ViewServiceProxy;
 
 struct SessionProxyContext {
+  const std::shared_ptr<Logger> logger_;
   boost::asio::io_context& io_context_;
   net::TransportFactory& transport_factory_;
   const scada::ServiceLogParams service_log_params_;
@@ -61,12 +63,11 @@ class SessionProxy : private SessionProxyContext,
   scada::ViewService& GetViewService();
 
   // scada::SessionService
-  virtual void CreateSession(const std::string& connection_string,
-                             const scada::LocalizedText& user_name,
-                             const scada::LocalizedText& password,
-                             bool allow_remote_logoff,
-                             const std::vector<std::string>& locale_ids,
-                             const scada::StatusCallback& callback) override;
+  virtual void Connect(const std::string& connection_string,
+                       const scada::LocalizedText& user_name,
+                       const scada::LocalizedText& password,
+                       bool allow_remote_logoff,
+                       const scada::StatusCallback& callback) override;
   virtual void Reconnect() override;
   virtual void Disconnect(const scada::StatusCallback& callback) override;
   virtual bool IsConnected(base::TimeDelta* ping_delay) const override;
@@ -83,19 +84,16 @@ class SessionProxy : private SessionProxyContext,
                        ResponseHandler response_handler) override;
 
   // scada::MonitoredItemService
-  virtual std::shared_ptr<scada::MonitoredItem> CreateMonitoredItem(
+  virtual std::unique_ptr<scada::MonitoredItem> CreateMonitoredItem(
       const scada::ReadValueId& read_value_id,
       const scada::MonitoringParameters& params) override;
 
   // scada::AttributeService
-  virtual void Read(
-      const std::shared_ptr<const scada::ServiceContext>& context,
-      const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
-      const scada::ReadCallback& callback) override;
-  virtual void Write(
-      const std::shared_ptr<const scada::ServiceContext>& context,
-      const std::shared_ptr<const std::vector<scada::WriteValueId>>& inputs,
-      const scada::WriteCallback& callback) override;
+  virtual void Read(const std::vector<scada::ReadValueId>& value_ids,
+                    const scada::ReadCallback& callback) override;
+  virtual void Write(const scada::WriteValue& value,
+                     const scada::NodeId& user_id,
+                     const scada::StatusCallback& callback) override;
 
   // scada::MethodService
   virtual void Call(const scada::NodeId& node_id,
@@ -105,6 +103,8 @@ class SessionProxy : private SessionProxyContext,
                     const scada::StatusCallback& callback) override;
 
  protected:
+  Logger& logger() { return *logger_; }
+
   // net::Transport::Delegate
   virtual void OnTransportOpened() override;
   virtual void OnTransportClosed(net::Error error) override;
@@ -131,16 +131,8 @@ class SessionProxy : private SessionProxyContext,
 
   bool IsMessageLogged(const protocol::Message& message) const;
 
-  BoostLogger logger_{LOG_NAME("SessionProxy")};
-
+  std::unique_ptr<net::Logger> transport_logger_;
   std::unique_ptr<net::Transport> transport_;
-
-  const std::unique_ptr<net::Logger> transport_logger_;
-  const std::shared_ptr<SubscriptionProxy> subscription_;
-  const std::unique_ptr<ViewServiceProxy> view_service_proxy_;
-  const std::unique_ptr<NodeManagementProxy> node_management_proxy_;
-  const std::unique_ptr<EventServiceProxy> event_service_proxy_;
-  const std::unique_ptr<HistoryProxy> history_proxy_;
 
   bool session_created_ = false;
 
@@ -148,11 +140,16 @@ class SessionProxy : private SessionProxyContext,
   scada::LocalizedText password_;
   std::string host_;
   bool allow_remote_logoff_ = false;
-  std::vector<std::string> locale_ids_;
 
   scada::NodeId user_node_id_;
   unsigned user_rights_ = 0;
   std::string session_token_;
+
+  std::unique_ptr<SubscriptionProxy> subscription_;
+  std::unique_ptr<ViewServiceProxy> view_service_proxy_;
+  std::unique_ptr<NodeManagementProxy> node_management_proxy_;
+  std::unique_ptr<EventServiceProxy> event_service_proxy_;
+  std::unique_ptr<HistoryProxy> history_proxy_;
 
   std::map<int /*request_id*/, ResponseHandler> requests_;
 

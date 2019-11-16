@@ -141,8 +141,3 @@ void InitBoostLogging(const std::filesystem::path& path, bool console) {
     sink->set_filter(severity >= BoostLogSeverity::Info);
   }
 }
-
-void ShutdownBoostLogging() {
-  if (const auto& core = boost::log::core::get())
-    core->remove_all_sinks();
-}

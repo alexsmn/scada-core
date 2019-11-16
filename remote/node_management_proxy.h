@@ -2,13 +2,15 @@
 
 #include <memory>
 
-#include "base/boost_log.h"
 #include "core/node_management_service.h"
 
+class Logger;
 class MessageSender;
 
 class NodeManagementProxy : public scada::NodeManagementService {
  public:
+  explicit NodeManagementProxy(std::shared_ptr<Logger> logger);
+
   void OnChannelOpened(MessageSender& sender);
   void OnChannelClosed();
 
@@ -16,9 +18,13 @@ class NodeManagementProxy : public scada::NodeManagementService {
   virtual void CreateNode(const scada::NodeId& requested_id,
                           const scada::NodeId& parent_id,
                           scada::NodeClass node_class,
-                          const scada::NodeId& type_definition_id,
+                          const scada::NodeId& type_id,
                           scada::NodeAttributes attributes,
                           const CreateNodeCallback& callback) override;
+  virtual void ModifyNodes(
+      const std::vector<std::pair<scada::NodeId, scada::NodeAttributes>>&
+          attributes,
+      const scada::ModifyNodesCallback& callback) override;
   virtual void DeleteNode(const scada::NodeId& node_id,
                           bool return_dependencies,
                           const scada::DeleteNodeCallback& callback) override;
@@ -37,7 +43,9 @@ class NodeManagementProxy : public scada::NodeManagementService {
                                const scada::StatusCallback& callback) override;
 
  private:
-  BoostLogger logger_{LOG_NAME("NodeManagementProxy")};
+  Logger& logger() { return *logger_; }
+
+  std::shared_ptr<Logger> logger_;
 
   MessageSender* sender_ = nullptr;
 };

@@ -22,12 +22,11 @@ class SessionService {
  public:
   virtual ~SessionService() {}
 
-  virtual void CreateSession(const std::string& connection_string,
-                             const scada::LocalizedText& user_name,
-                             const scada::LocalizedText& password,
-                             bool allow_remote_logoff,
-                             const std::vector<std::string>& locale_ids,
-                             const StatusCallback& callback) = 0;
+  virtual void Connect(const std::string& connection_string,
+                       const scada::LocalizedText& user_name,
+                       const scada::LocalizedText& password,
+                       bool allow_remote_logoff,
+                       const StatusCallback& callback) = 0;
 
   virtual void Reconnect() = 0;
 
