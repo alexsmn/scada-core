@@ -1,10 +1,7 @@
+include(gtest.cmake)
 include(scada_module.cmake)
 
-add_subdirectory("${deps}/googletest" gtest)
 add_subdirectory("${deps}/icu" icu)
-
-set(GTEST_INCLUDE_DIRS "${deps}/googletest/googletest/include")
-set(GMOCK_INCLUDE_DIRS "${deps}/googletest/googlemock/include")
 
 set(CHROME_BASE_ROOT "${deps}/chromebase")
 add_subdirectory(${CHROME_BASE_ROOT} chromebase)
