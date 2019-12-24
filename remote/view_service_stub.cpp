@@ -1,7 +1,7 @@
 #include "remote/view_service_stub.h"
 
 #include "model/node_id_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "core/status.h"
 #include "core/view_service.h"
 #include "remote/message_sender.h"
