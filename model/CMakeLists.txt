@@ -1,0 +1,2 @@
+scada_module(scada_model)
+target_link_libraries(scada_model PUBLIC scada_core)

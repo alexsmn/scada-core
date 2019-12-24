@@ -2,7 +2,7 @@
 
 #include "base/bind.h"
 #include "base/logger.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "core/history_service.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"

@@ -2,6 +2,8 @@ if(NOT BOOST_FOUND)
   find_package(Boost REQUIRED COMPONENTS system date_time log log_setup regex)
 endif()
 
+add_subdirectory(test)
+
 file(GLOB sources "*.cpp" "*.h")
 
 if(WIN32)

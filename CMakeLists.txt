@@ -1,3 +1,5 @@
+include(scada_module.cmake)
+
 add_subdirectory("${deps}/googletest" gtest)
 add_subdirectory("${deps}/icu" icu)
 
@@ -11,6 +13,7 @@ add_subdirectory("${deps}/net" net)
 
 add_subdirectory(base)
 add_subdirectory(core)
+add_subdirectory(model)
 add_subdirectory(remote)
 
 if(WIN32)

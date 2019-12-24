@@ -3,7 +3,7 @@
 #include "base/logger.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"

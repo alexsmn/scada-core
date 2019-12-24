@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
 
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "remote/protocol_utils.h"
 
 TEST(ProtocolUtils, NodeId) {
