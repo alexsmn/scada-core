@@ -10,7 +10,10 @@ int main(int argc, char** argv) {
     if (!base::PathService::Get(base::DIR_EXE, &path))
       return 1;
     path = path.AppendASCII("logs");
-    InitBoostLogging(path.value(), true);
+    BoostLogParams params;
+    params.path = path.value();
+    params.console = true;
+    InitBoostLogging(params);
   }
 
   ::testing::InitGoogleMock(&argc, argv);

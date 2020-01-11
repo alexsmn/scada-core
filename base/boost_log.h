@@ -21,4 +21,12 @@ using BoostLogger = boost::log::sources::severity_channel_logger_mt<BoostLogSeve
 
 #define LOG_NAME(name) boost::log::keywords::channel = (name)
 
-void InitBoostLogging(const std::filesystem::path& path, bool console);
+struct BoostLogParams {
+  std::filesystem::path path;
+  size_t rotation_size = 10485760;
+  size_t max_size = 104857600;
+  size_t max_files = 1000;
+  bool console = false;
+};
+
+void InitBoostLogging(const BoostLogParams& params);

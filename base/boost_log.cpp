@@ -108,21 +108,31 @@ void FormatLogRecordT(const boost::log::record_view& record,
   FormatLogRecord(record, kConsole, stream);
 }
 
+std::filesystem::path GetLogFileName(const std::filesystem::path& path) {
+  auto new_path = path;
+  auto suffix = "_%Y-%m-%d_%H-%M-%S-%N" + new_path.extension().string();
+  new_path.replace_extension();
+  new_path += suffix;
+  return new_path;
+}
+
+std::filesystem::path GetLogTarget(const std::filesystem::path& path) {
+  return path.parent_path();
+}
+
 }  // namespace
 
-void InitBoostLogging(const std::filesystem::path& path, bool console) {
+void InitBoostLogging(const BoostLogParams& params) {
   boost::log::add_common_attributes();
 
-  if (!path.empty()) {
+  if (!params.path.empty()) {
     try {
-      auto new_path = path;
-      auto suffix = "_%Y-%m-%d_%H-%M-%S-%N" + new_path.extension().string();
-      new_path.replace_extension();
-      new_path += suffix;
       auto sink = boost::log::add_file_log(
-          boost::log::keywords::file_name = new_path,
-          boost::log::keywords::rotation_size = 10 * 1024 * 1024,
-          boost::log::keywords::max_size = 100 * 1024 * 1024,
+          boost::log::keywords::file_name = GetLogFileName(params.path),
+          boost::log::keywords::target = GetLogTarget(params.path),
+          boost::log::keywords::rotation_size = params.rotation_size,
+          boost::log::keywords::max_size = params.max_size,
+          boost::log::keywords::max_files = params.max_files,
           boost::log::keywords::time_based_rotation =
               boost::log::sinks::file::rotation_at_time_point(0, 0, 0),
           boost::log::keywords::format =
@@ -134,7 +144,7 @@ void InitBoostLogging(const std::filesystem::path& path, bool console) {
     }
   }
 
-  if (console) {
+  if (params.console) {
     auto sink = boost::log::add_console_log();
     boost::log::core::get()->add_sink(sink);
     sink->set_formatter(&FormatLogRecordT<true>);
