@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "base/format.h"
+#include "base/format_time.h"
 #include "base/strings/utf_string_conversions.h"
 #include "core/debug_util.h"
 #include "core/standard_node_ids.h"
@@ -176,6 +177,20 @@ struct FormatHelperT<LocalizedText, LocalizedText> {
   }
 };
 
+template <>
+struct FormatHelperT<String, DateTime> {
+  static inline String Format(const DateTime& value) {
+    return FormatTime(value);
+  }
+};
+
+template <>
+struct FormatHelperT<LocalizedText, DateTime> {
+  static inline LocalizedText Format(const DateTime& value) {
+    return ToLocalizedText(FormatTime(value));
+  }
+};
+
 template <class Target, class Source>
 inline Target FormatHelper(const Source& value) {
   return FormatHelperT<Target, Source>::Format(value);
@@ -210,6 +225,9 @@ bool Variant::ToStringHelper(String& string_value) const {
       return true;
     case NODE_ID:
       string_value = FormatHelper<String>(as_node_id().ToString());
+      return true;
+    case DATE_TIME:
+      string_value = FormatHelper<String>(get<DateTime>());
       return true;
     default: {
       Int64 int64_value;
