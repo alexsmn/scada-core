@@ -1,8 +1,9 @@
 #pragma once
 
 #include "base/logger.h"
-#include "base/timer.h"
 #include "base/memory/weak_ptr.h"
+#include "base/timer.h"
+#include "common/view_events_subscription.h"
 #include "core/view_service.h"
 
 #include <memory>
@@ -34,7 +35,8 @@ struct ViewServiceStubContext {
   scada::ViewService& service_;
 };
 
-class ViewServiceStub final : private ViewServiceStubContext, private scada::ViewEvents {
+class ViewServiceStub final : private ViewServiceStubContext,
+                              private scada::ViewEvents {
  public:
   explicit ViewServiceStub(ViewServiceStubContext&& context);
   ~ViewServiceStub();
@@ -54,7 +56,9 @@ class ViewServiceStub final : private ViewServiceStubContext, private scada::Vie
 
   ViewEventQueue events_;
 
-  Timer timer_;
+  Timer timer_{io_context_};
 
-  base::WeakPtrFactory<ViewServiceStub> weak_factory_;
+  ViewEventsSubscription view_events_subscription_{service_, *this};
+
+  base::WeakPtrFactory<ViewServiceStub> weak_factory_{this};
 };

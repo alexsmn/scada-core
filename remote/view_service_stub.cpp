@@ -1,9 +1,9 @@
 #include "remote/view_service_stub.h"
 
-#include "model/node_id_util.h"
-#include "model/scada_node_ids.h"
 #include "core/status.h"
 #include "core/view_service.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
@@ -55,15 +55,9 @@ std::vector<ViewEventQueue::Event> ViewEventQueue::GetEvents() {
 // ViewServiceStub
 
 ViewServiceStub::ViewServiceStub(ViewServiceStubContext&& context)
-    : ViewServiceStubContext{std::move(context)},
-      timer_{io_context_},
-      weak_factory_(this) {
-  service_.Subscribe(*this);
-}
+    : ViewServiceStubContext{std::move(context)} {}
 
-ViewServiceStub::~ViewServiceStub() {
-  service_.Unsubscribe(*this);
-}
+ViewServiceStub::~ViewServiceStub() {}
 
 void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
   if (request.has_browse()) {
