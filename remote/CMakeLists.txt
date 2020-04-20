@@ -3,8 +3,8 @@ if(NOT PROTOBUF_FOUND)
   find_package(Protobuf REQUIRED)
 endif()
 
-file(GLOB sources "*.cpp" "*.h" "*.proto")
-file(GLOB unittests "*_unittest.*")
+file(GLOB sources CONFIGURE_DEPENDS "*.cpp" "*.h" "*.proto")
+file(GLOB unittests CONFIGURE_DEPENDS "*_unittest.*")
 
 list(REMOVE_ITEM sources ${unittests})
 

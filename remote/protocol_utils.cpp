@@ -456,6 +456,29 @@ void ToProto(const scada::ModelChangeEvent& source,
     target.set_reference_deleted(true);
 }
 
+scada::EventFilter FromProto(const protocol::EventFilter& source) {
+  scada::EventFilter target;
+
+  target.types = 0;
+  if (source.acked())
+    target.types |= scada::EventFilter::ACKED;
+  if (source.unacked())
+    target.types |= scada::EventFilter::UNACKED;
+
+  target.of_type = VectorFromProto<scada::NodeId>(source.of_type());
+
+  return target;
+}
+
+void ToProto(const scada::EventFilter& source, protocol::EventFilter& target) {
+  if (source.types & scada::EventFilter::ACKED)
+    target.set_acked(true);
+  if (source.types & scada::EventFilter::UNACKED)
+    target.set_unacked(true);
+
+  ContainerToProto(source.of_type, *target.mutable_of_type());
+}
+
 scada::AggregateFilter FromProto(const protocol::AggregateFilter& source) {
   return {
       scada::DateTime::FromInternalValue(source.start_time()),
@@ -474,15 +497,19 @@ void ToProto(const scada::AggregateFilter& source,
 scada::MonitoringParameters FromProto(
     const protocol::MonitoringParameters& source) {
   scada::MonitoringParameters target;
-  if (source.has_aggregate_filter())
+  if (source.has_event_filter())
+    target.filter = FromProto(source.event_filter());
+  else if (source.has_aggregate_filter())
     target.filter = FromProto(source.aggregate_filter());
   return target;
 }
 
 void ToProto(const scada::MonitoringParameters& source,
              protocol::MonitoringParameters& target) {
-  if (auto* aggregate_filter =
-          std::get_if<scada::AggregateFilter>(&source.filter)) {
+  if (auto* event_filter = std::get_if<scada::EventFilter>(&source.filter)) {
+    ToProto(*event_filter, *target.mutable_event_filter());
+  } else if (auto* aggregate_filter =
+                 std::get_if<scada::AggregateFilter>(&source.filter)) {
     ToProto(*aggregate_filter, *target.mutable_aggregate_filter());
   }
 }

@@ -1,9 +1,9 @@
 #include "remote/view_service_proxy.h"
 
 #include "base/logger.h"
-#include "model/node_id_util.h"
 #include "core/standard_node_ids.h"
 #include "core/status.h"
+#include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
@@ -19,25 +19,6 @@ void ViewServiceProxy::OnChannelOpened(MessageSender& sender) {
 
 void ViewServiceProxy::OnChannelClosed() {
   sender_ = nullptr;
-}
-
-void ViewServiceProxy::OnNotification(
-    const protocol::Notification& notification) {
-  // Notification should contain only one type changes.
-  // But it can be addition on complex object.
-
-  for (auto& model_change : notification.model_change()) {
-    const auto event = FromProto(model_change);
-    for (auto& e : events_)
-      e.OnModelChanged(event);
-  }
-
-  for (auto& semantics_changed_node_id :
-       notification.semantics_changed_node_id()) {
-    const auto node_id = FromProto(semantics_changed_node_id);
-    for (auto& e : events_)
-      e.OnNodeSemanticsChanged(node_id);
-  }
 }
 
 void ViewServiceProxy::Browse(
@@ -70,12 +51,4 @@ void ViewServiceProxy::TranslateBrowsePath(
     const scada::RelativePath& relative_path,
     const scada::TranslateBrowsePathCallback& callback) {
   callback(scada::StatusCode::Bad, {}, 0);
-}
-
-void ViewServiceProxy::Subscribe(scada::ViewEvents& events) {
-  events_.AddObserver(&events);
-}
-
-void ViewServiceProxy::Unsubscribe(scada::ViewEvents& events) {
-  events_.RemoveObserver(&events);
 }

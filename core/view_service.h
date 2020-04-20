@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "core/configuration_types.h"
-#include "core/model_change_event.h"
+#include "core/event.h"
 #include "core/node_class.h"
 #include "core/node_id.h"
 #include "core/qualified_name.h"
@@ -36,7 +36,8 @@ class ViewEvents {
   virtual ~ViewEvents() {}
 
   virtual void OnModelChanged(const ModelChangeEvent& event) = 0;
-  virtual void OnNodeSemanticsChanged(const NodeId& node_id) = 0;
+  virtual void OnNodeSemanticsChanged(
+      const scada::SemanticChangeEvent& event) = 0;
 };
 
 using BrowseCallback =
@@ -57,9 +58,6 @@ class ViewService {
       const NodeId& starting_node_id,
       const RelativePath& relative_path,
       const TranslateBrowsePathCallback& callback) = 0;
-
-  virtual void Subscribe(ViewEvents& events) = 0;
-  virtual void Unsubscribe(ViewEvents& events) = 0;
 };
 
 class LocalViewService {

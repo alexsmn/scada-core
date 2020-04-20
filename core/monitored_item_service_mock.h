@@ -2,6 +2,8 @@
 
 #include "core/monitored_item_service.h"
 
+#include <gmock/gmock.h>
+
 namespace scada {
 
 class MockMonitoredItemService : public MonitoredItemService {

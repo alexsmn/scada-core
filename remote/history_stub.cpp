@@ -133,9 +133,9 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   if (history_read_events.has_filter()) {
     auto& proto_filter = history_read_events.filter();
     if (proto_filter.acked())
-      filter.types |= scada::Event::ACKED;
+      filter.types |= scada::EventFilter::ACKED;
     if (proto_filter.unacked())
-      filter.types |= scada::Event::UNACKED;
+      filter.types |= scada::EventFilter::UNACKED;
   }
 
   logger_->WriteF(LogSeverity::Normal, "History read events request %u node %s",

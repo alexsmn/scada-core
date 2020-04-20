@@ -263,7 +263,7 @@ void SubscriptionProxy::OnDataChange(int monitored_item_id,
 
 void SubscriptionProxy::OnEvent(int monitored_item_id,
                                 const scada::Status& status,
-                                const scada::Event& event) {
+                                const std::any& event) {
   auto i = monitored_item_ids_.find(monitored_item_id);
   if (i != monitored_item_ids_.end())
     i->second->ForwardEvent(status, event);

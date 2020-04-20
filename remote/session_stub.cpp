@@ -18,7 +18,7 @@ SessionStub::SessionStub(SessionContext&& context)
       // conversion from 'SessionStub *' to 'MessageSender &' exists, but is
       // inaccessible
       view_service_stub_{new ViewServiceStub{
-          ViewServiceStubContext{logger_, io_context_, *this, view_service_}}},
+          ViewServiceStubContext{logger_, *this, view_service_}}},
       node_management_stub_{new NodeManagementStub{
           *this, node_management_service_, user_id_, logger_}},
       history_stub_{

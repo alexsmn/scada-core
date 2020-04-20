@@ -1,5 +1,5 @@
-file(GLOB scada_core_sources "*.cpp" "*.h")
-file(GLOB scada_core_unittest_sources "*_unittest.*")
+file(GLOB scada_core_sources CONFIGURE_DEPENDS "*.cpp" "*.h")
+file(GLOB scada_core_unittest_sources CONFIGURE_DEPENDS "*_unittest.*")
 list(REMOVE_ITEM scada_core_sources ${scada_core_unittest_sources})
 
 add_library(scada_core ${scada_core_sources})

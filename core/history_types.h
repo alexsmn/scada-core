@@ -22,10 +22,6 @@ struct HistoryReadRawDetails {
   ByteString continuation_point;
 };
 
-struct EventFilter {
-  unsigned types = 0;
-};
-
 struct ItemInfo {
   NodeId item;
   DataValue tvq;

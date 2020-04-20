@@ -36,7 +36,7 @@ class SubscriptionProxy {
   void OnDataChange(int monitored_item_id, const scada::DataValue& data_value);
   void OnEvent(int monitored_item_id,
                const scada::Status& status,
-               const scada::Event& event);
+               const std::any& event);
 
  private:
   class MonitoredItemProxy;

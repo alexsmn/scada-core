@@ -135,8 +135,6 @@ message DataValue {
 }
 
 message Event {
-  optional uint32 monitored_item_id = 1;
-  optional Status status = 13;
   required uint64 time = 2;
   required uint32 severity = 3;
   optional NodeId source_node_id = 4;
@@ -281,6 +279,7 @@ message AggregateFilter {
 
 message MonitoringParameters {
   optional AggregateFilter aggregate_filter = 1;
+  optional EventFilter event_filter = 4;
 }
 
 message HistoryReadRaw {
@@ -301,13 +300,14 @@ message HistoryReadRawResult {
 message EventFilter {
   optional bool acked = 1;
   optional bool unacked = 2;
+  repeated NodeId of_type = 3;
 }
 
 message HistoryReadEvents {
   required NodeId node_id = 1;
   optional uint64 from_time = 3;
   optional uint64 to_time = 4;
-  optional EventFilter filter  = 5;
+  optional EventFilter filter = 5;
 }
 
 message HistoryReadEventsResult {
@@ -437,7 +437,6 @@ message Response {
 }
 
 message DataChange {
-  required uint32 monitored_item_id = 1;
   required DataValue data_value = 2;
 }
 
@@ -455,6 +454,8 @@ message ModelChangeEvent {
 
 message Notification {
   optional uint32 subscription_id = 1;
+  optional uint32 monitored_item_id = 4;
+  optional Status status = 6;
 
   repeated DataChange data_changes = 2;
 

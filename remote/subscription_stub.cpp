@@ -64,7 +64,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
   } else if (read_value_id.attribute_id == scada::AttributeId::EventNotifier) {
     channel_ptr->set_event_handler(
         [this, monitored_item_id](const scada::Status& status,
-                                  const scada::Event& event) {
+                                  const std::any& event) {
           OnEvent(monitored_item_id, status, event);
         });
   }
@@ -95,15 +95,15 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
   protocol::Message message;
   auto& notification = *message.add_notifications();
   notification.set_subscription_id(subscription_id_);
+  notification.set_monitored_item_id(monitored_item_id);
   auto& data_change = *notification.add_data_changes();
-  data_change.set_monitored_item_id(monitored_item_id);
   ToProto(data_value, *data_change.mutable_data_value());
   sender_.Send(message);
 }
 
 void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
                                const scada::Status& status,
-                               const scada::Event& event) {
+                               const std::any& event) {
   auto i = channels_.find(monitored_item_id);
   if (i == channels_.end())
     return;
@@ -114,10 +114,16 @@ void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
   protocol::Message message;
   auto& notification = *message.add_notifications();
   notification.set_subscription_id(subscription_id_);
-  auto& proto_event = *notification.add_events();
-  proto_event.set_monitored_item_id(monitored_item_id);
-  ToProto(event, proto_event);
+  notification.set_monitored_item_id(monitored_item_id);
   if (!status)
-    ToProto(status, *proto_event.mutable_status());
+    ToProto(status, *notification.mutable_status());
+
+  if (auto* e = std::any_cast<scada::Event>(&event))
+    ToProto(*e, *notification.add_events());
+  else if (auto* e = std::any_cast<scada::ModelChangeEvent>(&event))
+    ToProto(*e, *notification.add_model_change());
+  else if (auto* e = std::any_cast<scada::SemanticChangeEvent>(&event))
+    ToProto(e->node_id, *notification.add_semantics_changed_node_id());
+
   sender_.Send(message);
 }
