@@ -2,7 +2,7 @@ package protocol;
 
 // Protocol version
 enum ProtocolVersionMajor {
-  PROTOCOL_VERSION_MAJOR = 10;
+  PROTOCOL_VERSION_MAJOR = 11;
 }
 enum ProtocolVersionMinor {
   PROTOCOL_VERSION_MINOR = 0;
