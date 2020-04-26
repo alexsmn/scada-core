@@ -31,6 +31,21 @@ struct RelativePathElement {
 
 using RelativePath = std::vector<RelativePathElement>;
 
+struct BrowsePath {
+  NodeId starting_node_id;
+  RelativePath relative_path;
+};
+
+struct BrowsePathTarget {
+  ExpandedNodeId target_id;
+  size_t remaining_path_index;
+};
+
+struct BrowsePathResult {
+  scada::StatusCode status_code;
+  std::vector<BrowsePathTarget> targets;
+};
+
 class ViewEvents {
  public:
   virtual ~ViewEvents() {}
@@ -44,8 +59,7 @@ using BrowseCallback =
     std::function<void(Status&& status, std::vector<BrowseResult>&& results)>;
 using TranslateBrowsePathCallback =
     std::function<void(Status&& status,
-                       std::vector<NodeId>&& target_ids,
-                       size_t remaining_path_index)>;
+                       std::vector<BrowsePathResult>&& results)>;
 
 class ViewService {
  public:
@@ -54,9 +68,8 @@ class ViewService {
   virtual void Browse(const std::vector<BrowseDescription>& descriptions,
                       const BrowseCallback& callback) = 0;
 
-  virtual void TranslateBrowsePath(
-      const NodeId& starting_node_id,
-      const RelativePath& relative_path,
+  virtual void TranslateBrowsePaths(
+      const std::vector<BrowsePath>& browse_paths,
       const TranslateBrowsePathCallback& callback) = 0;
 };
 

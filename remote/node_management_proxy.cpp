@@ -19,12 +19,13 @@ void NodeManagementProxy::OnChannelClosed() {
   sender_ = nullptr;
 }
 
-void NodeManagementProxy::CreateNode(const scada::NodeId& requested_id,
-                                     const scada::NodeId& parent_id,
-                                     scada::NodeClass node_class,
-                                     const scada::NodeId& type_id,
-                                     scada::NodeAttributes attributes,
-                                     const CreateNodeCallback& callback) {
+void NodeManagementProxy::CreateNode(
+    const scada::NodeId& requested_id,
+    const scada::NodeId& parent_id,
+    scada::NodeClass node_class,
+    const scada::NodeId& type_id,
+    scada::NodeAttributes attributes,
+    const scada::CreateNodeCallback& callback) {
   logger().WriteF(LogSeverity::Normal,
                   "CreateNode request [requested_id=%s, node_class=%s, "
                   "parent_id=%s, type_id=%s]",

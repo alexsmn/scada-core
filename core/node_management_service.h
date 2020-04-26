@@ -12,6 +12,8 @@ namespace scada {
 enum class NodeClass;
 
 using StatusCallback = std::function<void(Status&&)>;
+using CreateNodeCallback =
+    std::function<void(Status&& status, const NodeId& node_id)>;
 using ModifyNodesCallback =
     std::function<void(Status&&, std::vector<Status>&&)>;
 using DeleteNodeCallback =
@@ -22,8 +24,6 @@ class NodeManagementService {
  public:
   virtual ~NodeManagementService() {}
 
-  typedef std::function<void(Status&& status, const NodeId& node_id)>
-      CreateNodeCallback;
   virtual void CreateNode(const NodeId& requested_id,
                           const NodeId& parent_id,
                           NodeClass node_class,
