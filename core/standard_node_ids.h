@@ -5,6 +5,7 @@
 namespace scada {
 namespace id {
 
+constexpr NumericId BaseDataType = 24;
 constexpr NumericId Boolean = 1;
 constexpr NumericId SByte = 2;
 constexpr NumericId Byte = 3;
@@ -22,6 +23,7 @@ constexpr NumericId LocalizedText = 21;
 constexpr NumericId NodeId = 17;
 constexpr NumericId ExpandedNodeId = 18;
 constexpr NumericId DateTime = 13;
+constexpr NumericId Enumeration = 29;
 
 constexpr NumericId References = 31;
 constexpr NumericId NonHierarchicalReferences = 32;
@@ -35,7 +37,6 @@ constexpr NumericId HasTypeDefinition = 40;
 constexpr NumericId HasSubtype = 45;
 constexpr NumericId HasModellingRule = 37;
 
-constexpr NumericId BaseDataType = 24;
 constexpr NumericId BaseObjectType = 58;
 constexpr NumericId BaseVariableType = 62;
 constexpr NumericId FolderType = 61;
@@ -44,6 +45,7 @@ constexpr NumericId PropertyType = 68;
 constexpr NumericId RootFolder = 84;
 constexpr NumericId ObjectsFolder = 85;
 constexpr NumericId TypesFolder = 86;
+constexpr NumericId Server = 2253;
 
 constexpr NumericId ModellingRules = 87;
 constexpr NumericId ModellingRule_Mandatory = 78;
