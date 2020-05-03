@@ -1,5 +1,6 @@
 #include "node_id_util.h"
 
+#include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -84,9 +85,8 @@ std::string NodeIdToScadaString(const scada::NodeId& node_id) {
 
   switch (node_id.type()) {
     case scada::NodeIdType::Numeric:
-      result = base::StringPrintf("%s.%u",
-                                  GetNamespaceName(node_id.namespace_index()),
-                                  node_id.numeric_id());
+      result = base::StrCat({GetNamespaceName(node_id.namespace_index()), ".",
+                             base::IntToString(node_id.numeric_id())});
       break;
 
     case scada::NodeIdType::String:
