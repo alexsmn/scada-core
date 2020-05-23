@@ -12,7 +12,7 @@ const scada::NumericId HistoricalDatabases = 12;
 
 namespace id {
 
-const scada::NodeId PropertyCategories_History{317, NamespaceIndexes::SCADA};
+const scada::NodeId HistoryPropertyCategory{317, NamespaceIndexes::SCADA};
 const scada::NodeId HistoricalDatabases{numeric_id::HistoricalDatabases, NamespaceIndexes::SCADA};
 const scada::NodeId HistoricalDatabaseType_Depth{171, NamespaceIndexes::SCADA};
 const scada::NodeId HistoricalDatabaseType_EventCleanupDuration{242, NamespaceIndexes::SCADA};

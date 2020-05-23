@@ -13,12 +13,12 @@ const scada::NumericId TsFormats = 27;
 
 namespace id {
 
-const scada::NodeId PropertyCategories_Display{316, NamespaceIndexes::SCADA};
-const scada::NodeId PropertyCategories_Channels{313, NamespaceIndexes::SCADA};
-const scada::NodeId PropertyCategories_Conversion{314, NamespaceIndexes::SCADA};
-const scada::NodeId PropertyCategories_Filtering{315, NamespaceIndexes::SCADA};
-const scada::NodeId PropertyCategories_Simulation{318, NamespaceIndexes::SCADA};
-const scada::NodeId PropertyCategories_Limits{319, NamespaceIndexes::SCADA};
+const scada::NodeId DisplayPropertyCategory{316, NamespaceIndexes::SCADA};
+const scada::NodeId ChannelsPropertyCategory{313, NamespaceIndexes::SCADA};
+const scada::NodeId ConversionPropertyCategory{314, NamespaceIndexes::SCADA};
+const scada::NodeId FilteringPropertyCategory{315, NamespaceIndexes::SCADA};
+const scada::NodeId SimulationPropertyCategory{318, NamespaceIndexes::SCADA};
+const scada::NodeId LimitsPropertyCategory{319, NamespaceIndexes::SCADA};
 const scada::NodeId AnalogConversionDataType{320, NamespaceIndexes::SCADA};
 const scada::NodeId AnalogConversionDataType_EnumStrings{321, NamespaceIndexes::SCADA};
 const scada::NodeId AnalogItemType_Aperture{295, NamespaceIndexes::SCADA};
@@ -56,8 +56,8 @@ const scada::NodeId DiscreteItemType{72, NamespaceIndexes::SCADA}; // :DataItemT
 const scada::NodeId HasTsFormat{154, NamespaceIndexes::SCADA}; // Ref
 const scada::NodeId HasSimulationSignal{150, NamespaceIndexes::SCADA}; // Ref
 const scada::NodeId SimulationSignals{numeric_id::SimulationSignals, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalTypeEnum{326, NamespaceIndexes::SCADA};
-const scada::NodeId SimulationSignalTypeEnum_EnumStrings{327, NamespaceIndexes::SCADA};
+const scada::NodeId SimulationFunctionDataType{326, NamespaceIndexes::SCADA};
+const scada::NodeId SimulationFunctionDataType_EnumStrings{327, NamespaceIndexes::SCADA};
 const scada::NodeId SimulationSignalType_Period{173, NamespaceIndexes::SCADA};
 const scada::NodeId SimulationSignalType_Phase{174, NamespaceIndexes::SCADA};
 const scada::NodeId SimulationSignalType_Function{172, NamespaceIndexes::SCADA};
@@ -72,10 +72,10 @@ const scada::NodeId TsFormatType{80, NamespaceIndexes::SCADA};
 const scada::NodeId Aliases{300, NamespaceIndexes::SCADA};
 const scada::NodeId AliasType{301, NamespaceIndexes::SCADA};
 const scada::NodeId AliasOf{302, NamespaceIndexes::SCADA};
-const scada::NodeId Server_CPU{226, NamespaceIndexes::SCADA};
-const scada::NodeId Server_Memory{227, NamespaceIndexes::SCADA};
-const scada::NodeId Server_TotalCPU{228, NamespaceIndexes::SCADA};
-const scada::NodeId Server_TotalMemory{229, NamespaceIndexes::SCADA};
+const scada::NodeId Statistics_ServerCPUUsage{226, NamespaceIndexes::SCADA};
+const scada::NodeId Statistics_ServerMemoryUsage{227, NamespaceIndexes::SCADA};
+const scada::NodeId Statistics_TotalCPUUsage{228, NamespaceIndexes::SCADA};
+const scada::NodeId Statistics_TotalMemoryUsage{229, NamespaceIndexes::SCADA};
 
 }
 

@@ -36,10 +36,10 @@ const scada::NodeId Iec60870DeviceType_StartupClockSync{197, NamespaceIndexes::S
 const scada::NodeId Iec60870DeviceType_StartupInterrogation{195, NamespaceIndexes::SCADA};
 const scada::NodeId Iec60870DeviceType_UtcTime{294, NamespaceIndexes::SCADA};
 const scada::NodeId Iec60870DeviceType{331, NamespaceIndexes::SCADA};
-const scada::NodeId Iec60870ProtocolType{322, NamespaceIndexes::SCADA};
-const scada::NodeId Iec60870ProtocolType_EnumStrings{323, NamespaceIndexes::SCADA};
-const scada::NodeId Iec60870ModeType{324, NamespaceIndexes::SCADA};
-const scada::NodeId Iec60870ModeType_EnumStrings{325, NamespaceIndexes::SCADA};
+const scada::NodeId Iec60870ProtocolDataType{322, NamespaceIndexes::SCADA};
+const scada::NodeId Iec60870ProtocolDataType_EnumStrings{323, NamespaceIndexes::SCADA};
+const scada::NodeId Iec60870ModeDataType{324, NamespaceIndexes::SCADA};
+const scada::NodeId Iec60870ModeDataType_EnumStrings{325, NamespaceIndexes::SCADA};
 const scada::NodeId Iec60870LinkType_AnonymousMode{192, NamespaceIndexes::SCADA};
 const scada::NodeId Iec60870LinkType_ConfirmationTimeout{181, NamespaceIndexes::SCADA};
 const scada::NodeId Iec60870LinkType_ConnectTimeout{180, NamespaceIndexes::SCADA};
