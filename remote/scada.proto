@@ -110,20 +110,23 @@ message Variant {
   // 0 - scalar, 1 - array
   optional uint32 rank          = 2;
 
-  optional bool   bool_value    = 3;
-  optional int64  int_value     = 4;
-  optional double double_value  = 5;
-
+  optional bool   bool_value    = 13;
+  optional int64  int_value     = 14;
+  optional double double_value  = 15;
   // String, QualifiedName, or LocalizedText
-  optional bytes  string_value_utf8  = 6;
+  optional bytes  string_value_utf8  = 16;
+  optional NodeId node_id_value = 17;
+  optional bytes  byte_string_value = 18;
+  optional int64  time_value_time = 19;
 
-  optional NodeId node_id_value = 7;
-
-  optional bytes  byte_string_value = 8;
-
-  optional int64  time = 9;
-
-  repeated bytes  string_array_utf8 = 107;
+  repeated bool   bool_array = 103;
+  repeated int64  int_array = 104;
+  repeated double double_array = 105;
+  // String, QualifiedName, or LocalizedText
+  repeated bytes  string_array_utf8 = 106;
+  optional NodeId node_id_array = 107;
+  optional bytes  byte_string_array = 108;
+  optional int64  time_array_time = 109;
 }
 
 message DataValue {
