@@ -13,9 +13,9 @@ class MockAttributeService : public AttributeService {
                     const ReadCallback& callback));
 
   MOCK_METHOD3(Write,
-               void(const WriteValue& value,
+               void(const std::vector<WriteValueId>& value_ids,
                     const NodeId& user_id,
-                    const StatusCallback& callback));
+                    const WriteCallback& callback));
 };
 
 class SimpleMockAttributeService : public AttributeService {
@@ -23,9 +23,9 @@ class SimpleMockAttributeService : public AttributeService {
   MOCK_METHOD1(Read, DataValue(const ReadValueId& value_id));
 
   MOCK_METHOD3(Write,
-               void(const WriteValue& value,
+               void(const std::vector<WriteValueId>& value_ids,
                     const NodeId& user_id,
-                    const StatusCallback& callback));
+                    const WriteCallback& callback));
 
   virtual void Read(const std::vector<ReadValueId>& value_ids,
                     const ReadCallback& callback) final {

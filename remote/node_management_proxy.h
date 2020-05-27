@@ -21,10 +21,6 @@ class NodeManagementProxy : public scada::NodeManagementService {
                           const scada::NodeId& type_id,
                           scada::NodeAttributes attributes,
                           const scada::CreateNodeCallback& callback) override;
-  virtual void ModifyNodes(
-      const std::vector<std::pair<scada::NodeId, scada::NodeAttributes>>&
-          attributes,
-      const scada::ModifyNodesCallback& callback) override;
   virtual void DeleteNode(const scada::NodeId& node_id,
                           bool return_dependencies,
                           const scada::DeleteNodeCallback& callback) override;

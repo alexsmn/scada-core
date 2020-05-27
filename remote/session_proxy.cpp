@@ -378,26 +378,28 @@ void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
   });
 }
 
-void SessionProxy::Write(const scada::WriteValue& value,
+void SessionProxy::Write(const std::vector<scada::WriteValueId>& value_ids,
                          const scada::NodeId& user_id,
-                         const scada::StatusCallback& callback) {
+                         const scada::WriteCallback& callback) {
   if (!session_created_) {
-    callback(scada::StatusCode::Bad_Disconnected);
+    callback(scada::StatusCode::Bad_Disconnected, {});
     return;
   }
 
   protocol::Request request;
-  auto& write = *request.mutable_write();
-  ToProto(value.node_id, *write.mutable_node_id());
-  ToProto(value.value, *write.mutable_value());
-  write.set_attribute_id(
-      static_cast<protocol::AttributeId>(value.attribute_id));
-  if (value.flags.select())
-    write.set_select(true);
+  for (auto& value_id : value_ids)
+    ToProto(value_id, *request.add_write());
 
   Request(request, [this, callback](const protocol::Response& response) {
-    if (callback)
-      callback(FromProto(response.status()));
+    if (callback) {
+      std::vector<scada::StatusCode> status_codes;
+      auto statuses = VectorFromProto<scada::Status>(response.write_result());
+      status_codes.reserve(statuses.size());
+      std::transform(statuses.begin(), statuses.end(),
+                     std::back_inserter(status_codes),
+                     [](const scada::Status& status) { return status.code(); });
+      callback(FromProto(response.status()), std::move(status_codes));
+    }
   });
 }
 

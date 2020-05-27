@@ -364,6 +364,26 @@ void ToProto(const scada::ReadValueId& source, protocol::ReadValueId& target) {
   target.set_attribute_id(ToProto(source.attribute_id));
 }
 
+scada::WriteValueId FromProto(const protocol::Write& source) {
+  scada::WriteFlags flags;
+  if (source.select())
+    flags.set_select();
+  return {
+      FromProto(source.node_id()),
+      FromProto(source.attribute_id()),
+      FromProto(source.value()),
+      flags,
+  };
+}
+
+void ToProto(const scada::WriteValueId& source, protocol::Write& target) {
+  ToProto(source.node_id, *target.mutable_node_id());
+  ToProto(source.value, *target.mutable_value());
+  target.set_attribute_id(ToProto(source.attribute_id));
+  if (source.flags.select())
+    target.set_select(true);
+}
+
 scada::BrowseDirection FromProto(protocol::BrowseDirection source) {
   return static_cast<scada::BrowseDirection>(source);
 }

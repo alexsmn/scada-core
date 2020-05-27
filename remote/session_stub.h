@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 
+#include "core/attribute_service.h"
 #include "core/configuration_types.h"
 #include "remote/message_sender.h"
 #include "remote/subscription.h"
@@ -87,7 +88,8 @@ class SessionStub : public std::enable_shared_from_this<SessionStub>,
 
   void OnRead(unsigned request_id,
               const std::vector<scada::ReadValueId>& read_value_ids);
-  void OnWrite(unsigned request_id, const scada::WriteValue& value);
+  void OnWrite(unsigned request_id,
+               const std::vector<scada::WriteValueId>& value_ids);
   void OnCall(unsigned request_id,
               const scada::NodeId& node_id,
               const scada::NodeId& method_id,

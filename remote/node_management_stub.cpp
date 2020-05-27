@@ -30,16 +30,6 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
                                      : scada::NodeAttributes());
   }
 
-  if (request.modify_node_size() != 0) {
-    std::vector<std::pair<scada::NodeId, scada::NodeAttributes>> nodes;
-    nodes.reserve(request.modify_node_size());
-    for (auto& modify_node : request.modify_node()) {
-      nodes.emplace_back(FromProto(modify_node.node_id()),
-                         FromProto(modify_node.attributes()));
-    }
-    OnModifyNodes(request.request_id(), std::move(nodes));
-  }
-
   if (request.has_delete_node()) {
     auto& delete_node = request.delete_node();
     OnDeleteNode(request.request_id(), FromProto(delete_node.node_id()),
@@ -117,26 +107,6 @@ void NodeManagementStub::OnCreateNode(unsigned request_id,
         auto& create_node_result = *response.mutable_create_node_result();
         ToProto(status, *response.mutable_status());
         ToProto(node_id, *create_node_result.mutable_node_id());
-        ptr->sender_.Send(message);
-      });
-}
-
-void NodeManagementStub::OnModifyNodes(
-    unsigned request_id,
-    const std::vector<std::pair<scada::NodeId, scada::NodeAttributes>>& nodes) {
-  auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.ModifyNodes(
-      nodes, [weak_ptr, request_id](const scada::Status& status,
-                                    const std::vector<scada::Status>& results) {
-        auto ptr = weak_ptr.get();
-        if (!ptr)
-          return;
-
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        ToProto(status, *response.mutable_status());
-        ContainerToProto(results, *response.mutable_modify_node_result());
         ptr->sender_.Send(message);
       });
 }

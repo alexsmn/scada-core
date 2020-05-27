@@ -3,6 +3,7 @@
 #include <set>
 #include <vector>
 
+#include "core/attribute_service.h"
 #include "core/aggregate_filter.h"
 #include "core/configuration_types.h"
 #include "core/data_value.h"
@@ -39,6 +40,9 @@ protocol::AttributeId ToProto(scada::AttributeId source);
 
 scada::ReadValueId FromProto(const protocol::ReadValueId& source);
 void ToProto(const scada::ReadValueId& source, protocol::ReadValueId& target);
+
+scada::WriteValueId FromProto(const protocol::Write& source);
+void ToProto(const scada::WriteValueId& source, protocol::Write& target);
 
 scada::BrowseDirection FromProto(protocol::BrowseDirection source);
 protocol::BrowseDirection ToProto(scada::BrowseDirection source);

@@ -2,7 +2,7 @@ package protocol;
 
 // Protocol version
 enum ProtocolVersionMajor {
-  PROTOCOL_VERSION_MAJOR = 11;
+  PROTOCOL_VERSION_MAJOR = 12;
 }
 enum ProtocolVersionMinor {
   PROTOCOL_VERSION_MINOR = 0;
@@ -216,11 +216,6 @@ message DeleteNodeResult {
   repeated NodeId dependencies = 1;
 }
 
-message ModifyNode {
-  required NodeId node_id = 1;
-  optional Attributes attributes = 2;
-}
-
 message Reference {
   required NodeId reference_type_id = 1;
   required NodeId source_id = 2;
@@ -390,7 +385,7 @@ message Request {
   optional Ping ping = 15;
 
   optional Read read = 14;
-  optional Write write = 12;
+  repeated Write write = 12;
   optional Call call = 13;
 
   optional CreateSubscription create_subscription = 20;
@@ -404,7 +399,6 @@ message Request {
 
   optional CreateNode create_node = 50;
   optional DeleteNode delete_node = 51;
-  repeated ModifyNode modify_node = 52;
 
   optional Reference add_reference = 54;
   optional Reference delete_reference = 55;
@@ -421,6 +415,7 @@ message Response {
   optional CreateSessionResult create_session_result = 10;
 
   optional ReadResult read_result = 14;
+  repeated Status write_result = 12;
 
   optional CreateSubscriptionResult create_subscription_result = 20;
 

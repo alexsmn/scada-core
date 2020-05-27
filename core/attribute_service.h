@@ -17,6 +17,11 @@ using StatusCallback = std::function<void(Status&&)>;
 using ReadCallback =
     std::function<void(Status&&, std::vector<DataValue>&& values)>;
 
+using WriteCallback =
+    std::function<void(Status&& status,
+                       std::vector<StatusCode>&& status_codes)>;
+using WriteValueId = WriteValue;
+
 class AttributeService {
  public:
   virtual ~AttributeService() {}
@@ -24,9 +29,9 @@ class AttributeService {
   virtual void Read(const std::vector<ReadValueId>& value_ids,
                     const ReadCallback& callback) = 0;
 
-  virtual void Write(const WriteValue& value,
+  virtual void Write(const std::vector<WriteValue>& value_ids,
                      const NodeId& user_id,
-                     const StatusCallback& callback) = 0;
+                     const WriteCallback& callback) = 0;
 };
 
 template <class T>

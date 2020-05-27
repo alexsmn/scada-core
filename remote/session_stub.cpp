@@ -65,16 +65,9 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
            VectorFromProto<scada::ReadValueId>(read.value_id()));
   }
 
-  if (request.has_write()) {
+  if (request.write_size() != 0) {
     auto& write = request.write();
-    scada::WriteFlags flags;
-    if (write.select())
-      flags.set_select();
-    OnWrite(
-        request.request_id(),
-        scada::WriteValue{FromProto(write.node_id()),
-                          static_cast<scada::AttributeId>(write.attribute_id()),
-                          FromProto(write.value()), flags});
+    OnWrite(request.request_id(), VectorFromProto<scada::WriteValueId>(write));
   }
 
   if (request.has_call()) {
@@ -250,18 +243,23 @@ void SessionStub::OnRead(
       });
 }
 
-void SessionStub::OnWrite(unsigned request_id, const scada::WriteValue& value) {
+void SessionStub::OnWrite(unsigned request_id,
+                          const std::vector<scada::WriteValueId>& value_ids) {
   std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
-  attribute_service_.Write(value, user_id_,
-                           [weak_ptr, request_id](const scada::Status& status) {
-                             auto ptr = weak_ptr.lock();
-                             if (!ptr)
-                               return;
+  attribute_service_.Write(
+      value_ids, user_id_,
+      [weak_ptr, request_id](scada::Status&& status,
+                             std::vector<scada::StatusCode>&& status_codes) {
+        auto ptr = weak_ptr.lock();
+        if (!ptr)
+          return;
 
-                             protocol::Message message;
-                             auto& response = *message.add_responses();
-                             response.set_request_id(request_id);
-                             ToProto(status, *response.mutable_status());
-                             ptr->Send(message);
-                           });
+        protocol::Message message;
+        auto& response = *message.add_responses();
+        response.set_request_id(request_id);
+        ToProto(status, *response.mutable_status());
+        ContainerToProto(std::move(status_codes),
+                         *response.mutable_write_result());
+        ptr->Send(message);
+      });
 }
