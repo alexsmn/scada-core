@@ -486,6 +486,7 @@ scada::EventFilter FromProto(const protocol::EventFilter& source) {
     target.types |= scada::EventFilter::UNACKED;
 
   target.of_type = VectorFromProto<scada::NodeId>(source.of_type());
+  target.child_of = VectorFromProto<scada::NodeId>(source.child_of());
 
   return target;
 }
@@ -497,6 +498,7 @@ void ToProto(const scada::EventFilter& source, protocol::EventFilter& target) {
     target.set_unacked(true);
 
   ContainerToProto(source.of_type, *target.mutable_of_type());
+  ContainerToProto(source.child_of, *target.mutable_child_of());
 }
 
 scada::AggregateFilter FromProto(const protocol::AggregateFilter& source) {
@@ -541,4 +543,53 @@ scada::ByteString FromProto(const std::string& source) {
 
 void ToProto(const scada::ByteString& source, std::string& target) {
   target.assign(source.begin(), source.end());
+}
+
+scada::ExpandedNodeId FromProto(const protocol::ExpandedNodeId& source) {
+  return FromProto(source.node_id());
+}
+
+void ToProto(const scada::ExpandedNodeId& source,
+             protocol::ExpandedNodeId& target) {
+  ToProto(source.node_id(), *target.mutable_node_id());
+}
+
+scada::AddReferencesItem FromProto(const protocol::AddReference& source) {
+  scada::AddReferencesItem target;
+  target.source_node_id = FromProto(source.source_node_id());
+  target.reference_type_id = FromProto(source.reference_type_id());
+  target.forward = !source.has_forward() || source.forward();
+  target.target_node_id = FromProto(source.target_node_id());
+  target.target_server_uri = source.target_server_uri();
+  target.target_node_class = FromProto(source.target_node_class());
+  return target;
+}
+
+void ToProto(const scada::AddReferencesItem& source,
+             protocol::AddReference& target) {
+  ToProto(source.source_node_id, *target.mutable_source_node_id());
+  ToProto(source.reference_type_id, *target.mutable_reference_type_id());
+  target.set_forward(source.forward);
+  ToProto(source.target_node_id, *target.mutable_target_node_id());
+  target.set_target_server_uri(source.target_server_uri);
+  target.set_target_node_class(ToProto(source.target_node_class));
+}
+
+scada::DeleteReferencesItem FromProto(const protocol::DeleteReference& source) {
+  scada::DeleteReferencesItem target;
+  target.source_node_id = FromProto(source.source_node_id());
+  target.reference_type_id = FromProto(source.reference_type_id());
+  target.forward = source.forward();
+  target.target_node_id = FromProto(source.target_node_id());
+  target.delete_bidirectional = source.delete_bidirectional();
+  return target;
+}
+
+void ToProto(const scada::DeleteReferencesItem& source,
+             protocol::DeleteReference& target) {
+  ToProto(source.source_node_id, *target.mutable_source_node_id());
+  ToProto(source.reference_type_id, *target.mutable_reference_type_id());
+  target.set_forward(source.forward);
+  ToProto(source.target_node_id, *target.mutable_target_node_id());
+  target.set_delete_bidirectional(source.delete_bidirectional);
 }

@@ -3,6 +3,7 @@
 #include "core/attribute_ids.h"
 #include "core/configuration_types.h"
 #include "core/data_value.h"
+#include "core/node_id.h"
 #include "core/write_flags.h"
 
 #include <cassert>
@@ -10,8 +11,21 @@
 
 namespace scada {
 
-class NodeId;
 class Status;
+
+struct ReadValueId {
+  NodeId node_id;
+  AttributeId attribute_id;
+};
+
+struct WriteValue {
+  NodeId node_id;
+  AttributeId attribute_id;
+  Variant value;
+  WriteFlags flags;
+};
+
+using WriteValueId = WriteValue;
 
 using StatusCallback = std::function<void(Status&&)>;
 using ReadCallback =
@@ -20,7 +34,6 @@ using ReadCallback =
 using WriteCallback =
     std::function<void(Status&& status,
                        std::vector<StatusCode>&& status_codes)>;
-using WriteValueId = WriteValue;
 
 class AttributeService {
  public:
@@ -47,3 +60,9 @@ inline DataValue MakeReadError(scada::StatusCode status_code) {
 }
 
 }  // namespace scada
+
+inline bool operator==(const scada::ReadValueId& a,
+                       const scada::ReadValueId& b) {
+  return std::tie(a.node_id, a.attribute_id) ==
+         std::tie(b.node_id, b.attribute_id);
+}

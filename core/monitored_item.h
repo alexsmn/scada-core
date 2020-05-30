@@ -1,9 +1,9 @@
 #pragma once
 
+#include "core/configuration_types.h"
+
 #include <any>
 #include <functional>
-
-#include "core/configuration_types.h"
 
 namespace scada {
 

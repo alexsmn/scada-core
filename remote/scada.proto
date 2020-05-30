@@ -2,7 +2,7 @@ package protocol;
 
 // Protocol version
 enum ProtocolVersionMajor {
-  PROTOCOL_VERSION_MAJOR = 12;
+  PROTOCOL_VERSION_MAJOR = 14;
 }
 enum ProtocolVersionMinor {
   PROTOCOL_VERSION_MINOR = 0;
@@ -104,6 +104,10 @@ message NodeId {
   optional bytes opaque_id = 4;
 }
 
+message ExpandedNodeId {
+  optional NodeId node_id = 1;
+}
+
 message Variant {
   optional uint32 data_type     = 1;
 
@@ -155,6 +159,7 @@ message CreateSession {
   required bytes user_name_utf8 = 1;
   optional bytes password_utf8 = 2;
   optional bool delete_existing = 3;
+  repeated string locale_id = 6;
 
   // Assume version 0.0 if it isn't specified.
   required uint32 protocol_version_major = 4;
@@ -219,10 +224,21 @@ message DeleteNodeResult {
   repeated NodeId dependencies = 1;
 }
 
-message Reference {
-  required NodeId reference_type_id = 1;
-  required NodeId source_id = 2;
-  required NodeId target_id = 3;
+message AddReference {
+  optional NodeId source_node_id = 1;
+  optional NodeId reference_type_id = 2;
+  optional bool forward = 3;
+  optional string target_server_uri = 4;
+  optional ExpandedNodeId target_node_id = 5;
+  optional NodeClass target_node_class = 6;
+}
+
+message DeleteReference {
+  optional NodeId source_node_id = 1;
+  optional NodeId reference_type_id = 2;
+  optional bool forward = 3;
+  optional ExpandedNodeId target_node_id = 4;
+  optional bool delete_bidirectional = 5;
 }
 
 message ChangePassword {
@@ -299,6 +315,7 @@ message EventFilter {
   optional bool acked = 1;
   optional bool unacked = 2;
   repeated NodeId of_type = 3;
+  repeated NodeId child_of = 4;
 }
 
 message HistoryReadEvents {
@@ -377,6 +394,28 @@ message BrowseResponse {
   repeated BrowseResult results = 2;
 }
 
+message RelativePathElement {
+  optional NodeId reference_type_id = 1;
+  optional bool inverse = 2;
+  optional bool include_subtypes = 3;
+  required string target_name = 4;
+}
+
+message BrowsePath {
+  required NodeId node_id = 1;
+  repeated RelativePathElement relative_path_element = 2;
+}
+
+message BrowsePathTarget {
+  optional NodeId target_id = 1;
+  optional uint32 remaining_path_index = 2;
+}
+
+message BrowsePathResult {
+  optional uint32 status_code = 1;
+  repeated BrowsePathTarget target = 2;
+}
+
 message Ping {
 }
 
@@ -403,12 +442,13 @@ message Request {
   optional CreateNode create_node = 50;
   optional DeleteNode delete_node = 51;
 
-  optional Reference add_reference = 54;
-  optional Reference delete_reference = 55;
+  repeated AddReference add_reference = 54;
+  repeated DeleteReference delete_reference = 55;
 
   optional ChangePassword change_password = 53;
 
   optional Browse browse = 60;
+  repeated BrowsePath browse_path = 61;
 }
 
 message Response {
@@ -431,10 +471,15 @@ message Response {
   optional DeleteNodeResult delete_node_result = 51;
   repeated Status modify_node_result = 52;
 
+  repeated Status add_reference_result = 54;
+  repeated Status delete_reference_result = 55;
+
   optional BrowseResponse browse_result = 60;
+  repeated BrowsePathResult browse_path_result = 61;
 }
 
 message DataChange {
+  required uint32 monitored_item_id = 1;
   required DataValue data_value = 2;
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/aggregate_filter.h"
+#include "core/attribute_service.h"
 #include "core/event.h"
 #include "core/monitored_item.h"
 

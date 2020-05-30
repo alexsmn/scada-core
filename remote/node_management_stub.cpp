@@ -44,11 +44,17 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
         base::UTF8ToUTF16(change_password.new_password_utf8()));
   }
 
-  if (request.has_add_reference())
-    OnAddReference(request.request_id(), request.add_reference());
+  if (request.add_reference_size() != 0) {
+    OnAddReferences(
+        request.request_id(),
+        VectorFromProto<scada::AddReferencesItem>(request.add_reference()));
+  }
 
-  if (request.has_delete_reference())
-    OnDeleteReference(request.request_id(), request.delete_reference());
+  if (request.delete_reference_size() != 0) {
+    OnDeleteReferences(request.request_id(),
+                       VectorFromProto<scada::DeleteReferencesItem>(
+                           request.delete_reference()));
+  }
 }
 
 void NodeManagementStub::OnDeleteNode(unsigned request_id,
@@ -132,40 +138,44 @@ void NodeManagementStub::OnChangeUserPassword(
       });
 }
 
-void NodeManagementStub::OnAddReference(unsigned request_id,
-                                        const protocol::Reference& request) {
+void NodeManagementStub::OnAddReferences(
+    unsigned request_id,
+    const std::vector<scada::AddReferencesItem>& inputs) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.AddReference(FromProto(request.reference_type_id()),
-                        FromProto(request.source_id()),
-                        FromProto(request.target_id()),
-                        [weak_ptr, request_id](const scada::Status& status) {
-                          auto ptr = weak_ptr.get();
-                          if (!ptr)
-                            return;
+  service_.AddReferences(
+      inputs,
+      [weak_ptr, request_id](const scada::Status& status,
+                             const std::vector<scada::Status>& results) {
+        auto ptr = weak_ptr.get();
+        if (!ptr)
+          return;
 
-                          protocol::Message message;
-                          auto& response = *message.add_responses();
-                          response.set_request_id(request_id);
-                          ToProto(status, *response.mutable_status());
-                          ptr->sender_.Send(message);
-                        });
+        protocol::Message message;
+        auto& response = *message.add_responses();
+        response.set_request_id(request_id);
+        ToProto(status, *response.mutable_status());
+        ContainerToProto(results, *response.mutable_add_reference_result());
+        ptr->sender_.Send(message);
+      });
 }
 
-void NodeManagementStub::OnDeleteReference(unsigned request_id,
-                                           const protocol::Reference& request) {
+void NodeManagementStub::OnDeleteReferences(
+    unsigned request_id,
+    const std::vector<scada::DeleteReferencesItem>& inputs) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.DeleteReference(FromProto(request.reference_type_id()),
-                           FromProto(request.source_id()),
-                           FromProto(request.target_id()),
-                           [weak_ptr, request_id](const scada::Status& status) {
-                             auto ptr = weak_ptr.get();
-                             if (!ptr)
-                               return;
+  service_.DeleteReferences(
+      inputs,
+      [weak_ptr, request_id](const scada::Status& status,
+                             const std::vector<scada::Status>& results) {
+        auto ptr = weak_ptr.get();
+        if (!ptr)
+          return;
 
-                             protocol::Message message;
-                             auto& response = *message.add_responses();
-                             response.set_request_id(request_id);
-                             ToProto(status, *response.mutable_status());
-                             ptr->sender_.Send(message);
-                           });
+        protocol::Message message;
+        auto& response = *message.add_responses();
+        response.set_request_id(request_id);
+        ToProto(status, *response.mutable_status());
+        ContainerToProto(results, *response.mutable_delete_reference_result());
+        ptr->sender_.Send(message);
+      });
 }

@@ -97,6 +97,7 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
   notification.set_subscription_id(subscription_id_);
   notification.set_monitored_item_id(monitored_item_id);
   auto& data_change = *notification.add_data_changes();
+  data_change.set_monitored_item_id(monitored_item_id);
   ToProto(data_value, *data_change.mutable_data_value());
   sender_.Send(message);
 }

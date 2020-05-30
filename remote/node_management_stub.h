@@ -3,6 +3,7 @@
 #include "base/memory/weak_ptr.h"
 #include "core/node_attributes.h"
 #include "core/node_id.h"
+#include "core/node_management_service.h"
 
 #include <memory>
 #include <vector>
@@ -11,11 +12,6 @@ namespace protocol {
 class Reference;
 class Request;
 }  // namespace protocol
-
-namespace scada {
-class NodeManagementService;
-enum class NodeClass;
-}  // namespace scada
 
 class Logger;
 class MessageSender;
@@ -43,9 +39,11 @@ class NodeManagementStub {
                             const scada::NodeId& user_node_id,
                             const scada::LocalizedText& current_password,
                             const scada::LocalizedText& new_password);
-  void OnAddReference(unsigned request_id, const protocol::Reference& request);
-  void OnDeleteReference(unsigned request_id,
-                         const protocol::Reference& request);
+  void OnAddReferences(unsigned request_id,
+                       const std::vector<scada::AddReferencesItem>& inputs);
+  void OnDeleteReferences(
+      unsigned request_id,
+      const std::vector<scada::DeleteReferencesItem>& inputs);
 
   MessageSender& sender_;
 

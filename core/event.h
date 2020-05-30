@@ -81,6 +81,7 @@ struct EventFilter {
   unsigned types = 0;
 
   std::vector<NodeId> of_type;
+  std::vector<NodeId> child_of;
 };
 
 inline bool operator==(const ModelChangeEvent& a, const ModelChangeEvent& b) {

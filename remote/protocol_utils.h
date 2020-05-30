@@ -1,18 +1,19 @@
 #pragma once
 
-#include <set>
-#include <vector>
-
-#include "core/attribute_service.h"
 #include "core/aggregate_filter.h"
+#include "core/attribute_service.h"
 #include "core/configuration_types.h"
 #include "core/data_value.h"
 #include "core/event.h"
 #include "core/monitored_item_service.h"
 #include "core/node_attributes.h"
+#include "core/node_management_service.h"
 #include "core/status.h"
 #include "core/view_service.h"
 #include "remote/protocol.h"
+
+#include <set>
+#include <vector>
 
 scada::NodeId FromProto(const protocol::NodeId& source);
 void ToProto(const scada::NodeId& source, protocol::NodeId& target);
@@ -67,6 +68,18 @@ scada::MonitoringParameters FromProto(
     const protocol::MonitoringParameters& source);
 void ToProto(const scada::MonitoringParameters& source,
              protocol::MonitoringParameters& target);
+
+scada::ExpandedNodeId FromProto(const protocol::ExpandedNodeId& source);
+void ToProto(const scada::ExpandedNodeId& source,
+             protocol::ExpandedNodeId& target);
+
+scada::AddReferencesItem FromProto(const protocol::AddReference& source);
+void ToProto(const scada::AddReferencesItem& source,
+             protocol::AddReference& target);
+
+scada::DeleteReferencesItem FromProto(const protocol::DeleteReference& source);
+void ToProto(const scada::DeleteReferencesItem& source,
+             protocol::DeleteReference& target);
 
 template <class Target, class Source>
 Target FromProto(const Source& source);

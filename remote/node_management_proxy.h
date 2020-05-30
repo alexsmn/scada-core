@@ -29,14 +29,12 @@ class NodeManagementProxy : public scada::NodeManagementService {
       const scada::LocalizedText& current_password,
       const scada::LocalizedText& new_password,
       const scada::StatusCallback& callback) override;
-  virtual void AddReference(const scada::NodeId& reference_type_id,
-                            const scada::NodeId& source_id,
-                            const scada::NodeId& target_id,
-                            const scada::StatusCallback& callback) override;
-  virtual void DeleteReference(const scada::NodeId& reference_type_id,
-                               const scada::NodeId& source_id,
-                               const scada::NodeId& target_id,
-                               const scada::StatusCallback& callback) override;
+  virtual void AddReferences(
+      const std::vector<scada::AddReferencesItem>& inputs,
+      const scada::AddReferencesCallback& callback) override;
+  virtual void DeleteReferences(
+      const std::vector<scada::DeleteReferencesItem>& inputs,
+      const scada::DeleteReferencesCallback& callback) override;
 
  private:
   Logger& logger() { return *logger_; }

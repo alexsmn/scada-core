@@ -247,7 +247,7 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
                       : scada::Status{scada::StatusCode::Good};
 
     for (auto& data_change : notification.data_changes()) {
-      subscription_->OnDataChange(notification.monitored_item_id(),
+      subscription_->OnDataChange(data_change.monitored_item_id(),
                                   FromProto(data_change.data_value()));
     }
 
