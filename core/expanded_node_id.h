@@ -42,12 +42,10 @@ inline bool ExpandedNodeId::operator==(const ExpandedNodeId& other) const {
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const ExpandedNodeId& expanded_node_id) {
-  return stream << "{"
-                << "node_id: " << expanded_node_id.node_id() << ", "
-                << "namespace_uri: \"" << expanded_node_id.namespace_uri() << "\", "
-                << "server_index: " << expanded_node_id.server_index()
-                << "}";
+  return stream << "{node_id: " << expanded_node_id.node_id() << ", "
+                << "namespace_uri: \"" << expanded_node_id.namespace_uri()
+                << "\", "
+                << "server_index: " << expanded_node_id.server_index() << "}";
 }
 
 }  // namespace scada
-

@@ -20,11 +20,11 @@ class ExtensionObject {
   ExtensionObject(const ExtensionObject&) = default;
   ExtensionObject& operator=(const ExtensionObject&) = default;
 
-  ExtensionObject(ExtensionObject&& source)
+  ExtensionObject(ExtensionObject&& source) noexcept
       : data_type_id_{std::move(source.data_type_id_)},
         value_{std::move(source.value_)} {}
 
-  ExtensionObject& operator=(ExtensionObject&& source) {
+  ExtensionObject& operator=(ExtensionObject&& source) noexcept {
     if (&value_ != &source.value_) {
       data_type_id_ = std::move(source.data_type_id_);
       value_ = std::move(source.value_);
@@ -49,9 +49,7 @@ class ExtensionObject {
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const ExtensionObject& extension_object) {
-  return stream << "{"
-                << "data_type_id: " << extension_object.data_type_id()
-                << "}";
+  return stream << "{data_type_id: " << extension_object.data_type_id() << "}";
 }
 
 }  // namespace scada

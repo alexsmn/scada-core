@@ -33,22 +33,16 @@ class Event {
     EVT_BACKUP = 0x0100,  // locked
   };
 
-  Event()
-      : change_mask(0),
-        severity(kSeverityNormal),
-        acked(false),
-        acknowledge_id(0) {}
-
-  NodeId event_type_id;
+  scada::NodeId event_type_id;
   base::Time time;
-  unsigned change_mask;
-  unsigned severity;
+  unsigned change_mask = 0;
+  unsigned severity = kSeverityNormal;
   NodeId node_id;
   NodeId user_id;
   Variant value;
   Qualifier qualifier;
   base::string16 message;
-  bool acked;
+  bool acked = false;
   EventAcknowledgeId acknowledge_id;
   DateTime acknowledged_time;
   NodeId acknowledged_user_id;
@@ -63,9 +57,9 @@ struct ModelChangeEvent {
     DataTypeChanged = 1 << 4,
   };
 
-  NodeId node_id;
-  NodeId type_definition_id;
-  uint8_t verb;
+  scada::NodeId node_id;
+  scada::NodeId type_definition_id;
+  uint8_t verb = 0;
 
   static const NumericId event_type_id = id::GeneralModelChangeEventType;
 };
@@ -94,10 +88,10 @@ inline bool operator==(const SemanticChangeEvent& a,
   return a.node_id == b.node_id;
 }
 
+}  // namespace scada
+
 inline std::ostream& operator<<(std::ostream& stream,
-                                const ModelChangeEvent& e) {
+                                const scada::ModelChangeEvent& e) {
   return stream << "{" << e.node_id << ", " << e.type_definition_id << ", "
                 << static_cast<unsigned>(e.verb) << "}";
 }
-
-}  // namespace scada

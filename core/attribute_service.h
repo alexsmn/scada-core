@@ -2,8 +2,8 @@
 
 #include "core/attribute_ids.h"
 #include "core/data_value.h"
-#include "core/node_id.h"
 #include "core/node_class.h"
+#include "core/node_id.h"
 #include "core/write_flags.h"
 
 #include <cassert>

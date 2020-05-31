@@ -2,7 +2,7 @@ package protocol;
 
 // Protocol version
 enum ProtocolVersionMajor {
-  PROTOCOL_VERSION_MAJOR = 14;
+  PROTOCOL_VERSION_MAJOR = 15;
 }
 enum ProtocolVersionMinor {
   PROTOCOL_VERSION_MINOR = 0;
@@ -68,7 +68,7 @@ enum Severity {
 }
 
 message StatusCode {
-  optional Severity severity = 1;
+  required Severity severity = 1;
   optional uint32 sub_code = 2;
   optional bool structure_changed = 3;
   optional bool semantics_changed = 4;

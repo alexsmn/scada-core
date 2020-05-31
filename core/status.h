@@ -72,6 +72,8 @@ enum class StatusCode : unsigned {
   Bad_WrongNodeClass = Bad | 31,
   Bad_WrongAttributeId = Bad | 32,
   Bad_Iec61850Error = Bad | 33,
+  Bad_NothingToDo = Bad | 34,
+  Bad_BrowseNameInvalid = Bad | 35,
 };
 
 enum class StatusLimit {
@@ -121,18 +123,22 @@ class Status {
 
   static Status FromFullCode(unsigned full_code);
 
-  explicit operator bool() const noexcept { return !bad(); }
-  bool operator!() const noexcept { return bad(); }
+  explicit constexpr operator bool() const noexcept { return !bad(); }
+  constexpr bool operator!() const noexcept { return bad(); }
 
-  StatusSeverity severity() const noexcept {
+  constexpr StatusSeverity severity() const noexcept {
     return static_cast<StatusSeverity>(full_code_ >> 30);
   }
 
-  bool good() const noexcept { return severity() == StatusSeverity::Good; }
-  bool uncertain() const noexcept {
+  constexpr bool good() const noexcept {
+    return severity() == StatusSeverity::Good;
+  }
+  constexpr bool uncertain() const noexcept {
     return severity() == StatusSeverity::Uncertain;
   }
-  bool bad() const noexcept { return severity() == StatusSeverity::Bad; }
+  constexpr bool bad() const noexcept {
+    return severity() == StatusSeverity::Bad;
+  }
 
   StatusLimit limit() const noexcept {
     return static_cast<StatusLimit>(full_code_ & 3);
@@ -143,11 +149,11 @@ class Status {
     full_code_ |= static_cast<unsigned>(limit);
   }
 
-  StatusCode code() const noexcept {
+  constexpr StatusCode code() const noexcept {
     return static_cast<StatusCode>(full_code_ >> 16);
   }
 
-  unsigned full_code() const noexcept { return full_code_; }
+  constexpr unsigned full_code() const noexcept { return full_code_; }
 
  private:
   unsigned full_code_;
@@ -160,3 +166,15 @@ base::string16 ToString16(scada::StatusCode status_code);
 
 std::string ToString(const scada::Status& status);
 base::string16 ToString16(const scada::Status& status);
+
+namespace scada {
+
+inline std::ostream& operator<<(std::ostream& stream, StatusCode status_code) {
+  return stream << ToString(status_code);
+}
+
+inline std::ostream& operator<<(std::ostream& stream, const Status& status) {
+  return stream << ToString(status);
+}
+
+}  // namespace scada
