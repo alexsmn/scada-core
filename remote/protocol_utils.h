@@ -24,6 +24,9 @@ void ToProto(const scada::Variant& source, protocol::Variant& target);
 scada::DataValue FromProto(const protocol::DataValue& source);
 void ToProto(const scada::DataValue& source, protocol::DataValue& target);
 
+scada::StatusCode FromProto(const protocol::StatusCode& source);
+void ToProto(scada::StatusCode source, protocol::StatusCode& target);
+
 scada::Status FromProto(const protocol::Status& source);
 void ToProto(const scada::Status& source, protocol::Status& target);
 

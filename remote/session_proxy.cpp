@@ -242,9 +242,9 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
   }
 
   for (auto& notification : message.notifications()) {
-    auto status = notification.has_status()
-                      ? FromProto(notification.status())
-                      : scada::Status{scada::StatusCode::Good};
+    auto status_code = notification.has_status_code()
+                           ? FromProto(notification.status_code())
+                           : scada::StatusCode::Good;
 
     for (auto& data_change : notification.data_changes()) {
       subscription_->OnDataChange(data_change.monitored_item_id(),
@@ -252,19 +252,19 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
     }
 
     for (auto& model_change : notification.model_change()) {
-      subscription_->OnEvent(notification.monitored_item_id(), status,
+      subscription_->OnEvent(notification.monitored_item_id(), status_code,
                              FromProto(model_change));
     }
 
     for (auto& semantics_changed_node_id :
          notification.semantics_changed_node_id()) {
       subscription_->OnEvent(
-          notification.monitored_item_id(), status,
+          notification.monitored_item_id(), status_code,
           scada::SemanticChangeEvent{FromProto(semantics_changed_node_id)});
     }
 
     for (auto& event : notification.events()) {
-      subscription_->OnEvent(notification.monitored_item_id(), status,
+      subscription_->OnEvent(notification.monitored_item_id(), status_code,
                              FromProto(event));
     }
 

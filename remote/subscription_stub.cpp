@@ -65,7 +65,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
     channel_ptr->set_event_handler(
         [this, monitored_item_id](const scada::Status& status,
                                   const std::any& event) {
-          OnEvent(monitored_item_id, status, event);
+          OnEvent(monitored_item_id, status.code(), event);
         });
   }
 
@@ -103,21 +103,21 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
 }
 
 void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
-                               const scada::Status& status,
+                               scada::StatusCode status_code,
                                const std::any& event) {
   auto i = channels_.find(monitored_item_id);
   if (i == channels_.end())
     return;
 
-  if (!status)
+  if (scada::IsBad(status_code))
     channels_.erase(i);
 
   protocol::Message message;
   auto& notification = *message.add_notifications();
   notification.set_subscription_id(subscription_id_);
   notification.set_monitored_item_id(monitored_item_id);
-  if (!status)
-    ToProto(status, *notification.mutable_status());
+  if (status_code != scada::StatusCode::Good)
+    ToProto(status_code, *notification.mutable_status_code());
 
   if (auto* e = std::any_cast<scada::Event>(&event))
     ToProto(*e, *notification.add_events());

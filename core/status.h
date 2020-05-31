@@ -88,14 +88,29 @@ enum class StatusLimit {
   Constant,
 };
 
-inline StatusSeverity GetSeverity(StatusCode code) noexcept {
+inline constexpr StatusSeverity GetSeverity(StatusCode code) noexcept {
   return static_cast<StatusSeverity>(static_cast<unsigned>(code) >> 14);
 }
-inline bool IsGood(StatusCode code) noexcept {
+
+inline constexpr uint16_t GetSubCode(StatusCode code) noexcept {
+  return static_cast<unsigned>(code) & ((1 << 14) - 1);
+}
+
+inline constexpr StatusCode MakeStatusCode(StatusSeverity severity,
+                                           uint16_t sub_code) noexcept {
+  return static_cast<StatusCode>((static_cast<uint32_t>(severity) << 14) |
+                                 sub_code);
+}
+
+inline constexpr bool IsGood(StatusCode code) noexcept {
   return GetSeverity(code) == StatusSeverity::Good;
 }
 
-inline bool IsBad(StatusCode code) noexcept {
+inline constexpr bool IsUncertain(StatusCode code) noexcept {
+  return GetSeverity(code) == StatusSeverity::Uncertain;
+}
+
+inline constexpr bool IsBad(StatusCode code) noexcept {
   return GetSeverity(code) == StatusSeverity::Bad;
 }
 

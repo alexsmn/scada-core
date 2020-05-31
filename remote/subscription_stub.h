@@ -33,7 +33,7 @@ class SubscriptionStub {
   void OnDataChange(MonitoredItemId monitored_item_id,
                     const scada::DataValue& data_value);
   void OnEvent(MonitoredItemId monitored_item_id,
-               const scada::Status& status,
+               scada::StatusCode status_code,
                const std::any& event);
 
   MessageSender& sender_;

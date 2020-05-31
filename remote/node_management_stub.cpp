@@ -145,7 +145,7 @@ void NodeManagementStub::OnAddReferences(
   service_.AddReferences(
       inputs,
       [weak_ptr, request_id](const scada::Status& status,
-                             const std::vector<scada::Status>& results) {
+                             const std::vector<scada::StatusCode>& results) {
         auto ptr = weak_ptr.get();
         if (!ptr)
           return;
@@ -166,7 +166,7 @@ void NodeManagementStub::OnDeleteReferences(
   service_.DeleteReferences(
       inputs,
       [weak_ptr, request_id](const scada::Status& status,
-                             const std::vector<scada::Status>& results) {
+                             const std::vector<scada::StatusCode>& results) {
         auto ptr = weak_ptr.get();
         if (!ptr)
           return;

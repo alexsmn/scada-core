@@ -254,12 +254,23 @@ void ToProto(const scada::DataValue& source, protocol::DataValue& target) {
         static_cast<google::protobuf::uint32>(source.status_code));
 }
 
+scada::StatusCode FromProto(const protocol::StatusCode& source) {
+  return scada::MakeStatusCode(
+      static_cast<scada::StatusSeverity>(source.severity()), source.sub_code());
+}
+
+void ToProto(scada::StatusCode source, protocol::StatusCode& target) {
+  target.set_severity(
+      static_cast<protocol::Severity>(scada::GetSeverity(source)));
+  target.set_sub_code(scada::GetSubCode(source));
+}
+
 scada::Status FromProto(const protocol::Status& source) {
-  return scada::Status::FromFullCode(source.code());
+  return FromProto(source.code());
 }
 
 void ToProto(const scada::Status& source, protocol::Status& target) {
-  target.set_code(source.full_code());
+  ToProto(source.code(), *target.mutable_code());
 }
 
 scada::Event FromProto(const protocol::Event& source) {

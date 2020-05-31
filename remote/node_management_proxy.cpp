@@ -130,8 +130,9 @@ void NodeManagementProxy::AddReferences(
   sender_->Request(request, [this,
                              callback](const protocol::Response& response) {
     if (callback)
-      callback(FromProto(response.status()),
-               VectorFromProto<scada::Status>(response.add_reference_result()));
+      callback(
+          FromProto(response.status()),
+          VectorFromProto<scada::StatusCode>(response.add_reference_result()));
   });
 }
 
@@ -147,11 +148,11 @@ void NodeManagementProxy::DeleteReferences(
   protocol::Request request;
   ContainerToProto(inputs, *request.mutable_delete_reference());
 
-  sender_->Request(request, [this,
-                             callback](const protocol::Response& response) {
-    if (callback)
-      callback(
-          FromProto(response.status()),
-          VectorFromProto<scada::Status>(response.delete_reference_result()));
-  });
+  sender_->Request(request,
+                   [this, callback](const protocol::Response& response) {
+                     if (callback)
+                       callback(FromProto(response.status()),
+                                VectorFromProto<scada::StatusCode>(
+                                    response.delete_reference_result()));
+                   });
 }

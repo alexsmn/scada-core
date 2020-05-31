@@ -31,7 +31,7 @@ struct DeleteReferencesItem {
 
 using StatusCallback = std::function<void(Status&&)>;
 using MultiStatusCallback =
-    std::function<void(Status&&, std::vector<Status>&&)>;
+    std::function<void(Status&&, std::vector<StatusCode>&&)>;
 
 using CreateNodeCallback =
     std::function<void(Status&& status, const NodeId& node_id)>;

@@ -58,20 +58,27 @@ enum NodeClass {
   View = 128;
 }
 
+enum Severity {
+  // Good value.
+  Good = 0;
+  // Value is not up-to-date.
+  Uncertain = 1;
+  // Subscription has failed.
+  Bad = 2;
+}
+
+message StatusCode {
+  optional Severity severity = 1;
+  optional uint32 sub_code = 2;
+  optional bool structure_changed = 3;
+  optional bool semantics_changed = 4;
+}
+
 message Status {
-  required uint32 code = 1;
+  required StatusCode code = 1;
 }
 
 message Qualifier {
-  enum Severity {
-    // Good value.
-    GOOD = 0;
-    // Value is not up-to-date.
-    UNCERTAIN = 1;
-    // Subscription has failed.
-    BAD = 2;
-  }
-
   enum SubCode {
     GOOD_NORMAL = 0;
     GOOD_BACKUP = 1;
@@ -458,7 +465,7 @@ message Response {
   optional CreateSessionResult create_session_result = 10;
 
   optional ReadResult read_result = 14;
-  repeated Status write_result = 12;
+  repeated StatusCode write_result = 12;
 
   optional CreateSubscriptionResult create_subscription_result = 20;
 
@@ -469,10 +476,10 @@ message Response {
 
   optional CreateNodeResult create_node_result = 50;
   optional DeleteNodeResult delete_node_result = 51;
-  repeated Status modify_node_result = 52;
+  repeated StatusCode modify_node_result = 52;
 
-  repeated Status add_reference_result = 54;
-  repeated Status delete_reference_result = 55;
+  repeated StatusCode add_reference_result = 54;
+  repeated StatusCode delete_reference_result = 55;
 
   optional BrowseResponse browse_result = 60;
   repeated BrowsePathResult browse_path_result = 61;
@@ -498,7 +505,7 @@ message ModelChangeEvent {
 message Notification {
   optional uint32 subscription_id = 1;
   optional uint32 monitored_item_id = 4;
-  optional Status status = 6;
+  optional StatusCode status_code = 6;
 
   repeated DataChange data_changes = 2;
 
