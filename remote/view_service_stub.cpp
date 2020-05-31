@@ -28,11 +28,12 @@ void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
     nodes.reserve(proto_nodes.size());
     for (auto& proto_node : proto_nodes) {
       nodes.push_back({
-          FromProto(proto_node.node_id()),
-          proto_node.has_direction() ? FromProto(proto_node.direction())
-                                     : scada::BrowseDirection::Both,
+          ConvertTo<scada::NodeId>(proto_node.node_id()),
+          proto_node.has_direction()
+              ? ConvertTo<scada::BrowseDirection>(proto_node.direction())
+              : scada::BrowseDirection::Both,
           proto_node.has_reference_type_id()
-              ? FromProto(proto_node.reference_type_id())
+              ? ConvertTo<scada::NodeId>(proto_node.reference_type_id())
               : scada::NodeId{},
           proto_node.include_subtypes(),
       });
@@ -53,10 +54,10 @@ void ViewServiceStub::OnBrowse(
     protocol::Message message;
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
-    ToProto(status, *response.mutable_status());
+    Convert(status, *response.mutable_status());
     auto& browse = *response.mutable_browse_result();
     if (status)
-      ToProto(results, *browse.mutable_results());
+      Convert(results, *browse.mutable_results());
 
     sender_.Send(message);
   });

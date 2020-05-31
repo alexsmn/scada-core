@@ -90,11 +90,11 @@ void SubscriptionProxy::MonitoredItemProxy::CreateStub() {
   protocol::Request request;
   auto& create_monitored_item = *request.mutable_create_monitored_item();
   create_monitored_item.set_subscription_id(subscription_->subscription_id_);
-  ToProto(read_value_id_.node_id, *create_monitored_item.mutable_node_id());
+  Convert(read_value_id_.node_id, *create_monitored_item.mutable_node_id());
   create_monitored_item.set_attribute_id(
       static_cast<protocol::AttributeId>(read_value_id_.attribute_id));
   if (!params_.is_null())
-    ToProto(params_, *create_monitored_item.mutable_monitoring_parameters());
+    Convert(params_, *create_monitored_item.mutable_monitoring_parameters());
 
   std::weak_ptr<bool> cancelation = cancelation_;
   subscription_->sender_->Request(
@@ -106,7 +106,7 @@ void SubscriptionProxy::MonitoredItemProxy::CreateStub() {
           auto& m = response.create_monitored_item_result();
           monitored_item_id = m.monitored_item_id();
         }
-        OnCreateMonitoredItemResult(FromProto(response.status()),
+        OnCreateMonitoredItemResult(ConvertTo<scada::Status>(response.status()),
                                     monitored_item_id);
       });
 }
@@ -279,17 +279,18 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
   auto& create_subscription = *request.mutable_create_subscription();
 
   std::weak_ptr<bool> cancelation = cancelation_;
-  sender_->Request(request, [this,
-                             cancelation](const protocol::Response& response) {
-    if (cancelation.expired())
-      return;
-    int subscription_id = 0;
-    if (response.has_create_subscription_result()) {
-      auto& m = response.create_subscription_result();
-      subscription_id = m.subscription_id();
-    }
-    OnCreateSubscriptionResult(FromProto(response.status()), subscription_id);
-  });
+  sender_->Request(
+      request, [this, cancelation](const protocol::Response& response) {
+        if (cancelation.expired())
+          return;
+        int subscription_id = 0;
+        if (response.has_create_subscription_result()) {
+          auto& m = response.create_subscription_result();
+          subscription_id = m.subscription_id();
+        }
+        OnCreateSubscriptionResult(ConvertTo<scada::Status>(response.status()),
+                                   subscription_id);
+      });
 }
 
 void SubscriptionProxy::OnChannelClosed() {

@@ -22,37 +22,41 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
     OnCreateNode(
         request.request_id(),
         create_node.has_requested_node_id()
-            ? FromProto(create_node.requested_node_id())
+            ? ConvertTo<scada::NodeId>(create_node.requested_node_id())
             : scada::NodeId(),
-        FromProto(create_node.parent_id()), FromProto(create_node.node_class()),
-        FromProto(create_node.type_definition_id()),
-        create_node.has_attributes() ? FromProto(create_node.attributes())
-                                     : scada::NodeAttributes());
+        ConvertTo<scada::NodeId>(create_node.parent_id()),
+        ConvertTo<scada::NodeClass>(create_node.node_class()),
+        ConvertTo<scada::NodeId>(create_node.type_definition_id()),
+        create_node.has_attributes()
+            ? ConvertTo<scada::NodeAttributes>(create_node.attributes())
+            : scada::NodeAttributes());
   }
 
   if (request.has_delete_node()) {
     auto& delete_node = request.delete_node();
-    OnDeleteNode(request.request_id(), FromProto(delete_node.node_id()),
+    OnDeleteNode(request.request_id(),
+                 ConvertTo<scada::NodeId>(delete_node.node_id()),
                  delete_node.return_dependencies());
   }
 
   if (request.has_change_password()) {
     auto& change_password = request.change_password();
     OnChangeUserPassword(
-        request.request_id(), FromProto(change_password.user_node_id()),
+        request.request_id(),
+        ConvertTo<scada::NodeId>(change_password.user_node_id()),
         base::UTF8ToUTF16(change_password.current_password_utf8()),
         base::UTF8ToUTF16(change_password.new_password_utf8()));
   }
 
   if (request.add_reference_size() != 0) {
-    OnAddReferences(
-        request.request_id(),
-        VectorFromProto<scada::AddReferencesItem>(request.add_reference()));
+    OnAddReferences(request.request_id(),
+                    ConvertTo<std::vector<scada::AddReferencesItem>>(
+                        request.add_reference()));
   }
 
   if (request.delete_reference_size() != 0) {
     OnDeleteReferences(request.request_id(),
-                       VectorFromProto<scada::DeleteReferencesItem>(
+                       ConvertTo<std::vector<scada::DeleteReferencesItem>>(
                            request.delete_reference()));
   }
 }
@@ -65,7 +69,7 @@ void NodeManagementStub::OnDeleteNode(unsigned request_id,
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
     auto& delete_node_result = *response.mutable_delete_node_result();
-    ToProto(scada::StatusCode::Bad_CantDeleteOwnUser,
+    Convert(scada::StatusCode::Bad_CantDeleteOwnUser,
             *response.mutable_status());
     sender_.Send(message);
     return;
@@ -84,10 +88,9 @@ void NodeManagementStub::OnDeleteNode(unsigned request_id,
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         auto& delete_node_result = *response.mutable_delete_node_result();
-        ToProto(status, *response.mutable_status());
+        Convert(status, *response.mutable_status());
         if (!dependencies.empty())
-          ContainerToProto(dependencies,
-                           *delete_node_result.mutable_dependencies());
+          Convert(dependencies, *delete_node_result.mutable_dependencies());
         ptr->sender_.Send(message);
       });
 }
@@ -111,8 +114,8 @@ void NodeManagementStub::OnCreateNode(unsigned request_id,
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         auto& create_node_result = *response.mutable_create_node_result();
-        ToProto(status, *response.mutable_status());
-        ToProto(node_id, *create_node_result.mutable_node_id());
+        Convert(status, *response.mutable_status());
+        Convert(node_id, *create_node_result.mutable_node_id());
         ptr->sender_.Send(message);
       });
 }
@@ -133,7 +136,7 @@ void NodeManagementStub::OnChangeUserPassword(
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(status, *response.mutable_status());
+        Convert(status, *response.mutable_status());
         ptr->sender_.Send(message);
       });
 }
@@ -153,8 +156,8 @@ void NodeManagementStub::OnAddReferences(
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(status, *response.mutable_status());
-        ContainerToProto(results, *response.mutable_add_reference_result());
+        Convert(status, *response.mutable_status());
+        Convert(results, *response.mutable_add_reference_result());
         ptr->sender_.Send(message);
       });
 }
@@ -174,8 +177,8 @@ void NodeManagementStub::OnDeleteReferences(
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(status, *response.mutable_status());
-        ContainerToProto(results, *response.mutable_delete_reference_result());
+        Convert(status, *response.mutable_status());
+        Convert(results, *response.mutable_delete_reference_result());
         ptr->sender_.Send(message);
       });
 }

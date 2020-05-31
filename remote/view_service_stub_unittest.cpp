@@ -37,11 +37,11 @@ bool operator==(const NodeAttributes& a, const NodeAttributes& b) {
       .WillOnce(Invoke([&](const protocol::Message& message) {
         ASSERT_TRUE(message.responses_size() == 1);
         auto& response = message.responses(0);
-        EXPECT_EQ(scada::StatusCode::Good, FromProto(response.status()).code());
+        EXPECT_EQ(scada::StatusCode::Good, ConvertTo(response.status()).code());
         ASSERT_TRUE(response.has_browse_tree());
         auto& browse_tree = response.browse_tree();
         auto& node = browse_tree.node();
-        EXPECT_EQ(address_space.kTestNode1Id, FromProto(node.node_id()));
+        EXPECT_EQ(address_space.kTestNode1Id, ConvertTo(node.node_id()));
       }));
 
   // Request.
@@ -49,7 +49,7 @@ bool operator==(const NodeAttributes& a, const NodeAttributes& b) {
     protocol::Request request;
     request.set_request_id(request_id);
     auto& browse_tree = *request.mutable_browse_tree();
-    ToProto(address_space.kTestNode1Id, *browse_tree.mutable_node_id());
+    Convert(address_space.kTestNode1Id, *browse_tree.mutable_node_id());
     view_service_stub.OnRequestReceived(request);
   }
 }*/

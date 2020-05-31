@@ -55,19 +55,20 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
   if (request.has_ping()) {
     protocol::Response response;
     response.set_request_id(request.request_id());
-    ToProto(scada::StatusCode::Good, *response.mutable_status());
+    Convert(scada::StatusCode::Good, *response.mutable_status());
     SendResponse(response);
   }
 
   if (request.has_read()) {
     auto& read = request.read();
     OnRead(request.request_id(),
-           VectorFromProto<scada::ReadValueId>(read.value_id()));
+           ConvertTo<std::vector<scada::ReadValueId>>(read.value_id()));
   }
 
   if (request.write_size() != 0) {
     auto& write = request.write();
-    OnWrite(request.request_id(), VectorFromProto<scada::WriteValueId>(write));
+    OnWrite(request.request_id(),
+            ConvertTo<std::vector<scada::WriteValueId>>(write));
   }
 
   if (request.has_call()) {
@@ -77,14 +78,15 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
       event_service_.Acknowledge(acknowledge.acknowledge_id(), user_id_);
       protocol::Response response;
       response.set_request_id(request.request_id());
-      ToProto(scada::StatusCode::Good, *response.mutable_status());
+      Convert(scada::StatusCode::Good, *response.mutable_status());
       SendResponse(response);
     }
     if (call.has_device_command()) {
       auto& device_command = call.device_command();
-      OnCall(request.request_id(), FromProto(device_command.node_id()),
-             FromProto(device_command.method_id()),
-             VectorFromProto<scada::Variant>(device_command.argument()));
+      OnCall(request.request_id(),
+             ConvertTo<scada::NodeId>(device_command.node_id()),
+             ConvertTo<scada::NodeId>(device_command.method_id()),
+             ConvertTo<std::vector<scada::Variant>>(device_command.argument()));
     }
   }
 
@@ -102,14 +104,15 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
   if (request.has_create_monitored_item()) {
     auto& create_monitored_item = request.create_monitored_item();
     scada::ReadValueId read_value_id{
-        FromProto(create_monitored_item.node_id()),
+        ConvertTo<scada::NodeId>(create_monitored_item.node_id()),
         static_cast<scada::AttributeId>(create_monitored_item.attribute_id()),
     };
     OnCreateMonitoredItem(
         request.request_id(), create_monitored_item.subscription_id(),
         std::move(read_value_id),
         create_monitored_item.has_monitoring_parameters()
-            ? FromProto(create_monitored_item.monitoring_parameters())
+            ? ConvertTo<scada::MonitoringParameters>(
+                  create_monitored_item.monitoring_parameters())
             : scada::MonitoringParameters{});
   }
 
@@ -155,7 +158,7 @@ void SessionStub::OnCreateSubscription(int request_id) {
   auto& create_subscription_result =
       *response.mutable_create_subscription_result();
   create_subscription_result.set_subscription_id(subscription_id);
-  ToProto(scada::StatusCode::Good, *response.mutable_status());
+  Convert(scada::StatusCode::Good, *response.mutable_status());
   Send(message);
 }
 
@@ -167,7 +170,7 @@ void SessionStub::OnDeleteSubscription(int request_id, int subscription_id) {
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
-  ToProto(result, *response.mutable_status());
+  Convert(result, *response.mutable_status());
   Send(message);
 }
 
@@ -216,7 +219,7 @@ void SessionStub::OnCall(unsigned request_id,
                          protocol::Message message;
                          auto& response = *message.add_responses();
                          response.set_request_id(request_id);
-                         ToProto(status, *response.mutable_status());
+                         Convert(status, *response.mutable_status());
                          ptr->Send(message);
                        });
 }
@@ -236,9 +239,9 @@ void SessionStub::OnRead(
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(std::move(status), *response.mutable_status());
-        ContainerToProto(std::move(results),
-                         *response.mutable_read_result()->mutable_value());
+        Convert(std::move(status), *response.mutable_status());
+        Convert(std::move(results),
+                *response.mutable_read_result()->mutable_value());
         ptr->Send(message);
       });
 }
@@ -257,9 +260,8 @@ void SessionStub::OnWrite(unsigned request_id,
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        ToProto(status, *response.mutable_status());
-        ContainerToProto(std::move(status_codes),
-                         *response.mutable_write_result());
+        Convert(status, *response.mutable_status());
+        Convert(std::move(status_codes), *response.mutable_write_result());
         ptr->Send(message);
       });
 }
