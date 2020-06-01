@@ -44,8 +44,9 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
     OnChangeUserPassword(
         request.request_id(),
         ConvertTo<scada::NodeId>(change_password.user_node_id()),
-        base::UTF8ToUTF16(change_password.current_password_utf8()),
-        base::UTF8ToUTF16(change_password.new_password_utf8()));
+        ConvertTo<scada::LocalizedText>(
+            change_password.current_password_utf8()),
+        ConvertTo<scada::LocalizedText>(change_password.new_password_utf8()));
   }
 
   if (request.add_reference_size() != 0) {

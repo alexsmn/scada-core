@@ -33,17 +33,17 @@ void HistoryProxy::HistoryReadRaw(
             *history_read_raw.mutable_continuation_point());
   }
 
-  sender_->Request(
-      request, [this, callback](const protocol::Response& response) {
-        if (!callback)
-          return;
+  sender_->Request(request, [this,
+                             callback](const protocol::Response& response) {
+    if (!callback)
+      return;
 
-        callback(ConvertTo<scada::Status>(response.status()),
-                 ConvertTo<std::vector<scada::DataValue>>(
-                     response.history_read_raw_result().value()),
-                 ConvertTo<scada::ByteString>(
-                     response.history_read_raw_result().continuation_point()));
-      });
+    callback({ConvertTo<scada::Status>(response.status()),
+              ConvertTo<std::vector<scada::DataValue>>(
+                  response.history_read_raw_result().value()),
+              ConvertTo<scada::ByteString>(
+                  response.history_read_raw_result().continuation_point())});
+  });
 }
 
 void HistoryProxy::HistoryReadEvents(
@@ -64,14 +64,7 @@ void HistoryProxy::HistoryReadEvents(
     history_read_events.set_from_time(from.ToInternalValue());
   if (!to.is_null())
     history_read_events.set_to_time(to.ToInternalValue());
-
-  if (filter.types) {
-    auto& proto_filter = *history_read_events.mutable_filter();
-    if (filter.types & scada::EventFilter::ACKED)
-      proto_filter.set_acked(true);
-    if (filter.types & scada::EventFilter::UNACKED)
-      proto_filter.set_unacked(true);
-  }
+  Convert(filter, *history_read_events.mutable_filter());
 
   sender_->Request(
       request, [this, callback](const protocol::Response& response) {

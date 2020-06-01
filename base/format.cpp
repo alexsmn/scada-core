@@ -102,27 +102,27 @@ base::string16 WideFormat(base::StringPiece16 value) {
 }
 
 template<>
-bool Parse<int>(const base::StringPiece& str, int& value) {
+bool Parse(const base::StringPiece& str, int32_t& value) {
   return base::StringToInt(str, &value);
 }
 
 template<>
-bool Parse<int>(const base::StringPiece16& str, int& value) {
+bool Parse(const base::StringPiece16& str, int32_t& value) {
   return base::StringToInt(str, &value);
 }
 
 template<>
-bool Parse<unsigned>(const base::StringPiece& str, unsigned& value) {
+bool Parse(const base::StringPiece& str, uint32_t& value) {
   return base::StringToUint(str, &value);
 }
 
 template<>
-bool Parse<unsigned>(const base::StringPiece16& str, unsigned& value) {
+bool Parse(const base::StringPiece16& str, uint32_t& value) {
   return base::StringToUint(str, &value);
 }
 
 template<>
-bool Parse<unsigned char>(const base::StringPiece& str, unsigned char& value) {
+bool Parse(const base::StringPiece& str, uint8_t& value) {
   unsigned tmp;
   if (!Parse(str, tmp))
     return false;
@@ -131,16 +131,43 @@ bool Parse<unsigned char>(const base::StringPiece& str, unsigned char& value) {
 }
 
 template<>
-bool Parse<unsigned char>(const base::StringPiece16& str, unsigned char& value) {
+bool Parse(const base::StringPiece16& str, uint8_t& value) {
   unsigned tmp;
   if (!Parse(str, tmp))
     return false;
-  value = static_cast<unsigned char>(tmp);
+  value = static_cast<uint8_t>(tmp);
   return value == tmp;
 }
 
 template<>
-bool Parse<unsigned short>(const base::StringPiece& str, unsigned short& value) {
+bool Parse(const base::StringPiece& str, int16_t& value) {
+  int tmp;
+  if (!base::StringToInt(str, &tmp))
+    return false;
+  value = static_cast<int16_t>(tmp);
+  return value == tmp;
+}
+
+template<>
+bool Parse(const base::StringPiece16& str, int16_t& value) {
+  int tmp;
+  if (!base::StringToInt(str, &tmp))
+    return false;
+  value = static_cast<int16_t>(tmp);
+  return value == tmp;
+}
+
+template<>
+bool Parse(const base::StringPiece& str, uint16_t& value) {
+  unsigned tmp;
+  if (!base::StringToUint(str, &tmp))
+    return false;
+  value = static_cast<uint16_t>(tmp);
+  return value == tmp;
+}
+
+template<>
+bool Parse(const base::StringPiece16& str, uint16_t& value) {
   unsigned tmp;
   if (!base::StringToUint(str, &tmp))
     return false;
@@ -149,12 +176,13 @@ bool Parse<unsigned short>(const base::StringPiece& str, unsigned short& value) 
 }
 
 template<>
-bool Parse<unsigned short>(const base::StringPiece16& str, unsigned short& value) {
-  unsigned tmp;
-  if (!base::StringToUint(str, &tmp))
-    return false;
-  value = static_cast<unsigned short>(tmp);
-  return value == tmp;
+bool Parse(const base::StringPiece& str, int64_t& value) {
+  return base::StringToInt64(str, &value);
+}
+
+template<>
+bool Parse(const base::StringPiece16& str, int64_t& value) {
+  return base::StringToInt64(str, &value);
 }
 
 template<>
@@ -163,22 +191,22 @@ bool Parse(const base::StringPiece& str, uint64_t& value) {
 }
 
 template<>
-bool Parse<uint64_t>(const base::StringPiece16& str, uint64_t& value) {
+bool Parse(const base::StringPiece16& str, uint64_t& value) {
   return base::StringToUint64(str, &value);
 }
 
 template<>
-bool Parse<double>(const base::StringPiece& str, double& value) {
+bool Parse(const base::StringPiece& str, double& value) {
   return base::StringToDouble(str.as_string(), &value);
 }
 template<>
-bool Parse<double>(const base::StringPiece16& str, double& value) {
+bool Parse(const base::StringPiece16& str, double& value) {
   // TODO: Use ICU for conversion.
   return base::StringToDouble(base::UTF16ToASCII(str.as_string()), &value);
 }
 
 template<>
-bool Parse<bool>(const base::StringPiece& str, bool& value) {
+bool Parse(const base::StringPiece& str, bool& value) {
   int tmp;
   if (!Parse(str, tmp))
     return false;
@@ -186,7 +214,7 @@ bool Parse<bool>(const base::StringPiece& str, bool& value) {
   return true;
 }
 template<>
-bool Parse<bool>(const base::StringPiece16& str, bool& value) {
+bool Parse(const base::StringPiece16& str, bool& value) {
   int tmp;
   if (!Parse(str, tmp))
     return false;
@@ -195,12 +223,12 @@ bool Parse<bool>(const base::StringPiece16& str, bool& value) {
 }
 
 template<>
-bool Parse<std::string>(const base::StringPiece& str, std::string& value) {
+bool Parse(const base::StringPiece& str, std::string& value) {
   value = str.as_string();
   return true;
 }
 template<>
-bool Parse<base::string16>(const base::StringPiece16& str, base::string16& value) {
+bool Parse(const base::StringPiece16& str, base::string16& value) {
   value = str.as_string();
   return true;
 }

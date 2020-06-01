@@ -16,23 +16,26 @@ using NumericId = uint32_t;
 
 class NodeId {
  public:
-  NodeId() noexcept;
-  NodeId(NumericId numeric_id, NamespaceIndex namespace_index = 0) noexcept;
-  NodeId(String string_id, NamespaceIndex namespace_index) noexcept;
-  NodeId(ByteString opaque_id, NamespaceIndex namespace_index) noexcept;
+  constexpr NodeId() noexcept = default;
+  constexpr NodeId(NumericId numeric_id,
+                   NamespaceIndex namespace_index = 0) noexcept;
+  NodeId(String string_id, NamespaceIndex namespace_index);
+  NodeId(ByteString opaque_id, NamespaceIndex namespace_index);
 
-  NodeIdType type() const noexcept {
+  constexpr NodeIdType type() const noexcept {
     return static_cast<NodeIdType>(identifier_.index());
   }
 
-  bool is_null() const noexcept;
+  constexpr bool is_null() const noexcept;
 
-  NamespaceIndex namespace_index() const noexcept { return namespace_index_; }
+  constexpr NamespaceIndex namespace_index() const noexcept {
+    return namespace_index_;
+  }
   void set_namespace_index(NamespaceIndex index) noexcept {
     namespace_index_ = index;
   }
 
-  NumericId numeric_id() const;
+  constexpr NumericId numeric_id() const;
   const String& string_id() const;
   const ByteString& opaque_id() const;
 
@@ -42,30 +45,86 @@ class NodeId {
  private:
   using SharedStringId = std::shared_ptr<const String>;
   using SharedByteString = std::shared_ptr<const ByteString>;
-  std::variant<NumericId, SharedStringId, SharedByteString> identifier_;
+  std::variant<NumericId, SharedStringId, SharedByteString> identifier_ = 0;
 
-  NamespaceIndex namespace_index_;
+  NamespaceIndex namespace_index_ = 0;
 };
 
-bool operator==(const NodeId& a, const NodeId& b);
+inline constexpr NodeId::NodeId(NumericId numeric_id,
+                                NamespaceIndex namespace_index) noexcept
+    : identifier_{numeric_id}, namespace_index_{namespace_index} {}
 
-inline bool operator!=(const NodeId& a, const NodeId& b) {
+inline constexpr bool NodeId::is_null() const noexcept {
+  if (namespace_index_ != 0)
+    return false;
+  if (const auto* numeric_id = std::get_if<NumericId>(&identifier_))
+    return *numeric_id == 0;
+  return false;
+}
+
+inline constexpr NumericId NodeId::numeric_id() const {
+  assert(type() == NodeIdType::Numeric);
+  return std::get<NumericId>(identifier_);
+}
+
+inline constexpr bool operator==(const NodeId& a, const NodeId& b) noexcept {
+  if (a.namespace_index() != b.namespace_index())
+    return false;
+
+  if (a.type() != b.type())
+    return false;
+
+  switch (a.type()) {
+    case NodeIdType::Numeric:
+      return a.numeric_id() == b.numeric_id();
+    case NodeIdType::String:
+      return a.string_id() == b.string_id();
+    case NodeIdType::Opaque:
+      return a.opaque_id() == b.opaque_id();
+    default:
+      assert(false);
+      return false;
+  }
+}
+
+inline constexpr bool operator!=(const NodeId& a, const NodeId& b) noexcept {
   return !operator==(a, b);
 }
 
-bool operator<(const NodeId& a, const NodeId& b);
+inline constexpr bool operator<(const NodeId& a, const NodeId& b) noexcept {
+  if (a.namespace_index() != b.namespace_index())
+    return a.namespace_index() < b.namespace_index();
 
-bool operator==(const NodeId& a, NumericId b);
+  if (a.type() != b.type())
+    return a.type() < b.type();
 
-inline bool operator!=(const NodeId& a, NumericId b) {
+  switch (a.type()) {
+    case NodeIdType::Numeric:
+      return a.numeric_id() < b.numeric_id();
+    case NodeIdType::String:
+      return a.string_id() < b.string_id();
+    case NodeIdType::Opaque:
+      return a.opaque_id() < b.opaque_id();
+    default:
+      assert(false);
+      return false;
+  }
+}
+
+inline constexpr bool operator==(const NodeId& a, NumericId b) noexcept {
+  return a.namespace_index() == 0 && a.type() == NodeIdType::Numeric &&
+         a.numeric_id() == b;
+}
+
+inline constexpr bool operator!=(const NodeId& a, NumericId b) noexcept {
   return !(a == b);
 }
 
-inline bool operator==(NumericId a, const NodeId& b) {
+inline constexpr bool operator==(NumericId a, const NodeId& b) noexcept {
   return b == a;
 }
 
-inline bool operator!=(NumericId a, const NodeId& b) {
+inline constexpr bool operator!=(NumericId a, const NodeId& b) noexcept {
   return !operator==(a, b);
 }
 

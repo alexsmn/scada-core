@@ -49,6 +49,6 @@ void ViewServiceProxy::Browse(
 
 void ViewServiceProxy::TranslateBrowsePaths(
     const std::vector<scada::BrowsePath>& browse_paths,
-    const scada::TranslateBrowsePathCallback& callback) {
+    const scada::TranslateBrowsePathsCallback& callback) {
   callback(scada::StatusCode::Bad, {});
 }

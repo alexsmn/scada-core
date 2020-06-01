@@ -23,10 +23,9 @@ HistoryStub::~HistoryStub() {
   // Release continuation points.
   if (!continuation_points_.empty()) {
     const scada::HistoryReadRawCallback callback =
-        [](scada::Status status, std::vector<scada::DataValue> values,
-           scada::ByteString continuation_point) {
-          assert(values.empty());
-          assert(continuation_point.empty());
+        [](scada::HistoryReadRawResult&& result) {
+          assert(result.values.empty());
+          assert(result.continuation_point.empty());
         };
 
     for (auto& [continuation_point, details] : continuation_points_) {
@@ -89,29 +88,27 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   service_.HistoryReadRaw(
       details,
       io_context_.wrap([this, weak_ptr = weak_factory_.GetWeakPtr(), request_id,
-                        details](scada::Status status,
-                                 std::vector<scada::DataValue> values,
-                                 scada::ByteString continuation_point) {
+                        details](scada::HistoryReadRawResult result) {
         if (!weak_ptr.get())
           return;
 
         logger_->WriteF(LogSeverity::Normal,
                         "History read raw request %u completed with status %s",
-                        request_id, ToString(status).c_str());
+                        request_id, ToString(result.status).c_str());
 
-        if (!continuation_point.empty())
-          continuation_points_.emplace(continuation_point, details);
+        if (!result.continuation_point.empty())
+          continuation_points_.emplace(result.continuation_point, details);
 
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        Convert(status, *response.mutable_status());
-        if (!values.empty()) {
-          Convert(std::move(values),
+        Convert(result.status, *response.mutable_status());
+        if (!result.values.empty()) {
+          Convert(std::move(result.values),
                   *response.mutable_history_read_raw_result()->mutable_value());
         }
-        if (!continuation_point.empty()) {
-          Convert(std::move(continuation_point),
+        if (!result.continuation_point.empty()) {
+          Convert(std::move(result.continuation_point),
                   *response.mutable_history_read_raw_result()
                        ->mutable_continuation_point());
         }
@@ -131,13 +128,8 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
                 ? base::Time::FromInternalValue(history_read_events.to_time())
                 : base::Time();
   scada::EventFilter filter;
-  if (history_read_events.has_filter()) {
-    auto& proto_filter = history_read_events.filter();
-    if (proto_filter.acked())
-      filter.types |= scada::EventFilter::ACKED;
-    if (proto_filter.unacked())
-      filter.types |= scada::EventFilter::UNACKED;
-  }
+  if (history_read_events.has_filter())
+    Convert(history_read_events.filter(), filter);
 
   logger_->WriteF(LogSeverity::Normal, "History read events request %u node %s",
                   request_id, NodeIdToScadaString(node_id).c_str());
