@@ -234,13 +234,12 @@ SubscriptionProxy::~SubscriptionProxy() {
   }
 }
 
-std::unique_ptr<scada::MonitoredItem> SubscriptionProxy::CreateMonitoredItem(
+std::shared_ptr<scada::MonitoredItem> SubscriptionProxy::CreateMonitoredItem(
     const scada::ReadValueId& read_value_id,
     const scada::MonitoringParameters& params) {
   assert(read_value_id.attribute_id == scada::AttributeId::EventNotifier ||
          !read_value_id.node_id.is_null());
-  return std::unique_ptr<scada::MonitoredItem>(
-      new MonitoredItemProxy(*this, read_value_id, params));
+  return std::make_shared<MonitoredItemProxy>(*this, read_value_id, params);
 }
 
 void SubscriptionProxy::AddMonitoredItem(MonitoredItemProxy& item) {

@@ -27,8 +27,8 @@ class SubscriptionProxy {
   explicit SubscriptionProxy(const SubscriptionParams& params);
   ~SubscriptionProxy();
 
-  std::unique_ptr<scada::MonitoredItem> CreateMonitoredItem(
-      const scada::ReadValueId& read_value_id,
+  std::shared_ptr<scada::MonitoredItem> CreateMonitoredItem(
+      const scada::ReadValueId& value_id,
       const scada::MonitoringParameters& params);
 
   void OnChannelOpened(MessageSender& sender);
