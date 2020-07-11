@@ -25,16 +25,13 @@ if(WIN32)
   set(BOOST_COMPONENTS thread log log_setup filesystem date_time regex program_options)
   find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
-  set(BOOST_DEBUG_SUFFIX "vc142-mt-gd-x32-${Boost_LIB_VERSION}")
-  set(BOOST_RELEASE_SUFFIX "vc142-mt-x32-${Boost_LIB_VERSION}")
-
-  foreach(BOOST_COMPONENT ${BOOST_COMPONENTS})
-    install(FILES
-        "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/boost_${BOOST_COMPONENT}-${BOOST_DEBUG_SUFFIX}.dll>"
-        "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/boost_${BOOST_COMPONENT}-${BOOST_RELEASE_SUFFIX}.dll>"
-      DESTINATION bin
-      COMPONENT Common)
-  endforeach()
+  file(GLOB BOOST_DLLS CONFIGURE_DEPENDS
+    "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/boost_*-${Boost_LIB_VERSION}.dll>"
+    "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/boost_*-${Boost_LIB_VERSION}.dll>"
+  )
+  install(FILES ${BOOST_DLLS}
+    DESTINATION bin
+    COMPONENT Common)
 
   install(FILES
       "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/libprotobufd.dll>"
