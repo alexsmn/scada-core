@@ -223,6 +223,16 @@ inline bool Variant::get(T& value) const {
 }
 
 template <class T>
+inline bool Variant::get_int(T& value) const {
+  Int64 int64_value;
+  if (!get(int64_value))
+    return false;
+
+  value = static_cast<T>(int64_value);
+  return static_cast<Int64>(value) == int64_value;
+}
+
+template <class T>
 inline constexpr const T* Variant::get_if() const noexcept {
   return std::get_if<T>(&data_);
 }

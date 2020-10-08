@@ -88,6 +88,10 @@ void Convert(const std::string& source, scada::QualifiedName& target) {
   target = base::SysWideToNativeMB(base::SysUTF8ToWide(source));
 }
 
+void Convert(const scada::QualifiedName& source, std::string& target) {
+  target = base::SysWideToUTF8(base::SysNativeMBToWide(source.name()));
+}
+
 static_assert(static_cast<size_t>(scada::Variant::COUNT) == 19);
 
 void Convert(const protocol::Variant& source, scada::Variant& target) {

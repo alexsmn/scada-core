@@ -133,10 +133,14 @@ void InitBoostLogging(const BoostLogParams& params) {
           boost::log::keywords::rotation_size = params.rotation_size,
           boost::log::keywords::max_size = params.max_size,
           boost::log::keywords::max_files = params.max_files,
-          boost::log::keywords::time_based_rotation =
-              boost::log::sinks::file::rotation_at_time_point(0, 0, 0),
+          // Build fails in WSL.
+#if defined(WIN32)
           boost::log::keywords::format =
-              "%TimeStamp% (%LineID%) <%Severity%>: %Message%");
+              "%TimeStamp% (%LineID%) <%Severity%>: %Message%",
+#endif
+          boost::log::keywords::time_based_rotation =
+              boost::log::sinks::file::rotation_at_time_point(0, 0, 0)
+      );
       sink->set_formatter(&FormatLogRecordT<false>);
       sink->locked_backend()->auto_flush();
 

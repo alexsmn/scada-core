@@ -62,16 +62,6 @@ bool Variant::get(bool& value) const {
   return true;
 }
 
-template <class T>
-bool Variant::get_int(T& value) const {
-  Int64 int64_value;
-  if (!get(int64_value))
-    return false;
-
-  value = static_cast<T>(int64_value);
-  return static_cast<Int64>(value) == int64_value;
-}
-
 bool Variant::get(Int64& value) const {
   if (!is_scalar())
     return false;

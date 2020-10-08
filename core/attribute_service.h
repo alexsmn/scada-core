@@ -26,7 +26,7 @@ using ReadCallback =
     std::function<void(Status&&, std::vector<DataValue>&& results)>;
 using WriteCallback = MultiStatusCallback;
 
-struct [[deprecated]] WriteValue {
+struct WriteValue {
   NodeId node_id;
   AttributeId attribute_id;
   Variant value;

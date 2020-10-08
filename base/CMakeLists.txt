@@ -1,6 +1,4 @@
-if(NOT BOOST_FOUND)
-  find_package(Boost REQUIRED COMPONENTS system date_time log log_setup regex)
-endif()
+find_package(Boost REQUIRED COMPONENTS system date_time log log_setup regex)
 
 add_subdirectory(test)
 

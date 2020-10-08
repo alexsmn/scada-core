@@ -14,6 +14,9 @@
 #include <set>
 #include <vector>
 
+void Convert(const std::string& source, scada::QualifiedName& target);
+void Convert(const scada::QualifiedName& source, std::string& target);
+
 void Convert(const std::string& source, scada::LocalizedText& target);
 void Convert(const scada::LocalizedText& source, std::string& target);
 
@@ -122,6 +125,9 @@ inline void Convert(const T& source, T& target) {
 }
 
 // Convert To/From Repeated
+
+template <class Target, class Source>
+Target ConvertTo(const Source& source);
 
 template <typename Target, typename SourceRepeatedField>
 inline void ConvertFromRepeated(const SourceRepeatedField& source,

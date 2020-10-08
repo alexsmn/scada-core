@@ -28,7 +28,7 @@ class DataValue {
   DataValue(const DataValue&) = default;
   DataValue& operator=(const DataValue&) = default;
 
-  constexpr DataValue(DataValue&&) = default;
+  DataValue(DataValue&&) = default;
   DataValue& operator=(DataValue&&) = default;
 
   constexpr bool is_null() const noexcept {
