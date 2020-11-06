@@ -6,8 +6,9 @@
 
 class CsvReader {
  public:
-  // |signature| is expected contents of the first cell useful to determine separrator.
-  CsvReader(std::wistream& stream, base::StringPiece16 signature = {});
+  // |signature| is expected contents of the first cell useful to determine
+  // separator.
+  CsvReader(std::istream& stream, base::StringPiece16 signature = {});
 
   int row_index() const { return row_index_; }
   int cell_index() const { return cell_index_; }
@@ -17,8 +18,9 @@ class CsvReader {
 
  private:
   base::StringPiece16 signature_;
-  std::wistream& stream_;
+  std::istream& stream_;
   wchar_t separator_ = L',';
+  std::string raw_line_;
   base::string16 line_;
   base::string16::size_type line_pos_ = 0;
   bool has_cells_ = false;

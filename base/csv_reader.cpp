@@ -1,19 +1,19 @@
 #include "base/csv_reader.h"
 
 #include "base/strings/string_util.h"
+#include "base/strings/sys_string_conversions.h"
 
-CsvReader::CsvReader(std::wistream& stream, base::StringPiece16 signature)
-    : stream_{stream},
-      signature_{signature} {
-}
+CsvReader::CsvReader(std::istream& stream, base::StringPiece16 signature)
+    : stream_{stream}, signature_{signature} {}
 
 bool CsvReader::NextRow() {
   ++row_index_;
   cell_index_ = 0;
   line_pos_ = 0;
-  if (!std::getline(stream_, line_))
+  if (!std::getline(stream_, raw_line_))
     return false;
 
+  line_ = base::SysNativeMBToWide(raw_line_);
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.
@@ -47,7 +47,7 @@ bool CsvReader::NextCell(base::string16& str) {
         return false;
       }
       str += line_.substr(line_pos_, p - line_pos_);
-      line_pos_ = p + 1; // skip quote
+      line_pos_ = p + 1;  // skip quote
       if (line_pos_ >= line_.size() || line_[line_pos_] != L'"')
         break;
       str += L'"';
