@@ -1,8 +1,7 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
-
 #include <string>
+#include <string_view>
 
 #define LOCALIZED_TEXT(text) L##text
 
@@ -10,7 +9,7 @@ namespace scada {
 
 using LocalizedText = std::wstring;
 
-LocalizedText ToLocalizedText(base::StringPiece string);
+LocalizedText ToLocalizedText(std::string_view string);
 
 inline const LocalizedText& ToLocalizedText(const std::wstring& string) {
   return string;

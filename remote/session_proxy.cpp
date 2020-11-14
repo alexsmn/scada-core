@@ -1,6 +1,7 @@
 #include "remote/session_proxy.h"
 
 #include "base/net_logger_adapter.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
@@ -28,8 +29,8 @@ namespace {
 
 const auto kPingDelay = 1s;
 
-std::string MakeConnectionString(base::StringPiece str) {
-  auto parts = base::SplitString(str, ":", base::TRIM_WHITESPACE,
+std::string MakeConnectionString(std::string_view str) {
+  auto parts = base::SplitString(ToStringPiece(str), ":", base::TRIM_WHITESPACE,
                                  base::SplitResult::SPLIT_WANT_ALL);
   parts.resize(2);
   if (parts[1].empty())

@@ -1,5 +1,6 @@
 #include "base/csv_writer.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -7,7 +8,7 @@
 namespace {
 
 // chrome/src/components/password_manager/core/browser/import/csv_writer.cc
-std::wstring StringToCsv(base::StringPiece16 raw_value,
+std::wstring StringToCsv(std::wstring_view raw_value,
                          wchar_t delimiter,
                          wchar_t quote) {
   std::wstring result;
@@ -23,7 +24,7 @@ std::wstring StringToCsv(base::StringPiece16 raw_value,
     const wchar_t two_quotes[] = {quote, quote, L'\0'};
     base::ReplaceSubstringsAfterOffset(
         &result, result.size() - raw_value.size(),
-        base::StringPiece16{&quote, 1}, two_quotes);
+        base::StringPiece16{&quote, 1}, ToStringPiece(two_quotes));
     result.push_back(quote);
   } else {
     result.append(raw_value.begin(), raw_value.end());
@@ -48,7 +49,7 @@ void CsvWriter::StartRow() {
   start_of_line_ = true;
 }
 
-void CsvWriter::WriteCell(base::StringPiece16 utf16) {
+void CsvWriter::WriteCell(std::wstring_view utf16) {
   if (!start_of_line_)
     stream_ << delimiter;
   start_of_line_ = false;

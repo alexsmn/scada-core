@@ -1,11 +1,11 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "core/data_services.h"
 #include "core/logging.h"
 
 #include <functional>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 namespace boost::asio {
@@ -41,7 +41,7 @@ using DataServicesInfoList = std::vector<DataServicesInfo>;
 
 const DataServicesInfoList& GetDataServicesInfoList();
 
-bool EqualDataServicesName(base::StringPiece name1, base::StringPiece name2);
+bool EqualDataServicesName(std::string_view name1, std::string_view name2);
 
 #define REGISTER_DATA_SERVICES(name, display_name, factory_method) \
   static bool factory_method##_registered = [] {                   \
@@ -49,6 +49,6 @@ bool EqualDataServicesName(base::StringPiece name1, base::StringPiece name2);
     return true;                                                   \
   }();
 
-bool CreateDataServices(base::StringPiece name,
+bool CreateDataServices(std::string_view name,
                         const DataServicesContext& context,
                         DataServices& services);

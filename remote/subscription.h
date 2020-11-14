@@ -1,10 +1,10 @@
 #pragma once
 
-#include <functional>
-
-#include "base/strings/string_piece.h"
 #include "core/attribute_ids.h"
 #include "core/data_value.h"
+
+#include <functional>
+#include <string_view>
 
 typedef int MonitoredItemId;
 
@@ -14,7 +14,7 @@ struct SubscriptionParams {
 
 struct MonitoredItemParams {
   MonitoredItemId handle;
-  base::StringPiece16 item_id;
+  std::wstring_view item_id;
 };
 
 /*namespace scada {
@@ -37,7 +37,8 @@ class SubscriptionService {
  public:
   virtual ~SubscriptionService() {}
 
-  using PublishCallback = std::function<void(const Status& status, const std::vector<Notification>& notifications)>;
+  using PublishCallback = std::function<void(const Status& status, const
+std::vector<Notification>& notifications)>;
 
   virtual void Publish(PublishCallback callback) = 0;
 };

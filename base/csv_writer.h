@@ -1,15 +1,14 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
-
 #include <ostream>
+#include <string_view>
 
 class CsvWriter {
  public:
   explicit CsvWriter(std::ostream& stream);
 
   void StartRow();
-  void WriteCell(base::StringPiece16 utf16);
+  void WriteCell(std::wstring_view utf16);
 
   bool unicode = false;
   char delimiter = ',';

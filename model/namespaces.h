@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "core/basic_types.h"
+
+#include <string_view>
 
 namespace NamespaceIndexes {
 
@@ -28,5 +29,5 @@ constexpr scada::NamespaceIndex END = 19;
 
 }  // namespace NamespaceIndexes
 
-base::StringPiece GetNamespaceName(scada::NamespaceIndex namespace_index);
-int FindNamespaceIndexByName(base::StringPiece name);
+std::string_view GetNamespaceName(scada::NamespaceIndex namespace_index);
+int FindNamespaceIndexByName(std::string_view name);

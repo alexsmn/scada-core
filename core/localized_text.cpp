@@ -1,12 +1,13 @@
 #include "core/localized_text.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 
 namespace scada {
 
-LocalizedText ToLocalizedText(base::StringPiece string) {
-  return base::WideToUTF16(base::SysNativeMBToWide(string));
+LocalizedText ToLocalizedText(std::string_view string) {
+  return base::WideToUTF16(base::SysNativeMBToWide(ToStringPiece(string)));
 }
 
 }  // namespace scada

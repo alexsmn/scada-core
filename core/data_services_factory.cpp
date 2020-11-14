@@ -1,5 +1,6 @@
 #include "data_services_factory.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 
 namespace {
@@ -19,11 +20,12 @@ void RegisterDataServices(DataServicesInfo info) {
   GetMutableDataServicesInfoList().emplace_back(std::move(info));
 }
 
-bool EqualDataServicesName(base::StringPiece name1, base::StringPiece name2) {
-  return base::EqualsCaseInsensitiveASCII(name1, name2);
+bool EqualDataServicesName(std::string_view name1, std::string_view name2) {
+  return base::EqualsCaseInsensitiveASCII(ToStringPiece(name1),
+                                          ToStringPiece(name2));
 }
 
-bool CreateDataServices(base::StringPiece name,
+bool CreateDataServices(std::string_view name,
                         const DataServicesContext& context,
                         DataServices& services) {
   for (auto& info : GetDataServicesInfoList()) {

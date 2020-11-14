@@ -1,9 +1,11 @@
 #include "core/node_id.h"
 
-#include <atomic>
-
+#include "base/string_piece_util.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+
+#include <atomic>
 
 namespace scada {
 
@@ -49,46 +51,50 @@ String NodeId::ToString() const {
 }
 
 // static
-NodeId NodeId::FromString(const base::StringPiece& string) {
+NodeId NodeId::FromString(std::string_view string) {
   if (string.empty())
     return {};
 
   NamespaceIndex namespace_index = 0;
 
-  base::StringPiece str = string;
+  std::string_view str = string;
 
-  if (str.starts_with("ns=")) {
+  if (base::StartsWith(ToStringPiece(str),
+                       "ns=", base::CompareCase::INSENSITIVE_ASCII)) {
     auto index = str.find(';');
-    if (index == base::StringPiece::npos)
+    if (index == std::string_view::npos)
       return {};
     unsigned id = 0;
-    if (!base::StringToUint(str.substr(3, index - 3), &id))
+    if (!base::StringToUint(ToStringPiece(str.substr(3, index - 3)), &id))
       return {};
     namespace_index = static_cast<NamespaceIndex>(id);
     str = str.substr(index + 1);
   }
 
-  if (str.starts_with("i=")) {
+  if (base::StartsWith(ToStringPiece(str),
+                       "i=", base::CompareCase::INSENSITIVE_ASCII)) {
     unsigned numeric_id = 0;
-    if (!base::StringToUint(str.substr(2), &numeric_id))
+    if (!base::StringToUint(ToStringPiece(str.substr(2)), &numeric_id))
       return {};
     return {numeric_id, namespace_index};
   }
 
-  if (str.starts_with("s=")) {
+  if (base::StartsWith(ToStringPiece(str),
+                       "s=", base::CompareCase::INSENSITIVE_ASCII)) {
     auto string_id = str.substr(2);
-    return {string_id.as_string(), namespace_index};
+    return {std::string{string_id}, namespace_index};
   }
 
-  if (str.starts_with("s=")) {
+  if (base::StartsWith(ToStringPiece(str),
+                       "s=", base::CompareCase::INSENSITIVE_ASCII)) {
     auto string_id = str.substr(2);
-    return {string_id.as_string(), namespace_index};
+    return {std::string{string_id}, namespace_index};
   }
 
   // TODO: g=
   // TODO: b=
 
-  return {str.as_string(), namespace_index};
+  return {std::string{str}, namespace_index};
 }
 
 }  // namespace scada

@@ -1,16 +1,17 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "core/node_id.h"
+
+#include <string_view>
 
 bool IsNestedNodeId(const scada::NodeId& node_id,
                     scada::NodeId& parent_id,
-                    base::StringPiece& nested_name);
+                    std::string_view& nested_name);
 scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
-                               base::StringPiece nested_name);
+                               std::string_view nested_name);
 bool GetNestedSubName(const scada::NodeId& node_id,
                       const scada::NodeId& nested_id,
-                      base::StringPiece& nested_name);
+                      std::string_view& nested_name);
 
-scada::NodeId NodeIdFromScadaString(base::StringPiece scada_string);
+scada::NodeId NodeIdFromScadaString(std::string_view scada_string);
 std::string NodeIdToScadaString(const scada::NodeId& node_id);

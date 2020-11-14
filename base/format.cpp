@@ -1,5 +1,6 @@
 #include "base/format.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
@@ -7,7 +8,6 @@
 #include "base/third_party/dmg_fp/dmg_fp.h"
 
 #include <memory>
-
 
 std::string Format(double value) {
   char buffer[32];
@@ -85,44 +85,44 @@ std::wstring WideFormat(unsigned short value) {
   return WideFormat(static_cast<unsigned>(value));
 }
 
-std::string Format(base::StringPiece value) {
-  return value.as_string();
+std::string Format(std::string_view value) {
+  return std::string{value};
 }
 
-std::wstring WideFormat(base::StringPiece value) {
-  return base::WideToUTF16(base::SysNativeMBToWide(value.as_string()));
+std::wstring WideFormat(std::string_view value) {
+  return base::WideToUTF16(base::SysNativeMBToWide(ToStringPiece(value)));
 }
 
-std::string Format(base::StringPiece16 value) {
-  return base::SysWideToNativeMB(base::UTF16ToWide(value.as_string()));
+std::string Format(std::wstring_view value) {
+  return base::SysWideToNativeMB(base::UTF16ToWide(ToStringPiece(value)));
 }
 
-std::wstring WideFormat(base::StringPiece16 value) {
-  return value.as_string();
+std::wstring WideFormat(std::wstring_view value) {
+  return std::wstring{value};
 }
 
-template<>
-bool Parse(const base::StringPiece& str, int32_t& value) {
-  return base::StringToInt(str, &value);
+template <>
+bool Parse(const std::string_view& str, int32_t& value) {
+  return base::StringToInt(ToStringPiece(str), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece16& str, int32_t& value) {
-  return base::StringToInt(str, &value);
+template <>
+bool Parse(const std::wstring_view& str, int32_t& value) {
+  return base::StringToInt(ToStringPiece(str), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece& str, uint32_t& value) {
-  return base::StringToUint(str, &value);
+template <>
+bool Parse(const std::string_view& str, uint32_t& value) {
+  return base::StringToUint(ToStringPiece(str), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece16& str, uint32_t& value) {
-  return base::StringToUint(str, &value);
+template <>
+bool Parse(const std::wstring_view& str, uint32_t& value) {
+  return base::StringToUint(ToStringPiece(str), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece& str, uint8_t& value) {
+template <>
+bool Parse(const std::string_view& str, uint8_t& value) {
   unsigned tmp;
   if (!Parse(str, tmp))
     return false;
@@ -130,8 +130,8 @@ bool Parse(const base::StringPiece& str, uint8_t& value) {
   return value == tmp;
 }
 
-template<>
-bool Parse(const base::StringPiece16& str, uint8_t& value) {
+template <>
+bool Parse(const std::wstring_view& str, uint8_t& value) {
   unsigned tmp;
   if (!Parse(str, tmp))
     return false;
@@ -139,82 +139,82 @@ bool Parse(const base::StringPiece16& str, uint8_t& value) {
   return value == tmp;
 }
 
-template<>
-bool Parse(const base::StringPiece& str, int16_t& value) {
+template <>
+bool Parse(const std::string_view& str, int16_t& value) {
   int tmp;
-  if (!base::StringToInt(str, &tmp))
+  if (!base::StringToInt(ToStringPiece(str), &tmp))
     return false;
   value = static_cast<int16_t>(tmp);
   return value == tmp;
 }
 
-template<>
-bool Parse(const base::StringPiece16& str, int16_t& value) {
+template <>
+bool Parse(const std::wstring_view& str, int16_t& value) {
   int tmp;
-  if (!base::StringToInt(str, &tmp))
+  if (!base::StringToInt(ToStringPiece(str), &tmp))
     return false;
   value = static_cast<int16_t>(tmp);
   return value == tmp;
 }
 
-template<>
-bool Parse(const base::StringPiece& str, uint16_t& value) {
+template <>
+bool Parse(const std::string_view& str, uint16_t& value) {
   unsigned tmp;
-  if (!base::StringToUint(str, &tmp))
+  if (!base::StringToUint(ToStringPiece(str), &tmp))
     return false;
   value = static_cast<uint16_t>(tmp);
   return value == tmp;
 }
 
-template<>
-bool Parse(const base::StringPiece16& str, uint16_t& value) {
+template <>
+bool Parse(const std::wstring_view& str, uint16_t& value) {
   unsigned tmp;
-  if (!base::StringToUint(str, &tmp))
+  if (!base::StringToUint(ToStringPiece(str), &tmp))
     return false;
   value = static_cast<unsigned short>(tmp);
   return value == tmp;
 }
 
-template<>
-bool Parse(const base::StringPiece& str, int64_t& value) {
-  return base::StringToInt64(str, &value);
+template <>
+bool Parse(const std::string_view& str, int64_t& value) {
+  return base::StringToInt64(ToStringPiece(str), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece16& str, int64_t& value) {
-  return base::StringToInt64(str, &value);
+template <>
+bool Parse(const std::wstring_view& str, int64_t& value) {
+  return base::StringToInt64(ToStringPiece(str), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece& str, uint64_t& value) {
-  return base::StringToUint64(str, &value);
+template <>
+bool Parse(const std::string_view& str, uint64_t& value) {
+  return base::StringToUint64(ToStringPiece(str), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece16& str, uint64_t& value) {
-  return base::StringToUint64(str, &value);
+template <>
+bool Parse(const std::wstring_view& str, uint64_t& value) {
+  return base::StringToUint64(ToStringPiece(str), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece& str, double& value) {
-  return base::StringToDouble(str.as_string(), &value);
+template <>
+bool Parse(const std::string_view& str, double& value) {
+  return base::StringToDouble(std::string{str}, &value);
 }
-template<>
-bool Parse(const base::StringPiece16& str, double& value) {
+template <>
+bool Parse(const std::wstring_view& str, double& value) {
   // TODO: Use ICU for conversion.
-  return base::StringToDouble(base::UTF16ToASCII(str.as_string()), &value);
+  return base::StringToDouble(base::UTF16ToASCII(ToStringPiece(str)), &value);
 }
 
-template<>
-bool Parse(const base::StringPiece& str, bool& value) {
+template <>
+bool Parse(const std::string_view& str, bool& value) {
   int tmp;
   if (!Parse(str, tmp))
     return false;
   value = tmp != 0;
   return true;
 }
-template<>
-bool Parse(const base::StringPiece16& str, bool& value) {
+template <>
+bool Parse(const std::wstring_view& str, bool& value) {
   int tmp;
   if (!Parse(str, tmp))
     return false;
@@ -222,14 +222,14 @@ bool Parse(const base::StringPiece16& str, bool& value) {
   return true;
 }
 
-template<>
-bool Parse(const base::StringPiece& str, std::string& value) {
-  value = str.as_string();
+template <>
+bool Parse(const std::string_view& str, std::string& value) {
+  value = std::string{str};
   return true;
 }
-template<>
-bool Parse(const base::StringPiece16& str, std::wstring& value) {
-  value = str.as_string();
+template <>
+bool Parse(const std::wstring_view& str, std::wstring& value) {
+  value = std::wstring{str};
   return true;
 }
 

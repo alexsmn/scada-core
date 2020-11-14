@@ -1,8 +1,8 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
+#include <string_view>
 
-inline bool IsEqualNoCase(base::StringPiece a, base::StringPiece b) {
+inline bool IsEqualNoCase(std::string_view a, std::string_view b) {
   if (a.size() != b.size())
     return false;
   if (a.empty())
@@ -11,7 +11,7 @@ inline bool IsEqualNoCase(base::StringPiece a, base::StringPiece b) {
                     [](char a, char b) { return tolower(a) == tolower(b); });
 }
 
-inline bool IsEqualNoCase(base::StringPiece16 a, base::StringPiece16 b) {
+inline bool IsEqualNoCase(std::wstring_view a, std::wstring_view b) {
   if (a.size() != b.size())
     return false;
   if (a.empty())

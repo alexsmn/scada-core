@@ -1,15 +1,15 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "base/strings/string16.h"
 
 #include <istream>
+#include <string_view>
 
 class CsvReader {
  public:
   // |signature| is expected contents of the first cell useful to determine
   // separator.
-  CsvReader(std::istream& stream, base::StringPiece16 signature = {});
+  CsvReader(std::istream& stream, std::wstring_view signature = {});
 
   int row_index() const { return row_index_; }
   int cell_index() const { return cell_index_; }
@@ -18,7 +18,7 @@ class CsvReader {
   bool NextCell(std::wstring& str);
 
  private:
-  base::StringPiece16 signature_;
+  std::wstring_view signature_;
   std::istream& stream_;
   wchar_t separator_ = L',';
   std::string raw_line_;

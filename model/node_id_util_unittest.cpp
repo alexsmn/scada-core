@@ -43,7 +43,7 @@ TEST(NodeIdUtil, Comparison) {
 TEST(NodeIdUtil, IsNestedNodeId) {
   scada::NodeId kNodeId{"IEC_DEV.1!1", 0};
   scada::NodeId parent_id;
-  base::StringPiece nested_name;
+  std::string_view nested_name;
   EXPECT_TRUE(IsNestedNodeId(kNodeId, parent_id, nested_name));
   EXPECT_EQ(NodeIdFromScadaString("IEC_DEV.1"), parent_id);
   EXPECT_EQ("1", nested_name);

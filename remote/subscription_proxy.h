@@ -1,13 +1,13 @@
 #pragma once
 
-#include <map>
-#include <memory>
-#include <set>
-
-#include "base/strings/string_piece.h"
 #include "core/attribute_ids.h"
 #include "core/status.h"
 #include "remote/subscription.h"
+
+#include <map>
+#include <memory>
+#include <set>
+#include <string_view>
 
 namespace scada {
 class Event;

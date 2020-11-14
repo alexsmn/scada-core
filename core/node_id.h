@@ -1,11 +1,12 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "core/basic_types.h"
 #include "core/string.h"
 
 #include <cassert>
 #include <memory>
+#include <ostream>
+#include <string_view>
 #include <variant>
 
 namespace scada {
@@ -40,7 +41,7 @@ class NodeId {
   const ByteString& opaque_id() const;
 
   String ToString() const;
-  static NodeId FromString(const base::StringPiece& string);
+  static NodeId FromString(std::string_view string);
 
  private:
   using SharedStringId = std::shared_ptr<const String>;

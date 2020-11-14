@@ -1,10 +1,11 @@
 #include "base/csv_reader.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 
-CsvReader::CsvReader(std::istream& stream, base::StringPiece16 signature)
+CsvReader::CsvReader(std::istream& stream, std::wstring_view signature)
     : stream_{stream}, signature_{signature} {}
 
 bool CsvReader::NextRow() {
@@ -22,14 +23,16 @@ bool CsvReader::NextRow() {
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.
-  base::ReplaceSubstringsAfterOffset(&line_, 0, base::WideToUTF16(L"\r\n"), base::WideToUTF16(L"\n"));
+  base::ReplaceSubstringsAfterOffset(&line_, 0, base::WideToUTF16(L"\r\n"),
+                                     base::WideToUTF16(L"\n"));
 
   if (!signature_.empty()) {
     if (line_.size() > signature_.size() &&
-        base::StartsWith(line_, signature_, base::CompareCase::SENSITIVE)) {
+        base::StartsWith(ToStringPiece(line_), ToStringPiece(signature_),
+                         base::CompareCase::SENSITIVE)) {
       separator_ = line_[signature_.size()];
     }
-    signature_.clear();
+    signature_ = {};
   }
   return true;
 }

@@ -22,9 +22,9 @@ std::string SerializeToString(base::TimeDelta delta) {
                             static_cast<int>(m), static_cast<int>(s));
 }
 
-bool Deserialize(base::StringPiece str, base::TimeDelta& delta) {
+bool Deserialize(std::string_view str, base::TimeDelta& delta) {
   int h, m, s;
-  if (sscanf(str.as_string().c_str(), "%d:%d:%d", &h, &m, &s) != 3)
+  if (sscanf(std::string{str}.c_str(), "%d:%d:%d", &h, &m, &s) != 3)
     return false;
 
   if (h < 0 || m < 0 || s < 0)
@@ -55,6 +55,6 @@ std::string SerializeToString(base::Time time) {
   return str;
 }
 
-bool Deserialize(base::StringPiece str, base::Time& time) {
-  return base::Time::FromUTCString(str.as_string().c_str(), &time);
+bool Deserialize(std::string_view str, base::Time& time) {
+  return base::Time::FromUTCString(std::string{str}.c_str(), &time);
 }
