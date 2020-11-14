@@ -4,8 +4,8 @@
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 
-#include <shellapi.h>
 #include <memory>
+#include <shellapi.h>
 
 namespace win_util {
 
@@ -21,10 +21,7 @@ void InsertMenuItem(HMENU menu, int pos, UINT id, LPCTSTR text, UINT state) {
   InsertMenuItem(menu, pos, TRUE, &mii);
 }
 
-void InsertSubMenu(HMENU menu,
-                   int pos,
-                   const base::char16* text,
-                   HMENU submenu) {
+void InsertSubMenu(HMENU menu, int pos, const wchar_t* text, HMENU submenu) {
   MENUITEMINFO mii;
   memset(&mii, 0, sizeof(mii));
   mii.cbSize = sizeof(mii);
@@ -95,23 +92,23 @@ int RemoveMenuCommand(HMENU menu, UINT command) {
   return pos;
 }
 
-base::string16 LoadResourceString(HMODULE module, unsigned id) {
+std::wstring LoadResourceString(HMODULE module, unsigned id) {
   wchar_t* buffer = NULL;
   int len = ::LoadStringW(module, id, reinterpret_cast<LPWSTR>(&buffer), 0);
-  return base::string16(buffer, len);
+  return std::wstring(buffer, len);
 }
 
-base::string16 GetWindowText(HWND window_handle) {
+std::wstring GetWindowText(HWND window_handle) {
   DCHECK(IsWindow(window_handle));
   int len = GetWindowTextLength(window_handle) + 1;
-  base::string16 str;
+  std::wstring str;
   if (len > 1)
     ::GetWindowText(window_handle, base::WriteInto(&str, len), len);
   return str;
 }
 
 int GetWindowInt(HWND window_handle) {
-  base::string16 str = GetWindowText(window_handle);
+  std::wstring str = GetWindowText(window_handle);
   int value;
   if (!Parse(str, value))
     throw E_INVALIDARG;
@@ -122,30 +119,30 @@ void SetWindowTextInt(HWND window_handle, int value) {
   SetWindowText(window_handle, WideFormat(value).c_str());
 }
 
-base::string16 GetListBoxItemText(HWND window_handle, int index) {
+std::wstring GetListBoxItemText(HWND window_handle, int index) {
   int len = SendMessage(window_handle, LB_GETTEXTLEN, index, 0L);
   if (len <= 0)
-    return base::string16();
+    return std::wstring();
 
-  std::unique_ptr<base::char16[]> text(new base::char16[len + 1]);
+  std::unique_ptr<wchar_t[]> text(new wchar_t[len + 1]);
   int res = SendMessage(window_handle, LB_GETTEXT, index,
                         reinterpret_cast<LPARAM>(text.get()));
   if (res == LB_ERR)
-    return base::string16();
-  return base::string16(text.get(), text.get() + len);
+    return std::wstring();
+  return std::wstring(text.get(), text.get() + len);
 }
 
-base::string16 GetComboBoxItemText(HWND window_handle, int index) {
+std::wstring GetComboBoxItemText(HWND window_handle, int index) {
   int len = SendMessage(window_handle, CB_GETLBTEXTLEN, index, 0L);
   if (len <= 0)
-    return base::string16();
+    return std::wstring();
 
-  std::unique_ptr<base::char16[]> text(new base::char16[len + 1]);
+  std::unique_ptr<wchar_t[]> text(new wchar_t[len + 1]);
   int res = SendMessage(window_handle, CB_GETLBTEXT, index,
                         reinterpret_cast<LPARAM>(text.get()));
   if (res == LB_ERR)
-    return base::string16();
-  return base::string16(text.get(), text.get() + len);
+    return std::wstring();
+  return std::wstring(text.get(), text.get() + len);
 }
 
 enum Version {

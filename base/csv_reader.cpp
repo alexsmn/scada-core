@@ -34,7 +34,7 @@ bool CsvReader::NextRow() {
   return true;
 }
 
-bool CsvReader::NextCell(base::string16& str) {
+bool CsvReader::NextCell(std::wstring& str) {
   str.clear();
 
   if (!has_cells_)

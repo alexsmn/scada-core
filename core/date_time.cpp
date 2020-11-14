@@ -7,7 +7,7 @@ std::string ToString(scada::DateTime time) {
   return FormatTime(time);
 }
 
-base::string16 ToString16(scada::DateTime time) {
+std::wstring ToString16(scada::DateTime time) {
   return base::ASCIIToUTF16(FormatTime(time));
 }
 

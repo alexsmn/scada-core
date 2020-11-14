@@ -1,7 +1,6 @@
 #include "base/boost_log.h"
 
 #include "base/format.h"
-#include "base/strings/string16.h"
 
 #include <boost/date_time/posix_time/time_formatters.hpp>
 #include <boost/filesystem.hpp>
@@ -13,6 +12,7 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/console.hpp>
 #include <boost/log/utility/setup/file.hpp>
+#include <string>
 
 namespace {
 
@@ -32,7 +32,7 @@ std::string ToString(const boost::log::attribute_value& attr) {
   // NOTE: It's not clear why long is required at least under Windows.
   using Types = boost::mpl::vector<bool, int16_t, uint16_t, int32_t, uint32_t,
                                    int64_t, uint64_t, long, float, double,
-                                   std::string, base::string16>;
+                                   std::string, std::wstring>;
 
   StringFormatter::result_type result;
   boost::log::visit<Types>(attr,
@@ -133,14 +133,13 @@ void InitBoostLogging(const BoostLogParams& params) {
           boost::log::keywords::rotation_size = params.rotation_size,
           boost::log::keywords::max_size = params.max_size,
           boost::log::keywords::max_files = params.max_files,
-          // Build fails in WSL.
+      // Build fails in WSL.
 #if defined(WIN32)
           boost::log::keywords::format =
               "%TimeStamp% (%LineID%) <%Severity%>: %Message%",
 #endif
           boost::log::keywords::time_based_rotation =
-              boost::log::sinks::file::rotation_at_time_point(0, 0, 0)
-      );
+              boost::log::sinks::file::rotation_at_time_point(0, 0, 0));
       sink->set_formatter(&FormatLogRecordT<false>);
       sink->locked_backend()->auto_flush();
 

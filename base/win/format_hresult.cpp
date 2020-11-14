@@ -5,7 +5,7 @@
 #include <cassert>
 #include <windows.h>
 
-base::string16 FormatHresultUTF16(HRESULT err) {
+std::wstring FormatHresultUTF16(HRESULT err) {
   LPWSTR buf = NULL;
   if (!FormatMessageW(
           FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
@@ -21,7 +21,7 @@ base::string16 FormatHresultUTF16(HRESULT err) {
     len--;
   }
 
-  base::string16 str(buf, len);
+  std::wstring str(buf, len);
   LocalFree(buf);
   return str;
 }

@@ -25,8 +25,8 @@ std::string ToString(scada::Qualifier qualifier) {
   return text;
 }
 
-base::string16 ToString16(scada::Qualifier qualifier) {
-  base::string16 text;
+std::wstring ToString16(scada::Qualifier qualifier) {
+  std::wstring text;
   if (qualifier.bad())
     text += base::WideToUTF16(L"Недост ");
   if (qualifier.backup())

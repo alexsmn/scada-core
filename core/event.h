@@ -1,9 +1,10 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "core/configuration_types.h"
 #include "core/data_value.h"
 #include "core/standard_node_ids.h"
+
+#include <string>
 
 namespace scada {
 
@@ -41,7 +42,7 @@ class Event {
   NodeId user_id;
   Variant value;
   Qualifier qualifier;
-  base::string16 message;
+  std::wstring message;
   bool acked = false;
   EventAcknowledgeId acknowledge_id;
   DateTime acknowledged_time;

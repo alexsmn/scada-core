@@ -7,20 +7,20 @@
 namespace {
 
 // chrome/src/components/password_manager/core/browser/import/csv_writer.cc
-base::string16 StringToCsv(base::StringPiece16 raw_value,
-                           base::char16 delimiter,
-                           base::char16 quote) {
-  base::string16 result;
+std::wstring StringToCsv(base::StringPiece16 raw_value,
+                         wchar_t delimiter,
+                         wchar_t quote) {
+  std::wstring result;
   result.reserve(raw_value.size());
   // Fields containing line breaks (CRLF), double quotes, and commas should be
   // enclosed in double-quotes. If double-quotes are used to enclose fields,
   // then double-quotes appearing inside a field must be escaped by preceding
   // them with another double quote.
-  const base::char16 escape[] = {L'\r', L'\n', delimiter, quote, L'\0'};
-  if (raw_value.find_first_of(escape) != base::string16::npos) {
+  const wchar_t escape[] = {L'\r', L'\n', delimiter, quote, L'\0'};
+  if (raw_value.find_first_of(escape) != std::wstring::npos) {
     result.push_back(quote);
     result.append(raw_value.begin(), raw_value.end());
-    const base::char16 two_quotes[] = {quote, quote, L'\0'};
+    const wchar_t two_quotes[] = {quote, quote, L'\0'};
     base::ReplaceSubstringsAfterOffset(
         &result, result.size() - raw_value.size(),
         base::StringPiece16{&quote, 1}, two_quotes);

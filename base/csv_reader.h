@@ -15,15 +15,15 @@ class CsvReader {
   int cell_index() const { return cell_index_; }
 
   bool NextRow();
-  bool NextCell(base::string16& str);
+  bool NextCell(std::wstring& str);
 
  private:
   base::StringPiece16 signature_;
   std::istream& stream_;
   wchar_t separator_ = L',';
   std::string raw_line_;
-  base::string16 line_;
-  base::string16::size_type line_pos_ = 0;
+  std::wstring line_;
+  std::wstring::size_type line_pos_ = 0;
   bool has_cells_ = false;
   int row_index_ = 0;
   int cell_index_ = 1;

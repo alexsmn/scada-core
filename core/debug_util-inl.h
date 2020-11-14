@@ -40,7 +40,7 @@ inline std::string ToString(const T& v) {
 }
 
 template <class T>
-inline base::string16 ToString16(const T& v) {
+inline std::wstring ToString16(const T& v) {
   std::stringstream s;
   s << v;
   return base::UTF8ToUTF16(s.str());

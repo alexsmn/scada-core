@@ -102,6 +102,6 @@ bool Clipboard::SetText(const std::string& text) {
   return SetData(CF_TEXT, text.c_str(), text.length() + 1); 
 }
 
-bool Clipboard::SetText(const base::string16& text) {
+bool Clipboard::SetText(const std::wstring& text) {
   return SetData(CF_UNICODETEXT, text.c_str(), (text.length() + 1) * 2);
 }

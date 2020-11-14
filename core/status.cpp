@@ -79,7 +79,7 @@ std::string ToString(scada::StatusCode status_code) {
   return IsGood(status_code) ? "OK" : "Error";
 }
 
-base::string16 ToString16(scada::StatusCode status_code) {
+std::wstring ToString16(scada::StatusCode status_code) {
   if (auto* entry = FindEntry(status_code))
     return base::WideToUTF16(entry->localized_error_string);
 
@@ -91,6 +91,6 @@ std::string ToString(const scada::Status& status) {
   return ToString(status.code());
 }
 
-base::string16 ToString16(const scada::Status& status) {
+std::wstring ToString16(const scada::Status& status) {
   return ToString16(status.code());
 }

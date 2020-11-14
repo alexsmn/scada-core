@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "core/basic_types.h"
 #include "core/date_time.h"
 #include "core/expanded_node_id.h"
@@ -11,6 +10,7 @@
 #include "core/string.h"
 
 #include <cstdint>
+#include <string>
 #include <variant>
 
 namespace scada {
@@ -57,7 +57,7 @@ class Variant {
   Variant(LocalizedText str) noexcept : data_{std::move(str)} {}
   constexpr Variant(DateTime value) noexcept : data_{value} {}
   Variant(const char* str) : data_{str ? String{str} : String{}} {}
-  Variant(const base::char16* str)
+  Variant(const wchar_t* str)
       : data_{str ? LocalizedText{str} : LocalizedText{}} {}
   Variant(NodeId node_id) noexcept : data_{std::move(node_id)} {}
   Variant(ExpandedNodeId node_id) noexcept : data_{std::move(node_id)} {}
@@ -254,7 +254,7 @@ Variant::Type ToBuiltInDataType(const NodeId& node_id);
 std::string ToString(scada::Variant::Type type);
 
 std::string ToString(const scada::Variant& value);
-base::string16 ToString16(const scada::Variant& value);
+std::wstring ToString16(const scada::Variant& value);
 
 inline std::ostream& operator<<(std::ostream& stream, const scada::Variant& v) {
   v.Dump(stream);

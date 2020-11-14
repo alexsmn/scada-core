@@ -15,17 +15,17 @@ std::string Format(double value) {
   return std::string(buffer);
 }
 
-base::string16 WideFormat(double value) {
+std::wstring WideFormat(double value) {
   char buffer[32];
   dmg_fp::g_fmt(buffer, value);
-  return base::string16(buffer, buffer + strlen(buffer));
+  return std::wstring(buffer, buffer + strlen(buffer));
 }
 
 std::string Format(float value) {
   return Format(static_cast<double>(value));
 }
 
-base::string16 WideFormat(float value) {
+std::wstring WideFormat(float value) {
   return WideFormat(static_cast<double>(value));
 }
 
@@ -33,7 +33,7 @@ std::string Format(int value) {
   return base::NumberToString(value);
 }
 
-base::string16 WideFormat(int value) {
+std::wstring WideFormat(int value) {
   return base::NumberToString16(value);
 }
 
@@ -41,7 +41,7 @@ std::string Format(unsigned int value) {
   return base::NumberToString(value);
 }
 
-base::string16 WideFormat(unsigned int value) {
+std::wstring WideFormat(unsigned int value) {
   return base::NumberToString16(value);
 }
 
@@ -53,11 +53,11 @@ std::string Format(int64_t value) {
   return base::NumberToString(value);
 }
 
-base::string16 WideFormat(int64_t value) {
+std::wstring WideFormat(int64_t value) {
   return base::NumberToString16(value);
 }
 
-base::string16 WideFormat(uint64_t value) {
+std::wstring WideFormat(uint64_t value) {
   return base::NumberToString16(value);
 }
 
@@ -65,7 +65,7 @@ std::string Format(bool value) {
   return Format(value ? 1 : 0);
 }
 
-base::string16 WideFormat(bool value) {
+std::wstring WideFormat(bool value) {
   return WideFormat(value ? 1 : 0);
 }
 
@@ -73,7 +73,7 @@ std::string Format(unsigned char value) {
   return Format(static_cast<unsigned>(value));
 }
 
-base::string16 WideFormat(unsigned char value) {
+std::wstring WideFormat(unsigned char value) {
   return WideFormat(static_cast<unsigned>(value));
 }
 
@@ -81,7 +81,7 @@ std::string Format(unsigned short value) {
   return Format(static_cast<unsigned>(value));
 }
 
-base::string16 WideFormat(unsigned short value) {
+std::wstring WideFormat(unsigned short value) {
   return WideFormat(static_cast<unsigned>(value));
 }
 
@@ -89,7 +89,7 @@ std::string Format(base::StringPiece value) {
   return value.as_string();
 }
 
-base::string16 WideFormat(base::StringPiece value) {
+std::wstring WideFormat(base::StringPiece value) {
   return base::WideToUTF16(base::SysNativeMBToWide(value.as_string()));
 }
 
@@ -97,7 +97,7 @@ std::string Format(base::StringPiece16 value) {
   return base::SysWideToNativeMB(base::UTF16ToWide(value.as_string()));
 }
 
-base::string16 WideFormat(base::StringPiece16 value) {
+std::wstring WideFormat(base::StringPiece16 value) {
   return value.as_string();
 }
 
@@ -228,7 +228,7 @@ bool Parse(const base::StringPiece& str, std::string& value) {
   return true;
 }
 template<>
-bool Parse(const base::StringPiece16& str, base::string16& value) {
+bool Parse(const base::StringPiece16& str, std::wstring& value) {
   value = str.as_string();
   return true;
 }

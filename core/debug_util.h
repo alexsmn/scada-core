@@ -2,9 +2,8 @@
 
 #include <optional>
 #include <ostream>
+#include <string>
 #include <vector>
-
-#include "base/strings/string16.h"
 
 template <class A, class B>
 std::ostream& operator<<(std::ostream& stream, const std::pair<A, B>& pair);
@@ -19,4 +18,4 @@ template <class T>
 std::string ToString(const T& v);
 
 template <class T>
-base::string16 ToString16(const T& v);
+std::wstring ToString16(const T& v);
