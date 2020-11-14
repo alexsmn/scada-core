@@ -2,6 +2,8 @@
 
 #include "base/common_types.h"
 
+#include <memory>
+
 class Executor {
  public:
   virtual ~Executor() {}

@@ -2,6 +2,7 @@
 
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 
 CsvReader::CsvReader(std::istream& stream, base::StringPiece16 signature)
     : stream_{stream}, signature_{signature} {}
@@ -13,11 +14,15 @@ bool CsvReader::NextRow() {
   if (!std::getline(stream_, raw_line_))
     return false;
 
+#if defined(OS_WIN)
   line_ = base::SysNativeMBToWide(raw_line_);
+#else
+  line_ = base::UTF8ToUTF16(raw_line_);
+#endif
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.
-  base::ReplaceSubstringsAfterOffset(&line_, 0, L"\r\n", L"\n");
+  base::ReplaceSubstringsAfterOffset(&line_, 0, base::WideToUTF16(L"\r\n"), base::WideToUTF16(L"\n"));
 
   if (!signature_.empty()) {
     if (line_.size() > signature_.size() &&

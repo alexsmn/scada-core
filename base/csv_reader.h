@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/strings/string_piece.h"
+#include "base/strings/string16.h"
 
 #include <istream>
 

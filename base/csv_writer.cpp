@@ -55,8 +55,12 @@ void CsvWriter::WriteCell(base::StringPiece16 utf16) {
 
   auto escaped = StringToCsv(utf16, delimiter, quote);
 
+#if defined(OS_WIN)
   std::string encoded =
       unicode ? base::UTF16ToUTF8(escaped) : base::SysWideToNativeMB(escaped);
+#else
+  std::string encoded = base::UTF16ToUTF8(escaped);
+#endif
 
   stream_ << encoded;
   if (!stream_)
