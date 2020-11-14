@@ -16,5 +16,3 @@ using Duration = base::TimeDelta;
 
 std::string ToString(scada::DateTime time);
 std::wstring ToString16(scada::DateTime time);
-
-// std::ostream& operator<<(std::ostream& stream, scada::DateTime time);

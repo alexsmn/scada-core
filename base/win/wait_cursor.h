@@ -1,7 +1,5 @@
 #pragma once
 
-#include "base/macros.h"
-
 #include <windows.h>
 
 class WaitCursor {

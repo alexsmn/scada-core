@@ -2,7 +2,6 @@
 
 #include "base/base_export.h"
 
-#include <string>
 #include <windows.h>
 
 BASE_EXPORT bool DumpException(const wchar_t* path,
