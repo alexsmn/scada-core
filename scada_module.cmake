@@ -1,12 +1,12 @@
 include(GoogleTest)
 
 macro(SCADA_MODULE MODULE_NAME)
-  file(GLOB ${MODULE_NAME}_SOURCES "*.cpp" "*.h")
-  file(GLOB ${MODULE_NAME}_UT_SOURCES "*_unittest.*" "*_mock.*")
+  file(GLOB ${MODULE_NAME}_SOURCES CONFIGURE_DEPENDS "*.cpp" "*.h")
+  file(GLOB ${MODULE_NAME}_UT_SOURCES CONFIGURE_DEPENDS "*_unittest.*" "*_mock.*")
 
   if (WIN32)
-    file(GLOB ${MODULE_NAME}_SOURCES_WIN "win/*.cpp" "win/*.h")
-    file(GLOB ${MODULE_NAME}_UT_SOURCES_WIN "win/*_unittest.*" "win/*_mock.*")
+    file(GLOB ${MODULE_NAME}_SOURCES_WIN CONFIGURE_DEPENDS "win/*.cpp" "win/*.h")
+    file(GLOB ${MODULE_NAME}_UT_SOURCES_WIN CONFIGURE_DEPENDS "win/*_unittest.*" "win/*_mock.*")
     list(APPEND ${MODULE_NAME}_SOURCES ${${MODULE_NAME}_SOURCES_WIN})
     list(APPEND ${MODULE_NAME}_UT_SOURCES ${${MODULE_NAME}_UT_SOURCES_WIN})
   endif()
