@@ -71,15 +71,17 @@ inline bool operator==(const scada::ReadValueId& a,
          std::tie(b.node_id, b.attribute_id);
 }
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                const scada::ReadValueId& v) {
+namespace scada {
+
+inline std::ostream& operator<<(std::ostream& stream, const ReadValueId& v) {
   return stream << "{" << v.node_id << ", " << v.attribute_id << "}";
 }
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                const scada::WriteValue& write_value) {
+inline std::ostream& operator<<(std::ostream& stream, const WriteValue& write_value) {
   return stream << "{"
                 << "node_id: " << write_value.node_id
                 << ", attribute_id: " << write_value.attribute_id
                 << ", value: " << write_value.value << "}";
 }
+
+}  // namespace scada

@@ -145,4 +145,10 @@ inline Status Qualifier::ToStatus() const {
 std::string ToString(scada::Qualifier qualifier);
 std::wstring ToString16(scada::Qualifier qualifier);
 
-std::ostream& operator<<(std::ostream& stream, scada::Qualifier qualifier);
+namespace scada {
+
+inline std::ostream& operator<<(std::ostream& stream, Qualifier qualifier) {
+  return stream << ToString(qualifier);
+}
+
+}  // namespace scada

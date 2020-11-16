@@ -89,10 +89,10 @@ inline bool operator==(const SemanticChangeEvent& a,
   return a.node_id == b.node_id;
 }
 
-}  // namespace scada
-
 inline std::ostream& operator<<(std::ostream& stream,
-                                const scada::ModelChangeEvent& e) {
+                                const ModelChangeEvent& e) {
   return stream << "{" << e.node_id << ", " << e.type_definition_id << ", "
                 << static_cast<unsigned>(e.verb) << "}";
 }
+
+}  // namespace scada

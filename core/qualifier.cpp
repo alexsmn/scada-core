@@ -47,7 +47,3 @@ std::wstring ToString16(scada::Qualifier qualifier) {
     text += base::WideToUTF16(L"Ошибка ");
   return text;
 }
-
-std::ostream& operator<<(std::ostream& stream, scada::Qualifier qualifier) {
-  return stream << ToString(qualifier);
-}

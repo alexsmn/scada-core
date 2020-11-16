@@ -256,12 +256,15 @@ std::string ToString(scada::Variant::Type type);
 std::string ToString(const scada::Variant& value);
 std::wstring ToString16(const scada::Variant& value);
 
-inline std::ostream& operator<<(std::ostream& stream, const scada::Variant& v) {
+namespace scada {
+
+inline std::ostream& operator<<(std::ostream& stream, const Variant& v) {
   v.Dump(stream);
   return stream;
 }
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                scada::Variant::Type type) {
+inline std::ostream& operator<<(std::ostream& stream, Variant::Type type) {
   return stream << ToString(type);
 }
+
+}  // namespace scada

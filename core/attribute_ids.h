@@ -35,7 +35,11 @@ enum class AttributeId {
 
 std::string ToString(scada::AttributeId attribute_id);
 
+namespace scada {
+
 inline std::ostream& operator<<(std::ostream& stream,
                                 scada::AttributeId attribute_id) {
   return stream << ToString(attribute_id);
 }
+
+}  // namespace scada
