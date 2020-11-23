@@ -44,7 +44,7 @@ class SubscriptionProxy::MonitoredItemProxy : public scada::MonitoredItem {
 
   SubscriptionProxy* subscription_ = nullptr;
 
-  MonitoredItemId monitored_item_id_;
+  MonitoredItemId monitored_item_id_ = 0;
 
   enum State { DELETED, CREATING, CREATED };
   State state_ = DELETED;

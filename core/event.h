@@ -44,7 +44,7 @@ class Event {
   Qualifier qualifier;
   std::wstring message;
   bool acked = false;
-  EventAcknowledgeId acknowledge_id;
+  EventAcknowledgeId acknowledge_id = 0;
   DateTime acknowledged_time;
   NodeId acknowledged_user_id;
 };
