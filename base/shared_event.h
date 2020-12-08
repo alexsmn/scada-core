@@ -1,7 +1,8 @@
+#pragma once
+
 #include "base/win/scoped_handle.h"
 
 #include <cassert>
-#include <string>
 #include <windows.h>
 
 class SharedEvent {
