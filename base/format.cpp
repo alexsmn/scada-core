@@ -29,6 +29,14 @@ std::wstring WideFormat(float value) {
   return WideFormat(static_cast<double>(value));
 }
 
+std::string Format(long value) {
+  return base::NumberToString(value);
+}
+
+std::wstring WideFormat(long value) {
+  return base::NumberToString16(value);
+}
+
 std::string Format(int value) {
   return base::NumberToString(value);
 }

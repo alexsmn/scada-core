@@ -14,6 +14,9 @@
 #include <set>
 #include <vector>
 
+template<class Source, class Target>
+void Convert(const Source& source, Target& target);
+
 void Convert(const std::string& source, scada::QualifiedName& target);
 void Convert(const scada::QualifiedName& source, std::string& target);
 

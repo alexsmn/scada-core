@@ -156,7 +156,8 @@ void SessionProxy::OnSessionDeleted() {
   // Cancel all requests.
   {
     protocol::Response response;
-    Convert(scada::StatusCode::Bad_Disconnected, *response.mutable_status());
+    Convert(scada::Status{scada::StatusCode::Bad_Disconnected},
+            *response.mutable_status());
     auto requests = std::move(requests_);
     for (auto& p : requests) {
       response.set_request_id(p.first);

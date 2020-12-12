@@ -70,7 +70,7 @@ void NodeManagementStub::OnDeleteNode(unsigned request_id,
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
     auto& delete_node_result = *response.mutable_delete_node_result();
-    Convert(scada::StatusCode::Bad_CantDeleteOwnUser,
+    Convert(scada::Status{scada::StatusCode::Bad_CantDeleteOwnUser},
             *response.mutable_status());
     sender_.Send(message);
     return;

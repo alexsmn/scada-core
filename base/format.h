@@ -15,6 +15,9 @@ std::wstring WideFormat(double value);
 std::string Format(float value);
 std::wstring WideFormat(float value);
 
+std::string Format(long value);
+std::wstring WideFormat(long value);
+
 std::string Format(int32_t value);
 std::wstring WideFormat(int32_t value);
 

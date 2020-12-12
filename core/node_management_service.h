@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/configuration_types.h"
 #include "core/node_attributes.h"
 #include "core/node_class.h"
 #include "core/status.h"
@@ -10,7 +9,9 @@
 
 namespace scada {
 
-enum class NodeClass;
+using StatusCallback = std::function<void(Status&&)>;
+using MultiStatusCallback =
+    std::function<void(Status&&, std::vector<StatusCode>&&)>;
 
 struct AddReferencesItem {
   NodeId source_node_id;
@@ -28,10 +29,6 @@ struct DeleteReferencesItem {
   ExpandedNodeId target_node_id;
   bool delete_bidirectional = true;
 };
-
-using StatusCallback = std::function<void(Status&&)>;
-using MultiStatusCallback =
-    std::function<void(Status&&, std::vector<StatusCode>&&)>;
 
 using CreateNodeCallback =
     std::function<void(Status&& status, const NodeId& node_id)>;

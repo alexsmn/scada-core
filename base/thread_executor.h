@@ -13,6 +13,9 @@ class ThreadExecutor : public Executor {
   ThreadExecutor();
   virtual ~ThreadExecutor();
 
+  ThreadExecutor(const ThreadExecutor&) = delete;
+  ThreadExecutor& operator=(const ThreadExecutor&) = delete;
+
   virtual void PostDelayedTask(Duration delay, Task task) override;
   virtual size_t GetTaskCount() const override;
 

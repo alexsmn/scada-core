@@ -55,7 +55,7 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
   if (request.has_ping()) {
     protocol::Response response;
     response.set_request_id(request.request_id());
-    Convert(scada::StatusCode::Good, *response.mutable_status());
+    Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
     SendResponse(response);
   }
 
@@ -78,7 +78,8 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
       event_service_.Acknowledge(acknowledge.acknowledge_id(), user_id_);
       protocol::Response response;
       response.set_request_id(request.request_id());
-      Convert(scada::StatusCode::Good, *response.mutable_status());
+      Convert(scada::Status{scada::StatusCode::Good},
+              *response.mutable_status());
       SendResponse(response);
     }
     if (call.has_device_command()) {
@@ -158,7 +159,7 @@ void SessionStub::OnCreateSubscription(int request_id) {
   auto& create_subscription_result =
       *response.mutable_create_subscription_result();
   create_subscription_result.set_subscription_id(subscription_id);
-  Convert(scada::StatusCode::Good, *response.mutable_status());
+  Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
   Send(message);
 }
 
@@ -170,7 +171,7 @@ void SessionStub::OnDeleteSubscription(int request_id, int subscription_id) {
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
-  Convert(result, *response.mutable_status());
+  Convert(scada::Status{result}, *response.mutable_status());
   Send(message);
 }
 
