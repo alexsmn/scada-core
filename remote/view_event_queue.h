@@ -51,3 +51,17 @@ inline std::vector<ViewEventQueue::Event> ViewEventQueue::GetEvents() {
   queue_.clear();
   return queue;
 }
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const ViewEventQueue::Event& event) {
+  if (auto* model_change = std::get_if<scada::ModelChangeEvent>(&event)) {
+    stream << *model_change;
+  } else if (auto* semantic_change =
+                 std::get_if<scada::SemanticChangeEvent>(&event)) {
+    stream << *semantic_change;
+  } else {
+    assert(false);
+  }
+
+  return stream;
+}

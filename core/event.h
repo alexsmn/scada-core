@@ -89,10 +89,36 @@ inline bool operator==(const SemanticChangeEvent& a,
   return a.node_id == b.node_id;
 }
 
+inline std::string ModelChangeEventVerbToString(unsigned verb) {
+  constexpr std::string_view kBitStrings[] = {
+      "NodeAdded", "NodeDeleted", "ReferenceAdded", "ReferenceDeleted",
+      "DataTypeChanged"};
+  std::string result = "[";
+  bool first = true;
+  for (std::size_t i = 0; i < std::size(kBitStrings); ++i) {
+    if (verb & (1 << i)) {
+      if (!first)
+        result += ",";
+      result += '"';
+      result += kBitStrings[i];
+      result += '"';
+      first = false;
+    }
+  }
+  result += "]";
+  return result;
+}
+
 inline std::ostream& operator<<(std::ostream& stream,
                                 const ModelChangeEvent& e) {
-  return stream << "{" << e.node_id << ", " << e.type_definition_id << ", "
-                << static_cast<unsigned>(e.verb) << "}";
+  return stream << "ModelChangeEvent{" << e.node_id << ", "
+                << e.type_definition_id << ", "
+                << ModelChangeEventVerbToString(e.verb) << "}";
+}
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const SemanticChangeEvent& e) {
+  return stream << "SemanticChangeEvent{" << e.node_id << "}";
 }
 
 }  // namespace scada
