@@ -1,5 +1,6 @@
 #include "remote/session_stub.h"
 
+#include "base/range_util.h"
 #include "core/attribute_service.h"
 #include "core/event_service.h"
 #include "core/method_service.h"
@@ -75,7 +76,8 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
     auto& call = request.call();
     if (call.has_acknowledge()) {
       auto& acknowledge = call.acknowledge();
-      event_service_.Acknowledge(acknowledge.acknowledge_id(), user_id_);
+      event_service_.Acknowledge(MakeVector<int>(acknowledge.acknowledge_id()),
+                                 user_id_);
       protocol::Response response;
       response.set_request_id(request.request_id());
       Convert(scada::Status{scada::StatusCode::Good},

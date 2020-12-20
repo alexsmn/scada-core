@@ -2,6 +2,7 @@
 
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
+#include "remote/protocol_utils.h"
 
 EventServiceProxy::EventServiceProxy() {}
 
@@ -15,8 +16,8 @@ void EventServiceProxy::OnChannelClosed() {
   sender_ = nullptr;
 }
 
-void EventServiceProxy::Acknowledge(int acknowledge_id,
-                                    const scada::NodeId& user_node_id) {
+void EventServiceProxy::Acknowledge(base::span<const int> acknowledge_ids,
+                                    const scada::NodeId& user_id) {
   if (!sender_) {
     assert(false);
     return;
@@ -24,7 +25,8 @@ void EventServiceProxy::Acknowledge(int acknowledge_id,
 
   protocol::Request request;
   auto& acknowledge = *request.mutable_call()->mutable_acknowledge();
-  acknowledge.set_acknowledge_id(acknowledge_id);
+  acknowledge.mutable_acknowledge_id()->Add(acknowledge_ids.begin(),
+                                            acknowledge_ids.end());
 
   sender_->Request(request, nullptr);
 }
