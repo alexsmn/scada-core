@@ -55,6 +55,7 @@ const scada::NodeId DiscreteItemType_Inversion{153, NamespaceIndexes::SCADA};
 const scada::NodeId DiscreteItemType{72, NamespaceIndexes::SCADA}; // :DataItemType
 const scada::NodeId HasTsFormat{154, NamespaceIndexes::SCADA}; // Ref
 const scada::NodeId HasSimulationSignal{150, NamespaceIndexes::SCADA}; // Ref
+const scada::NodeId HasDevice{328, NamespaceIndexes::SCADA}; // Ref
 const scada::NodeId SimulationSignals{numeric_id::SimulationSignals, NamespaceIndexes::SCADA};
 const scada::NodeId SimulationFunctionDataType{326, NamespaceIndexes::SCADA};
 const scada::NodeId SimulationFunctionDataType_EnumStrings{327, NamespaceIndexes::SCADA};
