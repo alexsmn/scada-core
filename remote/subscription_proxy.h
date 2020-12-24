@@ -47,15 +47,15 @@ class SubscriptionProxy {
   void OnCreateSubscriptionResult(const scada::Status& status,
                                   int subscription_id);
 
-  MessageSender* sender_;
+  MessageSender* sender_ = nullptr;
 
   std::set<MonitoredItemProxy*> monitored_items_;
   std::map<MonitoredItemId, MonitoredItemProxy*> monitored_item_ids_;
 
-  enum State { DELETED, CREATING, CREATED };
-  State state_;
+  enum class State { DELETED, CREATING, CREATED };
+  State state_ = State::DELETED;
 
-  int subscription_id_;
+  int subscription_id_ = 0;
 
   std::shared_ptr<bool> cancelation_;
 };

@@ -9,8 +9,8 @@ namespace scada {
 class Event;
 class MonitoredItem;
 class MonitoredItemService;
-struct ReadValueId;
 struct MonitoringParameters;
+struct ReadValueId;
 }  // namespace scada
 
 class MessageSender;
@@ -38,7 +38,7 @@ class SubscriptionStub {
 
   MessageSender& sender_;
   scada::MonitoredItemService& monitored_item_service_;
-  int subscription_id_;
+  const int subscription_id_;
 
   MonitoredItemId next_monitored_item_id_ = 1;
   std::map<MonitoredItemId, std::shared_ptr<scada::MonitoredItem>> channels_;

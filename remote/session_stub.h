@@ -104,7 +104,7 @@ class SessionStub : public std::enable_shared_from_this<SessionStub>,
 
   std::string name_;
 
-  Connection* connection_;
+  Connection* connection_ = nullptr;
 
   std::unique_ptr<ViewServiceStub> view_service_stub_;
   std::unique_ptr<NodeManagementStub> node_management_stub_;

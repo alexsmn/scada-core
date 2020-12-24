@@ -1,7 +1,5 @@
 #include "remote/subscription_proxy.h"
 
-#include <cassert>
-
 #include "base/strings/sys_string_conversions.h"
 #include "core/monitored_item_service.h"
 #include "remote/message_sender.h"
@@ -46,8 +44,8 @@ class SubscriptionProxy::MonitoredItemProxy : public scada::MonitoredItem {
 
   MonitoredItemId monitored_item_id_ = 0;
 
-  enum State { DELETED, CREATING, CREATED };
-  State state_ = DELETED;
+  enum class State { DELETED, CREATING, CREATED };
+  State state_ = State::DELETED;
 
   scada::DataValue current_data_;
 
@@ -64,7 +62,7 @@ SubscriptionProxy::MonitoredItemProxy::MonitoredItemProxy(
       cancelation_(std::make_shared<bool>(false)) {}
 
 SubscriptionProxy::MonitoredItemProxy::~MonitoredItemProxy() {
-  if (state_ == CREATED)
+  if (state_ == State::CREATED)
     DeleteStub();
 
   if (subscription_)
@@ -73,7 +71,7 @@ SubscriptionProxy::MonitoredItemProxy::~MonitoredItemProxy() {
 
 void SubscriptionProxy::MonitoredItemProxy::Subscribe() {
   assert(subscription_);
-  assert(state_ == DELETED);
+  assert(state_ == State::DELETED);
 
   subscription_->AddMonitoredItem(*this);
 
@@ -83,9 +81,9 @@ void SubscriptionProxy::MonitoredItemProxy::Subscribe() {
 
 void SubscriptionProxy::MonitoredItemProxy::CreateStub() {
   assert(subscription_);
-  assert(state_ == DELETED);
+  assert(state_ == State::DELETED);
 
-  state_ = CREATING;
+  state_ = State::CREATING;
 
   protocol::Request request;
   auto& create_monitored_item = *request.mutable_create_monitored_item();
@@ -113,9 +111,9 @@ void SubscriptionProxy::MonitoredItemProxy::CreateStub() {
 
 void SubscriptionProxy::MonitoredItemProxy::DeleteStub() {
   assert(subscription_);
-  assert(state_ == CREATING || state_ == CREATED);
+  assert(state_ == State::CREATING || state_ == State::CREATED);
 
-  state_ = DELETED;
+  state_ = State::DELETED;
 
   auto monitored_item_id = monitored_item_id_;
   subscription_->monitored_item_ids_.erase(monitored_item_id_);
@@ -132,7 +130,7 @@ void SubscriptionProxy::MonitoredItemProxy::DeleteStub() {
 
 void SubscriptionProxy::MonitoredItemProxy::OnChannelOpened() {
   assert(subscription_);
-  assert(state_ == DELETED);
+  assert(state_ == State::DELETED);
 
   scada::DataValue tvq;
   tvq.server_timestamp = base::Time::Now();
@@ -145,9 +143,9 @@ void SubscriptionProxy::MonitoredItemProxy::OnChannelOpened() {
 
 void SubscriptionProxy::MonitoredItemProxy::OnChannelClosed() {
   assert(subscription_);
-  assert(state_ != DELETED);
+  assert(state_ != State::DELETED);
 
-  state_ = DELETED;
+  state_ = State::DELETED;
 
   subscription_->monitored_item_ids_.erase(monitored_item_id_);
   monitored_item_id_ = 0;
@@ -161,13 +159,13 @@ void SubscriptionProxy::MonitoredItemProxy::OnCreateMonitoredItemResult(
   assert(subscription_);
 
   if (!status) {
-    state_ = DELETED;
+    state_ = State::DELETED;
     subscription_->RemoveMonitoredItem(*this);
     UpdateQualifier(0, scada::Qualifier::FAILED);
     return;
   }
 
-  state_ = CREATED;
+  state_ = State::CREATED;
   monitored_item_id_ = monitored_item_id;
   subscription_->monitored_item_ids_[monitored_item_id_] = this;
 }
@@ -189,7 +187,7 @@ void SubscriptionProxy::MonitoredItemProxy::UpdateAndForwardData(
 
 void SubscriptionProxy::MonitoredItemProxy::Delete() {
   assert(subscription_);
-  assert(state_ == DELETED);
+  assert(state_ == State::DELETED);
 
   subscription_->RemoveMonitoredItem(*this);
   subscription_ = nullptr;
@@ -212,7 +210,7 @@ void SubscriptionProxy::MonitoredItemProxy::UpdateQualifier(unsigned remove,
 
 SubscriptionProxy::SubscriptionProxy(const SubscriptionParams& params)
     : sender_(nullptr),
-      state_(DELETED),
+      state_(State::DELETED),
       subscription_id_(0),
       cancelation_(std::make_shared<bool>(false)) {}
 
@@ -224,7 +222,7 @@ SubscriptionProxy::~SubscriptionProxy() {
 
   assert(monitored_items_.empty());
 
-  if (state_ == CREATED) {
+  if (state_ == State::CREATED) {
     protocol::Message message;
     auto& request = *message.add_requests();
     request.set_request_id(0);
@@ -235,17 +233,18 @@ SubscriptionProxy::~SubscriptionProxy() {
 }
 
 std::shared_ptr<scada::MonitoredItem> SubscriptionProxy::CreateMonitoredItem(
-    const scada::ReadValueId& read_value_id,
+    const scada::ReadValueId& value_id,
     const scada::MonitoringParameters& params) {
-  assert(read_value_id.attribute_id == scada::AttributeId::EventNotifier ||
-         !read_value_id.node_id.is_null());
-  return std::make_shared<MonitoredItemProxy>(*this, read_value_id, params);
+  assert(value_id.attribute_id == scada::AttributeId::EventNotifier ||
+         !value_id.node_id.is_null());
+
+  return std::make_shared<MonitoredItemProxy>(*this, value_id, params);
 }
 
 void SubscriptionProxy::AddMonitoredItem(MonitoredItemProxy& item) {
   monitored_items_.insert(&item);
 
-  if (state_ == CREATED)
+  if (state_ == State::CREATED)
     item.OnChannelOpened();
 }
 
@@ -269,10 +268,11 @@ void SubscriptionProxy::OnEvent(int monitored_item_id,
 }
 
 void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
-  sender_ = &sender;
+  assert(!sender_);
+  assert(state_ == State::DELETED);
 
-  assert(state_ == DELETED);
-  state_ = CREATING;
+  sender_ = &sender;
+  state_ = State::CREATING;
 
   protocol::Request request;
   auto& create_subscription = *request.mutable_create_subscription();
@@ -293,12 +293,15 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
 }
 
 void SubscriptionProxy::OnChannelClosed() {
+  assert(state_ != State::DELETED);
+  assert(sender_);
+
   sender_ = nullptr;
 
-  if (state_ == DELETED)
+  if (state_ == State::DELETED)
     return;
 
-  state_ = DELETED;
+  state_ = State::DELETED;
   subscription_id_ = 0;
 
   for (auto* channel : monitored_items_)
@@ -307,15 +310,18 @@ void SubscriptionProxy::OnChannelClosed() {
 
 void SubscriptionProxy::OnCreateSubscriptionResult(const scada::Status& status,
                                                    int subscription_id) {
-  if (state_ != CREATING)
+  assert(state_ == State::CREATING);
+  assert(sender_);
+
+  if (state_ != State::CREATING)
     return;
 
   if (!status) {
-    state_ = DELETED;
+    state_ = State::DELETED;
     return;
   }
 
-  state_ = CREATED;
+  state_ = State::CREATED;
   subscription_id_ = subscription_id;
 
   for (auto* channel : monitored_items_)
