@@ -1,8 +1,11 @@
 #pragma once
 
+#include "base/containers/span.h"
+
 #include <optional>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 template <class A, class B>
@@ -19,3 +22,6 @@ std::string ToString(const T& v);
 
 template <class T>
 std::wstring ToString16(const T& v);
+
+std::string BitMaskToString(unsigned bit_mask,
+                            base::span<const std::string_view> bit_strings);

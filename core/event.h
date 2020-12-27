@@ -2,6 +2,7 @@
 
 #include "core/configuration_types.h"
 #include "core/data_value.h"
+#include "core/debug_util.h"
 #include "core/standard_node_ids.h"
 
 #include <string>
@@ -91,22 +92,10 @@ inline bool operator==(const SemanticChangeEvent& a,
 
 inline std::string ModelChangeEventVerbToString(unsigned verb) {
   constexpr std::string_view kBitStrings[] = {
-      "NodeAdded", "NodeDeleted", "ReferenceAdded", "ReferenceDeleted",
-      "DataTypeChanged"};
-  std::string result = "[";
-  bool first = true;
-  for (std::size_t i = 0; i < std::size(kBitStrings); ++i) {
-    if (verb & (1 << i)) {
-      if (!first)
-        result += ",";
-      result += '"';
-      result += kBitStrings[i];
-      result += '"';
-      first = false;
-    }
-  }
-  result += "]";
-  return result;
+      "NodeAdded",        "NodeDeleted",     "ReferenceAdded",
+      "ReferenceDeleted", "DataTypeChanged",
+  };
+  return BitMaskToString(verb, kBitStrings);
 }
 
 inline std::ostream& operator<<(std::ostream& stream,
