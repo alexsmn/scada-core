@@ -48,18 +48,6 @@ const char* ToString(BoostLogSeverity severity) {
   return strs[static_cast<size_t>(severity)];
 }
 
-int ToConsoleColor(BoostLogSeverity severity) {
-  switch (severity) {
-    case BoostLogSeverity::Warning:
-      return 93;
-    case BoostLogSeverity::Error:
-    case BoostLogSeverity::Critical:
-      return 91;
-    default:
-      return 0;
-  }
-}
-
 void FormatLogRecord(const boost::log::record_view& record,
                      bool console,
                      boost::log::formatting_ostream& stream) {
@@ -118,22 +106,6 @@ template <bool kConsole>
 void FormatLogRecordT(const boost::log::record_view& record,
                       boost::log::formatting_ostream& stream) {
   FormatLogRecord(record, kConsole, stream);
-}
-
-template <>
-void FormatLogRecordT<true>(const boost::log::record_view& record,
-                            boost::log::formatting_ostream& stream) {
-  auto severity = record[boost::log::aux::default_attribute_names::severity()]
-                      .extract_or_default(BoostLogSeverity::Info);
-
-  int color = ToConsoleColor(severity);
-  if (color != 0)
-    stream << "\033[" << color << "m";
-
-  FormatLogRecord(record, true, stream);
-
-  if (color != 0)
-    stream << "\033[0m";
 }
 
 std::filesystem::path GetLogFileName(const std::filesystem::path& path) {
