@@ -26,14 +26,12 @@ using ReadCallback =
     std::function<void(Status&&, std::vector<DataValue>&& results)>;
 using WriteCallback = MultiStatusCallback;
 
-struct WriteValue {
+struct WriteValueId {
   NodeId node_id;
   AttributeId attribute_id;
   Variant value;
   WriteFlags flags;
 };
-
-using WriteValueId = WriteValue;
 
 class AttributeService {
  public:
@@ -42,7 +40,7 @@ class AttributeService {
   virtual void Read(const std::vector<ReadValueId>& value_ids,
                     const ReadCallback& callback) = 0;
 
-  virtual void Write(const std::vector<WriteValue>& value_ids,
+  virtual void Write(const std::vector<WriteValueId>& value_ids,
                      const NodeId& user_id,
                      const WriteCallback& callback) = 0;
 };
@@ -53,35 +51,36 @@ inline DataValue MakeReadResult(T&& value) {
   return DataValue{std::forward<T>(value), {}, timestamp, timestamp};
 }
 
-inline DataValue MakeReadResult(scada::NodeClass node_class) {
+inline DataValue MakeReadResult(NodeClass node_class) {
   return MakeReadResult(static_cast<int>(node_class));
 }
 
-inline DataValue MakeReadError(scada::StatusCode status_code) {
-  assert(scada::IsBad(status_code));
+inline DataValue MakeReadError(StatusCode status_code) {
+  assert(IsBad(status_code));
   const auto timestamp = base::Time::Now();
   return DataValue{status_code, timestamp};
 }
 
-}  // namespace scada
-
-inline bool operator==(const scada::ReadValueId& a,
-                       const scada::ReadValueId& b) {
+inline bool operator==(const ReadValueId& a, const ReadValueId& b) {
   return std::tie(a.node_id, a.attribute_id) ==
          std::tie(b.node_id, b.attribute_id);
 }
 
-namespace scada {
+inline bool operator==(const WriteValueId& a, const WriteValueId& b) {
+  return std::tie(a.node_id, a.attribute_id, a.value, a.flags) ==
+         std::tie(b.node_id, b.attribute_id, b.value, b.flags);
+}
 
 inline std::ostream& operator<<(std::ostream& stream, const ReadValueId& v) {
   return stream << "{" << v.node_id << ", " << v.attribute_id << "}";
 }
 
-inline std::ostream& operator<<(std::ostream& stream, const WriteValue& write_value) {
+inline std::ostream& operator<<(std::ostream& stream,
+                                const WriteValueId& value_id) {
   return stream << "{"
-                << "node_id: " << write_value.node_id
-                << ", attribute_id: " << write_value.attribute_id
-                << ", value: " << write_value.value << "}";
+                << "node_id: " << value_id.node_id
+                << ", attribute_id: " << value_id.attribute_id
+                << ", value: " << value_id.value << "}";
 }
 
 }  // namespace scada
