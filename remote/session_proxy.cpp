@@ -43,8 +43,6 @@ std::string MakeConnectionString(std::string_view str) {
 
 SessionProxy::SessionProxy(SessionProxyContext&& context)
     : SessionProxyContext{std::move(context)}, ping_timer_{io_context_} {
-  transport_logger_ = std::make_unique<NetLoggerAdapter>(*logger_);
-
   SubscriptionParams params;
   subscription_ = std::make_unique<SubscriptionProxy>(params);
 
@@ -323,8 +321,9 @@ void SessionProxy::Connect() {
   logger().WriteF(LogSeverity::Normal, "Connecting as '%s' to '%s'",
                   user_name_.c_str(), connection_string.c_str());
 
+  auto transport_logger = std::make_unique<NetLoggerAdapter>(logger_);
   auto transport = transport_factory_.CreateTransport(
-      net::TransportString(connection_string), transport_logger_.get());
+      net::TransportString(connection_string), std::move(transport_logger));
   if (!transport) {
     OnTransportClosed(net::ERR_FAILED);
     return;

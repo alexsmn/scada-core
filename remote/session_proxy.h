@@ -131,7 +131,6 @@ class SessionProxy : private SessionProxyContext,
 
   bool IsMessageLogged(const protocol::Message& message) const;
 
-  std::unique_ptr<net::Logger> transport_logger_;
   std::unique_ptr<net::Transport> transport_;
 
   bool session_created_ = false;
