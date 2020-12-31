@@ -1,5 +1,8 @@
 #include "base/time_utils.h"
 
+#include "base/string_piece_util.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
 
 namespace {
@@ -23,12 +26,16 @@ std::string SerializeToString(base::TimeDelta delta) {
 }
 
 bool Deserialize(std::string_view str, base::TimeDelta& delta) {
-  int h, m, s;
-  if (sscanf(std::string{str}.c_str(), "%d:%d:%d", &h, &m, &s) != 3)
+  auto parts = base::SplitStringPiece(
+      ToStringPiece(str), ":", base::KEEP_WHITESPACE, base::SPLIT_WANT_ALL);
+  if (parts.size() != 3)
     return false;
 
-  if (h < 0 || m < 0 || s < 0)
+  unsigned h, m, s;
+  if (!base::StringToUint(parts[0], &h) || !base::StringToUint(parts[1], &m) ||
+      !base::StringToUint(parts[2], &s)) {
     return false;
+  }
 
   delta = base::TimeDelta::FromHours(h) + base::TimeDelta::FromMinutes(m) +
           base::TimeDelta::FromSeconds(s);

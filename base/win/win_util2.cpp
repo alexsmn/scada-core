@@ -145,55 +145,6 @@ std::wstring GetComboBoxItemText(HWND window_handle, int index) {
   return std::wstring(text.get(), text.get() + len);
 }
 
-enum Version {
-  VERSION_PRE_2000 = 0,  // Not supported
-  VERSION_2000 = 1,      // Not supported
-  VERSION_XP = 2,
-  VERSION_SERVER_2003 = 3,  // Also includes Windows XP Professional x64 edition
-  VERSION_VISTA = 4,
-  VERSION_2008 = 5,
-  VERSION_WIN7 = 6,
-};
-
-Version GetVersion() {
-  static bool checked_version = false;
-  static Version win_version = VERSION_PRE_2000;
-  if (!checked_version) {
-    OSVERSIONINFOEX version_info;
-    version_info.dwOSVersionInfoSize = sizeof version_info;
-    GetVersionEx(reinterpret_cast<OSVERSIONINFO*>(&version_info));
-    if (version_info.dwMajorVersion == 5) {
-      switch (version_info.dwMinorVersion) {
-        case 0:
-          win_version = VERSION_2000;
-          break;
-        case 1:
-          win_version = VERSION_XP;
-          break;
-        case 2:
-        default:
-          win_version = VERSION_SERVER_2003;
-          break;
-      }
-    } else if (version_info.dwMajorVersion == 6) {
-      if (version_info.wProductType != VER_NT_WORKSTATION) {
-        // 2008 is 6.0, and 2008 R2 is 6.1.
-        win_version = VERSION_2008;
-      } else {
-        if (version_info.dwMinorVersion == 0) {
-          win_version = VERSION_VISTA;
-        } else {
-          win_version = VERSION_WIN7;
-        }
-      }
-    } else if (version_info.dwMajorVersion > 6) {
-      win_version = VERSION_WIN7;
-    }
-    checked_version = true;
-  }
-  return win_version;
-}
-
 void OpenWithAssociatedProgram(const std::filesystem::path& path) {
   ShellExecute(NULL, NULL, path.c_str(), NULL, NULL, SW_SHOW);
 }
