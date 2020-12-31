@@ -1,8 +1,8 @@
 #include <gmock/gmock.h>
 
+#include "core/node_id.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
-#include "core/node_id.h"
 
 TEST(NodeIdUtil, NodeIdFromScadaString) {
   EXPECT_EQ(scada::NodeId(53, NamespaceIndexes::TS),

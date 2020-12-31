@@ -119,7 +119,7 @@ bool Variant::get(Double& value) const {
   if (!get(int64_value))
     return false;
 
-  value = int64_value;
+  value = static_cast<Double>(int64_value);
   return true;
 }
 
@@ -265,6 +265,10 @@ bool Variant::ChangeType(Variant::Type new_type) {
   switch (new_type) {
     case BOOL:
       return ChangeTypeTo<bool>();
+    case INT8:
+      return ChangeTypeTo<Int8>();
+    case UINT8:
+      return ChangeTypeTo<UInt8>();
     case INT16:
       return ChangeTypeTo<Int16>();
     case UINT16:
@@ -342,8 +346,8 @@ scada::Variant::Type ParseBuiltInType(std::string_view str) {
 }
 
 const scada::NumericId kBuiltInDataTypeNodeIds[] = {
-    0,          id::Boolean,        id::SByte,
-    id::Byte,   id::Int16,          id::UInt16,
+    0,          id::Boolean,        id::Int8,
+    id::UInt8,  id::Int16,          id::UInt16,
     id::Int32,  id::UInt32,         id::Int64,
     id::UInt64, id::Double,         id::ByteString,
     id::String, id::QualifiedName,  id::LocalizedText,

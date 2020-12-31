@@ -33,6 +33,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
     response.set_request_id(request_id);
     auto& create_monitored_item_result =
         *response.mutable_create_monitored_item_result();
+    create_monitored_item_result;
     Convert(scada::Status{scada::StatusCode::Bad_WrongNodeId},
             *response.mutable_status());
     sender_.Send(message);
@@ -51,6 +52,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
     response.set_request_id(request_id);
     auto& create_monitored_item_result =
         *response.mutable_create_monitored_item_result();
+    create_monitored_item_result;
     Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
     create_monitored_item_result.set_monitored_item_id(monitored_item_id);
     sender_.Send(message);
@@ -120,12 +122,16 @@ void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
   if (status_code != scada::StatusCode::Good)
     Convert(status_code, *notification.mutable_status_code());
 
-  if (auto* e = std::any_cast<scada::Event>(&event))
-    Convert(*e, *notification.add_events());
-  else if (auto* e = std::any_cast<scada::ModelChangeEvent>(&event))
-    Convert(*e, *notification.add_model_change());
-  else if (auto* e = std::any_cast<scada::SemanticChangeEvent>(&event))
-    Convert(e->node_id, *notification.add_semantics_changed_node_id());
+  if (auto* system_event = std::any_cast<scada::Event>(&event)) {
+    Convert(*system_event, *notification.add_events());
+  } else if (auto* model_change_event =
+                 std::any_cast<scada::ModelChangeEvent>(&event)) {
+    Convert(*model_change_event, *notification.add_model_change());
+  } else if (auto* semantic_change_event =
+                 std::any_cast<scada::SemanticChangeEvent>(&event)) {
+    Convert(semantic_change_event->node_id,
+            *notification.add_semantics_changed_node_id());
+  }
 
   sender_.Send(message);
 }

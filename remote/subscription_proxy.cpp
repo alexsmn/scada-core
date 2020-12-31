@@ -276,6 +276,7 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
 
   protocol::Request request;
   auto& create_subscription = *request.mutable_create_subscription();
+  create_subscription;
 
   std::weak_ptr<bool> cancelation = cancelation_;
   sender_->Request(

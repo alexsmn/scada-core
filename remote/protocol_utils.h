@@ -242,7 +242,8 @@ template <>
 inline std::vector<scada::Status> ConvertTo(
     const ::google::protobuf::RepeatedPtrField<protocol::Status>& source) {
   std::vector<scada::Status> target(source.size(), scada::StatusCode::Bad);
-  for (size_t i = 0; i < source.size(); ++i)
+  // For some reason |RepeatedPtrField::size()| is int.
+  for (size_t i = 0; i < static_cast<size_t>(source.size()); ++i)
     Convert(source[i], target[i]);
   return target;
 }

@@ -65,6 +65,7 @@ void SessionProxy::Disconnect(const scada::StatusCallback& callback) {
 
   protocol::Request request;
   auto& delete_session = *request.mutable_delete_session();
+  delete_session;
 
   Request(request, [this, callback](const protocol::Response& response) {
     auto status = ConvertTo<scada::Status>(response.status());
@@ -222,7 +223,7 @@ void SessionProxy::Send(protocol::Message& message) {
     throw std::runtime_error("Can't serialize message");
 
   int res = transport_->Write(string.data(), string.size());
-  if (res != string.size())
+  if (res != static_cast<int>(string.size()))
     throw std::runtime_error("Can't send message");
 }
 
@@ -472,6 +473,7 @@ void SessionProxy::Ping() {
 
   protocol::Request request;
   auto& ping = *request.mutable_ping();
+  ping;
 
   Request(request, [this](const protocol::Response& response) {
     last_ping_delay_ = base::TimeTicks::Now() - ping_time_;

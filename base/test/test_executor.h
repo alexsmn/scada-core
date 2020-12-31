@@ -28,8 +28,8 @@ class TestExecutor : public Executor {
     for (auto i = p; i != pending_tasks_.end(); ++i)
       run_tasks.emplace_back(std::move(i->second));
     pending_tasks_.erase(p, pending_tasks_.end());
-    for (auto& p : pending_tasks_)
-      p.first -= delta;
+    for (auto& t : pending_tasks_)
+      t.first -= delta;
     for (auto& task : run_tasks)
       task();
   }

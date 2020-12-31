@@ -2,8 +2,8 @@
 
 #include "base/files/file_path.h"
 
+#include <cstdarg>
 #include <memory>
-#include <stdarg.h>
 #include <string>
 
 enum class LogSeverity {
@@ -16,18 +16,27 @@ enum class LogSeverity {
 
 class Logger {
  public:
-  virtual ~Logger() { }
- 
+  virtual ~Logger() {}
+
   virtual void Write(LogSeverity severity, const char* message) const = 0;
-  virtual void WriteV(LogSeverity severity, const char* format, va_list args) const = 0;
-  virtual void WriteF(LogSeverity severity, const char* format, ...) const = 0;
+  virtual void WriteV(LogSeverity severity,
+                      _Printf_format_string_ const char* format,
+                      va_list args) const = 0;
+  virtual void WriteF(LogSeverity severity,
+                      _Printf_format_string_ const char* format,
+                      ...) const = 0;
 };
 
 class NullLogger : public Logger {
  public:
-  virtual void Write(LogSeverity severity, const char* message) const override { }
-  virtual void WriteV(LogSeverity severity, const char* format, va_list args) const override { }
-  virtual void WriteF(LogSeverity severity, const char* format, ...) const override { }
+  virtual void Write(LogSeverity severity, const char* message) const override {
+  }
+  virtual void WriteV(LogSeverity severity,
+                      _Printf_format_string_ const char* format,
+                      va_list args) const override {}
+  virtual void WriteF(LogSeverity severity,
+                      _Printf_format_string_ const char* format,
+                      ...) const override {}
 
   static std::shared_ptr<NullLogger> GetInstance() {
     static auto logger = std::make_shared<NullLogger>();
@@ -35,4 +44,6 @@ class NullLogger : public Logger {
   }
 };
 
-std::unique_ptr<Logger> CreateFileLogger(int path_service_key, base::FilePath::StringType base_name, const char* title);
+std::unique_ptr<Logger> CreateFileLogger(int path_service_key,
+                                         base::FilePath::StringType base_name,
+                                         const char* title);

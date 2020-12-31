@@ -16,6 +16,7 @@ inline bool IsEqualNoCase(std::wstring_view a, std::wstring_view b) {
     return false;
   if (a.empty())
     return true;
-  return std::equal(a.begin(), a.end(), b.begin(),
-                    [](char a, char b) { return tolower(a) == tolower(b); });
+  return std::equal(a.begin(), a.end(), b.begin(), [](wchar_t a, wchar_t b) {
+    return tolower(a) == tolower(b);
+  });
 }

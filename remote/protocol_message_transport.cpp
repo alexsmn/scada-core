@@ -36,7 +36,7 @@ int ProtocolMessageTransport::Write(const void* data, size_t len) {
                  static_cast<const char*>(data) + len);
   protocol::UpdateMessageSize(message);
   int res = transport_->Write(message.data(), message.size());
-  if (res != message.size())
+  if (res != static_cast<int>(message.size()))
     return net::ERR_FAILED;
 
   return len;

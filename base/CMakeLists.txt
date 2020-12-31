@@ -26,5 +26,11 @@ target_link_libraries(scada_base PUBLIC
 set_property(TARGET scada_base PROPERTY FOLDER ${scada_folder})
 
 if(WIN32)
-  target_compile_options(scada_base PUBLIC /permissive-)
+  target_compile_options(scada_base PUBLIC
+    /permissive-
+    /W4
+    /wd4100 # unreferenced formal parameter
+    /wd4458 # declaration of 'x' hides class member
+    /wd4459 # declaration of 'x' hides global declaration
+  )
 endif()

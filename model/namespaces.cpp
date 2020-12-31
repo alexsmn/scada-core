@@ -35,16 +35,18 @@ int FindNamespaceIndexByName(std::string_view name) {
 
   int namespace_index = -1;
   if (name[0] == 'T' &&
-      base::StringToInt(ToStringPiece(name.substr(1)), &namespace_index))
+      base::StringToInt(ToStringPiece(name.substr(1)), &namespace_index)) {
     return namespace_index;
+  }
 
   if (base::StringToInt(ToStringPiece(name), &namespace_index))
     return namespace_index;
 
-  for (int i = 0; i != NamespaceIndexes::END; ++i) {
+  for (scada::NamespaceIndex i = 0; i != NamespaceIndexes::END; ++i) {
     if (base::EqualsCaseInsensitiveASCII(ToStringPiece(GetNamespaceName(i)),
-                                         ToStringPiece(name)))
+                                         ToStringPiece(name))) {
       return i;
+    }
   }
 
   return -1;

@@ -7,8 +7,8 @@ namespace id {
 
 constexpr NumericId BaseDataType = 24;
 constexpr NumericId Boolean = 1;
-constexpr NumericId SByte = 2;
-constexpr NumericId Byte = 3;
+constexpr NumericId Int8 = 2;
+constexpr NumericId UInt8 = 3;
 constexpr NumericId Int16 = 4;
 constexpr NumericId UInt16 = 5;
 constexpr NumericId Int32 = 6;

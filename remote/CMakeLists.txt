@@ -25,6 +25,23 @@ target_link_libraries(scada_core_remote PUBLIC
   address_space
 )
 
+set_property(TARGET scada_core_remote PROPERTY FOLDER ${scada_folder})
+
+if(WIN32)
+  target_compile_options(scada_core_remote PRIVATE
+    /wd4244 # 'conversion' conversion from 'type1' to 'type2', possible loss of data
+  )
+
+  # Required for `scada_proto_cpp`:
+  target_compile_options(scada_core_remote PRIVATE
+    /wd4125
+    /wd4127
+    /wd4251
+  )
+endif()
+
+# UTs
+
 add_executable(scada_core_remote_unittests ${unittests})
 add_test(NAME scada_core_remote_unittests COMMAND scada_core_remote_unittests)
 target_link_libraries(scada_core_remote_unittests PUBLIC
@@ -32,5 +49,4 @@ target_link_libraries(scada_core_remote_unittests PUBLIC
   gmock_main
 )
 
-set_property(TARGET scada_core_remote PROPERTY FOLDER ${scada_folder})
 set_property(TARGET scada_core_remote_unittests PROPERTY FOLDER ${scada_folder})
