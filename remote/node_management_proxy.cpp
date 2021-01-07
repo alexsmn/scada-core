@@ -19,77 +19,57 @@ void NodeManagementProxy::OnChannelClosed() {
   sender_ = nullptr;
 }
 
-void NodeManagementProxy::CreateNode(
-    const scada::NodeId& requested_id,
-    const scada::NodeId& parent_id,
-    scada::NodeClass node_class,
-    const scada::NodeId& type_id,
-    scada::NodeAttributes attributes,
-    const scada::CreateNodeCallback& callback) {
-  logger().WriteF(LogSeverity::Normal,
-                  "CreateNode request [requested_id=%s, node_class=%s, "
-                  "parent_id=%s, type_id=%s]",
-                  NodeIdToScadaString(requested_id).c_str(),
-                  ToString(node_class).c_str(),
-                  NodeIdToScadaString(parent_id).c_str(),
-                  NodeIdToScadaString(type_id).c_str());
+void NodeManagementProxy::AddNodes(
+    const std::vector<scada::AddNodesItem>& inputs,
+    const scada::AddNodesCallback& callback) {
+  logger().WriteF(LogSeverity::Normal, "AddNodes request [count=%d]",
+                  static_cast<int>(inputs.size()));
 
   if (!sender_)
     return callback(scada::StatusCode::Bad_Disconnected, {});
 
   protocol::Request request;
-  auto& create_node = *request.mutable_create_node();
-  create_node.set_node_class(ConvertTo<protocol::NodeClass>(node_class));
-  if (!requested_id.is_null())
-    Convert(requested_id, *create_node.mutable_requested_node_id());
-  Convert(parent_id, *create_node.mutable_parent_id());
-  Convert(type_id, *create_node.mutable_type_definition_id());
-  if (!attributes.empty())
-    Convert(std::move(attributes), *create_node.mutable_attributes());
+  Convert(inputs, *request.mutable_add_node());
 
-  sender_->Request(request, [this,
+  sender_->Request(request, [this, count = inputs.size(),
                              callback](const protocol::Response& response) {
     auto status = ConvertTo<scada::Status>(response.status());
-    scada::NodeId node_id;
-    if (response.has_create_node_result())
-      Convert(response.create_node_result().node_id(), node_id);
+    auto results = ConvertTo<std::vector<scada::AddNodesResult>>(
+        response.add_node_result());
 
-    logger().WriteF(
-        LogSeverity::Normal, "CreateNode response [status='%ls', node_id=%s]",
-        ToString16(status).c_str(), NodeIdToScadaString(node_id).c_str());
+    logger().WriteF(LogSeverity::Normal,
+                    "CreateNode response [status=%s, count=%d]",
+                    ToString(status).c_str(), static_cast<int>(count));
 
     if (callback)
-      callback(std::move(status), node_id);
+      callback(std::move(status), std::move(results));
   });
 }
 
-void NodeManagementProxy::DeleteNode(
-    const scada::NodeId& node_id,
-    bool return_dependencies,
-    const scada::DeleteNodeCallback& callback) {
-  logger().WriteF(LogSeverity::Normal, "DeleteNode request [node_id=%s]",
-                  NodeIdToScadaString(node_id).c_str());
+void NodeManagementProxy::DeleteNodes(
+    const std::vector<scada::DeleteNodesItem>& inputs,
+    const scada::DeleteNodesCallback& callback) {
+  logger().WriteF(LogSeverity::Normal, "DeleteNode request [count=%d]",
+                  static_cast<int>(inputs.size()));
 
   if (!sender_)
     return callback(scada::StatusCode::Bad_Disconnected, {});
 
   protocol::Request request;
-  auto& delete_node = *request.mutable_delete_node();
-  Convert(node_id, *delete_node.mutable_node_id());
-  if (return_dependencies)
-    delete_node.set_return_dependencies(true);
+  Convert(inputs, *request.mutable_delete_node());
 
-  sender_->Request(request, [this,
+  sender_->Request(request, [this, count = inputs.size(),
                              callback](const protocol::Response& response) {
     auto status = ConvertTo<scada::Status>(response.status());
-    auto dependencies = ConvertTo<std::vector<scada::NodeId>>(
-        response.delete_node_result().dependencies());
+    auto results = ConvertTo<std::vector<scada::StatusCode>>(
+        response.delete_node_result());
 
-    logger().WriteF(LogSeverity::Normal, "DeleteNode response [status='%ls']",
-                    ToString16(status).c_str());
+    logger().WriteF(LogSeverity::Normal,
+                    "DeleteNode response [status=%s, count=%d]",
+                    ToString(status).c_str(), static_cast<int>(count));
 
     if (callback)
-      callback(std::move(status), std::move(dependencies));
+      callback(std::move(status), std::move(results));
   });
 }
 

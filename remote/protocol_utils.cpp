@@ -369,9 +369,10 @@ void Convert(const scada::DataValue& source, protocol::DataValue& target) {
   if (!source.value.is_null())
     Convert(source.value, *target.mutable_value());
   target.set_qualifier(source.qualifier.raw());
-  if (source.status_code != scada::StatusCode::Good)
+  if (source.status_code != scada::StatusCode::Good) {
     target.set_status_code(
         static_cast<google::protobuf::uint32>(source.status_code));
+  }
 }
 
 void Convert(const protocol::StatusCode& source, scada::StatusCode& target) {
@@ -754,4 +755,60 @@ void Convert(const scada::DeleteReferencesItem& source,
   target.set_forward(source.forward);
   Convert(source.target_node_id, *target.mutable_target_node_id());
   target.set_delete_bidirectional(source.delete_bidirectional);
+}
+
+void Convert(const protocol::AddNode& source, scada::AddNodesItem& target) {
+  if (source.has_requested_node_id())
+    Convert(source.requested_node_id(), target.requested_id);
+  Convert(source.parent_id(), target.parent_id);
+  target.node_class = static_cast<scada::NodeClass>(source.node_class());
+  Convert(source.type_definition_id(), target.type_definition_id);
+  if (source.has_attributes())
+    Convert(source.attributes(), target.attributes);
+}
+
+void Convert(const scada::AddNodesItem& source, protocol::AddNode& target) {
+  target.set_node_class(ConvertTo<protocol::NodeClass>(source.node_class));
+  if (!source.requested_id.is_null())
+    Convert(source.requested_id, *target.mutable_requested_node_id());
+  Convert(source.parent_id, *target.mutable_parent_id());
+  Convert(source.type_definition_id, *target.mutable_type_definition_id());
+  if (!source.attributes.empty())
+    Convert(std::move(source.attributes), *target.mutable_attributes());
+}
+
+void Convert(const protocol::AddNodeResult& source,
+             scada::AddNodesResult& target) {
+  target.status_code =
+      source.has_status_code()
+          ? static_cast<scada::StatusCode>(source.status_code())
+          : scada::StatusCode::Good;
+
+  target.added_node_id = source.has_added_node_id()
+                             ? ConvertTo<scada::NodeId>(source.added_node_id())
+                             : scada::NodeId{};
+}
+
+void Convert(const scada::AddNodesResult& source,
+             protocol::AddNodeResult& target) {
+  if (source.status_code != scada::StatusCode::Good) {
+    target.set_status_code(
+        static_cast<google::protobuf::uint32>(source.status_code));
+  }
+
+  if (!source.added_node_id.is_null())
+    Convert(source.added_node_id, *target.mutable_added_node_id());
+}
+
+void Convert(const protocol::DeleteNode& source,
+             scada::DeleteNodesItem& target) {
+  Convert(source.node_id(), target.node_id);
+  target.delete_target_references = source.delete_target_references();
+}
+
+void Convert(const scada::DeleteNodesItem& source,
+             protocol::DeleteNode& target) {
+  Convert(source.node_id, *target.mutable_node_id());
+  if (target.delete_target_references())
+    target.set_delete_target_references(true);
 }

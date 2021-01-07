@@ -26,15 +26,10 @@ class NodeManagementStub {
   void OnRequestReceived(const protocol::Request& request);
 
  private:
-  void OnCreateNode(unsigned request_id,
-                    const scada::NodeId& requested_id,
-                    const scada::NodeId& parent_id,
-                    scada::NodeClass node_class,
-                    const scada::NodeId& type_id,
-                    scada::NodeAttributes attributes);
-  void OnDeleteNode(unsigned request_id,
-                    const scada::NodeId& id,
-                    bool return_dependencies);
+  void OnAddNodes(unsigned request_id,
+                  const std::vector<scada::AddNodesItem>& inputs);
+  void OnDeleteNodes(unsigned request_id,
+                     const std::vector<scada::DeleteNodesItem>& inputs);
   void OnChangeUserPassword(unsigned request_id,
                             const scada::NodeId& user_node_id,
                             const scada::LocalizedText& current_password,

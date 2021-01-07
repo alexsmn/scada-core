@@ -14,7 +14,7 @@
 #include <set>
 #include <vector>
 
-template<class Source, class Target>
+template <class Source, class Target>
 void Convert(const Source& source, Target& target);
 
 void Convert(const std::string& source, scada::QualifiedName& target);
@@ -110,6 +110,19 @@ void Convert(const protocol::ExpandedNodeId& source,
              scada::ExpandedNodeId& target);
 void Convert(const scada::ExpandedNodeId& source,
              protocol::ExpandedNodeId& target);
+
+void Convert(const protocol::AddNode& source, scada::AddNodesItem& target);
+void Convert(const scada::AddNodesItem& source, protocol::AddNode& target);
+
+void Convert(const protocol::AddNodeResult& source,
+             scada::AddNodesResult& target);
+void Convert(const scada::AddNodesResult& source,
+             protocol::AddNodeResult& target);
+
+void Convert(const protocol::DeleteNode& source,
+             scada::DeleteNodesItem& target);
+void Convert(const scada::DeleteNodesItem& source,
+             protocol::DeleteNode& target);
 
 void Convert(const protocol::AddReference& source,
              scada::AddReferencesItem& target);

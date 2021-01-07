@@ -7,6 +7,16 @@
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 
+namespace {
+
+inline bool ContainsNodeId(const std::vector<scada::DeleteNodesItem>& inputs,
+                           const scada::NodeId& node_id) {
+  return std::any_of(inputs.begin(), inputs.end(),
+                     [&](auto& input) { return input.node_id == node_id; });
+}
+
+}  // namespace
+
 NodeManagementStub::NodeManagementStub(MessageSender& sender,
                                        scada::NodeManagementService& service,
                                        const scada::NodeId& user_id,
@@ -17,26 +27,15 @@ NodeManagementStub::NodeManagementStub(MessageSender& sender,
       logger_{std::move(logger)} {}
 
 void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
-  if (request.has_create_node()) {
-    auto& create_node = request.create_node();
-    OnCreateNode(
-        request.request_id(),
-        create_node.has_requested_node_id()
-            ? ConvertTo<scada::NodeId>(create_node.requested_node_id())
-            : scada::NodeId(),
-        ConvertTo<scada::NodeId>(create_node.parent_id()),
-        ConvertTo<scada::NodeClass>(create_node.node_class()),
-        ConvertTo<scada::NodeId>(create_node.type_definition_id()),
-        create_node.has_attributes()
-            ? ConvertTo<scada::NodeAttributes>(create_node.attributes())
-            : scada::NodeAttributes());
+  if (request.add_node_size() != 0) {
+    OnAddNodes(request.request_id(),
+               ConvertTo<std::vector<scada::AddNodesItem>>(request.add_node()));
   }
 
-  if (request.has_delete_node()) {
-    auto& delete_node = request.delete_node();
-    OnDeleteNode(request.request_id(),
-                 ConvertTo<scada::NodeId>(delete_node.node_id()),
-                 delete_node.return_dependencies());
+  if (request.delete_node_size() != 0) {
+    OnDeleteNodes(
+        request.request_id(),
+        ConvertTo<std::vector<scada::DeleteNodesItem>>(request.delete_node()));
   }
 
   if (request.has_change_password()) {
@@ -62,10 +61,11 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
   }
 }
 
-void NodeManagementStub::OnDeleteNode(unsigned request_id,
-                                      const scada::NodeId& id,
-                                      bool return_dependencies) {
-  if (id == user_id_) {
+void NodeManagementStub::OnDeleteNodes(
+    unsigned request_id,
+    const std::vector<scada::DeleteNodesItem>& inputs) {
+  // TODO: Fail only for |user_id_|.
+  if (ContainsNodeId(inputs, user_id_)) {
     protocol::Message message;
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
@@ -78,10 +78,9 @@ void NodeManagementStub::OnDeleteNode(unsigned request_id,
   }
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.DeleteNode(
-      id, return_dependencies,
-      [weak_ptr, request_id](scada::Status&& status,
-                             std::vector<scada::NodeId>&& dependencies) {
+  service_.DeleteNodes(
+      inputs, [weak_ptr, request_id](scada::Status&& status,
+                                     std::vector<scada::StatusCode>&& results) {
         auto ptr = weak_ptr.get();
         if (!ptr)
           return;
@@ -89,37 +88,32 @@ void NodeManagementStub::OnDeleteNode(unsigned request_id,
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        auto& delete_node_result = *response.mutable_delete_node_result();
         Convert(status, *response.mutable_status());
-        if (!dependencies.empty())
-          Convert(dependencies, *delete_node_result.mutable_dependencies());
+        if (status)
+          Convert(results, *response.mutable_delete_node_result());
         ptr->sender_.Send(message);
       });
 }
 
-void NodeManagementStub::OnCreateNode(unsigned request_id,
-                                      const scada::NodeId& requested_id,
-                                      const scada::NodeId& parent_id,
-                                      scada::NodeClass node_class,
-                                      const scada::NodeId& type_id,
-                                      scada::NodeAttributes attributes) {
+void NodeManagementStub::OnAddNodes(
+    unsigned request_id,
+    const std::vector<scada::AddNodesItem>& inputs) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.CreateNode(
-      requested_id, parent_id, node_class, type_id, std::move(attributes),
-      [weak_ptr, request_id](const scada::Status& status,
-                             const scada::NodeId& node_id) {
-        auto ptr = weak_ptr.get();
-        if (!ptr)
-          return;
+  service_.AddNodes(inputs, [weak_ptr, request_id](
+                                scada::Status&& status,
+                                std::vector<scada::AddNodesResult>&& results) {
+    auto ptr = weak_ptr.get();
+    if (!ptr)
+      return;
 
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        auto& create_node_result = *response.mutable_create_node_result();
-        Convert(status, *response.mutable_status());
-        Convert(node_id, *create_node_result.mutable_node_id());
-        ptr->sender_.Send(message);
-      });
+    protocol::Message message;
+    auto& response = *message.add_responses();
+    response.set_request_id(request_id);
+    Convert(status, *response.mutable_status());
+    if (status)
+      Convert(std::move(results), *response.mutable_add_node_result());
+    ptr->sender_.Send(message);
+  });
 }
 
 void NodeManagementStub::OnChangeUserPassword(

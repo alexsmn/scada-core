@@ -2,10 +2,10 @@ package protocol;
 
 // Protocol version
 enum ProtocolVersionMajor {
-  PROTOCOL_VERSION_MAJOR = 15;
+  PROTOCOL_VERSION_MAJOR = 16;
 }
 enum ProtocolVersionMinor {
-  PROTOCOL_VERSION_MINOR = 1;
+  PROTOCOL_VERSION_MINOR = 0;
 }
 
 enum ConstantNodeId {
@@ -210,7 +210,7 @@ message Node {
   repeated Node children = 10;
 }
 
-message CreateNode {
+message AddNode {
   optional NodeId requested_node_id = 1;
   required NodeId type_definition_id = 2;
   required NodeId parent_id = 3;
@@ -218,17 +218,14 @@ message CreateNode {
   optional Attributes attributes = 6;
 }
 
-message CreateNodeResult {
-  required NodeId node_id = 1;
+message AddNodeResult {
+  optional uint32 status_code = 1;
+  optional NodeId added_node_id = 2;
 }
 
 message DeleteNode {
-  required NodeId node_id = 2;
-  optional bool return_dependencies = 10;
-}
-
-message DeleteNodeResult {
-  repeated NodeId dependencies = 1;
+  required NodeId node_id = 1;
+  optional bool delete_target_references = 2;
 }
 
 message AddReference {
@@ -446,8 +443,8 @@ message Request {
   optional HistoryReadRaw history_read_raw = 40;
   optional HistoryReadEvents history_read_events = 41;
 
-  optional CreateNode create_node = 50;
-  optional DeleteNode delete_node = 51;
+  repeated AddNode add_node = 50;
+  repeated DeleteNode delete_node = 51;
 
   repeated AddReference add_reference = 54;
   repeated DeleteReference delete_reference = 55;
@@ -474,9 +471,8 @@ message Response {
   optional HistoryReadRawResult history_read_raw_result = 40;
   optional HistoryReadEventsResult history_read_events_result = 41;
 
-  optional CreateNodeResult create_node_result = 50;
-  optional DeleteNodeResult delete_node_result = 51;
-  repeated StatusCode modify_node_result = 52;
+  repeated AddNodeResult add_node_result = 50;
+  repeated StatusCode delete_node_result = 51;
 
   repeated StatusCode add_reference_result = 54;
   repeated StatusCode delete_reference_result = 55;
