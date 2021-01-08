@@ -32,5 +32,8 @@ if(WIN32)
     /wd4100 # unreferenced formal parameter
     /wd4458 # declaration of 'x' hides class member
     /wd4459 # declaration of 'x' hides global declaration
+    $<$<NOT:$<CONFIG:Debug>>:
+      /wd4189 # local variable is initialized but not referenced
+    >
   )
 endif()
