@@ -5,6 +5,7 @@
 #include "core/event_service.h"
 #include "core/method_service.h"
 #include "core/write_flags.h"
+#include "model/node_id_util.h"
 #include "remote/connection.h"
 #include "remote/history_stub.h"
 #include "remote/node_management_stub.h"
@@ -28,6 +29,7 @@ SessionStub::SessionStub(SessionContext&& context)
           std::make_unique<HistoryStub>(history_service_,
                                         static_cast<MessageSender&>(*this),
                                         io_context_)} {
+  LOG_BIND_TAG(logger_, "UserId", NodeIdToScadaString(user_id_));
   LOG_INFO(logger_) << "Created";
 }
 
