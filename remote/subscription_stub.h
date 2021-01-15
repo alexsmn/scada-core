@@ -14,7 +14,6 @@ struct ReadValueId;
 }  // namespace scada
 
 class MessageSender;
-struct DataItemUpdate;
 
 class SubscriptionStub {
  public:

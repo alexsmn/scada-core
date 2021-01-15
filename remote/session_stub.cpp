@@ -22,8 +22,7 @@ SessionStub::SessionStub(SessionContext&& context)
           ViewServiceStubContext{logger_, *this, view_service_}}},
       node_management_stub_{new NodeManagementStub{
           *this, node_management_service_, user_id_, logger_}},
-      history_stub_{
-          new HistoryStub{history_service_, *this, io_context_, logger_}} {
+      history_stub_{new HistoryStub{history_service_, *this, io_context_}} {
   logger().Write(LogSeverity::Normal, "Created");
 }
 

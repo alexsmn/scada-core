@@ -2,15 +2,13 @@
 
 #include <memory>
 
+#include "base/boost_log.h"
 #include "core/node_management_service.h"
 
-class Logger;
 class MessageSender;
 
 class NodeManagementProxy : public scada::NodeManagementService {
  public:
-  explicit NodeManagementProxy(std::shared_ptr<Logger> logger);
-
   void OnChannelOpened(MessageSender& sender);
   void OnChannelClosed();
 
@@ -32,9 +30,7 @@ class NodeManagementProxy : public scada::NodeManagementService {
       const scada::DeleteReferencesCallback& callback) override;
 
  private:
-  Logger& logger() { return *logger_; }
-
-  std::shared_ptr<Logger> logger_;
+  BoostLogger logger_{LOG_NAME("NodeManagementProxy")};
 
   MessageSender* sender_ = nullptr;
 };

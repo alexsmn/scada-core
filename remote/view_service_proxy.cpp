@@ -1,6 +1,5 @@
 #include "remote/view_service_proxy.h"
 
-#include "base/logger.h"
 #include "core/standard_node_ids.h"
 #include "core/status.h"
 #include "model/node_id_util.h"
@@ -9,9 +8,6 @@
 #include "remote/protocol_utils.h"
 
 // ViewServiceProxy
-
-ViewServiceProxy::ViewServiceProxy(std::shared_ptr<Logger> logger)
-    : logger_(std::move(logger)), sender_(nullptr) {}
 
 void ViewServiceProxy::OnChannelOpened(MessageSender& sender) {
   sender_ = &sender;

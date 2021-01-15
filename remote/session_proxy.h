@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/nested_logger.h"
+#include "base/boost_log.h"
 #include "base/observer_list.h"
 #include "base/timer.h"
 #include "core/attribute_service.h"
@@ -33,14 +33,12 @@ class ViewService;
 }  // namespace scada
 
 class EventServiceProxy;
-class Logger;
 class NodeManagementProxy;
 class HistoryProxy;
 class SubscriptionProxy;
 class ViewServiceProxy;
 
 struct SessionProxyContext {
-  const std::shared_ptr<Logger> logger_;
   boost::asio::io_context& io_context_;
   net::TransportFactory& transport_factory_;
   const scada::ServiceLogParams service_log_params_;
@@ -103,8 +101,6 @@ class SessionProxy : private SessionProxyContext,
                     const scada::StatusCallback& callback) override;
 
  protected:
-  Logger& logger() { return *logger_; }
-
   // net::Transport::Delegate
   virtual void OnTransportOpened() override;
   virtual void OnTransportClosed(net::Error error) override;
@@ -131,7 +127,16 @@ class SessionProxy : private SessionProxyContext,
 
   bool IsMessageLogged(const protocol::Message& message) const;
 
+  const std::shared_ptr<BoostLogger> logger_ =
+      std::make_shared<BoostLogger>(LOG_NAME("SessionProxy"));
+
   std::unique_ptr<net::Transport> transport_;
+
+  const std::unique_ptr<SubscriptionProxy> subscription_;
+  const std::unique_ptr<ViewServiceProxy> view_service_proxy_;
+  const std::unique_ptr<NodeManagementProxy> node_management_proxy_;
+  const std::unique_ptr<EventServiceProxy> event_service_proxy_;
+  const std::unique_ptr<HistoryProxy> history_proxy_;
 
   bool session_created_ = false;
 
@@ -143,12 +148,6 @@ class SessionProxy : private SessionProxyContext,
   scada::NodeId user_node_id_;
   unsigned user_rights_ = 0;
   std::string session_token_;
-
-  std::unique_ptr<SubscriptionProxy> subscription_;
-  std::unique_ptr<ViewServiceProxy> view_service_proxy_;
-  std::unique_ptr<NodeManagementProxy> node_management_proxy_;
-  std::unique_ptr<EventServiceProxy> event_service_proxy_;
-  std::unique_ptr<HistoryProxy> history_proxy_;
 
   std::map<int /*request_id*/, ResponseHandler> requests_;
 

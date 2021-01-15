@@ -8,16 +8,14 @@
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 
+#include "core/debug_util-inl.h"
+
 #include <boost/asio/io_context.hpp>
 
 HistoryStub::HistoryStub(scada::HistoryService& service,
                          MessageSender& sender,
-                         boost::asio::io_context& io_context,
-                         std::shared_ptr<Logger> logger)
-    : service_{service},
-      sender_{sender},
-      io_context_{io_context},
-      logger_{std::move(logger)} {}
+                         boost::asio::io_context& io_context)
+    : service_{service}, sender_{sender}, io_context_{io_context} {}
 
 HistoryStub::~HistoryStub() {
   // Release continuation points.
@@ -82,8 +80,8 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
                               : scada::AggregateFilter{};
   }
 
-  logger_->WriteF(LogSeverity::Normal, "History read raw request %u node %s",
-                  request_id, NodeIdToScadaString(details.node_id).c_str());
+  LOG_INFO(logger_) << "History read raw" << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("NodeId", NodeIdToScadaString(details.node_id));
 
   service_.HistoryReadRaw(
       details,
@@ -92,9 +90,11 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
         if (!weak_ptr.get())
           return;
 
-        logger_->WriteF(LogSeverity::Normal,
-                        "History read raw request %u completed with status %s",
-                        request_id, ToString(result.status).c_str());
+        LOG_INFO(logger_) << "History read raw completed"
+                          << LOG_TAG("RequestId", request_id)
+                          << LOG_TAG("Status", ToString(result.status))
+                          << LOG_TAG("ValueCount",
+                                     ToString(result.values.size()));
 
         if (!result.continuation_point.empty())
           continuation_points_.emplace(result.continuation_point, details);
@@ -131,8 +131,8 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   if (history_read_events.has_filter())
     Convert(history_read_events.filter(), filter);
 
-  logger_->WriteF(LogSeverity::Normal, "History read events request %u node %s",
-                  request_id, NodeIdToScadaString(node_id).c_str());
+  LOG_INFO(logger_) << "History read events" << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
 
   service_.HistoryReadEvents(
       node_id, from, to, filter,
@@ -142,10 +142,10 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
         if (!weak_ptr.get())
           return;
 
-        logger_->WriteF(
-            LogSeverity::Normal,
-            "History read events request %u completed with status %s",
-            request_id, ToString(status).c_str());
+        LOG_INFO(logger_) << "History read events completed"
+                          << LOG_TAG("RequestId", request_id)
+                          << LOG_TAG("Status", ToString(status))
+                          << LOG_TAG("EventCount", events.size());
 
         protocol::Message message;
         auto& response = *message.add_responses();

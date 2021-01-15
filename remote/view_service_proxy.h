@@ -1,20 +1,13 @@
 #pragma once
 
-#include <memory>
-
 #include "core/view_service.h"
 
-namespace protocol {
-class BrowseResult;
-}  // namespace protocol
+#include <memory>
 
-class Logger;
 class MessageSender;
 
 class ViewServiceProxy : public scada::ViewService {
  public:
-  explicit ViewServiceProxy(std::shared_ptr<Logger> logger);
-
   void OnChannelOpened(MessageSender& sender);
   void OnChannelClosed();
 
@@ -26,7 +19,5 @@ class ViewServiceProxy : public scada::ViewService {
       const scada::TranslateBrowsePathsCallback& callback) override;
 
  private:
-  const std::shared_ptr<Logger> logger_;
-
   MessageSender* sender_ = nullptr;
 };

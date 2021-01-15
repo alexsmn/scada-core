@@ -1,6 +1,6 @@
 #include "remote/session_proxy.h"
 
-#include "base/net_logger_adapter.h"
+#include "base/net_boost_logger_adapter.h"
 #include "base/string_piece_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
@@ -42,20 +42,13 @@ std::string MakeConnectionString(std::string_view str) {
 }  // namespace
 
 SessionProxy::SessionProxy(SessionProxyContext&& context)
-    : SessionProxyContext{std::move(context)}, ping_timer_{io_context_} {
-  SubscriptionParams params;
-  subscription_ = std::make_unique<SubscriptionProxy>(params);
-
-  view_service_proxy_ = std::make_unique<ViewServiceProxy>(
-      std::make_shared<NestedLogger>(logger_, "ViewService"));
-
-  node_management_proxy_ = std::make_unique<NodeManagementProxy>(
-      std::make_shared<NestedLogger>(logger_, "NodeManagementService"));
-
-  event_service_proxy_ = std::make_unique<EventServiceProxy>();
-
-  history_proxy_ = std::make_unique<HistoryProxy>();
-}
+    : SessionProxyContext{std::move(context)},
+      subscription_{std::make_unique<SubscriptionProxy>(SubscriptionParams{})},
+      view_service_proxy_{std::make_unique<ViewServiceProxy>()},
+      node_management_proxy_{std::make_unique<NodeManagementProxy>()},
+      event_service_proxy_{std::make_unique<EventServiceProxy>()},
+      history_proxy_{std::make_unique<HistoryProxy>()},
+      ping_timer_{io_context_} {}
 
 SessionProxy::~SessionProxy() {}
 
@@ -78,7 +71,7 @@ void SessionProxy::Disconnect(const scada::StatusCallback& callback) {
 }
 
 void SessionProxy::OnTransportOpened() {
-  logger().Write(LogSeverity::Normal, "Transport opened");
+  LOG_INFO(*logger_) << "Transport opened";
 
   protocol::Request request;
   auto& create_session = *request.mutable_create_session();
@@ -113,8 +106,8 @@ void SessionProxy::OnSessionCreated() {
 }
 
 void SessionProxy::OnTransportClosed(net::Error error) {
-  logger().WriteF(LogSeverity::Warning, "Transport closed as %s",
-                  ErrorToString(error).c_str());
+  LOG_WARNING(*logger_) << "Transport closed"
+                        << LOG_TAG("Status", ErrorToString(error));
 
   scada::Status status_code(
       error == net::OK ? scada::StatusCode::Bad_SessionForcedLogoff
@@ -214,8 +207,8 @@ void SessionProxy::Send(protocol::Message& message) {
   }
 
   if (IsMessageLogged(message)) {
-    logger_->WriteF(LogSeverity::Normal, "Send: %s",
-                    message.DebugString().c_str());
+    LOG_INFO(*logger_) << "Send message"
+                       << LOG_TAG("Message", message.DebugString());
   }
 
   std::string string;
@@ -229,8 +222,8 @@ void SessionProxy::Send(protocol::Message& message) {
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {
   if (IsMessageLogged(message)) {
-    logger_->WriteF(LogSeverity::Normal, "Received: %s",
-                    message.DebugString().c_str());
+    LOG_INFO(*logger_) << "Message received"
+                       << LOG_TAG("Message", message.DebugString());
   }
 
   for (auto& response : message.responses()) {
@@ -319,10 +312,10 @@ void SessionProxy::Connect(const std::string& host,
 void SessionProxy::Connect() {
   std::string connection_string = MakeConnectionString(host_);
 
-  logger().WriteF(LogSeverity::Normal, "Connecting as '%s' to '%s'",
-                  user_name_.c_str(), connection_string.c_str());
+  LOG_INFO(*logger_) << "Connect" << LOG_TAG("UserName", user_name_)
+                     << LOG_TAG("ConnectionString", connection_string);
 
-  auto transport_logger = std::make_unique<NetLoggerAdapter>(logger_);
+  auto transport_logger = std::make_shared<NetBoostLoggerAdapter>(logger_);
   auto transport = transport_factory_.CreateTransport(
       net::TransportString(connection_string), std::move(transport_logger));
   if (!transport) {
@@ -357,8 +350,7 @@ void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
 
   auto& create_session_result = response.create_session_result();
   session_token_ = create_session_result.token();
-  user_node_id_ =
-      ConvertTo<scada::NodeId>(create_session_result.user_node_id());
+  Convert(create_session_result.user_node_id(), user_node_id_);
   user_rights_ = create_session_result.user_rights();
 
   OnSessionCreated();
@@ -376,7 +368,7 @@ void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
   for (auto& value_id : value_ids)
     Convert(value_id, *read.add_value_id());
 
-  Request(request, [this, callback](const protocol::Response& response) {
+  Request(request, [callback](const protocol::Response& response) {
     if (callback)
       callback(ConvertTo<scada::Status>(response.status()),
                ConvertTo<std::vector<scada::DataValue>>(
@@ -396,7 +388,7 @@ void SessionProxy::Write(const std::vector<scada::WriteValueId>& value_ids,
   for (auto& value_id : value_ids)
     Convert(value_id, *request.add_write());
 
-  Request(request, [this, callback](const protocol::Response& response) {
+  Request(request, [callback](const protocol::Response& response) {
     if (callback) {
       callback(
           ConvertTo<scada::Status>(response.status()),
@@ -421,7 +413,7 @@ void SessionProxy::Call(const scada::NodeId& node_id,
   Convert(method_id, *command.mutable_method_id());
   Convert(arguments, *command.mutable_argument());
 
-  Request(request, [this, callback](const protocol::Response& response) {
+  Request(request, [callback](const protocol::Response& response) {
     if (callback)
       callback(ConvertTo<scada::Status>(response.status()));
   });
