@@ -7,6 +7,8 @@
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 
+#include "core/debug_util-inl.h"
+
 namespace {
 
 inline bool ContainsNodeId(const std::vector<scada::DeleteNodesItem>& inputs,
@@ -19,12 +21,8 @@ inline bool ContainsNodeId(const std::vector<scada::DeleteNodesItem>& inputs,
 
 NodeManagementStub::NodeManagementStub(MessageSender& sender,
                                        scada::NodeManagementService& service,
-                                       const scada::NodeId& user_id,
-                                       std::shared_ptr<Logger> logger)
-    : sender_(sender),
-      service_(service),
-      user_id_(user_id),
-      logger_{std::move(logger)} {}
+                                       const scada::NodeId& user_id)
+    : sender_(sender), service_(service), user_id_(user_id) {}
 
 void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
   if (request.add_node_size() != 0) {
@@ -118,63 +116,87 @@ void NodeManagementStub::OnAddNodes(
 
 void NodeManagementStub::OnChangeUserPassword(
     unsigned request_id,
-    const scada::NodeId& user_node_id,
+    const scada::NodeId& user_id,
     const scada::LocalizedText& current_password,
     const scada::LocalizedText& new_password) {
+  LOG_INFO(logger_) << "Change user password"
+                    << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("UserId", ToString(user_id));
+
   auto weak_ptr = weak_factory_.GetWeakPtr();
   service_.ChangeUserPassword(
-      user_node_id, current_password, new_password,
-      [weak_ptr, request_id](const scada::Status& status) {
+      user_id, current_password, new_password,
+      [this, weak_ptr, request_id](const scada::Status& status) {
         auto ptr = weak_ptr.get();
         if (!ptr)
           return;
+
+        LOG_INFO(logger_) << "Change user password"
+                          << LOG_TAG("RequestId", request_id)
+                          << LOG_TAG("Status", ToString(status));
 
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         Convert(status, *response.mutable_status());
-        ptr->sender_.Send(message);
+        sender_.Send(message);
       });
 }
 
 void NodeManagementStub::OnAddReferences(
     unsigned request_id,
     const std::vector<scada::AddReferencesItem>& inputs) {
+  LOG_INFO(logger_) << "Add references" << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("Count", inputs.size());
+
   auto weak_ptr = weak_factory_.GetWeakPtr();
   service_.AddReferences(
-      inputs,
-      [weak_ptr, request_id](const scada::Status& status,
-                             const std::vector<scada::StatusCode>& results) {
+      inputs, [this, weak_ptr, request_id, count = inputs.size()](
+                  const scada::Status& status,
+                  const std::vector<scada::StatusCode>& results) {
         auto ptr = weak_ptr.get();
         if (!ptr)
           return;
+
+        LOG_INFO(logger_) << "Add references completed"
+                          << LOG_TAG("RequestId", request_id)
+                          << LOG_TAG("Count", count)
+                          << LOG_TAG("Status", ToString(status));
 
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         Convert(status, *response.mutable_status());
         Convert(results, *response.mutable_add_reference_result());
-        ptr->sender_.Send(message);
+        sender_.Send(message);
       });
 }
 
 void NodeManagementStub::OnDeleteReferences(
     unsigned request_id,
     const std::vector<scada::DeleteReferencesItem>& inputs) {
+  LOG_INFO(logger_) << "Delete reference" << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("Count", inputs.size());
+
   auto weak_ptr = weak_factory_.GetWeakPtr();
   service_.DeleteReferences(
-      inputs,
-      [weak_ptr, request_id](const scada::Status& status,
-                             const std::vector<scada::StatusCode>& results) {
+      inputs, [this, weak_ptr, request_id, count = inputs.size()](
+                  const scada::Status& status,
+                  const std::vector<scada::StatusCode>& results) {
         auto ptr = weak_ptr.get();
         if (!ptr)
           return;
+
+        LOG_INFO(logger_) << "Delete references completed"
+                          << LOG_TAG("RequestId", request_id)
+                          << LOG_TAG("Count", count)
+                          << LOG_TAG("Status", ToString(status));
 
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
         Convert(status, *response.mutable_status());
         Convert(results, *response.mutable_delete_reference_result());
-        ptr->sender_.Send(message);
+        sender_.Send(message);
       });
 }

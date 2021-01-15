@@ -10,10 +10,6 @@
 
 using namespace std::chrono_literals;
 
-namespace {
-const auto kEventConsolidationDelay = 100ms;
-}
-
 // ViewServiceStub
 
 ViewServiceStub::ViewServiceStub(ViewServiceStubContext&& context)

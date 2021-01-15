@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/boost_log.h"
 #include "core/attribute_service.h"
 #include "core/configuration_types.h"
 #include "remote/message_sender.h"
@@ -30,7 +31,6 @@ struct MonitoringParameters;
 }  // namespace scada
 
 class Connection;
-class Logger;
 class NodeManagementStub;
 class EventServiceStub;
 class HistoryStub;
@@ -40,7 +40,6 @@ class ViewServiceStub;
 
 struct SessionContext {
   boost::asio::io_context& io_context_;
-  const std::shared_ptr<Logger> logger_;
   scada::NodeManagementService& node_management_service_;
   scada::AttributeService& attribute_service_;
   scada::MethodService& method_service_;
@@ -51,18 +50,16 @@ struct SessionContext {
   const scada::NodeId user_id_;
 };
 
-class SessionStub : public std::enable_shared_from_this<SessionStub>,
-                    private MessageSender,
-                    private SessionContext {
+class SessionStub : private MessageSender,
+                    private SessionContext,
+                    public std::enable_shared_from_this<SessionStub> {
  public:
-  virtual ~SessionStub();
+  ~SessionStub();
 
   static std::shared_ptr<SessionStub> Create(SessionContext&& context);
 
   Connection* connection() { return connection_; }
   void SetConnection(Connection* connection);
-
-  Logger& logger() { return *logger_; }
 
   const std::string& name() const { return name_; }
   const scada::NodeId& user_id() const { return user_id_; }
@@ -101,6 +98,8 @@ class SessionStub : public std::enable_shared_from_this<SessionStub>,
   virtual void Send(protocol::Message& message) override;
   virtual void Request(protocol::Request& request,
                        ResponseHandler response_handler) {}
+
+  BoostLogger logger_{LOG_NAME("SessionStub")};
 
   std::string name_;
 

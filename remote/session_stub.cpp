@@ -18,16 +18,21 @@ SessionStub::SessionStub(SessionContext&& context)
       // Can't use std::make_unique:
       // conversion from 'SessionStub *' to 'MessageSender &' exists, but is
       // inaccessible
-      view_service_stub_{new ViewServiceStub{
-          ViewServiceStubContext{logger_, *this, view_service_}}},
-      node_management_stub_{new NodeManagementStub{
-          *this, node_management_service_, user_id_, logger_}},
-      history_stub_{new HistoryStub{history_service_, *this, io_context_}} {
-  logger().Write(LogSeverity::Normal, "Created");
+      view_service_stub_{std::make_unique<ViewServiceStub>(
+          ViewServiceStubContext{*this, view_service_})},
+      node_management_stub_{std::make_unique<NodeManagementStub>(
+          static_cast<MessageSender&>(*this),
+          node_management_service_,
+          user_id_)},
+      history_stub_{
+          std::make_unique<HistoryStub>(history_service_,
+                                        static_cast<MessageSender&>(*this),
+                                        io_context_)} {
+  LOG_INFO(logger_) << "Created";
 }
 
 SessionStub::~SessionStub() {
-  logger().Write(LogSeverity::Normal, "Destroying");
+  LOG_INFO(logger_) << "Destroying";
 
   if (connection_)
     connection_->OnSessionDeleted();

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/logger.h"
 #include "base/memory/weak_ptr.h"
 #include "core/view_service.h"
 
@@ -12,7 +11,6 @@ class Request;
 class MessageSender;
 
 struct ViewServiceStubContext {
-  const std::shared_ptr<Logger> logger_;
   MessageSender& sender_;
   scada::ViewService& service_;
 };
