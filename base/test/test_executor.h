@@ -2,6 +2,8 @@
 
 #include "base/executor.h"
 
+#include <algorithm>
+
 namespace testing {
 
 class TestExecutor : public Executor {
