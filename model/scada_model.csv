@@ -169,9 +169,10 @@ PropertyCategories,310
 Creates,297
 HasPropertyCategory,311
 GeneralPropertyCategory,312
-NextId,329
+OPC,329
 Users,29
 RootUser,234
 UserType_AccessRights,170
 UserType,16
 HasDevice,328
+NextId,330
