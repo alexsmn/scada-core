@@ -1,5 +1,6 @@
 #include "remote/subscription_stub.h"
 
+#include "base/executor.h"
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
 #include "remote/message_sender.h"
@@ -10,11 +11,13 @@
 #include "core/debug_util-inl.h"
 
 SubscriptionStub::SubscriptionStub(
-    MessageSender& sender,
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<MessageSender> sender,
     scada::MonitoredItemService& monitored_item_service,
     int subscription_id,
     const SubscriptionParams& params)
-    : sender_{sender},
+    : executor_{std::move(executor)},
+      sender_{std::move(sender)},
       monitored_item_service_{monitored_item_service},
       subscription_id_(subscription_id) {
   LOG_BIND_TAG(logger_, "SubscriptionId", subscription_id_);
@@ -48,7 +51,9 @@ void SubscriptionStub::OnCreateMonitoredItem(
         *response.mutable_create_monitored_item_result();
     create_monitored_item_result;
     Convert(scada::Status{scada::StatusCode::Bad}, *response.mutable_status());
-    sender_.Send(message);
+
+    if (auto locked_sender = sender_.lock())
+      locked_sender->Send(message);
     return;
   }
 
@@ -74,21 +79,26 @@ void SubscriptionStub::OnCreateMonitoredItem(
     create_monitored_item_result;
     Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
     create_monitored_item_result.set_monitored_item_id(monitored_item_id);
-    sender_.Send(message);
+
+    if (auto locked_sender = sender_.lock())
+      locked_sender->Send(message);
   }
 
   if (read_value_id.attribute_id == scada::AttributeId::Value) {
-    channel_ptr->set_data_change_handler(
-        [this, monitored_item_id](const scada::DataValue& data_value) {
-          OnDataChange(monitored_item_id, data_value);
-        });
+    channel_ptr->set_data_change_handler(BindExecutor(
+        executor_, [weak_this = weak_from_this(),
+                    monitored_item_id](const scada::DataValue& data_value) {
+          if (auto ptr = weak_this.lock())
+            ptr->OnDataChange(monitored_item_id, data_value);
+        }));
 
   } else if (read_value_id.attribute_id == scada::AttributeId::EventNotifier) {
-    channel_ptr->set_event_handler(
-        [this, monitored_item_id](const scada::Status& status,
-                                  const std::any& event) {
-          OnEvent(monitored_item_id, status.code(), event);
-        });
+    channel_ptr->set_event_handler(BindExecutor(
+        executor_, [weak_this = weak_from_this(), monitored_item_id](
+                       const scada::Status& status, const std::any& event) {
+          if (auto ptr = weak_this.lock())
+            ptr->OnEvent(monitored_item_id, status.code(), event);
+        }));
   }
 
   channel_ptr->Subscribe();
@@ -106,7 +116,9 @@ void SubscriptionStub::OnDeleteMonitoredItem(int request_id,
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
   Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
-  sender_.Send(message);
+
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
 }
 
 void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
@@ -131,7 +143,9 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
   auto& data_change = *notification.add_data_changes();
   data_change.set_monitored_item_id(monitored_item_id);
   Convert(data_value, *data_change.mutable_data_value());
-  sender_.Send(message);
+
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
 }
 
 void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
@@ -168,5 +182,6 @@ void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
             *notification.add_semantics_changed_node_id());
   }
 
-  sender_.Send(message);
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
 }

@@ -9,10 +9,6 @@
 #include <map>
 #include <memory>
 
-namespace boost::asio {
-class io_context;
-}
-
 namespace protocol {
 class Message;
 class Request;
@@ -31,15 +27,16 @@ struct MonitoringParameters;
 }  // namespace scada
 
 class Connection;
-class NodeManagementStub;
+class Executor;
 class EventServiceStub;
 class HistoryStub;
+class NodeManagementStub;
 class SessionStub;
 class SubscriptionStub;
 class ViewServiceStub;
 
 struct SessionContext {
-  boost::asio::io_context& io_context_;
+  const std::shared_ptr<Executor> executor_;
   scada::NodeManagementService& node_management_service_;
   scada::AttributeService& attribute_service_;
   scada::MethodService& method_service_;
@@ -50,7 +47,7 @@ struct SessionContext {
   const scada::NodeId user_id_;
 };
 
-class SessionStub : private MessageSender,
+class SessionStub : public MessageSender,
                     private SessionContext,
                     public std::enable_shared_from_this<SessionStub> {
  public:
@@ -70,6 +67,8 @@ class SessionStub : private MessageSender,
 
  private:
   explicit SessionStub(SessionContext&& context);
+
+  void Init();
 
   void ProcessRequest(const protocol::Request& request);
 
@@ -105,12 +104,12 @@ class SessionStub : private MessageSender,
 
   Connection* connection_ = nullptr;
 
-  std::unique_ptr<ViewServiceStub> view_service_stub_;
-  std::unique_ptr<NodeManagementStub> node_management_stub_;
-  std::unique_ptr<HistoryStub> history_stub_;
+  std::shared_ptr<ViewServiceStub> view_service_stub_;
+  std::shared_ptr<NodeManagementStub> node_management_stub_;
+  std::shared_ptr<HistoryStub> history_stub_;
 
   int next_subscription_id_ = 1;
-  std::map<int /*subscription_id*/, std::unique_ptr<SubscriptionStub>>
+  std::map<int /*subscription_id*/, std::shared_ptr<SubscriptionStub>>
       subscriptions_;
 
   std::unique_ptr<protocol::Message> send_message_;

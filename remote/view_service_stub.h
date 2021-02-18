@@ -1,7 +1,10 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
 #include "core/view_service.h"
+
+#include <memory>
+
+class Executor;
 
 namespace protocol {
 class Reference;
@@ -11,7 +14,8 @@ class Request;
 class MessageSender;
 
 struct ViewServiceStubContext {
-  MessageSender& sender_;
+  const std::shared_ptr<Executor> executor_;
+  const std::weak_ptr<MessageSender> sender_;
   scada::ViewService& service_;
 };
 
@@ -25,6 +29,4 @@ class ViewServiceStub final : private ViewServiceStubContext {
  private:
   void OnBrowse(unsigned request_id,
                 const std::vector<scada::BrowseDescription>& nodes);
-
-  base::WeakPtrFactory<ViewServiceStub> weak_factory_{this};
 };

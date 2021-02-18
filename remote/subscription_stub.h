@@ -14,11 +14,13 @@ struct MonitoringParameters;
 struct ReadValueId;
 }  // namespace scada
 
+class Executor;
 class MessageSender;
 
-class SubscriptionStub {
+class SubscriptionStub : public std::enable_shared_from_this<SubscriptionStub> {
  public:
-  SubscriptionStub(MessageSender& sender,
+  SubscriptionStub(std::shared_ptr<Executor> executor,
+                   std::weak_ptr<MessageSender> sender,
                    scada::MonitoredItemService& monitored_item_service,
                    int subscription_id,
                    const SubscriptionParams& params);
@@ -36,7 +38,8 @@ class SubscriptionStub {
                scada::StatusCode status_code,
                const std::any& event);
 
-  MessageSender& sender_;
+  const std::shared_ptr<Executor> executor_;
+  const std::weak_ptr<MessageSender> sender_;
   scada::MonitoredItemService& monitored_item_service_;
   const int subscription_id_;
 

@@ -1,5 +1,6 @@
 #include "remote/session_stub.h"
 
+#include "base/executor.h"
 #include "base/range_util.h"
 #include "core/attribute_service.h"
 #include "core/event_service.h"
@@ -15,20 +16,7 @@
 #include "remote/view_service_stub.h"
 
 SessionStub::SessionStub(SessionContext&& context)
-    : SessionContext(std::move(context)),
-      // Can't use std::make_unique:
-      // conversion from 'SessionStub *' to 'MessageSender &' exists, but is
-      // inaccessible
-      view_service_stub_{std::make_unique<ViewServiceStub>(
-          ViewServiceStubContext{*this, view_service_})},
-      node_management_stub_{std::make_unique<NodeManagementStub>(
-          static_cast<MessageSender&>(*this),
-          node_management_service_,
-          user_id_)},
-      history_stub_{
-          std::make_unique<HistoryStub>(history_service_,
-                                        static_cast<MessageSender&>(*this),
-                                        io_context_)} {
+    : SessionContext(std::move(context)) {
   LOG_BIND_TAG(logger_, "UserId", NodeIdToScadaString(user_id_));
   LOG_INFO(logger_) << "Created";
 }
@@ -40,8 +28,24 @@ SessionStub::~SessionStub() {
     connection_->OnSessionDeleted();
 }
 
+void SessionStub::Init() {
+  const std::weak_ptr<MessageSender> sender = weak_from_this();
+
+  view_service_stub_ = std::make_shared<ViewServiceStub>(
+      ViewServiceStubContext{executor_, sender, view_service_});
+
+  node_management_stub_ = std::make_shared<NodeManagementStub>(
+      executor_, sender, node_management_service_, user_id_);
+
+  history_stub_ =
+      std::make_shared<HistoryStub>(history_service_, sender, executor_);
+}
+
 std::shared_ptr<SessionStub> SessionStub::Create(SessionContext&& context) {
-  return std::shared_ptr<SessionStub>(new SessionStub(std::move(context)));
+  auto session =
+      std::shared_ptr<SessionStub>(new SessionStub(std::move(context)));
+  session->Init();
+  return session;
 }
 
 void SessionStub::SetConnection(Connection* connection) {
@@ -155,11 +159,11 @@ void SessionStub::OnCreateSubscription(int request_id) {
   SubscriptionParams params;
 
   auto subscription_id = next_subscription_id_++;
-  // Can't use std::make_unique:
-  // conversion from 'SessionStub *' to 'MessageSender &' exists, but is
-  // inaccessible
-  std::unique_ptr<SubscriptionStub> subscription{new SubscriptionStub{
-      *this, monitored_item_service_, subscription_id, params}};
+
+  std::weak_ptr<MessageSender> sender = weak_from_this();
+
+  auto subscription = std::make_shared<SubscriptionStub>(
+      executor_, sender, monitored_item_service_, subscription_id, params);
   subscriptions_.emplace(subscription_id, std::move(subscription));
 
   protocol::Message message;
@@ -169,6 +173,7 @@ void SessionStub::OnCreateSubscription(int request_id) {
       *response.mutable_create_subscription_result();
   create_subscription_result.set_subscription_id(subscription_id);
   Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
+
   Send(message);
 }
 
@@ -181,6 +186,7 @@ void SessionStub::OnDeleteSubscription(int request_id, int subscription_id) {
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
   Convert(scada::Status{result}, *response.mutable_status());
+
   Send(message);
 }
 
@@ -220,18 +226,20 @@ void SessionStub::OnCall(unsigned request_id,
                          const scada::NodeId& method_id,
                          const std::vector<scada::Variant>& arguments) {
   std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
-  method_service_.Call(node_id, method_id, arguments, user_id_,
-                       [weak_ptr, request_id](const scada::Status& status) {
-                         auto ptr = weak_ptr.lock();
-                         if (!ptr)
-                           return;
+  method_service_.Call(
+      node_id, method_id, arguments, user_id_,
+      BindExecutor(executor_,
+                   [weak_ptr, request_id](const scada::Status& status) {
+                     auto ptr = weak_ptr.lock();
+                     if (!ptr)
+                       return;
 
-                         protocol::Message message;
-                         auto& response = *message.add_responses();
-                         response.set_request_id(request_id);
-                         Convert(status, *response.mutable_status());
-                         ptr->Send(message);
-                       });
+                     protocol::Message message;
+                     auto& response = *message.add_responses();
+                     response.set_request_id(request_id);
+                     Convert(status, *response.mutable_status());
+                     ptr->Send(message);
+                   }));
 }
 
 void SessionStub::OnRead(
@@ -240,8 +248,9 @@ void SessionStub::OnRead(
   std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
   attribute_service_.Read(
       read_value_ids,
-      [weak_ptr, request_id](scada::Status&& status,
-                             std::vector<scada::DataValue>&& results) {
+      BindExecutor(executor_, [weak_ptr, request_id](
+                                  scada::Status status,
+                                  std::vector<scada::DataValue> results) {
         auto ptr = weak_ptr.lock();
         if (!ptr)
           return;
@@ -253,7 +262,7 @@ void SessionStub::OnRead(
         Convert(std::move(results),
                 *response.mutable_read_result()->mutable_value());
         ptr->Send(message);
-      });
+      }));
 }
 
 void SessionStub::OnWrite(unsigned request_id,
@@ -261,8 +270,9 @@ void SessionStub::OnWrite(unsigned request_id,
   std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
   attribute_service_.Write(
       value_ids, user_id_,
-      [weak_ptr, request_id](scada::Status&& status,
-                             std::vector<scada::StatusCode>&& status_codes) {
+      BindExecutor(executor_, [weak_ptr, request_id](
+                                  scada::Status status,
+                                  std::vector<scada::StatusCode> status_codes) {
         auto ptr = weak_ptr.lock();
         if (!ptr)
           return;
@@ -273,5 +283,5 @@ void SessionStub::OnWrite(unsigned request_id,
         Convert(status, *response.mutable_status());
         Convert(std::move(status_codes), *response.mutable_write_result());
         ptr->Send(message);
-      });
+      }));
 }

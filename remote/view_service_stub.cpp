@@ -1,5 +1,6 @@
 #include "remote/view_service_stub.h"
 
+#include "base/executor.h"
 #include "core/status.h"
 #include "core/view_service.h"
 #include "model/node_id_util.h"
@@ -41,20 +42,20 @@ void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
 void ViewServiceStub::OnBrowse(
     unsigned request_id,
     const std::vector<scada::BrowseDescription>& nodes) {
-  auto weak_ptr = weak_factory_.GetWeakPtr();
-  service_.Browse(nodes, [=](const scada::Status& status,
-                             std::vector<scada::BrowseResult> results) {
-    if (!weak_ptr)
-      return;
+  service_.Browse(
+      nodes,
+      BindExecutor(executor_, [request_id, sender = sender_](
+                                  const scada::Status& status,
+                                  std::vector<scada::BrowseResult> results) {
+        protocol::Message message;
+        auto& response = *message.add_responses();
+        response.set_request_id(request_id);
+        Convert(status, *response.mutable_status());
+        auto& browse = *response.mutable_browse_result();
+        if (status)
+          Convert(results, *browse.mutable_results());
 
-    protocol::Message message;
-    auto& response = *message.add_responses();
-    response.set_request_id(request_id);
-    Convert(status, *response.mutable_status());
-    auto& browse = *response.mutable_browse_result();
-    if (status)
-      Convert(results, *browse.mutable_results());
-
-    sender_.Send(message);
-  });
+        if (auto locked_sender = sender.lock())
+          locked_sender->Send(message);
+      }));
 }

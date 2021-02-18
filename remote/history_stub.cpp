@@ -1,6 +1,6 @@
 #include "remote/history_stub.h"
 
-#include "base/bind.h"
+#include "base/executor.h"
 #include "base/logger.h"
 #include "core/history_service.h"
 #include "model/node_id_util.h"
@@ -13,9 +13,11 @@
 #include <boost/asio/io_context.hpp>
 
 HistoryStub::HistoryStub(scada::HistoryService& service,
-                         MessageSender& sender,
-                         boost::asio::io_context& io_context)
-    : service_{service}, sender_{sender}, io_context_{io_context} {}
+                         std::weak_ptr<MessageSender> sender,
+                         std::shared_ptr<Executor> executor)
+    : service_{service},
+      sender_{std::move(sender)},
+      executor_{std::move(executor)} {}
 
 HistoryStub::~HistoryStub() {
   // Release continuation points.
@@ -85,11 +87,8 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
 
   service_.HistoryReadRaw(
       details,
-      io_context_.wrap([this, weak_ptr = weak_factory_.GetWeakPtr(), request_id,
-                        details](scada::HistoryReadRawResult result) {
-        if (!weak_ptr.get())
-          return;
-
+      BindExecutor(executor_, [request_id, details, ref = shared_from_this(),
+                               this](scada::HistoryReadRawResult result) {
         LOG_INFO(logger_) << "History read raw completed"
                           << LOG_TAG("RequestId", request_id)
                           << LOG_TAG("Status", ToString(result.status))
@@ -112,7 +111,9 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
                   *response.mutable_history_read_raw_result()
                        ->mutable_continuation_point());
         }
-        sender_.Send(message);
+
+        if (auto locked_sender = sender_.lock())
+          locked_sender->Send(message);
       }));
 }
 
@@ -136,12 +137,9 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
 
   service_.HistoryReadEvents(
       node_id, from, to, filter,
-      io_context_.wrap([this, weak_ptr = weak_factory_.GetWeakPtr(),
-                        request_id](scada::Status status,
-                                    std::vector<scada::Event> events) {
-        if (!weak_ptr.get())
-          return;
-
+      BindExecutor(executor_, [request_id, ref = shared_from_this(), this](
+                                  scada::Status status,
+                                  std::vector<scada::Event> events) {
         LOG_INFO(logger_) << "History read events completed"
                           << LOG_TAG("RequestId", request_id)
                           << LOG_TAG("Status", ToString(status))
@@ -156,6 +154,8 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
               std::move(events),
               *response.mutable_history_read_events_result()->mutable_event());
         }
-        sender_.Send(message);
+
+        if (auto locked_sender = sender_.lock())
+          locked_sender->Send(message);
       }));
 }
