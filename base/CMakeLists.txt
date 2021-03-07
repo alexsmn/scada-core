@@ -1,5 +1,6 @@
 find_package(Boost REQUIRED COMPONENTS system date_time log log_setup regex)
 
+add_subdirectory("${deps}/promise.hpp" "promise.hpp")
 add_subdirectory(test)
 
 file(GLOB sources "*.cpp" "*.h")
@@ -22,6 +23,7 @@ target_link_libraries(scada_base PUBLIC
   Boost::log
   Boost::log_setup
   Boost::system
+  promise.hpp
 )
 set_property(TARGET scada_base PROPERTY FOLDER ${scada_folder})
 

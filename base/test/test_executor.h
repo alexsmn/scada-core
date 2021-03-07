@@ -4,8 +4,6 @@
 
 #include <algorithm>
 
-namespace testing {
-
 class TestExecutor : public Executor {
  public:
   explicit TestExecutor(bool instant = false) : instant_{instant} {}
@@ -41,5 +39,3 @@ class TestExecutor : public Executor {
 
   std::vector<std::pair<Duration, Task>> pending_tasks_;
 };
-
-}  // namespace testing
