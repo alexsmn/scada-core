@@ -26,9 +26,7 @@ void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
     for (auto& proto_node : proto_nodes) {
       nodes.push_back({
           ConvertTo<scada::NodeId>(proto_node.node_id()),
-          proto_node.has_direction()
-              ? ConvertTo<scada::BrowseDirection>(proto_node.direction())
-              : scada::BrowseDirection::Both,
+          ConvertTo<scada::BrowseDirection>(proto_node.direction()),
           proto_node.has_reference_type_id()
               ? ConvertTo<scada::NodeId>(proto_node.reference_type_id())
               : scada::NodeId{},

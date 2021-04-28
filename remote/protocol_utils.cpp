@@ -32,14 +32,12 @@ inline Target CastConvertTo(const Source& source) {
 void Convert(const protocol::NodeId& source, scada::NodeId& target) {
   auto namespace_index =
       static_cast<scada::NamespaceIndex>(source.namespace_index());
-  if (source.has_numeric_id())
-    target = scada::NodeId(source.numeric_id(), namespace_index);
-  else if (source.has_string_id())
+  if (!source.string_id().empty())
     target = scada::NodeId(source.string_id(), namespace_index);
-  else if (source.has_opaque_id())
+  else if (!source.opaque_id().empty())
     target = scada::NodeId(source.opaque_id(), namespace_index);
   else
-    target = scada::NodeId();
+    target = scada::NodeId(source.numeric_id(), namespace_index);
 }
 
 void Convert(const scada::NodeId& source, protocol::NodeId& target) {
@@ -346,33 +344,26 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
 }
 
 void Convert(const protocol::DataValue& source, scada::DataValue& target) {
-  if (source.has_server_time())
+  if (source.server_time())
     target.server_timestamp =
         base::Time::FromInternalValue(source.server_time());
-  if (source.has_source_time())
+  if (source.source_time())
     target.source_timestamp =
         base::Time::FromInternalValue(source.source_time());
   if (source.has_value())
     Convert(source.value(), target.value);
   target.qualifier = scada::Qualifier(source.qualifier());
-  target.status_code =
-      source.has_status_code()
-          ? static_cast<scada::StatusCode>(source.status_code())
-          : scada::StatusCode::Good;
+  target.status_code = static_cast<scada::StatusCode>(source.status_code());
 }
 
 void Convert(const scada::DataValue& source, protocol::DataValue& target) {
-  if (!source.server_timestamp.is_null())
-    target.set_server_time(source.server_timestamp.ToInternalValue());
-  if (!source.source_timestamp.is_null())
-    target.set_source_time(source.source_timestamp.ToInternalValue());
+  target.set_server_time(source.server_timestamp.ToInternalValue());
+  target.set_source_time(source.source_timestamp.ToInternalValue());
   if (!source.value.is_null())
     Convert(source.value, *target.mutable_value());
   target.set_qualifier(source.qualifier.raw());
-  if (source.status_code != scada::StatusCode::Good) {
-    target.set_status_code(
-        static_cast<google::protobuf::uint32>(source.status_code));
-  }
+  target.set_status_code(
+      static_cast<google::protobuf::uint32>(source.status_code));
 }
 
 void Convert(const protocol::StatusCode& source, scada::StatusCode& target) {
@@ -403,15 +394,11 @@ void Convert(const protocol::Event& source, scada::Event& target) {
     Convert(source.user_node_id(), target.user_id);
   if (source.has_value())
     Convert(source.value(), target.value);
-  if (source.has_qualifier())
-    target.qualifier = scada::Qualifier(source.qualifier());
-  if (source.has_message_utf8())
-    target.message = base::UTF8ToUTF16(source.message_utf8());
-  if (source.has_acknowledged())
-    target.acked = source.acknowledged();
-  if (source.has_acknowledge_id())
-    target.acknowledge_id = source.acknowledge_id();
-  if (source.has_acknowledge_time())
+  target.qualifier = scada::Qualifier(source.qualifier());
+  target.message = base::UTF8ToUTF16(source.message_utf8());
+  target.acked = source.acknowledged();
+  target.acknowledge_id = source.acknowledge_id();
+  if (source.acknowledge_time())
     target.acknowledged_time =
         base::Time::FromInternalValue(source.acknowledge_time());
   if (source.has_acknowledge_user_id())
@@ -473,10 +460,8 @@ void Convert(const scada::NodeClass source, protocol::NodeClass& target) {
 
 void Convert(const protocol::Attributes& source,
              scada::NodeAttributes& target) {
-  if (source.has_browse_name_utf8())
-    Convert(source.browse_name_utf8(), target.browse_name);
-  if (source.has_display_name_utf8())
-    Convert(source.display_name_utf8(), target.display_name);
+  Convert(source.browse_name_utf8(), target.browse_name);
+  Convert(source.display_name_utf8(), target.display_name);
   if (source.has_data_type_id())
     Convert(source.data_type_id(), target.data_type);
   if (source.has_value())
@@ -485,11 +470,9 @@ void Convert(const protocol::Attributes& source,
 
 void Convert(const scada::NodeAttributes& source,
              protocol::Attributes& target) {
-  if (!source.browse_name.empty())
-    target.set_browse_name_utf8(source.browse_name.name());
-  if (!source.display_name.empty())
-    target.set_display_name_utf8(
-        base::UTF16ToUTF8(ToString16(source.display_name)));
+  target.set_browse_name_utf8(source.browse_name.name());
+  target.set_display_name_utf8(
+      base::UTF16ToUTF8(ToString16(source.display_name)));
   if (!source.data_type.is_null())
     Convert(source.data_type, *target.mutable_data_type_id());
   if (source.value.has_value())
@@ -562,8 +545,7 @@ void Convert(const protocol::BrowseResult& source,
 
 void Convert(const scada::BrowseResult& source,
              protocol::BrowseResult& target) {
-  if (source.status_code != scada::StatusCode::Good)
-    target.set_status_code(static_cast<uint32_t>(source.status_code));
+  target.set_status_code(static_cast<uint32_t>(source.status_code));
   Convert(source.references, *target.mutable_references());
 }
 
@@ -603,8 +585,7 @@ void Convert(const protocol::BrowsePathResult& source,
 
 void Convert(const scada::BrowsePathResult& source,
              protocol::BrowsePathResult& target) {
-  if (source.status_code != scada::StatusCode::Good)
-    target.set_status_code(static_cast<uint32_t>(source.status_code));
+  target.set_status_code(static_cast<uint32_t>(source.status_code));
   Convert(source.targets, *target.mutable_target());
 }
 
@@ -722,7 +703,7 @@ void Convert(const protocol::AddReference& source,
              scada::AddReferencesItem& target) {
   Convert(source.source_node_id(), target.source_node_id);
   Convert(source.reference_type_id(), target.reference_type_id);
-  target.forward = !source.has_forward() || source.forward();
+  target.forward = source.forward();
   Convert(source.target_node_id(), target.target_node_id);
   Convert(source.target_server_uri(), target.target_server_uri);
   Convert(source.target_node_class(), target.target_node_class);
@@ -779,11 +760,7 @@ void Convert(const scada::AddNodesItem& source, protocol::AddNode& target) {
 
 void Convert(const protocol::AddNodeResult& source,
              scada::AddNodesResult& target) {
-  target.status_code =
-      source.has_status_code()
-          ? static_cast<scada::StatusCode>(source.status_code())
-          : scada::StatusCode::Good;
-
+  target.status_code = static_cast<scada::StatusCode>(source.status_code());
   target.added_node_id = source.has_added_node_id()
                              ? ConvertTo<scada::NodeId>(source.added_node_id())
                              : scada::NodeId{};
@@ -791,10 +768,8 @@ void Convert(const protocol::AddNodeResult& source,
 
 void Convert(const scada::AddNodesResult& source,
              protocol::AddNodeResult& target) {
-  if (source.status_code != scada::StatusCode::Good) {
-    target.set_status_code(
-        static_cast<google::protobuf::uint32>(source.status_code));
-  }
+  target.set_status_code(
+      static_cast<google::protobuf::uint32>(source.status_code));
 
   if (!source.added_node_id.is_null())
     Convert(source.added_node_id, *target.mutable_added_node_id());

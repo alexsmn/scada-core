@@ -69,10 +69,10 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   if (!ignore_params) {
     details.node_id = ConvertTo<scada::NodeId>(history_read_raw.node_id());
     details.from =
-        history_read_raw.has_from_time()
+        history_read_raw.from_time()
             ? base::Time::FromInternalValue(history_read_raw.from_time())
             : base::Time();
-    details.to = history_read_raw.has_to_time()
+    details.to = history_read_raw.to_time()
                      ? base::Time::FromInternalValue(history_read_raw.to_time())
                      : base::Time();
     details.max_count = history_read_raw.max_count();
@@ -122,10 +122,10 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   auto& history_read_events = request.history_read_events();
   const auto node_id = ConvertTo<scada::NodeId>(history_read_events.node_id());
   auto from =
-      history_read_events.has_from_time()
+      history_read_events.from_time()
           ? base::Time::FromInternalValue(history_read_events.from_time())
           : base::Time();
-  auto to = history_read_events.has_to_time()
+  auto to = history_read_events.to_time()
                 ? base::Time::FromInternalValue(history_read_events.to_time())
                 : base::Time();
   scada::EventFilter filter;

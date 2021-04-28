@@ -6,6 +6,7 @@ file(GLOB UT_SOURCES CONFIGURE_DEPENDS "*_unittest.*")
 
 list(REMOVE_ITEM SOURCES ${UT_SOURCES})
 
+# get_target_property(GRPC_CPP_PLUGIN grpc::grpc_cpp_plugin IMPORTED_LOCATION)
 include(protobuf_grpc.cmake)
 protobuf_generate_cpp(SCADA_PROTO_CPP SCADA_PROTO_H scada.proto)
 protobuf_generate_grpc_cpp(SCADA_PROTO_GRPC_CPP SCADA_PROTO_GRPC_H scada.proto)

@@ -28,9 +28,8 @@ void ViewServiceProxy::Browse(
   for (auto& node : nodes) {
     auto& browse_node = *browse.add_nodes();
     Convert(node.node_id, *browse_node.mutable_node_id());
-    if (node.direction != scada::BrowseDirection::Both)
-      browse_node.set_direction(
-          ConvertTo<protocol::BrowseDirection>(node.direction));
+    browse_node.set_direction(
+        ConvertTo<protocol::BrowseDirection>(node.direction));
     Convert(node.reference_type_id, *browse_node.mutable_reference_type_id());
     if (node.include_subtypes)
       browse_node.set_include_subtypes(true);

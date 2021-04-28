@@ -1,14 +1,9 @@
+syntax = "proto3";
+
 package protocol;
 
-// Protocol version
-enum ProtocolVersionMajor {
-  PROTOCOL_VERSION_MAJOR = 16;
-}
-enum ProtocolVersionMinor {
-  PROTOCOL_VERSION_MINOR = 0;
-}
-
 enum ConstantNodeId {
+  NULL = 0;
   ROOT = 13;
   TYPES = 15;
   OBJECTS = 100;
@@ -16,6 +11,7 @@ enum ConstantNodeId {
 }
 
 enum AttributeId {
+  NONE = 0;
   NODE_ID = 1;
   NODE_CLASS = 2;
   BROWSE_NAME = 3;
@@ -41,13 +37,14 @@ enum AttributeId {
 }
 
 message Attributes {
-  optional bytes browse_name_utf8 = 3;
-  optional bytes display_name_utf8 = 4;
-  optional Variant value = 13;
-  optional NodeId data_type_id = 14;
+  bytes browse_name_utf8 = 3;
+  bytes display_name_utf8 = 4;
+  Variant value = 13;
+  NodeId data_type_id = 14;
 }
 
 enum NodeClass {
+  None = 0;
   Object = 1;
   Variable = 2;
   Method = 4;
@@ -68,14 +65,14 @@ enum Severity {
 }
 
 message StatusCode {
-  required Severity severity = 1;
-  optional uint32 sub_code = 2;
-  optional bool structure_changed = 3;
-  optional bool semantics_changed = 4;
+  Severity severity = 1;
+  uint32 sub_code = 2;
+  bool structure_changed = 3;
+  bool semantics_changed = 4;
 }
 
 message Status {
-  required StatusCode code = 1;
+  StatusCode code = 1;
 }
 
 message Qualifier {
@@ -99,161 +96,161 @@ message Qualifier {
     HIHI = 4;
   }
 
-  required Severity severity = 1;
-  optional SubCode sub_code = 2;
-  optional Limit limit = 3;
+  Severity severity = 1;
+  SubCode sub_code = 2;
+  Limit limit = 3;
 }
 
 message NodeId {
-  optional uint32 namespace_index = 1;
-  optional uint32 numeric_id = 2;
-  optional string string_id = 3;
-  optional bytes opaque_id = 4;
+  uint32 namespace_index = 1;
+  uint32 numeric_id = 2;
+  string string_id = 3;
+  bytes opaque_id = 4;
 }
 
 message ExpandedNodeId {
-  optional NodeId node_id = 1;
+  NodeId node_id = 1;
 }
 
 message Variant {
-  optional uint32 data_type     = 1;
+  uint32 data_type     = 1;
 
   // 0 - scalar, 1 - array
-  optional uint32 rank          = 2;
+  uint32 rank          = 2;
 
-  optional bool   bool_value    = 13;
-  optional int64  int_value     = 14;
-  optional double double_value  = 15;
+  bool   bool_value    = 13;
+  int64  int_value     = 14;
+  double double_value  = 15;
   // String, QualifiedName, or LocalizedText
-  optional bytes  string_value_utf8  = 16;
-  optional NodeId node_id_value = 17;
-  optional bytes  byte_string_value = 18;
-  optional int64  time_value_time = 19;
+  bytes  string_value_utf8  = 16;
+  NodeId node_id_value = 17;
+  bytes  byte_string_value = 18;
+  int64  time_value_time = 19;
 
   repeated bool   bool_array = 103;
   repeated int64  int_array = 104;
   repeated double double_array = 105;
   // String, QualifiedName, or LocalizedText
   repeated bytes  string_array_utf8 = 106;
-  optional NodeId node_id_array = 107;
-  optional bytes  byte_string_array = 108;
-  optional int64  time_array_time = 109;
+  NodeId node_id_array = 107;
+  bytes  byte_string_array = 108;
+  int64  time_array_time = 109;
 }
 
 message DataValue {
-  optional uint64 server_time = 1;
-  optional uint64 source_time = 2;
-  optional Variant value = 3;
-  optional uint32 qualifier = 4;
-  optional uint32 status_code = 5;
+  uint64 server_time = 1;
+  uint64 source_time = 2;
+  Variant value = 3;
+  uint32 qualifier = 4;
+  uint32 status_code = 5;
 }
 
 message Event {
-  required uint64 time = 2;
-  required uint32 severity = 3;
-  optional NodeId source_node_id = 4;
-  optional NodeId user_node_id = 5;
-  optional Variant value = 6;
-  optional uint32 qualifier = 7;
-  optional bytes message_utf8 = 8;
-  optional bool acknowledged = 9;
-  optional uint64 acknowledge_id = 10;
-  optional uint64 acknowledge_time = 11;
-  optional NodeId acknowledge_user_id = 12;
+  uint64 time = 2;
+  uint32 severity = 3;
+  NodeId source_node_id = 4;
+  NodeId user_node_id = 5;
+  Variant value = 6;
+  uint32 qualifier = 7;
+  bytes message_utf8 = 8;
+  bool acknowledged = 9;
+  uint64 acknowledge_id = 10;
+  uint64 acknowledge_time = 11;
+  NodeId acknowledge_user_id = 12;
 }
 
 message CreateSession {
-  required bytes user_name_utf8 = 1;
-  optional bytes password_utf8 = 2;
-  optional bool delete_existing = 3;
+  bytes user_name_utf8 = 1;
+  bytes password_utf8 = 2;
+  bool delete_existing = 3;
   repeated string locale_id = 6;
 
   // Assume version 0.0 if it isn't specified.
-  required uint32 protocol_version_major = 4;
-  required uint32 protocol_version_minor = 5;
+  uint32 protocol_version_major = 4;
+  uint32 protocol_version_minor = 5;
 }
 
 message CreateSessionResult {
-  optional string token = 1;
-  optional NodeId user_node_id = 2;
-  optional uint32 user_rights = 3;
+  string token = 1;
+  NodeId user_node_id = 2;
+  uint32 user_rights = 3;
 
   // Current protocol version of server.
-  required uint32 protocol_version_major = 4;
-  required uint32 protocol_version_minor = 5;
+  uint32 protocol_version_major = 4;
+  uint32 protocol_version_minor = 5;
 }
 
 message DeleteSession {
-  optional string token = 1;
+  string token = 1;
 }
 
 message NodeReference {
-  optional NodeId reference_type_id = 1;
-  optional bool forward = 2;
-  optional NodeId node_id = 3;
+  NodeId reference_type_id = 1;
+  bool forward = 2;
+  NodeId node_id = 3;
 }
 
 message NodeProperty {
-  optional NodeId declaration_id = 1;
-  optional Variant value = 2;
+  NodeId declaration_id = 1;
+  Variant value = 2;
 }
 
 message Node {
-  required NodeId node_id = 1;
-  optional NodeId type_definition_id = 2;
-  optional NodeClass node_class = 3;
-  optional Attributes attributes = 5;
-  optional NodeId parent_id = 6;
-  optional NodeId reference_type_id = 7;
+  NodeId node_id = 1;
+  NodeId type_definition_id = 2;
+  NodeClass node_class = 3;
+  Attributes attributes = 5;
+  NodeId parent_id = 6;
+  NodeId reference_type_id = 7;
   repeated NodeReference reference = 8;
   repeated NodeProperty property = 9;
   repeated Node children = 10;
 }
 
 message AddNode {
-  optional NodeId requested_node_id = 1;
-  required NodeId type_definition_id = 2;
-  required NodeId parent_id = 3;
-  required NodeClass node_class = 5;
-  optional Attributes attributes = 6;
+  NodeId requested_node_id = 1;
+  NodeId type_definition_id = 2;
+  NodeId parent_id = 3;
+  NodeClass node_class = 5;
+  Attributes attributes = 6;
 }
 
 message AddNodeResult {
-  optional uint32 status_code = 1;
-  optional NodeId added_node_id = 2;
+  uint32 status_code = 1;
+  NodeId added_node_id = 2;
 }
 
 message DeleteNode {
-  required NodeId node_id = 1;
-  optional bool delete_target_references = 2;
+  NodeId node_id = 1;
+  bool delete_target_references = 2;
 }
 
 message AddReference {
-  optional NodeId source_node_id = 1;
-  optional NodeId reference_type_id = 2;
-  optional bool forward = 3;
-  optional string target_server_uri = 4;
-  optional ExpandedNodeId target_node_id = 5;
-  optional NodeClass target_node_class = 6;
+  NodeId source_node_id = 1;
+  NodeId reference_type_id = 2;
+  bool forward = 3;
+  string target_server_uri = 4;
+  ExpandedNodeId target_node_id = 5;
+  NodeClass target_node_class = 6;
 }
 
 message DeleteReference {
-  optional NodeId source_node_id = 1;
-  optional NodeId reference_type_id = 2;
-  optional bool forward = 3;
-  optional ExpandedNodeId target_node_id = 4;
-  optional bool delete_bidirectional = 5;
+  NodeId source_node_id = 1;
+  NodeId reference_type_id = 2;
+  bool forward = 3;
+  ExpandedNodeId target_node_id = 4;
+  bool delete_bidirectional = 5;
 }
 
 message ChangePassword {
-  required NodeId user_node_id = 1;
-  required bytes current_password_utf8 = 2;
-  required bytes new_password_utf8 = 3;
+  NodeId user_node_id = 1;
+  bytes current_password_utf8 = 2;
+  bytes new_password_utf8 = 3;
 }
 
 message ReadValueId {
-  required NodeId node_id = 1;
-  required AttributeId attribute_id = 2;
+  NodeId node_id = 1;
+  AttributeId attribute_id = 2;
 }
 
 message Read {
@@ -265,68 +262,68 @@ message ReadResult {
 }
 
 message Write {
-  required NodeId node_id = 1;
-  required Variant value = 2;
-  required AttributeId attribute_id = 3;
-  optional bool select = 5;
+  NodeId node_id = 1;
+  Variant value = 2;
+  AttributeId attribute_id = 3;
+  bool select = 5;
 }
 
 // Calls
 
 message DeviceCommand {
-  required NodeId node_id = 1;
-  required NodeId method_id = 2;
+  NodeId node_id = 1;
+  NodeId method_id = 2;
   repeated Variant argument = 3;
 }
 
 message Acknowledge {
   repeated uint64 acknowledge_id = 1;
-  optional bytes comment_utf8 = 2;
+  bytes comment_utf8 = 2;
 }
 
 message Call {
-  optional DeviceCommand device_command = 1;
-  optional Acknowledge acknowledge = 2;
+  DeviceCommand device_command = 1;
+  Acknowledge acknowledge = 2;
 }
 
 message AggregateFilter {
-  optional uint64 start_time = 1;
-  optional uint64 interval = 2;
-  optional NodeId aggregate_type = 3;
+  uint64 start_time = 1;
+  uint64 interval = 2;
+  NodeId aggregate_type = 3;
 }
 
 message MonitoringParameters {
-  optional AggregateFilter aggregate_filter = 1;
-  optional EventFilter event_filter = 4;
+  AggregateFilter aggregate_filter = 1;
+  EventFilter event_filter = 4;
 }
 
 message HistoryReadRaw {
-  required NodeId node_id = 1;
-  optional uint64 from_time = 3;
-  optional uint64 to_time = 4;
-  optional uint64 max_count = 8;
-  optional AggregateFilter aggregate_filter = 5;
-  optional bool release_continuation_point = 6;
-  optional bytes continuation_point = 7;
+  NodeId node_id = 1;
+  uint64 from_time = 3;
+  uint64 to_time = 4;
+  uint64 max_count = 8;
+  AggregateFilter aggregate_filter = 5;
+  bool release_continuation_point = 6;
+  bytes continuation_point = 7;
 }
 
 message HistoryReadRawResult {
   repeated DataValue value = 1;
-  optional bytes continuation_point = 2;
+  bytes continuation_point = 2;
 }
 
 message EventFilter {
-  optional bool acked = 1;
-  optional bool unacked = 2;
+  bool acked = 1;
+  bool unacked = 2;
   repeated NodeId of_type = 3;
   repeated NodeId child_of = 4;
 }
 
 message HistoryReadEvents {
-  required NodeId node_id = 1;
-  optional uint64 from_time = 3;
-  optional uint64 to_time = 4;
-  optional EventFilter filter = 5;
+  NodeId node_id = 1;
+  uint64 from_time = 3;
+  uint64 to_time = 4;
+  EventFilter filter = 5;
 }
 
 message HistoryReadEventsResult {
@@ -334,32 +331,32 @@ message HistoryReadEventsResult {
 }
 
 message CreateSubscription {
-  optional uint32 update_rate_ms = 1;
-  optional EventFilter event_filter = 2;
+  uint32 update_rate_ms = 1;
+  EventFilter event_filter = 2;
 }
 
 message CreateSubscriptionResult {
-  optional uint32 subscription_id = 1;
+  uint32 subscription_id = 1;
 }
 
 message DeleteSubscription {
-  required uint32 subscription_id = 1;
+  uint32 subscription_id = 1;
 }
 
 message CreateMonitoredItem {
-  required uint32 subscription_id = 1;
-  required NodeId node_id = 2;
-  required AttributeId attribute_id = 3;
-  optional MonitoringParameters monitoring_parameters = 4;
+  uint32 subscription_id = 1;
+  NodeId node_id = 2;
+  AttributeId attribute_id = 3;
+  MonitoringParameters monitoring_parameters = 4;
 }
 
 message CreateMonitoredItemResult {
-  optional uint32 monitored_item_id = 21;
+  uint32 monitored_item_id = 21;
 }
 
 message DeleteMonitoredItem {
-  required uint32 subscription_id = 1;
-  required uint32 monitored_item_id = 2;
+  uint32 subscription_id = 1;
+  uint32 monitored_item_id = 2;
 }
 
 message NodeTree {
@@ -373,10 +370,10 @@ enum BrowseDirection {
 }
 
 message BrowseDescription {
-  required NodeId node_id = 1;
-  optional BrowseDirection direction = 2;
-  optional NodeId reference_type_id = 3;
-  optional bool include_subtypes = 4;
+  NodeId node_id = 1;
+  BrowseDirection direction = 2;
+  NodeId reference_type_id = 3;
+  bool include_subtypes = 4;
 }
 
 message Browse {
@@ -384,13 +381,13 @@ message Browse {
 }
 
 message ReferenceDescription {
-  required NodeId reference_type_id = 1;
-  required bool forward = 2;
-  required NodeId node_id = 3;
+  NodeId reference_type_id = 1;
+  bool forward = 2;
+  NodeId node_id = 3;
 }
 
 message BrowseResult {
-  optional uint32 status_code = 1;
+  uint32 status_code = 1;
   repeated ReferenceDescription references = 2;
 }
 
@@ -399,24 +396,24 @@ message BrowseResponse {
 }
 
 message RelativePathElement {
-  optional NodeId reference_type_id = 1;
-  optional bool inverse = 2;
-  optional bool include_subtypes = 3;
-  required string target_name = 4;
+  NodeId reference_type_id = 1;
+  bool inverse = 2;
+  bool include_subtypes = 3;
+  string target_name = 4;
 }
 
 message BrowsePath {
-  required NodeId node_id = 1;
+  NodeId node_id = 1;
   repeated RelativePathElement relative_path_element = 2;
 }
 
 message BrowsePathTarget {
-  optional NodeId target_id = 1;
-  optional uint32 remaining_path_index = 2;
+  NodeId target_id = 1;
+  uint32 remaining_path_index = 2;
 }
 
 message BrowsePathResult {
-  optional uint32 status_code = 1;
+  uint32 status_code = 1;
   repeated BrowsePathTarget target = 2;
 }
 
@@ -424,24 +421,24 @@ message Ping {
 }
 
 message Request {
-  optional uint32 request_id = 1;
+  uint32 request_id = 1;
 
-  optional CreateSession create_session = 10;
-  optional DeleteSession delete_session = 11;
-  optional Ping ping = 15;
+  CreateSession create_session = 10;
+  DeleteSession delete_session = 11;
+  Ping ping = 15;
 
-  optional Read read = 14;
+  Read read = 14;
   repeated Write write = 12;
-  optional Call call = 13;
+  Call call = 13;
 
-  optional CreateSubscription create_subscription = 20;
-  optional DeleteSubscription delete_subscription = 21;
+  CreateSubscription create_subscription = 20;
+  DeleteSubscription delete_subscription = 21;
 
-  optional CreateMonitoredItem create_monitored_item = 30;
-  optional DeleteMonitoredItem delete_monitored_item = 31;
+  CreateMonitoredItem create_monitored_item = 30;
+  DeleteMonitoredItem delete_monitored_item = 31;
 
-  optional HistoryReadRaw history_read_raw = 40;
-  optional HistoryReadEvents history_read_events = 41;
+  HistoryReadRaw history_read_raw = 40;
+  HistoryReadEvents history_read_events = 41;
 
   repeated AddNode add_node = 50;
   repeated DeleteNode delete_node = 51;
@@ -449,27 +446,27 @@ message Request {
   repeated AddReference add_reference = 54;
   repeated DeleteReference delete_reference = 55;
 
-  optional ChangePassword change_password = 53;
+  ChangePassword change_password = 53;
 
-  optional Browse browse = 60;
+  Browse browse = 60;
   repeated BrowsePath browse_path = 61;
 }
 
 message Response {
-  required uint32 request_id = 1;
-  required Status status = 2;
+  uint32 request_id = 1;
+  Status status = 2;
 
-  optional CreateSessionResult create_session_result = 10;
+  CreateSessionResult create_session_result = 10;
 
-  optional ReadResult read_result = 14;
+  ReadResult read_result = 14;
   repeated StatusCode write_result = 12;
 
-  optional CreateSubscriptionResult create_subscription_result = 20;
+  CreateSubscriptionResult create_subscription_result = 20;
 
-  optional CreateMonitoredItemResult create_monitored_item_result = 30;
+  CreateMonitoredItemResult create_monitored_item_result = 30;
 
-  optional HistoryReadRawResult history_read_raw_result = 40;
-  optional HistoryReadEventsResult history_read_events_result = 41;
+  HistoryReadRawResult history_read_raw_result = 40;
+  HistoryReadEventsResult history_read_events_result = 41;
 
   repeated AddNodeResult add_node_result = 50;
   repeated StatusCode delete_node_result = 51;
@@ -477,31 +474,31 @@ message Response {
   repeated StatusCode add_reference_result = 54;
   repeated StatusCode delete_reference_result = 55;
 
-  optional BrowseResponse browse_result = 60;
+  BrowseResponse browse_result = 60;
   repeated BrowsePathResult browse_path_result = 61;
 }
 
 message DataChange {
-  required uint32 monitored_item_id = 1;
-  required DataValue data_value = 2;
+  uint32 monitored_item_id = 1;
+  DataValue data_value = 2;
 }
 
 message SessionDeleted {
 }
 
 message ModelChangeEvent {
-  optional NodeId node_id = 1;
-  optional NodeId type_definition_id = 2;
-  optional bool node_added = 3;
-  optional bool node_deleted = 4;
-  optional bool reference_added = 5;
-  optional bool reference_deleted = 6;
+  NodeId node_id = 1;
+  NodeId type_definition_id = 2;
+  bool node_added = 3;
+  bool node_deleted = 4;
+  bool reference_added = 5;
+  bool reference_deleted = 6;
 }
 
 message Notification {
-  optional uint32 subscription_id = 1;
-  optional uint32 monitored_item_id = 4;
-  optional StatusCode status_code = 6;
+  uint32 subscription_id = 1;
+  uint32 monitored_item_id = 4;
+  StatusCode status_code = 6;
 
   repeated DataChange data_changes = 2;
 
@@ -509,7 +506,7 @@ message Notification {
   repeated NodeId semantics_changed_node_id = 5;
 
   repeated Event events = 8;
-  optional SessionDeleted session_deleted = 9;
+  SessionDeleted session_deleted = 9;
 }
 
 message Message {
