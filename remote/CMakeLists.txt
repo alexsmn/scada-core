@@ -1,29 +1,40 @@
-# ProtoBuf
-if(NOT PROTOBUF_FOUND)
-  find_package(Protobuf REQUIRED)
-endif()
+find_package(Protobuf REQUIRED)
+find_package(gRPC REQUIRED)
 
-file(GLOB sources CONFIGURE_DEPENDS "*.cpp" "*.h" "*.proto")
-file(GLOB unittests CONFIGURE_DEPENDS "*_unittest.*")
+file(GLOB SOURCES CONFIGURE_DEPENDS "*.cpp" "*.h" "*.proto")
+file(GLOB UT_SOURCES CONFIGURE_DEPENDS "*_unittest.*")
 
-list(REMOVE_ITEM sources ${unittests})
+list(REMOVE_ITEM SOURCES ${UT_SOURCES})
 
-protobuf_generate_cpp(scada_proto_cpp scada_proto_h scada.proto)
-protobuf_generate_python(scada_proto_py scada.proto)
+include(protobuf_grpc.cmake)
+protobuf_generate_cpp(SCADA_PROTO_CPP SCADA_PROTO_H scada.proto)
+protobuf_generate_grpc_cpp(SCADA_PROTO_GRPC_CPP SCADA_PROTO_GRPC_H scada.proto)
+protobuf_generate_python(SCADA_PROTO_PY scada.proto)
 
-list(APPEND sources ${scada_proto_cpp} ${scada_proto_h})
+list(APPEND SOURCES
+  ${SCADA_PROTO_CPP}
+  ${SCADA_PROTO_H}
+  ${SCADA_PROTO_GRPC_CPP}
+  ${SCADA_PROTO_GRPC_H}
+)
 
-add_library(scada_core_remote ${sources})
+add_library(scada_core_remote ${SOURCES})
 
 # For proto generated files
 target_include_directories(scada_core_remote PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(scada_core_remote PUBLIC
   protobuf::libprotobuf
+  gRPC::grpc++
   net
   scada_core
   address_space
 )
+
+# Required by gRPC.
+# target_compile_definitions(scada_core_remote PUBLIC
+#   _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
+# )
 
 set_property(TARGET scada_core_remote PROPERTY FOLDER ${scada_folder})
 
@@ -32,7 +43,7 @@ if(WIN32)
     /wd4244 # 'conversion' conversion from 'type1' to 'type2', possible loss of data
   )
 
-  # Required for `scada_proto_cpp`:
+  # Required for `SCADA_PROTO_CPP`:
   target_compile_options(scada_core_remote PRIVATE
     /wd4125
     /wd4127
@@ -42,7 +53,7 @@ endif()
 
 # UTs
 
-add_executable(scada_core_remote_unittests ${unittests})
+add_executable(scada_core_remote_unittests ${UT_SOURCES})
 add_test(NAME scada_core_remote_unittests COMMAND scada_core_remote_unittests)
 target_link_libraries(scada_core_remote_unittests PUBLIC
   scada_core_remote
