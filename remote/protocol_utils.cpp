@@ -498,7 +498,7 @@ void Convert(const scada::ReadValueId& source, protocol::ReadValueId& target) {
       ConvertTo<protocol::AttributeId>(source.attribute_id));
 }
 
-void Convert(const protocol::Write& source, scada::WriteValueId& target) {
+void Convert(const protocol::Write& source, scada::WriteValue& target) {
   Convert(source.node_id(), target.node_id);
   Convert(source.attribute_id(), target.attribute_id);
   Convert(source.value(), target.value);
@@ -506,7 +506,7 @@ void Convert(const protocol::Write& source, scada::WriteValueId& target) {
     target.flags.set_select();
 }
 
-void Convert(const scada::WriteValueId& source, protocol::Write& target) {
+void Convert(const scada::WriteValue& source, protocol::Write& target) {
   Convert(source.node_id, *target.mutable_node_id());
   target.set_attribute_id(
       ConvertTo<protocol::AttributeId>(source.attribute_id));

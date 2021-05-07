@@ -59,8 +59,8 @@ void Convert(scada::AttributeId source, protocol::AttributeId& target);
 void Convert(const protocol::ReadValueId& source, scada::ReadValueId& target);
 void Convert(const scada::ReadValueId& source, protocol::ReadValueId& target);
 
-void Convert(const protocol::Write& source, scada::WriteValueId& target);
-void Convert(const scada::WriteValueId& source, protocol::Write& target);
+void Convert(const protocol::Write& source, scada::WriteValue& target);
+void Convert(const scada::WriteValue& source, protocol::Write& target);
 
 void Convert(protocol::BrowseDirection source, scada::BrowseDirection& target);
 void Convert(scada::BrowseDirection source, protocol::BrowseDirection& target);

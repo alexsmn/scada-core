@@ -376,7 +376,7 @@ void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
   });
 }
 
-void SessionProxy::Write(const std::vector<scada::WriteValueId>& value_ids,
+void SessionProxy::Write(const std::vector<scada::WriteValue>& values,
                          const scada::NodeId& user_id,
                          const scada::WriteCallback& callback) {
   if (!session_created_) {
@@ -385,8 +385,8 @@ void SessionProxy::Write(const std::vector<scada::WriteValueId>& value_ids,
   }
 
   protocol::Request request;
-  for (auto& value_id : value_ids)
-    Convert(value_id, *request.add_write());
+  for (auto& value : values)
+    Convert(value, *request.add_write());
 
   Request(request, [callback](const protocol::Response& response) {
     if (callback) {

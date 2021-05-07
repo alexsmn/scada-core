@@ -79,7 +79,7 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
   if (request.write_size() != 0) {
     auto& write = request.write();
     OnWrite(request.request_id(),
-            ConvertTo<std::vector<scada::WriteValueId>>(write));
+            ConvertTo<std::vector<scada::WriteValue>>(write));
   }
 
   if (request.has_call()) {
@@ -266,10 +266,10 @@ void SessionStub::OnRead(
 }
 
 void SessionStub::OnWrite(unsigned request_id,
-                          const std::vector<scada::WriteValueId>& value_ids) {
+                          const std::vector<scada::WriteValue>& values) {
   std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
   attribute_service_.Write(
-      value_ids, user_id_,
+      values, user_id_,
       BindExecutor(executor_, [weak_ptr, request_id](
                                   scada::Status status,
                                   std::vector<scada::StatusCode> status_codes) {

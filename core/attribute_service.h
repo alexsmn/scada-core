@@ -26,7 +26,7 @@ using ReadCallback =
     std::function<void(Status&&, std::vector<DataValue>&& results)>;
 using WriteCallback = MultiStatusCallback;
 
-struct WriteValueId {
+struct WriteValue {
   NodeId node_id;
   AttributeId attribute_id;
   Variant value;
@@ -40,7 +40,7 @@ class AttributeService {
   virtual void Read(const std::vector<ReadValueId>& value_ids,
                     const ReadCallback& callback) = 0;
 
-  virtual void Write(const std::vector<WriteValueId>& value_ids,
+  virtual void Write(const std::vector<WriteValue>& values,
                      const NodeId& user_id,
                      const WriteCallback& callback) = 0;
 };
@@ -66,7 +66,7 @@ inline bool operator==(const ReadValueId& a, const ReadValueId& b) {
          std::tie(b.node_id, b.attribute_id);
 }
 
-inline bool operator==(const WriteValueId& a, const WriteValueId& b) {
+inline bool operator==(const WriteValue& a, const WriteValue& b) {
   return std::tie(a.node_id, a.attribute_id, a.value, a.flags) ==
          std::tie(b.node_id, b.attribute_id, b.value, b.flags);
 }
@@ -76,7 +76,7 @@ inline std::ostream& operator<<(std::ostream& stream, const ReadValueId& v) {
 }
 
 inline std::ostream& operator<<(std::ostream& stream,
-                                const WriteValueId& value_id) {
+                                const WriteValue& value_id) {
   return stream << "{"
                 << "node_id: " << value_id.node_id
                 << ", attribute_id: " << value_id.attribute_id

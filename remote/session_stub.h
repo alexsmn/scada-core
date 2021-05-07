@@ -85,7 +85,7 @@ class SessionStub : public MessageSender,
   void OnRead(unsigned request_id,
               const std::vector<scada::ReadValueId>& read_value_ids);
   void OnWrite(unsigned request_id,
-               const std::vector<scada::WriteValueId>& value_ids);
+               const std::vector<scada::WriteValue>& values);
   void OnCall(unsigned request_id,
               const scada::NodeId& node_id,
               const scada::NodeId& method_id,

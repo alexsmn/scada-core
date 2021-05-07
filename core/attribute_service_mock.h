@@ -15,7 +15,7 @@ class MockAttributeService : public AttributeService {
 
   MOCK_METHOD(void,
               Write,
-              (const std::vector<WriteValueId>& value_ids,
+              (const std::vector<WriteValue>& values,
                const NodeId& user_id,
                const WriteCallback& callback));
 };
@@ -26,7 +26,7 @@ class SimpleMockAttributeService final : public AttributeService {
 
   MOCK_METHOD(StatusCode,
               Write,
-              (const WriteValueId& value_id, const NodeId& user_id));
+              (const WriteValue& value, const NodeId& user_id));
 
   virtual void Read(const std::vector<ReadValueId>& value_ids,
                     const ReadCallback& callback) override {
@@ -36,12 +36,12 @@ class SimpleMockAttributeService final : public AttributeService {
     callback(StatusCode::Good, std::move(results));
   }
 
-  virtual void Write(const std::vector<WriteValueId>& value_ids,
+  virtual void Write(const std::vector<WriteValue>& values,
                      const NodeId& user_id,
                      const WriteCallback& callback) override {
-    std::vector<StatusCode> results(value_ids.size());
-    for (size_t i = 0; i < value_ids.size(); ++i)
-      results[i] = Write(value_ids[i], user_id);
+    std::vector<StatusCode> results(values.size());
+    for (size_t i = 0; i < values.size(); ++i)
+      results[i] = Write(values[i], user_id);
     callback(StatusCode::Good, std::move(results));
   }
 };
