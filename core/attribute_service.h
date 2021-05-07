@@ -37,10 +37,10 @@ class AttributeService {
  public:
   virtual ~AttributeService() {}
 
-  virtual void Read(const std::vector<ReadValueId>& value_ids,
+  virtual void Read(const std::vector<ReadValueId>& inputs,
                     const ReadCallback& callback) = 0;
 
-  virtual void Write(const std::vector<WriteValue>& values,
+  virtual void Write(const std::vector<WriteValue>& inputs,
                      const NodeId& user_id,
                      const WriteCallback& callback) = 0;
 };
@@ -59,6 +59,31 @@ inline DataValue MakeReadError(StatusCode status_code) {
   assert(IsBad(status_code));
   const auto timestamp = base::Time::Now();
   return DataValue{status_code, timestamp};
+}
+
+template <class Callback>
+inline void Read(AttributeService& attribute_service,
+                 ReadValueId input,
+                 const Callback& callback) {
+  attribute_service.Read(
+      std::vector<ReadValueId>(1, std::move(input)),
+      [callback](Status&& status, std::vector<DataValue>&& results) {
+        assert(!status || results.size() == 1);
+        callback(status ? std::move(results[0]) : MakeReadError(status.code()));
+      });
+}
+
+template <class Callback>
+inline void Write(AttributeService& attribute_service,
+                  WriteValue input,
+                  const NodeId& user_id,
+                  const Callback& callback) {
+  attribute_service.Write(
+      std::vector<WriteValue>(1, std::move(input)), user_id,
+      [callback](Status&& status, std::vector<StatusCode>&& results) {
+        assert(!status || results.size() == 1);
+        callback(status ? Status{results[0]} : std::move(status));
+      });
 }
 
 inline bool operator==(const ReadValueId& a, const ReadValueId& b) {
