@@ -11,9 +11,9 @@ TEST(NodeIdUtil, NodeIdFromScadaString) {
             NodeIdFromScadaString("IEC_DEV.15"));
   EXPECT_EQ(scada::NodeId(12, NamespaceIndexes::IEC60870_DEVICE),
             NodeIdFromScadaString("T11.12"));
-  EXPECT_EQ(scada::NodeId("MODBUS_PORTS.32!Online", 0),
+  EXPECT_EQ(scada::NodeId("32!Online", NamespaceIndexes::MODBUS_PORTS),
             NodeIdFromScadaString("MODBUS_PORTS.32!Online"));
-  EXPECT_EQ(scada::NodeId("MODBUS_PORTS.32!BIT:4", 0),
+  EXPECT_EQ(scada::NodeId("32!BIT:4", NamespaceIndexes::MODBUS_PORTS),
             NodeIdFromScadaString("MODBUS_PORTS.32!BIT:4"));
 }
 
@@ -22,10 +22,12 @@ TEST(NodeIdUtil, NodeIdToScadaString) {
             "TS.53");
   EXPECT_EQ(
       NodeIdToScadaString(scada::NodeId(15, NamespaceIndexes::IEC60870_DEVICE)),
-            "IEC_DEV.15");
-  EXPECT_EQ(NodeIdToScadaString(scada::NodeId("MODBUS_PORTS.32!Online", 0)),
+      "IEC_DEV.15");
+  EXPECT_EQ(NodeIdToScadaString(
+                scada::NodeId("32!Online", NamespaceIndexes::MODBUS_PORTS)),
             "MODBUS_PORTS.32!Online");
-  EXPECT_EQ(NodeIdToScadaString(scada::NodeId("MODBUS_PORTS.32!BIT:4", 0)),
+  EXPECT_EQ(NodeIdToScadaString(
+                scada::NodeId("32!BIT:4", NamespaceIndexes::MODBUS_PORTS)),
             "MODBUS_PORTS.32!BIT:4");
 }
 
@@ -41,10 +43,16 @@ TEST(NodeIdUtil, Comparison) {
 }
 
 TEST(NodeIdUtil, IsNestedNodeId) {
-  scada::NodeId kNodeId{"IEC_DEV.1!1", 0};
+  scada::NodeId kNodeId{"123!Online", NamespaceIndexes::MODBUS_DEVICES};
   scada::NodeId parent_id;
   std::string_view nested_name;
   EXPECT_TRUE(IsNestedNodeId(kNodeId, parent_id, nested_name));
-  EXPECT_EQ(NodeIdFromScadaString("IEC_DEV.1"), parent_id);
-  EXPECT_EQ("1", nested_name);
+  EXPECT_EQ(scada::NodeId(123, NamespaceIndexes::MODBUS_DEVICES), parent_id);
+  EXPECT_EQ("Online", nested_name);
+}
+
+TEST(NodeIdUtil, MakeNestedNodeId) {
+  const scada::NodeId kParentId{456, NamespaceIndexes::MODBUS_DEVICES};
+  EXPECT_EQ(scada::NodeId("456!Active", NamespaceIndexes::MODBUS_DEVICES),
+            MakeNestedNodeId(kParentId, "Active"));
 }

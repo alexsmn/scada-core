@@ -4,30 +4,7 @@
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "model/namespaces.h"
-
-namespace {
-
-scada::NodeId ScadaStringToNumericNodeId(std::string_view scada_string) {
-  auto p = scada_string.find('.');
-  if (p == std::string_view::npos)
-    return scada::NodeId{};
-
-  int namespace_index = FindNamespaceIndexByName(scada_string.substr(0, p));
-  if (namespace_index == -1)
-    return scada::NodeId{};
-
-  unsigned numeric_id = 0;
-  if (!base::StringToUint(ToStringPiece(scada_string.substr(p + 1)),
-                          &numeric_id))
-    return scada::NodeId{};
-
-  return scada::NodeId{numeric_id,
-                       static_cast<scada::NamespaceIndex>(namespace_index)};
-}
-
-}  // namespace
 
 bool IsNestedNodeId(const scada::NodeId& node_id,
                     scada::NodeId& parent_id,
@@ -40,74 +17,106 @@ bool IsNestedNodeId(const scada::NodeId& node_id,
   if (p == std::string::npos)
     return false;
 
-  parent_id = NodeIdFromScadaString(string_id.substr(0, p));
-  if (parent_id.is_null())
+  // Parent id can only be a number for now.
+  scada::NumericId parent_numeric_id = 0;
+  if (!base::StringToUint(ToStringPiece(string_id.substr(0, p)),
+                          &parent_numeric_id)) {
     return false;
+  }
 
+  parent_id = scada::NodeId{parent_numeric_id, node_id.namespace_index()};
   nested_name = string_id.substr(p + 1);
   return true;
 }
 
 scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
                                std::string_view nested_name) {
+  assert(!parent_id.is_null());
   assert(!nested_name.empty());
-  return scada::NodeId{
-      NodeIdToScadaString(parent_id) + '!' + std::string{nested_name}, 0};
+
+  auto parent_identifier = parent_id.type() == scada::NodeIdType::Numeric
+                               ? base::NumberToString(parent_id.numeric_id())
+                               : parent_id.string_id();
+  auto identifier =
+      base::StrCat({parent_identifier, "!", ToStringPiece(nested_name)});
+
+  return scada::NodeId{std::move(identifier), parent_id.namespace_index()};
 }
 
 bool GetNestedSubName(const scada::NodeId& node_id,
                       const scada::NodeId& nested_id,
                       std::string_view& nested_name) {
-  if (node_id.type() != scada::NodeIdType::String)
-    return false;
-
-  const std::string_view string_id = node_id.string_id();
-  const std::string nested_string_id = NodeIdToScadaString(nested_id);
-
-  if (string_id.size() < nested_string_id.size())
-    return false;
-  if (!base::StartsWith(ToStringPiece(string_id), nested_string_id,
-                        base::CompareCase::SENSITIVE))
-    return false;
-
-  if (string_id.size() == nested_string_id.size())
+  // For backward compatibility.
+  if (node_id == nested_id) {
+    nested_name = {};
     return true;
+  }
 
-  if (string_id.size() < nested_string_id.size() + 1)
-    return false;
-  if (string_id[nested_string_id.size()] != '!')
+  scada::NodeId parent_id;
+  if (!IsNestedNodeId(node_id, parent_id, nested_name))
     return false;
 
-  nested_name = string_id.substr(nested_string_id.size() + 1);
-  return true;
+  return parent_id == nested_id;
 }
 
 std::string NodeIdToScadaString(const scada::NodeId& node_id) {
-  std::string result;
+  std::string namespace_name =
+      std::string{GetNamespaceName(node_id.namespace_index())};
+  if (namespace_name.empty()) {
+    namespace_name =
+        base::StrCat({"NS", base::NumberToString(node_id.namespace_index())});
+  }
+
+  std::string identifier;
 
   switch (node_id.type()) {
     case scada::NodeIdType::Numeric:
-      result = base::StrCat(
-          {ToStringPiece(GetNamespaceName(node_id.namespace_index())), ".",
-           base::IntToString(node_id.numeric_id())});
+      identifier = base::NumberToString(node_id.numeric_id());
       break;
 
     case scada::NodeIdType::String:
-      assert(node_id.namespace_index() == 0);
-      result = node_id.string_id();
+      identifier = node_id.string_id();
       break;
 
     default:
       assert(false);
+      return {};
   }
 
-  return result;
+  return base::StrCat({namespace_name, ".", identifier});
 }
 
 scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
-  auto p = scada_string.find('!');
-  if (p != std::string_view::npos)
-    return scada::NodeId{std::string{scada_string}, 0};
-  else
-    return ScadaStringToNumericNodeId(scada_string);
+  const auto p = scada_string.find('.');
+  if (p == std::string_view::npos)
+    return scada::NodeId{};
+
+  const auto namespace_name = scada_string.substr(0, p);
+  int namespace_index = FindNamespaceIndexByName(namespace_name);
+  if (namespace_index == -1) {
+    if (!base::StartsWith(ToStringPiece(namespace_name), "NS",
+                          base::CompareCase::INSENSITIVE_ASCII)) {
+      return scada::NodeId{};
+    }
+    if (!base::StringToInt(ToStringPiece(namespace_name.substr(2)),
+                           &namespace_index)) {
+      return scada::NodeId{};
+    }
+  }
+
+  const auto& identifier = scada_string.substr(p + 1);
+
+  if (identifier.find('!') != std::string_view::npos) {
+    return scada::NodeId{std::string{identifier},
+                         static_cast<scada::NamespaceIndex>(namespace_index)};
+  }
+
+  scada::NumericId numeric_id = 0;
+  if (!base::StringToUint(ToStringPiece(identifier), &numeric_id)) {
+    return scada::NodeId{std::string{identifier},
+                         static_cast<scada::NamespaceIndex>(namespace_index)};
+  }
+
+  return scada::NodeId{numeric_id,
+                       static_cast<scada::NamespaceIndex>(namespace_index)};
 }
