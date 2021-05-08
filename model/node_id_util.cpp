@@ -4,7 +4,34 @@
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
+
+namespace {
+
+static std::pair<std::string_view, scada::NodeId> kPredefinedScadaStrings[] = {
+    {"Server!CPU", data_items::id::Statistics_TotalCPUUsage},
+    {"Server!Mem", data_items::id::Statistics_TotalMemoryUsage},
+    {"Server!PCPU", data_items::id::Statistics_ServerCPUUsage},
+    {"Server!PMem", data_items::id::Statistics_ServerMemoryUsage},
+};
+
+scada::NodeId NodeIdFromPredefinedScadaString(std::string_view scada_string) {
+  auto i = std::find_if(
+      std::cbegin(kPredefinedScadaStrings), std::cend(kPredefinedScadaStrings),
+      [scada_string](const auto& p) { return p.first == scada_string; });
+  return i != std::cend(kPredefinedScadaStrings) ? i->second : scada::NodeId{};
+}
+
+std::string_view NodeIdToPredefinedScadaString(const scada::NodeId& node_id) {
+  auto i = std::find_if(
+      std::cbegin(kPredefinedScadaStrings), std::cend(kPredefinedScadaStrings),
+      [node_id](const auto& p) { return p.second == node_id; });
+  return i != std::cend(kPredefinedScadaStrings) ? i->first
+                                                 : std::string_view{};
+}
+
+}  // namespace
 
 bool IsNestedNodeId(const scada::NodeId& node_id,
                     scada::NodeId& parent_id,
@@ -60,6 +87,10 @@ bool GetNestedSubName(const scada::NodeId& node_id,
 }
 
 std::string NodeIdToScadaString(const scada::NodeId& node_id) {
+  if (auto predefined_scada_string = NodeIdToPredefinedScadaString(node_id);
+      !predefined_scada_string.empty())
+    return std::string{predefined_scada_string};
+
   std::string namespace_name =
       std::string{GetNamespaceName(node_id.namespace_index())};
   if (namespace_name.empty()) {
@@ -87,6 +118,10 @@ std::string NodeIdToScadaString(const scada::NodeId& node_id) {
 }
 
 scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
+  if (auto node_id = NodeIdFromPredefinedScadaString(scada_string);
+      !node_id.is_null())
+    return node_id;
+
   const auto p = scada_string.find('.');
   if (p == std::string_view::npos)
     return scada::NodeId{};

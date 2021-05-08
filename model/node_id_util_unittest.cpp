@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 
 #include "core/node_id.h"
+#include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 
@@ -9,12 +10,17 @@ TEST(NodeIdUtil, NodeIdFromScadaString) {
             NodeIdFromScadaString("TS.53"));
   EXPECT_EQ(scada::NodeId(15, NamespaceIndexes::IEC60870_DEVICE),
             NodeIdFromScadaString("IEC_DEV.15"));
-  EXPECT_EQ(scada::NodeId(12, NamespaceIndexes::IEC60870_DEVICE),
-            NodeIdFromScadaString("T11.12"));
+  EXPECT_EQ(
+      scada::NodeId(12, NamespaceIndexes::IEC60870_DEVICE),
+      NodeIdFromScadaString("T11.12"));  // NamespaceIndexes::IEC60870_DEVICE
   EXPECT_EQ(scada::NodeId("32!Online", NamespaceIndexes::MODBUS_PORTS),
             NodeIdFromScadaString("MODBUS_PORTS.32!Online"));
   EXPECT_EQ(scada::NodeId("32!BIT:4", NamespaceIndexes::MODBUS_PORTS),
             NodeIdFromScadaString("MODBUS_PORTS.32!BIT:4"));
+  EXPECT_EQ(data_items::id::Statistics_ServerCPUUsage,
+            NodeIdFromScadaString("Server!PCPU"));
+  EXPECT_EQ(data_items::id::Statistics_TotalMemoryUsage,
+            NodeIdFromScadaString("Server!Mem"));
 }
 
 TEST(NodeIdUtil, NodeIdToScadaString) {
@@ -29,6 +35,10 @@ TEST(NodeIdUtil, NodeIdToScadaString) {
   EXPECT_EQ(NodeIdToScadaString(
                 scada::NodeId("32!BIT:4", NamespaceIndexes::MODBUS_PORTS)),
             "MODBUS_PORTS.32!BIT:4");
+  EXPECT_EQ(NodeIdToScadaString(data_items::id::Statistics_ServerCPUUsage),
+            "Server!PCPU");
+  EXPECT_EQ(NodeIdToScadaString(data_items::id::Statistics_TotalMemoryUsage),
+            "Server!Mem");
 }
 
 TEST(NodeIdUtil, Comparison) {
