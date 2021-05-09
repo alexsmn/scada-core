@@ -21,6 +21,8 @@ TEST(NodeIdUtil, NodeIdFromScadaString) {
             NodeIdFromScadaString("Server!PCPU"));
   EXPECT_EQ(data_items::id::Statistics_TotalMemoryUsage,
             NodeIdFromScadaString("Server!Mem"));
+  EXPECT_EQ(scada::NodeId{}, NodeIdFromScadaString("Alias"));
+  EXPECT_EQ(scada::NodeId{}, NodeIdFromScadaString("alias_with_underscores"));
 }
 
 TEST(NodeIdUtil, NodeIdToScadaString) {
