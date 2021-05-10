@@ -514,3 +514,9 @@ message Message {
   repeated Request requests = 2;
   repeated Response responses = 3;
 }
+
+service Scada {
+  rpc Call(Request) returns (Response) {}
+
+  rpc Subscribe(Notification) returns (stream Notification) {}
+}
