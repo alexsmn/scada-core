@@ -130,11 +130,29 @@ bool Parse(const std::wstring_view& str, uint32_t& value) {
 }
 
 template <>
+bool Parse(const std::string_view& str, int8_t& value) {
+  int tmp;
+  if (!Parse(str, tmp))
+    return false;
+  value = static_cast<int8_t>(tmp);
+  return value == tmp;
+}
+
+template <>
+bool Parse(const std::wstring_view& str, int8_t& value) {
+  int tmp;
+  if (!Parse(str, tmp))
+    return false;
+  value = static_cast<int8_t>(tmp);
+  return value == tmp;
+}
+
+template <>
 bool Parse(const std::string_view& str, uint8_t& value) {
   unsigned tmp;
   if (!Parse(str, tmp))
     return false;
-  value = static_cast<unsigned char>(tmp);
+  value = static_cast<uint8_t>(tmp);
   return value == tmp;
 }
 

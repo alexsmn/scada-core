@@ -36,6 +36,14 @@ inline auto Map(const Range& range, const Func& func) {
   return result;
 }
 
+template <class Range, class Pred>
+inline auto Filter(const Range& range, const Pred& pred) {
+  std::vector<typename Range::value_type> result;
+  std::copy_if(std::cbegin(range), std::cend(range), std::back_inserter(result),
+               pred);
+  return result;
+}
+
 template <class E, class T>
 inline bool Erase(std::vector<E>& vector, const T& item) {
   auto i = std::find(std::begin(vector), std::end(vector), item);
