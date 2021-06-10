@@ -9,11 +9,6 @@ using namespace testing;
 
 namespace scada {
 
-bool operator==(const NodeAttributes& a, const NodeAttributes& b) {
-  return std::tie(a.browse_name, a.data_type, a.value) ==
-         std::tie(b.browse_name, b.data_type, b.value);
-}
-
 /*bool operator==(const NodeState& a, const NodeState& b) {
   return a.node_id == b.node_id && a.node_class == b.node_class &&
          a.type_definition_id == b.type_definition_id &&

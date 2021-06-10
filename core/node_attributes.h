@@ -53,6 +53,11 @@ struct NodeAttributes {
   std::optional<Variant> value;
 };
 
+inline bool operator==(const NodeAttributes& a, const NodeAttributes& b) {
+  return a.browse_name == b.browse_name && a.display_name == b.display_name &&
+         a.data_type == b.data_type && a.value == b.value;
+}
+
 inline std::ostream& operator<<(std::ostream& stream,
                                 const NodeAttributes& attributes) {
   using ::operator<<;
