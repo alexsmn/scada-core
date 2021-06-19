@@ -2,7 +2,7 @@
 
 #include "core/configuration_types.h"
 #include "core/data_value.h"
-#include "core/debug_util.h"
+#include "base/debug_util.h"
 #include "core/standard_node_ids.h"
 
 #include <string>

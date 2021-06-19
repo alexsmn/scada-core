@@ -1,9 +1,9 @@
 #pragma once
 
+#include "base/struct_writer.h"
 #include "core/node_attributes.h"
 #include "core/node_class.h"
 #include "core/status.h"
-#include "core/struct_writer.h"
 
 #include <functional>
 #include <vector>
@@ -117,14 +117,12 @@ inline bool operator==(const AddNodesItem& a, const AddNodesItem& b) {
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const AddNodesItem& item) {
-  StructWriter writer{stream};
-  writer.BeginStruct();
-  writer.AddField("requested_id", item.requested_id);
-  writer.AddField("parent_id", item.parent_id);
-  writer.AddField("node_class", item.node_class);
-  writer.AddField("type_definition_id", item.type_definition_id);
-  writer.AddField("attributes", item.attributes);
-  writer.EndStruct();
+  StructWriter{stream}
+      .AddField("requested_id", item.requested_id)
+      .AddField("parent_id", item.parent_id)
+      .AddField("node_class", item.node_class)
+      .AddField("type_definition_id", item.type_definition_id)
+      .AddField("attributes", item.attributes);
   return stream;
 }
 

@@ -1,26 +1,29 @@
 #pragma once
 
-#include "core/debug_util.h"
+#include "base/debug_util.h"
 
 #include <ostream>
 #include <string_view>
 
 class StructWriter {
  public:
-  explicit StructWriter(std::ostream& stream) : stream_{stream} {}
+  explicit StructWriter(std::ostream& stream) : stream_{stream} {
+    stream_ << "{";
+  }
 
-  void BeginStruct() { stream_ << "{"; }
-  void EndStruct() { stream_ << "}"; }
+  ~StructWriter() { stream_ << "}"; }
 
   template <class T>
-  void AddField(std::string_view name, const T& value) {
+  StructWriter& AddField(std::string_view name, const T& value) {
     if (count_ != 0)
       stream_ << ", ";
     stream_ << name << ": ";
     AddValue(value);
     ++count_;
+    return *this;
   }
 
+ private:
   template <class T>
   void AddValue(const T& value) {
     stream_ << value;
@@ -31,7 +34,6 @@ class StructWriter {
     stream_ << "\"" << value << "\"";
   }
 
- private:
   std::ostream& stream_;
-  int count_ = 0;
+  std::size_t count_ = 0;
 };

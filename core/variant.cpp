@@ -3,7 +3,7 @@
 #include "base/format.h"
 #include "base/format_time.h"
 #include "base/strings/utf_string_conversions.h"
-#include "core/debug_util.h"
+#include "base/debug_util.h"
 #include "core/standard_node_ids.h"
 
 #include <cassert>

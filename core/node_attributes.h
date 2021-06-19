@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/attribute_ids.h"
-#include "core/debug_util.h"
+#include "base/debug_util.h"
 #include "core/localized_text.h"
 #include "core/node_id.h"
 #include "core/qualified_name.h"

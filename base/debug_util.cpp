@@ -1,4 +1,4 @@
-#include "core/debug_util.h"
+#include "base/debug_util.h"
 
 std::string BitMaskToString(unsigned bit_mask,
                             base::span<const std::string_view> bit_strings) {

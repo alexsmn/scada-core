@@ -8,7 +8,7 @@
 #include "remote/protocol_utils.h"
 #include "remote/subscription.h"
 
-#include "core/debug_util-inl.h"
+#include "base/debug_util-inl.h"
 
 SubscriptionStub::SubscriptionStub(
     std::shared_ptr<Executor> executor,

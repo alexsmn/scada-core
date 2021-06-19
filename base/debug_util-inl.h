@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/debug_util.h"
+#include "base/debug_util.h"
 
 #include "base/strings/utf_string_conversions.h"
 
