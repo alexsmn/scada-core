@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/debug_util.h"
+#include "base/strings/sys_string_conversions.h"
 
 #include <ostream>
 #include <string_view>
@@ -30,8 +31,18 @@ class StructWriter {
   }
 
   template <>
+  void AddValue(const char* const& value) {
+    stream_ << "\"" << value << "\"";
+  }
+
+  template <>
   void AddValue(const std::string& value) {
     stream_ << "\"" << value << "\"";
+  }
+
+  template <>
+  void AddValue(const std::wstring& value) {
+    stream_ << "\"" << base::SysWideToNativeMB(value) << "\"";
   }
 
   std::ostream& stream_;
