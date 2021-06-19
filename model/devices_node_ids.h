@@ -84,6 +84,7 @@ const scada::NodeId ModbusLinkProtocol{130, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusLinkProtocol_EnumStrings{303, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusLinkType_Protocol{167, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusLinkType_RequestDelay{299, NamespaceIndexes::SCADA};
+const scada::NodeId ModbusLinkType_Mode{330, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusLinkType{108, NamespaceIndexes::SCADA};
 const scada::NodeId Devices{30, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType_Disabled{141, NamespaceIndexes::SCADA};
@@ -101,6 +102,8 @@ const scada::NodeId TransmissionItemType_SourceAddress{225, NamespaceIndexes::SC
 const scada::NodeId TransmissionItemType{34, NamespaceIndexes::SCADA};
 const scada::NodeId HasTransmissionSource{221, NamespaceIndexes::SCADA};
 const scada::NodeId HasTransmissionTarget{224, NamespaceIndexes::SCADA}; // Ref
+const scada::NodeId ModbusModeDataType{332, NamespaceIndexes::SCADA};
+const scada::NodeId ModbusModeDataType_EnumStrings{333, NamespaceIndexes::SCADA};
 
 }
 
