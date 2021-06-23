@@ -28,12 +28,19 @@ inline std::set<T> Union(const std::vector<std::set<T>>& subsets) {
   return result;
 }
 
-template <class Range, class Func>
-inline auto Map(const Range& range, const Func& func) {
-  std::vector<decltype(func({}))> result;
+template <class OutputCollection, class Range, class Func>
+inline OutputCollection MapTo(const Range& range, const Func& func) {
+  OutputCollection result;
+  result.reserve(std::size(range));
   std::transform(std::cbegin(range), std::cend(range),
                  std::back_inserter(result), func);
   return result;
+}
+
+template <class Range, class Func>
+inline auto Map(const Range& range, const Func& func) {
+  using OutputCollection = std::vector<decltype(func({}))>;
+  return MapTo<OutputCollection>(range, func);
 }
 
 template <class Range, class Pred>
