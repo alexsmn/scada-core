@@ -15,6 +15,9 @@ template <class T>
 std::ostream& operator<<(std::ostream& stream, const std::vector<T>& v);
 
 template <class T>
+std::ostream& operator<<(std::ostream& stream, base::span<T> span);
+
+template <class T>
 std::ostream& operator<<(std::ostream& stream, const std::optional<T>& v);
 
 template <class T>

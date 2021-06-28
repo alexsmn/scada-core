@@ -23,6 +23,18 @@ inline std::ostream& operator<<(std::ostream& stream, const std::vector<T>& v) {
 }
 
 template <class T>
+inline std::ostream& operator<<(std::ostream& stream, base::span<T> span) {
+  stream << "[";
+  for (size_t i = 0; i < span.size(); ++i) {
+    stream << span[i];
+    if (i != span.size() - 1)
+      stream << ", ";
+  }
+  stream << "]";
+  return stream;
+}
+
+template <class T>
 inline std::ostream& operator<<(std::ostream& stream,
                                 const std::optional<T>& v) {
   if (v.has_value())
