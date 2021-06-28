@@ -6,6 +6,15 @@
 #include <ostream>
 #include <string_view>
 
+// Usage:
+// std::ostream& operator<<(std::ostream& stream, const MyType& x) {
+//   constexpr std::string_view kVerbStrings[] = {"Bit0", "Bit1", "Bit02"};
+//   StructWriter{stream}
+//       .AddField("a", x.a)
+//       .AddBitMaskField("b", x.b, kEnumStrings)
+//       .AddField("c", x.c);
+//   return stream;
+// }
 class StructWriter {
  public:
   explicit StructWriter(std::ostream& stream) : stream_{stream} {
@@ -20,6 +29,17 @@ class StructWriter {
       stream_ << ", ";
     stream_ << name << ": ";
     AddValue(value);
+    ++count_;
+    return *this;
+  }
+
+  StructWriter& AddBitMaskField(
+      std::string_view name,
+      unsigned bit_mask,
+      base::span<const std::string_view> bit_strings) {
+    if (count_ != 0)
+      stream_ << ", ";
+    stream_ << name << ": " << BitMaskToString(bit_mask, bit_strings);
     ++count_;
     return *this;
   }

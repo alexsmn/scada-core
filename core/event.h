@@ -1,8 +1,9 @@
 #pragma once
 
+#include "base/debug_util.h"
+#include "base/struct_writer.h"
 #include "core/configuration_types.h"
 #include "core/data_value.h"
-#include "base/debug_util.h"
 #include "core/standard_node_ids.h"
 
 #include <string>
@@ -90,24 +91,23 @@ inline bool operator==(const SemanticChangeEvent& a,
   return a.node_id == b.node_id;
 }
 
-inline std::string ModelChangeEventVerbToString(unsigned verb) {
-  constexpr std::string_view kBitStrings[] = {
+inline std::ostream& operator<<(std::ostream& stream,
+                                const ModelChangeEvent& e) {
+  constexpr std::string_view kVerbBitStrings[] = {
       "NodeAdded",        "NodeDeleted",     "ReferenceAdded",
       "ReferenceDeleted", "DataTypeChanged",
   };
-  return BitMaskToString(verb, kBitStrings);
-}
-
-inline std::ostream& operator<<(std::ostream& stream,
-                                const ModelChangeEvent& e) {
-  return stream << "ModelChangeEvent{" << e.node_id << ", "
-                << e.type_definition_id << ", "
-                << ModelChangeEventVerbToString(e.verb) << "}";
+  StructWriter{stream}
+      .AddField("node_id", e.node_id)
+      .AddField("type_definition_id", e.type_definition_id)
+      .AddBitMaskField("verb", e.verb, kVerbBitStrings);
+  return stream;
 }
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const SemanticChangeEvent& e) {
-  return stream << "SemanticChangeEvent{" << e.node_id << "}";
+  StructWriter{stream}.AddField("node_id", e.node_id);
+  return stream;
 }
 
 }  // namespace scada
