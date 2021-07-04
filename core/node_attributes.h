@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/attribute_ids.h"
 #include "base/debug_util.h"
+#include "core/attribute_ids.h"
 #include "core/localized_text.h"
 #include "core/node_id.h"
 #include "core/qualified_name.h"
@@ -56,6 +56,10 @@ struct NodeAttributes {
 inline bool operator==(const NodeAttributes& a, const NodeAttributes& b) {
   return a.browse_name == b.browse_name && a.display_name == b.display_name &&
          a.data_type == b.data_type && a.value == b.value;
+}
+
+inline bool operator!=(const NodeAttributes& a, const NodeAttributes& b) {
+  return !operator==(a, b);
 }
 
 inline std::ostream& operator<<(std::ostream& stream,

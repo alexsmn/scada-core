@@ -155,6 +155,14 @@ class Status {
 
   constexpr unsigned full_code() const noexcept { return full_code_; }
 
+  constexpr bool operator==(const Status& other) const noexcept {
+    return full_code_ == other.full_code_;
+  }
+
+  constexpr bool operator!=(const Status& other) const noexcept {
+    return !operator==(other);
+  }
+
  private:
   unsigned full_code_;
 };

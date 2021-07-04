@@ -39,7 +39,7 @@ inline OutputCollection MapTo(const Range& range, const Func& func) {
 
 template <class Range, class Func>
 inline auto Map(const Range& range, const Func& func) {
-  using OutputCollection = std::vector<decltype(func({}))>;
+  using OutputCollection = std::vector<decltype(func(*std::begin(range)))>;
   return MapTo<OutputCollection>(range, func);
 }
 

@@ -60,6 +60,11 @@ struct ModelChangeEvent {
     DataTypeChanged = 1 << 4,
   };
 
+  ModelChangeEvent& set_verb(uint8_t verb) {
+    this->verb = verb;
+    return *this;
+  }
+
   scada::NodeId node_id;
   scada::NodeId type_definition_id;
   uint8_t verb = 0;
