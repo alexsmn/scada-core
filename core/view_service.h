@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/configuration_types.h"
 #include "base/debug_util.h"
+#include "core/configuration_types.h"
 #include "core/expanded_node_id.h"
 #include "core/node_class.h"
 #include "core/qualified_name.h"
@@ -30,12 +30,6 @@ struct ReferenceDescription {
   bool forward;
   NodeId node_id;
 };
-
-inline bool operator==(const ReferenceDescription& a,
-                       const ReferenceDescription& b) {
-  return std::tie(a.reference_type_id, a.forward, a.node_id) ==
-         std::tie(b.reference_type_id, b.forward, b.node_id);
-}
 
 using ReferenceDescriptions = std::vector<ReferenceDescription>;
 
@@ -108,11 +102,24 @@ inline std::ostream& operator<<(std::ostream& stream, BrowseDirection v) {
   return stream << name;
 }
 
+inline bool operator==(const BrowseDescription& a, const BrowseDescription& b) {
+  return std::tie(a.node_id, a.direction, a.reference_type_id,
+                  a.include_subtypes) == std::tie(b.node_id, b.direction,
+                                                  b.reference_type_id,
+                                                  b.include_subtypes);
+}
+
 inline std::ostream& operator<<(std::ostream& stream,
                                 const BrowseDescription& v) {
   return stream << "{node_id: " << v.node_id << ", direction: " << v.direction
                 << ", reference_type_id: " << v.reference_type_id
                 << ", include_subtypes: " << v.include_subtypes << "}";
+}
+
+inline bool operator==(const ReferenceDescription& a,
+                       const ReferenceDescription& b) {
+  return std::tie(a.reference_type_id, a.forward, a.node_id) ==
+         std::tie(b.reference_type_id, b.forward, b.node_id);
 }
 
 inline std::ostream& operator<<(std::ostream& stream,

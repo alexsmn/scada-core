@@ -5,7 +5,7 @@
 #include <string_view>
 
 inline base::TimeDelta TimeDeltaFromSecondsF(double dt) {
-  return base::TimeDelta::FromMicroseconds(static_cast<int64>(
+  return base::TimeDelta::FromMicroseconds(static_cast<int64_t>(
       dt * static_cast<double>(base::Time::kMicrosecondsPerSecond)));
 }
 

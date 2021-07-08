@@ -16,10 +16,10 @@ base::Time FloorToMilliseconds(base::Time time) {
 }  // namespace
 
 std::string SerializeToString(base::TimeDelta delta) {
-  int64 s = delta.InSeconds();
-  int64 m = s / 60;
+  int64_t s = delta.InSeconds();
+  int64_t m = s / 60;
   s = s % 60;
-  int64 h = m / 60;
+  int64_t h = m / 60;
   m = m % 60;
   return base::StringPrintf("%d:%02d:%02d", static_cast<int>(h),
                             static_cast<int>(m), static_cast<int>(s));

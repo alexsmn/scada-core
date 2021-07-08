@@ -46,7 +46,8 @@ class NodeId {
  private:
   using SharedStringId = std::shared_ptr<const String>;
   using SharedByteString = std::shared_ptr<const ByteString>;
-  std::variant<NumericId, SharedStringId, SharedByteString> identifier_ = 0;
+  std::variant<NumericId, SharedStringId, SharedByteString> identifier_ =
+      static_cast<NumericId>(0);
 
   NamespaceIndex namespace_index_ = 0;
 };

@@ -5,6 +5,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 
+#include <cassert>
+
 CsvReader::CsvReader(std::istream& stream, std::wstring_view signature)
     : stream_{stream}, signature_{signature} {}
 

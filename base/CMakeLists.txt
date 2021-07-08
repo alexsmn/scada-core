@@ -17,6 +17,7 @@ if(NOT WIN32)
 endif()
 
 target_include_directories(scada_base PUBLIC "..")
+
 target_link_libraries(scada_base PUBLIC
   base
   Boost::boost
@@ -25,6 +26,7 @@ target_link_libraries(scada_base PUBLIC
   Boost::system
   promise.hpp
 )
+
 set_property(TARGET scada_base PROPERTY FOLDER ${scada_folder})
 
 if(WIN32)
@@ -38,4 +40,4 @@ if(WIN32)
       /wd4189 # local variable is initialized but not referenced
     >
   )
-endif()
+endif(WIN32)
