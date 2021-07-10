@@ -15,6 +15,8 @@
 #include "remote/subscription_stub.h"
 #include "remote/view_service_stub.h"
 
+#include <boost/range/adaptor/transformed.hpp>
+
 SessionStub::SessionStub(SessionContext&& context)
     : SessionContext(std::move(context)) {
   LOG_BIND_TAG(logger_, "UserId",
@@ -77,9 +79,15 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
 
   if (request.has_call()) {
     auto& call = request.call();
+
     if (call.has_acknowledge()) {
       auto& acknowledge = call.acknowledge();
-      event_service_.Acknowledge(MakeVector<int>(acknowledge.acknowledge_id()),
+      auto int_acknowledge_ids = acknowledge.acknowledge_id() |
+                                 boost::adaptors::transformed([](auto v) {
+                                   return static_cast<int>(v);
+                                 }) |
+                                 to_vector;
+      event_service_.Acknowledge(int_acknowledge_ids,
                                  service_context_->user_id);
       protocol::Response response;
       response.set_request_id(request.request_id());
@@ -87,6 +95,7 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
               *response.mutable_status());
       SendResponse(response);
     }
+
     if (call.has_device_command()) {
       auto& device_command = call.device_command();
       OnCall(request.request_id(),

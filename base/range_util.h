@@ -5,11 +5,6 @@
 #include <set>
 #include <vector>
 
-template <class T, class Range>
-inline std::vector<T> MakeVector(const Range& range) {
-  return std::vector<T>(std::begin(range), std::end(range));
-}
-
 template <class C>
 inline C Join(const std::vector<C>& sub_ranges) {
   C result;
@@ -25,29 +20,6 @@ inline std::set<T> Union(const std::vector<std::set<T>>& subsets) {
     for (const auto& e : subset)
       result.insert(e);
   }
-  return result;
-}
-
-template <class OutputCollection, class Range, class Func>
-inline OutputCollection MapTo(const Range& range, const Func& func) {
-  OutputCollection result;
-  result.reserve(std::size(range));
-  std::transform(std::cbegin(range), std::cend(range),
-                 std::back_inserter(result), func);
-  return result;
-}
-
-template <class Range, class Func>
-inline auto Map(const Range& range, const Func& func) {
-  using OutputCollection = std::vector<decltype(func(*std::begin(range)))>;
-  return MapTo<OutputCollection>(range, func);
-}
-
-template <class Range, class Pred>
-inline auto Filter(const Range& range, const Pred& pred) {
-  std::vector<typename Range::value_type> result;
-  std::copy_if(std::cbegin(range), std::cend(range), std::back_inserter(result),
-               pred);
   return result;
 }
 
@@ -69,3 +41,21 @@ template <class K, class T>
 inline bool Erase(std::set<K>& set, const T& item) {
   return set.erase(item) != 0;
 }
+
+namespace detail {
+struct to_set_forwarder {};
+struct to_vector_forwarder {};
+};  // namespace detail
+
+template <class R>
+inline auto operator|(const R& r, ::detail::to_set_forwarder) {
+  return std::set<R::value_type>(std::begin(r), std::end(r));
+}
+
+template <class R>
+inline auto operator|(const R& r, ::detail::to_vector_forwarder) {
+  return std::vector<R::value_type>(std::begin(r), std::end(r));
+}
+
+inline static const auto to_set = ::detail::to_set_forwarder();
+inline static const auto to_vector = ::detail::to_vector_forwarder();
