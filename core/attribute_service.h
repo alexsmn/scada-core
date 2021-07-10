@@ -4,6 +4,7 @@
 #include "core/data_value.h"
 #include "core/node_class.h"
 #include "core/node_id.h"
+#include "core/service.h"
 #include "core/write_flags.h"
 
 #include <cassert>
@@ -37,12 +38,15 @@ class AttributeService {
  public:
   virtual ~AttributeService() {}
 
-  virtual void Read(const std::vector<ReadValueId>& inputs,
-                    const ReadCallback& callback) = 0;
+  virtual void Read(
+      const std::shared_ptr<const ServiceContext>& context,
+      const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
+      const ReadCallback& callback) = 0;
 
-  virtual void Write(const std::vector<WriteValue>& inputs,
-                     const NodeId& user_id,
-                     const WriteCallback& callback) = 0;
+  virtual void Write(
+      const std::shared_ptr<const ServiceContext>& context,
+      const std::shared_ptr<const std::vector<WriteValue>>& inputs,
+      const WriteCallback& callback) = 0;
 };
 
 template <class T>
@@ -63,10 +67,12 @@ inline DataValue MakeReadError(StatusCode status_code) {
 
 template <class Callback>
 inline void Read(AttributeService& attribute_service,
-                 ReadValueId input,
+                 const std::shared_ptr<const scada::ServiceContext>& context,
+                 ReadValueId&& input,
                  const Callback& callback) {
+  auto inputs = std::make_shared<std::vector<ReadValueId>>(1, std::move(input));
   attribute_service.Read(
-      std::vector<ReadValueId>(1, std::move(input)),
+      context, inputs,
       [callback](Status&& status, std::vector<DataValue>&& results) {
         assert(!status || results.size() == 1);
         callback(status ? std::move(results[0]) : MakeReadError(status.code()));
@@ -75,11 +81,12 @@ inline void Read(AttributeService& attribute_service,
 
 template <class Callback>
 inline void Write(AttributeService& attribute_service,
-                  WriteValue input,
-                  const NodeId& user_id,
+                  const std::shared_ptr<const scada::ServiceContext>& context,
+                  WriteValue&& input,
                   const Callback& callback) {
+  auto inputs = std::make_shared<std::vector<WriteValue>>(1, std::move(input));
   attribute_service.Write(
-      std::vector<WriteValue>(1, std::move(input)), user_id,
+      context, inputs,
       [callback](Status&& status, std::vector<StatusCode>&& results) {
         assert(!status || results.size() == 1);
         callback(status ? Status{results[0]} : std::move(status));

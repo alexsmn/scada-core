@@ -2,12 +2,12 @@
 
 #include "base/boost_log.h"
 #include "core/attribute_service.h"
-#include "core/configuration_types.h"
+#include "core/event.h"
 #include "remote/message_sender.h"
 #include "remote/subscription.h"
 
-#include <map>
 #include <memory>
+#include <unordered_map>
 
 namespace protocol {
 class Message;
@@ -44,7 +44,7 @@ struct SessionContext {
   scada::EventService& event_service_;
   scada::ViewService& view_service_;
   scada::HistoryService& history_service_;
-  const scada::NodeId user_id_;
+  const std::shared_ptr<const scada::ServiceContext> service_context_;
 };
 
 class SessionStub : public MessageSender,
@@ -58,8 +58,9 @@ class SessionStub : public MessageSender,
   Connection* connection() { return connection_; }
   void SetConnection(Connection* connection);
 
-  const std::string& name() const { return name_; }
-  const scada::NodeId& user_id() const { return user_id_; }
+  const std::shared_ptr<const scada::ServiceContext>& service_context() const {
+    return service_context_;
+  }
 
   void ProcessMessage(const protocol::Message& message);
 
@@ -82,10 +83,8 @@ class SessionStub : public MessageSender,
                              int subscription_id,
                              int monitored_item_id);
 
-  void OnRead(unsigned request_id,
-              const std::vector<scada::ReadValueId>& read_value_ids);
-  void OnWrite(unsigned request_id,
-               const std::vector<scada::WriteValue>& values);
+  void OnRead(const protocol::Request& request);
+  void OnWrite(const protocol::Request& request);
   void OnCall(unsigned request_id,
               const scada::NodeId& node_id,
               const scada::NodeId& method_id,
@@ -100,8 +99,6 @@ class SessionStub : public MessageSender,
 
   BoostLogger logger_{LOG_NAME("SessionStub")};
 
-  std::string name_;
-
   Connection* connection_ = nullptr;
 
   std::shared_ptr<ViewServiceStub> view_service_stub_;
@@ -109,7 +106,7 @@ class SessionStub : public MessageSender,
   std::shared_ptr<HistoryStub> history_stub_;
 
   int next_subscription_id_ = 1;
-  std::map<int /*subscription_id*/, std::shared_ptr<SubscriptionStub>>
+  std::unordered_map<int /*subscription_id*/, std::shared_ptr<SubscriptionStub>>
       subscriptions_;
 
   std::unique_ptr<protocol::Message> send_message_;

@@ -109,11 +109,11 @@ void SessionProxy::OnTransportClosed(net::Error error) {
   LOG_WARNING(*logger_) << "Transport closed"
                         << LOG_TAG("Status", ErrorToString(error));
 
-  scada::Status status_code(
-      error == net::OK ? scada::StatusCode::Bad_SessionForcedLogoff
-                       : error == net::ERR_SSL_BAD_PEER_PUBLIC_KEY
-                             ? scada::StatusCode::Bad_UserIsAlreadyLoggedOn
-                             : scada::StatusCode::Bad_Disconnected);
+  scada::Status status_code(error == net::OK
+                                ? scada::StatusCode::Bad_SessionForcedLogoff
+                            : error == net::ERR_SSL_BAD_PEER_PUBLIC_KEY
+                                ? scada::StatusCode::Bad_UserIsAlreadyLoggedOn
+                                : scada::StatusCode::Bad_Disconnected);
   OnSessionError(status_code);
 }
 
@@ -356,8 +356,10 @@ void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
   OnSessionCreated();
 }
 
-void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
-                        const scada::ReadCallback& callback) {
+void SessionProxy::Read(
+    const std::shared_ptr<const scada::ServiceContext>& context,
+    const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
+    const scada::ReadCallback& callback) {
   if (!session_created_) {
     callback(scada::StatusCode::Bad_Disconnected, {});
     return;
@@ -365,7 +367,7 @@ void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
 
   protocol::Request request;
   auto& read = *request.mutable_read();
-  for (auto& value_id : value_ids)
+  for (auto& value_id : *inputs)
     Convert(value_id, *read.add_value_id());
 
   Request(request, [callback](const protocol::Response& response) {
@@ -376,16 +378,17 @@ void SessionProxy::Read(const std::vector<scada::ReadValueId>& value_ids,
   });
 }
 
-void SessionProxy::Write(const std::vector<scada::WriteValue>& values,
-                         const scada::NodeId& user_id,
-                         const scada::WriteCallback& callback) {
+void SessionProxy::Write(
+    const std::shared_ptr<const scada::ServiceContext>& context,
+    const std::shared_ptr<const std::vector<scada::WriteValue>>& inputs,
+    const scada::WriteCallback& callback) {
   if (!session_created_) {
     callback(scada::StatusCode::Bad_Disconnected, {});
     return;
   }
 
   protocol::Request request;
-  for (auto& value : values)
+  for (auto& value : *inputs)
     Convert(value, *request.add_write());
 
   Request(request, [callback](const protocol::Response& response) {

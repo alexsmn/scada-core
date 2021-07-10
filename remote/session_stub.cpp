@@ -17,7 +17,8 @@
 
 SessionStub::SessionStub(SessionContext&& context)
     : SessionContext(std::move(context)) {
-  LOG_BIND_TAG(logger_, "UserId", NodeIdToScadaString(user_id_));
+  LOG_BIND_TAG(logger_, "UserId",
+               NodeIdToScadaString(service_context_->user_id));
   LOG_INFO(logger_) << "Created";
 }
 
@@ -35,7 +36,7 @@ void SessionStub::Init() {
       ViewServiceStubContext{executor_, sender, view_service_});
 
   node_management_stub_ = std::make_shared<NodeManagementStub>(
-      executor_, sender, node_management_service_, user_id_);
+      executor_, sender, node_management_service_, service_context_);
 
   history_stub_ =
       std::make_shared<HistoryStub>(history_service_, sender, executor_);
@@ -70,24 +71,16 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
     SendResponse(response);
   }
 
-  if (request.has_read()) {
-    auto& read = request.read();
-    OnRead(request.request_id(),
-           ConvertTo<std::vector<scada::ReadValueId>>(read.value_id()));
-  }
+  OnRead(request);
 
-  if (request.write_size() != 0) {
-    auto& write = request.write();
-    OnWrite(request.request_id(),
-            ConvertTo<std::vector<scada::WriteValue>>(write));
-  }
+  OnWrite(request);
 
   if (request.has_call()) {
     auto& call = request.call();
     if (call.has_acknowledge()) {
       auto& acknowledge = call.acknowledge();
       event_service_.Acknowledge(MakeVector<int>(acknowledge.acknowledge_id()),
-                                 user_id_);
+                                 service_context_->user_id);
       protocol::Response response;
       response.set_request_id(request.request_id());
       Convert(scada::Status{scada::StatusCode::Good},
@@ -227,7 +220,7 @@ void SessionStub::OnCall(unsigned request_id,
                          const std::vector<scada::Variant>& arguments) {
   std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
   method_service_.Call(
-      node_id, method_id, arguments, user_id_,
+      node_id, method_id, arguments, service_context_->user_id,
       BindExecutor(executor_,
                    [weak_ptr, request_id](const scada::Status& status) {
                      auto ptr = weak_ptr.lock();
@@ -242,13 +235,17 @@ void SessionStub::OnCall(unsigned request_id,
                    }));
 }
 
-void SessionStub::OnRead(
-    unsigned request_id,
-    const std::vector<scada::ReadValueId>& read_value_ids) {
-  std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
+void SessionStub::OnRead(const protocol::Request& request) {
+  if (!request.has_read())
+    return;
+
+  const auto request_id = request.request_id();
+  const auto inputs = std::make_shared<const std::vector<scada::ReadValueId>>(
+      ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id()));
+
   attribute_service_.Read(
-      read_value_ids,
-      BindExecutor(executor_, [weak_ptr, request_id](
+      service_context_, inputs,
+      BindExecutor(executor_, [weak_ptr = weak_from_this(), request_id](
                                   scada::Status status,
                                   std::vector<scada::DataValue> results) {
         auto ptr = weak_ptr.lock();
@@ -265,12 +262,17 @@ void SessionStub::OnRead(
       }));
 }
 
-void SessionStub::OnWrite(unsigned request_id,
-                          const std::vector<scada::WriteValue>& values) {
-  std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
+void SessionStub::OnWrite(const protocol::Request& request) {
+  if (request.write_size() == 0)
+    return;
+
+  const auto request_id = request.request_id();
+  const auto inputs = std::make_shared<const std::vector<scada::WriteValue>>(
+      ConvertTo<std::vector<scada::WriteValue>>(request.write()));
+
   attribute_service_.Write(
-      values, user_id_,
-      BindExecutor(executor_, [weak_ptr, request_id](
+      service_context_, inputs,
+      BindExecutor(executor_, [weak_ptr = weak_from_this(), request_id](
                                   scada::Status status,
                                   std::vector<scada::StatusCode> status_codes) {
         auto ptr = weak_ptr.lock();

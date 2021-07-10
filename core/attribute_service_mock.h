@@ -10,14 +10,17 @@ class MockAttributeService : public AttributeService {
  public:
   MOCK_METHOD(void,
               Read,
-              (const std::vector<ReadValueId>& value_ids,
-               const ReadCallback& callback));
+              (const std::shared_ptr<const ServiceContext>& context,
+               const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
+               const ReadCallback& callback),
+              (override));
 
   MOCK_METHOD(void,
               Write,
-              (const std::vector<WriteValue>& values,
-               const NodeId& user_id,
-               const WriteCallback& callback));
+              (const std::shared_ptr<const ServiceContext>& context,
+               const std::shared_ptr<const std::vector<WriteValue>>& inputs,
+               const WriteCallback& callback),
+              (override));
 };
 
 class SimpleMockAttributeService final : public AttributeService {
@@ -26,22 +29,26 @@ class SimpleMockAttributeService final : public AttributeService {
 
   MOCK_METHOD(StatusCode,
               Write,
-              (const WriteValue& value, const NodeId& user_id));
+              (const std::shared_ptr<const scada::ServiceContext>& context,
+               const WriteValue& value));
 
-  virtual void Read(const std::vector<ReadValueId>& value_ids,
-                    const ReadCallback& callback) override {
-    std::vector<DataValue> results(value_ids.size());
-    for (size_t i = 0; i < value_ids.size(); ++i)
-      results[i] = Read(value_ids[i]);
+  virtual void Read(
+      const std::shared_ptr<const scada::ServiceContext>& context,
+      const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
+      const scada::ReadCallback& callback) override {
+    std::vector<DataValue> results(inputs->size());
+    for (size_t i = 0; i < inputs->size(); ++i)
+      results[i] = Read((*inputs)[i]);
     callback(StatusCode::Good, std::move(results));
   }
 
-  virtual void Write(const std::vector<WriteValue>& values,
-                     const NodeId& user_id,
-                     const WriteCallback& callback) override {
-    std::vector<StatusCode> results(values.size());
-    for (size_t i = 0; i < values.size(); ++i)
-      results[i] = Write(values[i], user_id);
+  virtual void Write(
+      const std::shared_ptr<const scada::ServiceContext>& context,
+      const std::shared_ptr<const std::vector<scada::WriteValue>>& inputs,
+      const scada::WriteCallback& callback) override {
+    std::vector<StatusCode> results(inputs->size());
+    for (size_t i = 0; i < inputs->size(); ++i)
+      results[i] = Write(context, (*inputs)[i]);
     callback(StatusCode::Good, std::move(results));
   }
 };

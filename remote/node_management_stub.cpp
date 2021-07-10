@@ -20,14 +20,15 @@ inline bool ContainsNodeId(const std::vector<scada::DeleteNodesItem>& inputs,
 
 }  // namespace
 
-NodeManagementStub::NodeManagementStub(std::shared_ptr<Executor> executor,
-                                       std::weak_ptr<MessageSender> sender,
-                                       scada::NodeManagementService& service,
-                                       const scada::NodeId& user_id)
+NodeManagementStub::NodeManagementStub(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<MessageSender> sender,
+    scada::NodeManagementService& service,
+    std::shared_ptr<const scada::ServiceContext> service_context)
     : executor_{std::move(executor)},
       sender_{std::move(sender)},
       service_{service},
-      user_id_{user_id} {}
+      service_context_{std::move(service_context)} {}
 
 void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
   if (request.add_node_size() != 0) {
@@ -67,8 +68,10 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
 void NodeManagementStub::OnDeleteNodes(
     unsigned request_id,
     const std::vector<scada::DeleteNodesItem>& inputs) {
-  // TODO: Fail only for |user_id_|.
-  if (ContainsNodeId(inputs, user_id_)) {
+  assert(service_context_);
+
+  // TODO: Fail only for |service_context_->user_id|.
+  if (ContainsNodeId(inputs, service_context_->user_id)) {
     protocol::Message message;
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
