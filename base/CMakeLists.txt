@@ -3,14 +3,7 @@ find_package(Boost REQUIRED COMPONENTS system date_time log log_setup regex)
 add_subdirectory("${deps}/promise.hpp" "promise.hpp")
 add_subdirectory(test)
 
-file(GLOB sources "*.cpp" "*.h")
-
-if(WIN32)
-  file(GLOB sources_win "win/*.cpp" "win/*.h")
-  list(APPEND sources ${sources_win})
-endif()
-
-add_library(scada_base ${sources})
+scada_module(scada_base)
 
 if(NOT WIN32)
   target_link_libraries(scada_base PUBLIC stdc++fs pthread)
@@ -26,8 +19,6 @@ target_link_libraries(scada_base PUBLIC
   Boost::system
   promise.hpp
 )
-
-set_property(TARGET scada_base PROPERTY FOLDER ${scada_folder})
 
 if(WIN32)
   target_compile_options(scada_base PUBLIC

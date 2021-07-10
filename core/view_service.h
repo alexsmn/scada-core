@@ -81,6 +81,22 @@ class ViewService {
       const TranslateBrowsePathsCallback& callback) = 0;
 };
 
+// Callback = void(const scada::BrowsePathResult);
+template <class Callback>
+inline void TranslateBrowsePath(scada::ViewService& view_service,
+                                const scada::BrowsePath& browse_path,
+                                const Callback& callback) {
+  view_service.TranslateBrowsePaths(
+      {browse_path},
+      [callback = std::move(callback)](
+          scada::Status status, std::vector<scada::BrowsePathResult> results) {
+        if (status)
+          callback(std::move(results.front()));
+        else
+          callback({status.code()});
+      });
+}
+
 inline std::ostream& operator<<(std::ostream& stream, BrowseDirection v) {
   std::string_view name;
 
