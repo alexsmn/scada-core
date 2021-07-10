@@ -84,24 +84,25 @@ void SubscriptionStub::OnCreateMonitoredItem(
       locked_sender->Send(message);
   }
 
+  scada::MonitoredItemHandler handler;
   if (read_value_id.attribute_id == scada::AttributeId::Value) {
-    channel_ptr->set_data_change_handler(BindExecutor(
+    handler = scada::DataChangeHandler{BindExecutor(
         executor_, [weak_this = weak_from_this(),
                     monitored_item_id](const scada::DataValue& data_value) {
           if (auto ptr = weak_this.lock())
             ptr->OnDataChange(monitored_item_id, data_value);
-        }));
+        })};
 
   } else if (read_value_id.attribute_id == scada::AttributeId::EventNotifier) {
-    channel_ptr->set_event_handler(BindExecutor(
+    handler = scada::EventHandler{BindExecutor(
         executor_, [weak_this = weak_from_this(), monitored_item_id](
                        const scada::Status& status, const std::any& event) {
           if (auto ptr = weak_this.lock())
             ptr->OnEvent(monitored_item_id, status.code(), event);
-        }));
+        })};
   }
 
-  channel_ptr->Subscribe();
+  channel_ptr->Subscribe(std::move(handler));
 }
 
 void SubscriptionStub::OnDeleteMonitoredItem(int request_id,

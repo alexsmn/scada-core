@@ -43,7 +43,7 @@ std::string MakeConnectionString(std::string_view str) {
 
 SessionProxy::SessionProxy(SessionProxyContext&& context)
     : SessionProxyContext{std::move(context)},
-      subscription_{std::make_unique<SubscriptionProxy>(SubscriptionParams{})},
+      subscription_{std::make_shared<SubscriptionProxy>(SubscriptionParams{})},
       view_service_proxy_{std::make_unique<ViewServiceProxy>()},
       node_management_proxy_{std::make_unique<NodeManagementProxy>()},
       event_service_proxy_{std::make_unique<EventServiceProxy>()},

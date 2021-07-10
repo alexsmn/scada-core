@@ -8,11 +8,7 @@ namespace scada {
 
 class MockMonitoredItem : public MonitoredItem {
  public:
-  const DataChangeHandler& data_change_handler() const {
-    return data_change_handler_;
-  }
-
-  MOCK_METHOD(void, Subscribe, ());
+  MOCK_METHOD(void, Subscribe, (MonitoredItemHandler handler), (override));
 };
 
 }  // namespace scada

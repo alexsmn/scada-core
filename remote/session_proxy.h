@@ -135,7 +135,7 @@ class SessionProxy : private SessionProxyContext,
 
   std::unique_ptr<net::Transport> transport_;
 
-  const std::unique_ptr<SubscriptionProxy> subscription_;
+  const std::shared_ptr<SubscriptionProxy> subscription_;
   const std::unique_ptr<ViewServiceProxy> view_service_proxy_;
   const std::unique_ptr<NodeManagementProxy> node_management_proxy_;
   const std::unique_ptr<EventServiceProxy> event_service_proxy_;

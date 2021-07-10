@@ -4,10 +4,9 @@
 #include "core/status.h"
 #include "remote/subscription.h"
 
-#include <map>
 #include <memory>
-#include <set>
-#include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace scada {
 class Event;
@@ -21,8 +20,10 @@ class Response;
 }
 
 class MessageSender;
+class MonitoredItemProxy;
 
-class SubscriptionProxy {
+class SubscriptionProxy
+    : public std::enable_shared_from_this<SubscriptionProxy> {
  public:
   explicit SubscriptionProxy(const SubscriptionParams& params);
   ~SubscriptionProxy();
@@ -39,8 +40,6 @@ class SubscriptionProxy {
                const std::any& event);
 
  private:
-  class MonitoredItemProxy;
-
   void AddMonitoredItem(MonitoredItemProxy& item);
   void RemoveMonitoredItem(MonitoredItemProxy& item);
 
@@ -49,13 +48,13 @@ class SubscriptionProxy {
 
   MessageSender* sender_ = nullptr;
 
-  std::set<MonitoredItemProxy*> monitored_items_;
-  std::map<MonitoredItemId, MonitoredItemProxy*> monitored_item_ids_;
+  std::unordered_set<MonitoredItemProxy*> monitored_items_;
+  std::unordered_map<MonitoredItemId, MonitoredItemProxy*> monitored_item_ids_;
 
   enum class State { DELETED, CREATING, CREATED };
   State state_ = State::DELETED;
 
   int subscription_id_ = 0;
 
-  std::shared_ptr<bool> cancelation_;
+  friend class MonitoredItemProxy;
 };
