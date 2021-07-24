@@ -73,11 +73,11 @@ class ViewService {
  public:
   virtual ~ViewService() {}
 
-  virtual void Browse(const std::vector<BrowseDescription>& descriptions,
+  virtual void Browse(const std::vector<BrowseDescription>& inputs,
                       const BrowseCallback& callback) = 0;
 
   virtual void TranslateBrowsePaths(
-      const std::vector<BrowsePath>& browse_paths,
+      const std::vector<BrowsePath>& inputs,
       const TranslateBrowsePathsCallback& callback) = 0;
 };
 
