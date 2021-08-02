@@ -17,9 +17,7 @@ inline bool ConvertVariant(const Variant& source, Variant& target) {
 }
 
 template <class T>
-inline scada::NodeId ToBuiltInDataType() {
-  static_assert(false);
-}
+inline scada::NodeId ToBuiltInDataType();
 
 template <>
 inline scada::NodeId ToBuiltInDataType<scada::Int8>() {

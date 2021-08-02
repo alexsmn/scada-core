@@ -49,12 +49,12 @@ struct to_vector_forwarder {};
 
 template <class R>
 inline auto operator|(const R& r, ::detail::to_set_forwarder) {
-  return std::set<R::value_type>(std::begin(r), std::end(r));
+  return std::set<typename R::value_type>(std::begin(r), std::end(r));
 }
 
 template <class R>
 inline auto operator|(const R& r, ::detail::to_vector_forwarder) {
-  return std::vector<R::value_type>(std::begin(r), std::end(r));
+  return std::vector<typename R::value_type>(std::begin(r), std::end(r));
 }
 
 inline static const auto to_set = ::detail::to_set_forwarder();

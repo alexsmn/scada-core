@@ -9,35 +9,38 @@
 #include <string>
 #include <string_view>
 
-std::string Format(double value);
-std::wstring WideFormat(double value);
+std::string Format(unsigned char value);
+std::wstring WideFormat(unsigned char value);
 
-std::string Format(float value);
-std::wstring WideFormat(float value);
+std::string Format(unsigned short value);
+std::wstring WideFormat(unsigned short value);
+
+std::string Format(int value);
+std::wstring WideFormat(int value);
+
+std::string Format(unsigned int value);
+std::wstring WideFormat(unsigned int value);
 
 std::string Format(long value);
 std::wstring WideFormat(long value);
 
-std::string Format(int32_t value);
-std::wstring WideFormat(int32_t value);
+std::string Format(unsigned long value);
+std::wstring WideFormat(unsigned long value);
 
-std::string Format(uint32_t value);
-std::wstring WideFormat(uint32_t value);
+std::string Format(long long value);
+std::wstring WideFormat(long long value);
 
-std::string Format(int64_t value);
-std::wstring WideFormat(int64_t value);
+std::string Format(unsigned long long value);
+std::wstring WideFormat(unsigned long long value);
 
-std::string Format(uint64_t value);
-std::wstring WideFormat(uint64_t value);
+std::string Format(float value);
+std::wstring WideFormat(float value);
+
+std::string Format(double value);
+std::wstring WideFormat(double value);
 
 std::string Format(bool value);
 std::wstring WideFormat(bool value);
-
-std::string Format(uint8_t value);
-std::wstring WideFormat(uint8_t value);
-
-std::string Format(uint16_t value);
-std::wstring WideFormat(uint16_t value);
 
 std::string Format(std::string_view value);
 std::wstring WideFormat(std::string_view value);

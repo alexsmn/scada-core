@@ -29,14 +29,6 @@ std::wstring WideFormat(float value) {
   return WideFormat(static_cast<double>(value));
 }
 
-std::string Format(long value) {
-  return base::NumberToString(value);
-}
-
-std::wstring WideFormat(long value) {
-  return base::NumberToString16(value);
-}
-
 std::string Format(int value) {
   return base::NumberToString(value);
 }
@@ -53,19 +45,35 @@ std::wstring WideFormat(unsigned int value) {
   return base::NumberToString16(value);
 }
 
-std::string Format(uint64_t value) {
+std::string Format(long value) {
   return base::NumberToString(value);
 }
 
-std::string Format(int64_t value) {
-  return base::NumberToString(value);
-}
-
-std::wstring WideFormat(int64_t value) {
+std::wstring WideFormat(long value) {
   return base::NumberToString16(value);
 }
 
-std::wstring WideFormat(uint64_t value) {
+std::string Format(unsigned long value) {
+  return base::NumberToString(value);
+}
+
+std::wstring WideFormat(unsigned long value) {
+  return base::NumberToString16(value);
+}
+
+std::string Format(long long value) {
+  return base::NumberToString(value);
+}
+
+std::wstring WideFormat(long long value) {
+  return base::NumberToString16(value);
+}
+
+std::string Format(unsigned long long value) {
+  return base::NumberToString(value);
+}
+
+std::wstring WideFormat(unsigned long long value) {
   return base::NumberToString16(value);
 }
 

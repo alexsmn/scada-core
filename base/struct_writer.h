@@ -17,54 +17,70 @@
 // }
 class StructWriter {
  public:
-  explicit StructWriter(std::ostream& stream) : stream_{stream} {
-    stream_ << "{";
-  }
-
-  ~StructWriter() { stream_ << "}"; }
+  explicit StructWriter(std::ostream& stream);
+  ~StructWriter();
 
   template <class T>
-  StructWriter& AddField(std::string_view name, const T& value) {
-    if (count_ != 0)
-      stream_ << ", ";
-    stream_ << name << ": ";
-    AddValue(value);
-    ++count_;
-    return *this;
-  }
+  StructWriter& AddField(std::string_view name, const T& value);
 
-  StructWriter& AddBitMaskField(
-      std::string_view name,
-      unsigned bit_mask,
-      base::span<const std::string_view> bit_strings) {
-    if (count_ != 0)
-      stream_ << ", ";
-    stream_ << name << ": " << BitMaskToString(bit_mask, bit_strings);
-    ++count_;
-    return *this;
-  }
+  StructWriter& AddBitMaskField(std::string_view name,
+                                unsigned bit_mask,
+                                base::span<const std::string_view> bit_strings);
 
  private:
   template <class T>
-  void AddValue(const T& value) {
-    stream_ << value;
-  }
-
-  template <>
-  void AddValue(const char* const& value) {
-    stream_ << "\"" << value << "\"";
-  }
-
-  template <>
-  void AddValue(const std::string& value) {
-    stream_ << "\"" << value << "\"";
-  }
-
-  template <>
-  void AddValue(const std::wstring& value) {
-    stream_ << "\"" << base::SysWideToNativeMB(value) << "\"";
-  }
+  void AddValue(const T& value);
 
   std::ostream& stream_;
   std::size_t count_ = 0;
 };
+
+inline StructWriter::StructWriter(std::ostream& stream) : stream_{stream} {
+  stream_ << "{";
+}
+
+inline StructWriter::~StructWriter() {
+  stream_ << "}";
+}
+
+template <class T>
+inline StructWriter& StructWriter::AddField(std::string_view name,
+                                            const T& value) {
+  if (count_ != 0)
+    stream_ << ", ";
+  stream_ << name << ": ";
+  AddValue(value);
+  ++count_;
+  return *this;
+}
+
+inline StructWriter& StructWriter::AddBitMaskField(
+    std::string_view name,
+    unsigned bit_mask,
+    base::span<const std::string_view> bit_strings) {
+  if (count_ != 0)
+    stream_ << ", ";
+  stream_ << name << ": " << BitMaskToString(bit_mask, bit_strings);
+  ++count_;
+  return *this;
+}
+
+template <class T>
+inline void StructWriter::AddValue(const T& value) {
+  stream_ << value;
+}
+
+template <>
+inline void StructWriter::AddValue(const char* const& value) {
+  stream_ << "\"" << value << "\"";
+}
+
+template <>
+inline void StructWriter::AddValue(const std::string& value) {
+  stream_ << "\"" << value << "\"";
+}
+
+template <>
+inline void StructWriter::AddValue(const std::wstring& value) {
+  stream_ << "\"" << base::SysWideToNativeMB(value) << "\"";
+}
