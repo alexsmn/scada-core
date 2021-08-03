@@ -5,11 +5,16 @@
 #include <set>
 #include <vector>
 
-template <class C>
-inline C Join(const std::vector<C>& sub_ranges) {
-  C result;
+template <typename T>
+using element_type_t =
+    std::remove_reference_t<decltype(*std::begin(std::declval<T&>()))>;
+
+template <class R>
+inline auto Join(const R& sub_ranges)
+    -> std::vector<std::remove_const_t<element_type_t<element_type_t<R>>>> {
+  std::vector<std::remove_const_t<element_type_t<element_type_t<R>>>> result;
   for (const auto& sub_range : sub_ranges)
-    result.insert(result.end(), sub_range.begin(), sub_range.end());
+    result.insert(result.end(), std::begin(sub_range), std::end(sub_range));
   return result;
 }
 
@@ -42,9 +47,10 @@ inline bool Erase(std::set<K>& set, const T& item) {
   return set.erase(item) != 0;
 }
 
+// to_set
+
 namespace detail {
 struct to_set_forwarder {};
-struct to_vector_forwarder {};
 };  // namespace detail
 
 template <class R>
@@ -52,10 +58,30 @@ inline auto operator|(const R& r, ::detail::to_set_forwarder) {
   return std::set<typename R::value_type>(std::begin(r), std::end(r));
 }
 
+inline static const auto to_set = ::detail::to_set_forwarder();
+
+// to_vector
+
+namespace detail {
+struct to_vector_forwarder {};
+};  // namespace detail
+
 template <class R>
 inline auto operator|(const R& r, ::detail::to_vector_forwarder) {
   return std::vector<typename R::value_type>(std::begin(r), std::end(r));
 }
 
-inline static const auto to_set = ::detail::to_set_forwarder();
 inline static const auto to_vector = ::detail::to_vector_forwarder();
+
+// flattened
+
+namespace detail {
+struct flattened_forwarder {};
+};  // namespace detail
+
+template <class R>
+inline auto operator|(const R& r, ::detail::flattened_forwarder) {
+  return Join(r);
+}
+
+inline static const auto flattened = ::detail::flattened_forwarder();
