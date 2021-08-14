@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <map>
+#include <numeric>
 #include <set>
 #include <vector>
 
@@ -10,8 +11,7 @@ using element_type_t =
     std::remove_reference_t<decltype(*std::begin(std::declval<T&>()))>;
 
 template <class R>
-inline auto Join(const R& sub_ranges)
-    -> std::vector<std::remove_const_t<element_type_t<element_type_t<R>>>> {
+inline auto Join(const R& sub_ranges) {
   std::vector<std::remove_const_t<element_type_t<element_type_t<R>>>> result;
   for (const auto& sub_range : sub_ranges)
     result.insert(result.end(), std::begin(sub_range), std::end(sub_range));
@@ -45,6 +45,18 @@ inline bool Erase(std::map<K, V>& map, const T& item) {
 template <class K, class T>
 inline bool Erase(std::set<K>& set, const T& item) {
   return set.erase(item) != 0;
+}
+
+template <class Range, class Mapper>
+inline auto Group(Range&& range, const Mapper& mapper) {
+  using Element = element_type_t<Range>;
+  using Key = std::invoke_result_t<Mapper, Element>;
+  std::map<Key, std::vector<Element>> result;
+  for (auto&& e : range) {
+    auto key = mapper(e);
+    result[key].emplace_back(std::move(e));
+  }
+  return result;
 }
 
 // to_set
@@ -85,3 +97,25 @@ inline auto operator|(const R& r, ::detail::flattened_forwarder) {
 }
 
 inline static const auto flattened = ::detail::flattened_forwarder();
+
+// grouped
+
+namespace detail {
+
+template <class Mapper>
+struct grouped_forwarder {
+  Mapper mapper;
+};
+
+};  // namespace detail
+
+template <class R, class Mapper>
+inline auto operator|(const R& r,
+                      const ::detail::grouped_forwarder<Mapper>& forwarder) {
+  return Group(r, forwarder.mapper);
+}
+
+template <class Mapper>
+inline auto grouped(Mapper&& mapper) {
+  return ::detail::grouped_forwarder<Mapper>{std::forward<Mapper>(mapper)};
+}
