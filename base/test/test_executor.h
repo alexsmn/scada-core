@@ -18,16 +18,7 @@ class TestExecutor : public Executor {
   virtual size_t GetTaskCount() const override { return 0; }
 
   void Advance(Duration delta) {
-    auto p =
-        std::stable_partition(pending_tasks_.begin(), pending_tasks_.end(),
-                              [delta](auto& p) { return p.first < delta; });
-    std::stable_sort(p, pending_tasks_.end(),
-                     [](auto& a, auto& b) { return a.first < b.first; });
-    std::vector<Task> run_tasks;
-    run_tasks.reserve(pending_tasks_.end() - p);
-    for (auto i = p; i != pending_tasks_.end(); ++i)
-      run_tasks.emplace_back(std::move(i->second));
-    pending_tasks_.erase(p, pending_tasks_.end());
+    auto run_tasks = PopRunTasks(delta);
     for (auto& t : pending_tasks_)
       t.first -= delta;
     for (auto& task : run_tasks)
@@ -35,6 +26,24 @@ class TestExecutor : public Executor {
   }
 
  private:
+  std::vector<Task> PopRunTasks(Duration delta) {
+    // Move run tasks with |task.delay <= delta| to the end of queue.
+    auto p =
+        std::stable_partition(pending_tasks_.begin(), pending_tasks_.end(),
+                              [delta](auto& p) { return p.first > delta; });
+    // Sort run tasks.
+    std::stable_sort(p, pending_tasks_.end(),
+                     [](auto& a, auto& b) { return a.first < b.first; });
+    // Collect run tasks
+    std::vector<Task> run_tasks;
+    run_tasks.reserve(pending_tasks_.end() - p);
+    for (auto i = p; i != pending_tasks_.end(); ++i)
+      run_tasks.emplace_back(std::move(i->second));
+    // Remove run tasks.
+    pending_tasks_.erase(p, pending_tasks_.end());
+    return run_tasks;
+  }
+
   const bool instant_;
 
   std::vector<std::pair<Duration, Task>> pending_tasks_;
