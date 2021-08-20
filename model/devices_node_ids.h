@@ -69,11 +69,7 @@ const scada::NodeId Iec61850DeviceType{277, NamespaceIndexes::SCADA};
 const scada::NodeId Iec61850LogicalNodeType{289, NamespaceIndexes::SCADA};
 const scada::NodeId Iec61850RcbType{281, NamespaceIndexes::SCADA};
 const scada::NodeId LinkType_ActiveConnections{251, NamespaceIndexes::SCADA};
-const scada::NodeId LinkType_BytesIn{254, NamespaceIndexes::SCADA};
-const scada::NodeId LinkType_BytesOut{255, NamespaceIndexes::SCADA};
 const scada::NodeId LinkType_ConnectCount{250, NamespaceIndexes::SCADA};
-const scada::NodeId LinkType_MessagesIn{252, NamespaceIndexes::SCADA};
-const scada::NodeId LinkType_MessagesOut{253, NamespaceIndexes::SCADA};
 const scada::NodeId LinkType_Transport{142, NamespaceIndexes::SCADA};
 const scada::NodeId LinkType{116, NamespaceIndexes::SCADA}; // :Device
 const scada::NodeId ModbusDeviceType_Address{168, NamespaceIndexes::SCADA};
@@ -96,6 +92,10 @@ const scada::NodeId DeviceType_Select{137, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType_SyncClock{134, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType_WriteParam{138, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType_Write{136, NamespaceIndexes::SCADA};
+const scada::NodeId DeviceType_BytesIn{254, NamespaceIndexes::SCADA};
+const scada::NodeId DeviceType_BytesOut{255, NamespaceIndexes::SCADA};
+const scada::NodeId DeviceType_MessagesIn{252, NamespaceIndexes::SCADA};
+const scada::NodeId DeviceType_MessagesOut{253, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType{115, NamespaceIndexes::SCADA}; // :BaseObjectType
 const scada::NodeId TransmissionItems{33, NamespaceIndexes::SCADA};
 const scada::NodeId TransmissionItemType_SourceAddress{225, NamespaceIndexes::SCADA};
