@@ -80,6 +80,12 @@ struct SemanticChangeEvent {
 
 struct EventFilter {
   enum EventType { ACKED = 1, UNACKED = 2 };
+
+  EventFilter& set_of_type(std::vector<NodeId> of_type) {
+    this->of_type = std::move(of_type);
+    return *this;
+  }
+
   unsigned types = 0;
 
   std::vector<NodeId> of_type;

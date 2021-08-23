@@ -24,7 +24,8 @@ macro(SCADA_MODULE MODULE_NAME)
     set_property(TARGET ${MODULE_NAME}_unittests PROPERTY FOLDER ${scada_folder})
     # Temporary workaround of "no cmake script provided" error. Also,
     # `gtest_discover_tests` is not correctly handled by CTest.
-    # gtest_discover_tests(${MODULE_NAME}_unittests)
-    gtest_add_tests(TARGET ${MODULE_NAME}_unittests)
+    # In opposite, `gtest_add_tests` triggers generation on each UT modification.
+    gtest_discover_tests(${MODULE_NAME}_unittests)
+    # gtest_add_tests(TARGET ${MODULE_NAME}_unittests)
   endif()
 endmacro()

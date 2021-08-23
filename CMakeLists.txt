@@ -4,9 +4,6 @@ include(scada_module.cmake)
 
 add_subdirectory("${deps}/icu" icu)
 
-set(CHROME_BASE_ROOT "${deps}/chromebase")
-add_subdirectory(${CHROME_BASE_ROOT} chromebase)
-
 add_subdirectory("${deps}/net" net)
 
 add_subdirectory(base)

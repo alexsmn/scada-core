@@ -2,23 +2,37 @@
 
 #include "core/aggregate_filter.h"
 #include "core/attribute_service.h"
+#include "core/data_change_filter.h"
 #include "core/event.h"
 #include "core/monitored_item.h"
 
 #include <memory>
+#include <optional>
 
 namespace scada {
 
 class MonitoredItem;
 struct ReadValueId;
 
-using MonitoringFilter =
-    std::variant<std::monostate, EventFilter, AggregateFilter>;
+using MonitoringFilter = std::
+    variant<std::monostate, DataChangeFilter, EventFilter, AggregateFilter>;
 
 struct MonitoringParameters {
-  bool is_null() const { return filter.index() == 0; }
+  bool is_null() const {
+    return !sampling_interval.has_value() && filter.index() == 0 &&
+           !queue_size.has_value();
+  }
+
+  MonitoringParameters& set_filter(MonitoringFilter filter) {
+    this->filter = std::move(filter);
+    return *this;
+  }
+
+  std::optional<Duration> sampling_interval;
 
   MonitoringFilter filter;
+
+  std::optional<size_t> queue_size;
 };
 
 class MonitoredItemService {
