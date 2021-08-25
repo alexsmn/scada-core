@@ -11,7 +11,7 @@
 namespace scada {
 
 // sys event severities
-enum EventSeverity {
+enum EventSeverity : unsigned {
   kSeverityMin = 0,        // silent
   kSeverityVerbose = 20,   // verbose
   kSeverityNormal = 50,    // normal
@@ -36,8 +36,8 @@ class Event {
     EVT_BACKUP = 0x0100,  // locked
   };
 
-  scada::NodeId event_type_id;
-  base::Time time;
+  NodeId event_type_id;
+  DateTime time;
   unsigned change_mask = 0;
   unsigned severity = kSeverityNormal;
   NodeId node_id;
@@ -65,8 +65,8 @@ struct ModelChangeEvent {
     return *this;
   }
 
-  scada::NodeId node_id;
-  scada::NodeId type_definition_id;
+  NodeId node_id;
+  NodeId type_definition_id;
   uint8_t verb = 0;
 
   static const NumericId event_type_id = id::GeneralModelChangeEventType;
