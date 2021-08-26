@@ -607,11 +607,13 @@ bool AssertValid(const scada::ModelChangeEvent& event) {
   assert(!event.node_id.is_null());
   assert(event.verb != 0);
 
+  if (event.verb & scada::ModelChangeEvent::NodeAdded) {
+    assert(!event.type_definition_id.is_null());
+  }
+
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     assert(event.verb ==
            static_cast<uint8_t>(scada::ModelChangeEvent::NodeDeleted));
-  } else {
-    // assert(!event.type_definition_id.is_null());
   }
 
   return true;

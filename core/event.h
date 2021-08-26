@@ -66,7 +66,10 @@ struct ModelChangeEvent {
   }
 
   NodeId node_id;
+
+  // |type_definition_id| is only set for |NodeAdded| event.
   NodeId type_definition_id;
+
   uint8_t verb = 0;
 
   static const NumericId event_type_id = id::GeneralModelChangeEventType;
