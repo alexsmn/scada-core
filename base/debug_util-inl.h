@@ -22,6 +22,22 @@ inline std::ostream& operator<<(std::ostream& stream, const std::vector<T>& v) {
   return stream;
 }
 
+template <class K, class V>
+inline std::ostream& operator<<(std::ostream& stream,
+                                const std::map<K, V>& map) {
+  stream << "{";
+  auto i = map.begin();
+  if (i != map.end()) {
+    stream << i->first << ": " << i->second;
+    for (; i != map.end(); ++i) {
+      stream << ", ";
+      stream << i->first << ": " << i->second;
+    }
+  }
+  stream << "}";
+  return stream;
+}
+
 template <class T>
 inline std::ostream& operator<<(std::ostream& stream, base::span<T> span) {
   stream << "[";

@@ -2,6 +2,7 @@
 
 #include "base/containers/span.h"
 
+#include <numeric>
 #include <string_view>
 #include <vector>
 
@@ -24,6 +25,8 @@ inline bool IsEqualNoCase(std::wstring_view a, std::wstring_view b) {
   });
 }
 
+// |boost::split| is not useful for delimiter string.
+// |base::SplitString| works only with base::StringView.
 inline std::vector<std::string_view> SplitString(std::string_view str,
                                                  std::string_view delimiter) {
   if (str.empty())
@@ -45,16 +48,32 @@ inline std::vector<std::string_view> SplitString(std::string_view str,
   return parts;
 }
 
+inline std::vector<std::string_view> SplitString(std::string_view str,
+                                                 char delimiter) {
+  return SplitString(str, std::string_view{&delimiter, 1});
+}
+
+// |boost::algorithm::join| does not support |std::string_view|.
 inline std::string JoinStrings(base::span<const std::string_view> strings,
                                std::string_view delimiter) {
   if (strings.empty())
     return {};
 
-  std::string result{strings[0]};
+  const auto strings_combined_size = std::accumulate(
+      strings.begin(), strings.end(), 0,
+      [](std::size_t sum, std::string_view str) { return sum + str.size(); });
+  const auto delimiters_size = delimiter.size() * (strings.size() - 1);
+  const auto result_size = strings_combined_size + delimiters_size;
+
+  std::string result;
+  result.reserve(result_size);
+
+  result += strings[0];
   for (size_t i = 1; i < strings.size(); ++i) {
     result += delimiter;
     result += strings[i];
   }
 
+  assert(result.capacity() == result_size);
   return result;
 }
