@@ -11,11 +11,32 @@ namespace {
 // WARNING: These names are used as names for tables in the configuration DB and
 // mustn't be modified.
 constexpr std::string_view kNamespaceNames[] = {
-    "NS0",          "TS",           "TIT",           "MODBUS_DEVICES",
-    "GROUP",        "USER",         "HISTORICAL_DB", "SCADA",
-    "EXPR",         "SIM_ITEM",     "IEC_LINK",      "IEC_DEV",
-    "MODBUS_PORTS", "FILE",         "TS_PARAMS",     "SERVER_PARAMS",
-    "IEC_TRANSMIT", "IEC61850_DEV", "IEC61850_RCB",
+    "NS0",
+    "TS",
+    "TIT",
+    "MODBUS_DEVICES",
+    "GROUP",
+    "USER",
+    "HISTORICAL_DB",
+    "SCADA",
+    "HISTORY",
+    "SIM_ITEM",
+    "IEC_LINK",
+    "IEC_DEV",
+    "MODBUS_PORTS",
+    "DEVICES",
+    "TS_PARAMS",
+    "SERVER_PARAMS",
+    "IEC_TRANSMIT",
+    "IEC61850_DEV",
+    "IEC61850_RCB",
+    "FILESYSTEM",
+    "DATA_ITEMS",
+    "SECURITY",
+    "IEC61850_SERVER",
+    "ALIAS",
+    "FILESYSTEM_FILE",
+    "OPC_SERVER",
 };
 
 static_assert(std::size(kNamespaceNames) == NamespaceIndexes::END);

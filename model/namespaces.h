@@ -22,10 +22,19 @@ constexpr scada::NamespaceIndex SERVER_PARAMS = 15;
 constexpr scada::NamespaceIndex TRANSMISSION_ITEM = 16;
 constexpr scada::NamespaceIndex IEC61850_DEVICE = 17;
 constexpr scada::NamespaceIndex IEC61850_RCB = 18;
+// constexpr scada::NamespaceIndex IEC61850_SERVER = 22;
+// constexpr scada::NamespaceIndex OPC_SERVER = 25;
 
 constexpr scada::NamespaceIndex SCADA = 7;
+// constexpr scada::NamespaceIndex HISTORY = 8;
+// constexpr scada::NamespaceIndex DEVICES = 13;
+// constexpr scada::NamespaceIndex FILESYSTEM = 19;
+constexpr scada::NamespaceIndex FILESYSTEM_FILE = 24;
+// constexpr scada::NamespaceIndex DATA_ITEMS = 20;
+// constexpr scada::NamespaceIndex SECURITY = 21;
+constexpr scada::NamespaceIndex ALIAS = 23;
 
-constexpr scada::NamespaceIndex END = 19;
+constexpr scada::NamespaceIndex END = 26;
 
 }  // namespace NamespaceIndexes
 
