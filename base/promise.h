@@ -8,6 +8,17 @@ using namespace promise_hpp;
 
 namespace internal {
 
+template <class T, class Args, class R>
+inline void ResolvePromise(promise<R>& promise, T&& task, Args&& args) {
+  promise.resolve(std::apply(std::forward<T>(task), std::forward<Args>(args)));
+}
+
+template <class T, class Args>
+inline void ResolvePromise(promise<>& promise, T&& task, Args&& args) {
+  std::apply(std::forward<T>(task), std::forward<Args>(args));
+  promise.resolve();
+}
+
 template <class Task>
 class WrappedPromiseTask {
  public:
@@ -22,7 +33,7 @@ class WrappedPromiseTask {
     Dispatch(*executor_,
              [promise, task = std::move(task_),
               args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-               promise.resolve(std::apply(std::move(task), std::move(args)));
+               ResolvePromise(promise, std::move(task), std::move(args));
              });
     return promise;
   }
