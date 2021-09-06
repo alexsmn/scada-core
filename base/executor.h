@@ -29,8 +29,13 @@ class WrappedTask {
       : executor_{std::move(executor)}, task_{std::forward<T>(task)} {}
 
   template <class... Args>
-  void operator()(const Args&... args) const {
-    Dispatch(*executor_, [task = std::move(task_), args...] { task(args...); });
+  void operator()(Args&&... args) const {
+    // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
+    Dispatch(*executor_,
+             [task = std::move(task_),
+              args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+               std::apply(std::move(task), std::move(args));
+             });
   }
 
  private:

@@ -17,10 +17,12 @@ namespace net {
 class TransportFactory;
 }
 
+class Executor;
 class Logger;
 
 struct DataServicesContext {
   const std::shared_ptr<Logger> logger;
+  const std::shared_ptr<Executor> executor;
   boost::asio::io_context& io_context;
   net::TransportFactory& transport_factory;
   scada::ServiceLogParams service_log_params;
