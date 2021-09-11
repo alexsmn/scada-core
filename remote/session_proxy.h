@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "base/observer_list.h"
 #include "base/timer.h"
 #include "core/attribute_service.h"
 #include "core/configuration_types.h"
@@ -14,6 +13,7 @@
 #include "net/transport.h"
 #include "remote/message_sender.h"
 
+#include <boost/signals2/signal.hpp>
 #include <map>
 
 namespace boost::asio {
@@ -73,8 +73,8 @@ class SessionProxy : private SessionProxyContext,
   virtual bool IsScada() const override { return false; }
   virtual scada::NodeId GetUserId() const override;
   virtual std::string GetHostName() const override;
-  virtual void AddObserver(scada::SessionStateObserver& observer) override;
-  virtual void RemoveObserver(scada::SessionStateObserver& observer) override;
+  virtual boost::signals2::scoped_connection SubscribeSessionStateChanged(
+      const SessionStateChangedCallback& callback) override;
 
   // MessageSender
   virtual void Send(protocol::Message& message) override;
@@ -154,7 +154,8 @@ class SessionProxy : private SessionProxyContext,
 
   std::map<int /*request_id*/, ResponseHandler> requests_;
 
-  base::ObserverList<scada::SessionStateObserver> observers_;
+  boost::signals2::signal<void(bool connected, const scada::Status& status)>
+      session_state_changed_signal_;
 
   scada::StatusCallback connect_callback_;
 

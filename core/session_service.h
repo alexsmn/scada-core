@@ -5,6 +5,7 @@
 #include "core/privileges.h"
 #include "core/status.h"
 
+#include <boost/signals2/connection.hpp>
 #include <functional>
 #include <string>
 
@@ -13,8 +14,6 @@ class TimeDelta;
 }
 
 namespace scada {
-
-class SessionStateObserver;
 
 using StatusCallback = std::function<void(Status&&)>;
 
@@ -41,8 +40,10 @@ class SessionService {
 
   virtual bool IsScada() const = 0;
 
-  virtual void AddObserver(SessionStateObserver& observer) = 0;
-  virtual void RemoveObserver(SessionStateObserver& observer) = 0;
+  using SessionStateChangedCallback =
+      std::function<void(bool connected, const Status& status)>;
+  virtual boost::signals2::scoped_connection SubscribeSessionStateChanged(
+      const SessionStateChangedCallback& callback) = 0;
 };
 
 }  // namespace scada

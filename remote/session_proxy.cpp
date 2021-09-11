@@ -7,7 +7,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "core/monitored_item.h"
-#include "core/session_state_observer.h"
 #include "core/status.h"
 #include "net/transport_factory.h"
 #include "net/transport_string.h"
@@ -99,8 +98,7 @@ void SessionProxy::OnSessionCreated() {
 
   SchedulePing();
 
-  for (auto& o : observers_)
-    o.OnSessionCreated();
+  session_state_changed_signal_(true, scada::StatusCode::Good);
 
   ForwardConnectResult(scada::StatusCode::Good);
 }
@@ -125,8 +123,7 @@ void SessionProxy::OnSessionError(const scada::Status& status) {
   auto copied_status = status;
   ForwardConnectResult(std::move(copied_status));
 
-  for (auto& o : observers_)
-    o.OnSessionDeleted(status);
+  session_state_changed_signal_(false, status);
 }
 
 void SessionProxy::OnTransportMessageReceived(const void* data, size_t size) {
@@ -186,14 +183,6 @@ scada::HistoryService& SessionProxy::GetHistoryService() {
 
 scada::ViewService& SessionProxy::GetViewService() {
   return *view_service_proxy_;
-}
-
-void SessionProxy::AddObserver(scada::SessionStateObserver& observer) {
-  observers_.AddObserver(&observer);
-}
-
-void SessionProxy::RemoveObserver(scada::SessionStateObserver& observer) {
-  observers_.RemoveObserver(&observer);
 }
 
 void SessionProxy::Send(protocol::Message& message) {
@@ -529,4 +518,9 @@ bool SessionProxy::IsMessageLogged(const protocol::Message& message) const {
   }
 
   return false;
+}
+
+boost::signals2::scoped_connection SessionProxy::SubscribeSessionStateChanged(
+    const SessionStateChangedCallback& callback) {
+  return session_state_changed_signal_.connect(callback);
 }
