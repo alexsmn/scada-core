@@ -42,16 +42,6 @@ void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
         ConvertTo<std::vector<scada::DeleteNodesItem>>(request.delete_node()));
   }
 
-  if (request.has_change_password()) {
-    auto& change_password = request.change_password();
-    OnChangeUserPassword(
-        request.request_id(),
-        ConvertTo<scada::NodeId>(change_password.user_node_id()),
-        ConvertTo<scada::LocalizedText>(
-            change_password.current_password_utf8()),
-        ConvertTo<scada::LocalizedText>(change_password.new_password_utf8()));
-  }
-
   if (request.add_reference_size() != 0) {
     OnAddReferences(request.request_id(),
                     ConvertTo<std::vector<scada::AddReferencesItem>>(
@@ -115,33 +105,6 @@ void NodeManagementStub::OnAddNodes(
         Convert(status, *response.mutable_status());
         if (status)
           Convert(std::move(results), *response.mutable_add_node_result());
-
-        if (auto locked_sender = sender.lock())
-          locked_sender->Send(message);
-      }));
-}
-
-void NodeManagementStub::OnChangeUserPassword(
-    unsigned request_id,
-    const scada::NodeId& user_id,
-    const scada::LocalizedText& current_password,
-    const scada::LocalizedText& new_password) {
-  LOG_INFO(*logger_) << "Change user password"
-                     << LOG_TAG("RequestId", request_id)
-                     << LOG_TAG("UserId", ToString(user_id));
-
-  service_.ChangeUserPassword(
-      user_id, current_password, new_password,
-      BindExecutor(executor_, [request_id, sender = sender_,
-                               logger = logger_](scada::Status status) {
-        LOG_INFO(*logger) << "Change user password"
-                          << LOG_TAG("RequestId", request_id)
-                          << LOG_TAG("Status", ToString(status));
-
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(status, *response.mutable_status());
 
         if (auto locked_sender = sender.lock())
           locked_sender->Send(message);

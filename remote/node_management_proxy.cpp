@@ -71,38 +71,6 @@ void NodeManagementProxy::DeleteNodes(
   });
 }
 
-void NodeManagementProxy::ChangeUserPassword(
-    const scada::NodeId& user_node_id,
-    const scada::LocalizedText& current_password,
-    const scada::LocalizedText& new_password,
-    const scada::StatusCallback& callback) {
-  LOG_INFO(logger_) << "ChangePassword"
-                    << LOG_TAG("UserId", NodeIdToScadaString(user_node_id));
-
-  if (!sender_) {
-    LOG_WARNING(logger_) << "ChangePassword failed: disconnected";
-    return callback(scada::StatusCode::Bad_Disconnected);
-  }
-
-  protocol::Request request;
-  auto& change_password = *request.mutable_change_password();
-  Convert(user_node_id, *change_password.mutable_user_node_id());
-  change_password.set_current_password_utf8(
-      base::UTF16ToUTF8(current_password));
-  change_password.set_new_password_utf8(base::UTF16ToUTF8(new_password));
-
-  sender_->Request(request,
-                   [this, callback](const protocol::Response& response) {
-                     auto status = ConvertTo<scada::Status>(response.status());
-
-                     LOG_INFO(logger_) << "ChangePassword response"
-                                       << LOG_TAG("Status", ToString(status));
-
-                     if (callback)
-                       callback(std::move(status));
-                   });
-}
-
 void NodeManagementProxy::AddReferences(
     const std::vector<scada::AddReferencesItem>& inputs,
     const scada::AddReferencesCallback& callback) {

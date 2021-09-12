@@ -69,11 +69,6 @@ class NodeManagementService {
   virtual void DeleteNodes(const std::vector<DeleteNodesItem>& inputs,
                            const DeleteNodesCallback& callback) = 0;
 
-  virtual void ChangeUserPassword(const NodeId& user_node_id,
-                                  const LocalizedText& current_password,
-                                  const LocalizedText& new_password,
-                                  const StatusCallback& callback) = 0;
-
   virtual void AddReferences(const std::vector<AddReferencesItem>& inputs,
                              const AddReferencesCallback& callback) = 0;
 
