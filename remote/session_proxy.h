@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "base/timer.h"
+#include "base/executor_timer.h"
 #include "core/attribute_service.h"
 #include "core/configuration_types.h"
 #include "core/logging.h"
@@ -16,10 +16,6 @@
 #include <boost/signals2/signal.hpp>
 #include <map>
 
-namespace boost::asio {
-class io_context;
-}
-
 namespace net {
 class Logger;
 class TransportFactory;
@@ -32,6 +28,7 @@ class HistoryService;
 class ViewService;
 }  // namespace scada
 
+class Executor;
 class EventServiceProxy;
 class NodeManagementProxy;
 class HistoryProxy;
@@ -39,7 +36,7 @@ class SubscriptionProxy;
 class ViewServiceProxy;
 
 struct SessionProxyContext {
-  boost::asio::io_context& io_context_;
+  const std::shared_ptr<Executor> executor_;
   net::TransportFactory& transport_factory_;
   const scada::ServiceLogParams service_log_params_;
 };
@@ -162,7 +159,7 @@ class SessionProxy : private SessionProxyContext,
   int next_request_id_ = 1;
 
   // Ping.
-  Timer ping_timer_;
+  ExecutorTimer ping_timer_;
   base::TimeTicks ping_time_;
   base::TimeDelta last_ping_delay_;
 };

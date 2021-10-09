@@ -47,7 +47,7 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       node_management_proxy_{std::make_unique<NodeManagementProxy>()},
       event_service_proxy_{std::make_unique<EventServiceProxy>()},
       history_proxy_{std::make_unique<HistoryProxy>()},
-      ping_timer_{io_context_} {}
+      ping_timer_{executor_} {}
 
 SessionProxy::~SessionProxy() {}
 
