@@ -58,9 +58,20 @@ TEST(NodeIdUtil, IsNestedNodeId) {
   scada::NodeId kNodeId{"123!Online", NamespaceIndexes::MODBUS_DEVICES};
   scada::NodeId parent_id;
   std::string_view nested_name;
-  EXPECT_TRUE(IsNestedNodeId(kNodeId, parent_id, nested_name));
+  ASSERT_TRUE(IsNestedNodeId(kNodeId, parent_id, nested_name));
   EXPECT_EQ(scada::NodeId(123, NamespaceIndexes::MODBUS_DEVICES), parent_id);
-  EXPECT_EQ("Online", nested_name);
+  EXPECT_EQ("Online", std::string{nested_name});
+}
+
+TEST(NodeIdUtil, IsNestedNodeId_LevelTwo) {
+  scada::NodeId kNodeId{"1!Model!ENIP2BAYCTRL",
+                        NamespaceIndexes::IEC61850_DEVICE};
+  scada::NodeId parent_id;
+  std::string_view nested_name;
+  ASSERT_TRUE(IsNestedNodeId(kNodeId, parent_id, nested_name));
+  EXPECT_EQ(scada::NodeId("1!Model", NamespaceIndexes::IEC61850_DEVICE),
+            parent_id);
+  EXPECT_EQ("ENIP2BAYCTRL", std::string{nested_name});
 }
 
 TEST(NodeIdUtil, MakeNestedNodeId) {

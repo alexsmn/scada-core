@@ -40,18 +40,25 @@ bool IsNestedNodeId(const scada::NodeId& node_id,
     return false;
 
   const std::string_view string_id = node_id.string_id();
-  auto p = string_id.find('!');
+  const auto p = string_id.find_last_of('!');
   if (p == std::string::npos)
     return false;
 
-  // Parent id can only be a number for now.
-  scada::NumericId parent_numeric_id = 0;
-  if (!base::StringToUint(ToStringPiece(string_id.substr(0, p)),
-                          &parent_numeric_id)) {
-    return false;
+  // Top parent id can only be a number for now. Next levels are always strings,
+  // since they have to contain the `!` separator.
+  const bool is_top_parent = string_id.find('!') == p;
+  if (is_top_parent) {
+    scada::NumericId parent_numeric_id = 0;
+    if (!base::StringToUint(ToStringPiece(string_id.substr(0, p)),
+                            &parent_numeric_id)) {
+      return false;
+    }
+    parent_id = scada::NodeId{parent_numeric_id, node_id.namespace_index()};
+  } else {
+    parent_id = scada::NodeId{std::string{string_id.substr(0, p)},
+                              node_id.namespace_index()};
   }
 
-  parent_id = scada::NodeId{parent_numeric_id, node_id.namespace_index()};
   nested_name = string_id.substr(p + 1);
   return true;
 }
