@@ -6,9 +6,7 @@ bool ThreadExecutor::PendingTask::operator<(const PendingTask& other) const {
   return sequence - other.sequence < 0;
 }
 
-ThreadExecutor::ThreadExecutor()
-    : stopped_(false),
-      sequence_(0) {
+ThreadExecutor::ThreadExecutor() : stopped_(false), sequence_(0) {
   thread_ = std::thread([this] {
     while (!stopped_) {
       if (auto task = GetTask())
@@ -37,7 +35,7 @@ void ThreadExecutor::PostDelayedTask(Duration delay, Task task) {
   condition_.notify_one();
 }
 
-Task ThreadExecutor::GetTask() {
+Executor::Task ThreadExecutor::GetTask() {
   std::unique_lock<std::mutex> lock(mutex_);
 
   while (!stopped_) {

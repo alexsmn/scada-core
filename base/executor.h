@@ -2,11 +2,14 @@
 
 #include "base/common_types.h"
 
+#include <functional>
 #include <memory>
 
 class Executor {
  public:
   virtual ~Executor() {}
+
+  using Task = std::function<void()>;
 
   void PostTask(Task task) { PostDelayedTask(Duration(), std::move(task)); }
 
@@ -15,8 +18,9 @@ class Executor {
   virtual size_t GetTaskCount() const = 0;
 };
 
-inline void Dispatch(Executor& executor, Task task) {
-  executor.PostTask(std::move(task));
+template <class T>
+inline void Dispatch(Executor& executor, T&& task) {
+  executor.PostTask(std::forward<T>(task));
 }
 
 namespace internal {
