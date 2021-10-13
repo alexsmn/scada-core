@@ -6,7 +6,7 @@ bool ThreadExecutor::PendingTask::operator<(const PendingTask& other) const {
   return sequence - other.sequence < 0;
 }
 
-ThreadExecutor::ThreadExecutor() : stopped_(false), sequence_(0) {
+ThreadExecutor::ThreadExecutor() {
   thread_ = std::thread([this] {
     while (!stopped_) {
       if (auto task = GetTask())

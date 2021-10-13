@@ -11,7 +11,7 @@ class DataValue {
   constexpr DataValue() = default;
 
   constexpr DataValue(StatusCode status_code, DateTime server_timestamp)
-      : status_code{status_code}, server_timestamp{server_timestamp} {
+      : server_timestamp{server_timestamp}, status_code{status_code} {
     assert(!IsGood(status_code));
   }
 

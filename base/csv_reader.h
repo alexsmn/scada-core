@@ -16,8 +16,8 @@ class CsvReader {
   bool NextCell(std::wstring& str);
 
  private:
-  std::wstring_view signature_;
   std::istream& stream_;
+  std::wstring_view signature_;
   wchar_t separator_ = L',';
   std::string raw_line_;
   std::wstring line_;

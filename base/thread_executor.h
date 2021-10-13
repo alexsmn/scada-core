@@ -34,7 +34,7 @@ class ThreadExecutor : public Executor {
   std::condition_variable condition_;
   std::queue<Task> task_queue_;
   std::priority_queue<PendingTask> pending_task_queue_;
-  int sequence_;
+  int sequence_ = 0;
   std::thread thread_;
-  std::atomic<bool> stopped_;
+  std::atomic<bool> stopped_ = false;
 };

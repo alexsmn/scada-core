@@ -13,10 +13,10 @@ class QualifiedName {
   QualifiedName() {}
 
   QualifiedName(String name, NamespaceIndex namespace_index = 0)
-      : namespace_index_{namespace_index}, name_{std::move(name)} {}
+      : name_{std::move(name)}, namespace_index_{namespace_index} {}
 
   QualifiedName(const char* name, NamespaceIndex namespace_index = 0)
-      : namespace_index_{namespace_index}, name_{name} {}
+      : name_{name}, namespace_index_{namespace_index} {}
 
   NamespaceIndex namespace_index() const { return namespace_index_; }
   const String& name() const { return name_; }

@@ -7,11 +7,13 @@
 
 namespace {
 
+#ifndef NDEBUG
 base::Time FloorToMilliseconds(base::Time time) {
   return base::Time::FromDeltaSinceWindowsEpoch(
       base::TimeDelta::FromMilliseconds(
           time.ToDeltaSinceWindowsEpoch().InMilliseconds()));
 }
+#endif
 
 }  // namespace
 
