@@ -37,4 +37,6 @@ if(WIN32)
       /wd4189 # local variable is initialized but not referenced
     >
   )
+else()
+  target_compile_options(scada_base PUBLIC -Werror)
 endif(WIN32)
