@@ -38,5 +38,5 @@ if(WIN32)
     >
   )
 else()
-  target_compile_options(scada_base PUBLIC -Werror -Wall)
+  target_compile_options(scada_base PUBLIC -Werror)
 endif(WIN32)

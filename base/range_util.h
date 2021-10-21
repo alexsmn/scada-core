@@ -18,6 +18,25 @@ inline auto Join(const R& sub_ranges) {
   return result;
 }
 
+template <class R>
+inline auto Join(const R& range1, const R& range2) {
+  std::vector<std::remove_const_t<element_type_t<R>>> result;
+  result.reserve(range1.size() + range2.size());
+  result.insert(result.end(), range1.begin(), range1.end());
+  result.insert(result.end(), range2.begin(), range2.end());
+  return result;
+}
+
+template <class R>
+inline auto Join(const R& range1, const R& range2, const R& range3) {
+  std::vector<std::remove_const_t<element_type_t<R>>> result;
+  result.reserve(range1.size() + range2.size() + range3.size());
+  result.insert(result.end(), range1.begin(), range1.end());
+  result.insert(result.end(), range2.begin(), range2.end());
+  result.insert(result.end(), range3.begin(), range3.end());
+  return result;
+}
+
 template <class T>
 inline std::set<T> Union(const std::vector<std::set<T>>& subsets) {
   std::set<T> result;
@@ -26,6 +45,12 @@ inline std::set<T> Union(const std::vector<std::set<T>>& subsets) {
       result.insert(e);
   }
   return result;
+}
+
+template <class R, class E>
+inline bool Contains(const R& range, const E& item) {
+  return std::find(std::cbegin(range), std::cend(range), item) !=
+         std::cend(range);
 }
 
 template <class E, class T>
@@ -49,7 +74,7 @@ inline bool Erase(std::set<K>& set, const T& item) {
 
 template <class Range, class Mapper>
 inline auto Group(Range&& range, const Mapper& mapper) {
-  using Element = element_type_t<Range>;
+  using Element = std::remove_const_t<element_type_t<Range>>;
   using Key = std::invoke_result_t<Mapper, Element>;
   std::map<Key, std::vector<Element>> result;
   for (auto&& e : range) {
