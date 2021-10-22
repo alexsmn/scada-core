@@ -11,6 +11,14 @@ using element_type_t =
     std::remove_reference_t<decltype(*std::begin(std::declval<T&>()))>;
 
 template <class R>
+inline auto Join(const std::initializer_list<R>& sub_ranges) {
+  std::vector<std::remove_const_t<element_type_t<R>>> result;
+  for (const auto& sub_range : sub_ranges)
+    result.insert(result.end(), std::begin(sub_range), std::end(sub_range));
+  return result;
+}
+
+template <class R>
 inline auto Join(const R& sub_ranges) {
   std::vector<std::remove_const_t<element_type_t<element_type_t<R>>>> result;
   for (const auto& sub_range : sub_ranges)
