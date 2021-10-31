@@ -25,10 +25,10 @@ struct HistoryReadRawDetails {
 };
 
 struct HistoryReadEventsDetails {
-  scada::NodeId node_id;
+  NodeId node_id;
   base::Time from;
   base::Time to;
-  scada::EventFilter filter;
+  EventFilter filter;
 };
 
 struct ItemInfo {
@@ -54,6 +54,9 @@ using HistoryReadRawCallback =
 
 using HistoryReadEventsCallback =
     std::function<void(Status&& status, std::vector<Event>&& events)>;
+
+using AcknowledgeCallback =
+    std::function<void(Status&& status, std::vector<StatusCode>&& results)>;
 
 inline bool operator==(const ItemInfo& a, const ItemInfo& b) {
   return std::tie(a.node_id, a.data_value, a.change_time) ==
