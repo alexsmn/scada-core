@@ -89,6 +89,21 @@ struct EventFilter {
     return *this;
   }
 
+  EventFilter& add_of_type(NodeId type_definition_id) {
+    of_type.emplace_back(std::move(type_definition_id));
+    return *this;
+  }
+
+  EventFilter& set_child_of(std::vector<NodeId> child_of) {
+    this->child_of = std::move(child_of);
+    return *this;
+  }
+
+  EventFilter& add_child_of(NodeId parent_id) {
+    child_of.emplace_back(std::move(parent_id));
+    return *this;
+  }
+
   unsigned types = 0;
 
   std::vector<NodeId> of_type;

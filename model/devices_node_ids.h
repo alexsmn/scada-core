@@ -97,6 +97,7 @@ const scada::NodeId DeviceType_BytesOut{255, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType_MessagesIn{252, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType_MessagesOut{253, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType{115, NamespaceIndexes::SCADA}; // :BaseObjectType
+const scada::NodeId DeviceWatchEventType{15132, NamespaceIndexes::SCADA}; // ObjectType
 const scada::NodeId TransmissionItems{33, NamespaceIndexes::SCADA};
 const scada::NodeId TransmissionItemType_SourceAddress{225, NamespaceIndexes::SCADA};
 const scada::NodeId TransmissionItemType{34, NamespaceIndexes::SCADA};

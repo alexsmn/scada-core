@@ -27,7 +27,7 @@ class ThreadExecutor : public Executor {
 
     Task task;
     TimePoint time;
-    int sequence;
+    int sequence = 0;
   };
 
   mutable std::mutex mutex_;
