@@ -23,6 +23,7 @@ const scada::NodeId HistoricalDatabaseType_WriteValueDuration{240, NamespaceInde
 const scada::NodeId HistoricalDatabaseType{20, NamespaceIndexes::SCADA};
 const scada::NodeId HasHistoricalDatabase{152, NamespaceIndexes::SCADA}; // Ref
 const scada::NodeId SystemDatabase{233, NamespaceIndexes::SCADA};
+const scada::NodeId HasEventDatabase{335, NamespaceIndexes::SCADA};
 
 }
 
