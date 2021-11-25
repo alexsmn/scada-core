@@ -308,14 +308,17 @@ void SessionProxy::Connect() {
   auto transport = transport_factory_.CreateTransport(
       net::TransportString(connection_string), std::move(transport_logger));
   if (!transport) {
+    LOG_WARNING(*logger_) << "Cannot create raw transport";
     OnTransportClosed(net::ERR_FAILED);
     return;
   }
 
   transport_.reset(new ProtocolMessageTransport(std::move(transport)));
   net::Error error = transport_->Open(*this);
-  if (error != net::OK)
+  if (error != net::OK) {
+    LOG_WARNING(*logger_) << "Cannot open message transport";
     OnTransportClosed(error);
+  }
 }
 
 void SessionProxy::ForwardConnectResult(scada::Status&& status) {

@@ -28,9 +28,10 @@ class NetBoostLoggerAdapter final : public net::Logger {
                       ...) const override {
     va_list args;
     va_start(args, format);
-    BOOST_LOG_SEV(*boost_logger_, ToBoostLogSeverity(severity))
-        << base::StringPrintV(format, args);
+    auto message = base::StringPrintV(format, args);
     va_end(args);
+
+    BOOST_LOG_SEV(*boost_logger_, ToBoostLogSeverity(severity)) << message;
   }
 
  private:
