@@ -65,5 +65,7 @@ constexpr NumericId AggregateFunction_Count = 2352;
 constexpr NumericId AggregateFunction_Start = 2357;
 constexpr NumericId AggregateFunction_End = 2358;
 
+constexpr NumericId AcknowledgeableConditionType_Acknowledge = 9111;
+
 }  // namespace id
 }  // namespace scada
