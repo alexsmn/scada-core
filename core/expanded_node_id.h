@@ -13,7 +13,7 @@ class ExpandedNodeId {
   ExpandedNodeId(NodeId node_id) : node_id_{std::move(node_id)} {}
   ExpandedNodeId(NodeId node_id, String namespace_uri, unsigned server_index);
 
-  constexpr bool is_null() noexcept { return node_id_.is_null(); }
+  constexpr bool is_null() const noexcept { return node_id_.is_null(); }
 
   bool operator==(const ExpandedNodeId& other) const;
   bool operator!=(const ExpandedNodeId& other) const {
