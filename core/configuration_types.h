@@ -18,4 +18,10 @@ inline const Variant* FindProperty(const NodeProperties& properties,
   return i != properties.end() ? &i->second : nullptr;
 }
 
+inline Variant GetProperty(const NodeProperties& properties,
+                           const scada::NodeId& prop_decl_id) {
+  auto* p = FindProperty(properties, prop_decl_id);
+  return p ? *p : Variant{};
+}
+
 }  // namespace scada

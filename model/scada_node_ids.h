@@ -11,8 +11,9 @@ const scada::NodeId PropertyCategories{310, NamespaceIndexes::SCADA};
 const scada::NodeId Creates{297, NamespaceIndexes::SCADA}; // Ref
 const scada::NodeId HasPropertyCategory{311, NamespaceIndexes::SCADA};
 const scada::NodeId GeneralPropertyCategory{312, NamespaceIndexes::SCADA};
+// const scada::NodeId MetricType{336, NamespaceIndexes::SCADA};
 
-const scada::NodeId NextId{336, NamespaceIndexes::SCADA};
+const scada::NodeId NextId{337, NamespaceIndexes::SCADA};
 
 } // namespace id
 

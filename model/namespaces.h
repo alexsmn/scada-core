@@ -33,6 +33,7 @@ constexpr scada::NamespaceIndex FILESYSTEM_FILE = 24;
 // constexpr scada::NamespaceIndex DATA_ITEMS = 20;
 // constexpr scada::NamespaceIndex SECURITY = 21;
 constexpr scada::NamespaceIndex ALIAS = 23;
+// constexpr scada::NamespaceIndex METRIC = 24;
 
 constexpr scada::NamespaceIndex END = 26;
 

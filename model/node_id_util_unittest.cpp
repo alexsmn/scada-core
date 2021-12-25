@@ -79,3 +79,17 @@ TEST(NodeIdUtil, MakeNestedNodeId) {
   EXPECT_EQ(scada::NodeId("456!Active", NamespaceIndexes::MODBUS_DEVICES),
             MakeNestedNodeId(kParentId, "Active"));
 }
+
+TEST(NodeIdUtil, NestedNodeId_NestedNamespaceDiffers) {
+  const scada::NodeId kParentId{456, NamespaceIndexes::MODBUS_DEVICES};
+  const scada::NodeId kNestedId{"3:456!ConnectCount", NamespaceIndexes::SCADA};
+  const std::string_view kNestedName = "ConnectCount";
+  EXPECT_EQ(kNestedId,
+            MakeNestedNodeId(kParentId, kNestedName, NamespaceIndexes::SCADA));
+
+  scada::NodeId parent_id;
+  std::string_view nested_name;
+  ASSERT_TRUE(IsNestedNodeId(kNestedId, parent_id, nested_name));
+  EXPECT_EQ(kParentId, parent_id);
+  EXPECT_EQ(kNestedName, nested_name);
+}
