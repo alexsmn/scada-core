@@ -135,3 +135,12 @@ inline std::ostream& operator<<(std::ostream& stream, const NodeId& node_id) {
 }
 
 }  // namespace scada
+
+namespace std {
+
+template <>
+struct hash<scada::NodeId> {
+  std::size_t operator()(const scada::NodeId& node_id) const noexcept;
+};
+
+}  // namespace std

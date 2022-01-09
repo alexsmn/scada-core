@@ -6,6 +6,32 @@
 #include "base/strings/stringprintf.h"
 
 #include <atomic>
+#include <boost/container_hash/hash.hpp>
+
+namespace std {
+
+std::size_t hash<scada::NodeId>::operator()(
+    const scada::NodeId& node_id) const noexcept {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, node_id.namespace_index());
+  switch (node_id.type()) {
+    case scada::NodeIdType::Numeric:
+      boost::hash_combine(seed, node_id.numeric_id());
+      break;
+    case scada::NodeIdType::String:
+      boost::hash_combine(seed, node_id.string_id());
+      break;
+    case scada::NodeIdType::Opaque:
+      boost::hash_combine(seed, node_id.opaque_id());
+      break;
+    default:
+      assert(false);
+      break;
+  }
+  return seed;
+}
+
+}  // namespace std
 
 namespace scada {
 
