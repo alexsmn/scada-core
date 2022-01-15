@@ -1,8 +1,21 @@
 include(GoogleTest)
 
-macro(SCADA_MODULE MODULE_NAME)
-  file(GLOB ${MODULE_NAME}_SOURCES CONFIGURE_DEPENDS "*.cpp" "*.h")
-  file(GLOB ${MODULE_NAME}_UT_SOURCES CONFIGURE_DEPENDS "*_unittest.*" "*_mock.*")
+macro(scada_module MODULE_NAME)
+  set(OPTIONS "RECURSE")
+  set(ONE_VALUE_ARGS "")
+  set(MULTI_VALUE_ARGS "")
+  cmake_parse_arguments(SCADA_MODULE "${OPTIONS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" ${ARGN})
+
+  if(SCADA_MODULE_RECURSE)
+    set(SCADA_MODULE_GLOB "GLOB_RECURSE")
+  else()
+    set(SCADA_MODULE_GLOB "GLOB")
+  endif()
+
+  message("Generate module ${MODULE_NAME}: ${SCADA_MODULE_GLOB}")
+
+  file(${SCADA_MODULE_GLOB} ${MODULE_NAME}_SOURCES CONFIGURE_DEPENDS "*.cpp" "*.h")
+  file(${SCADA_MODULE_GLOB} ${MODULE_NAME}_UT_SOURCES CONFIGURE_DEPENDS "*_unittest.*" "*_mock.*")
 
   if (WIN32)
     file(GLOB ${MODULE_NAME}_SOURCES_WIN CONFIGURE_DEPENDS "win/*.cpp" "win/*.h")
