@@ -1,16 +1,19 @@
 find_package(Protobuf REQUIRED)
-find_package(gRPC REQUIRED)
 
 file(GLOB SOURCES CONFIGURE_DEPENDS "*.cpp" "*.h" "*.proto")
 file(GLOB UT_SOURCES CONFIGURE_DEPENDS "*_unittest.*")
 
 list(REMOVE_ITEM SOURCES ${UT_SOURCES})
 
-# get_target_property(GRPC_CPP_PLUGIN grpc::grpc_cpp_plugin IMPORTED_LOCATION)
-include(protobuf_grpc.cmake)
 protobuf_generate_cpp(SCADA_PROTO_CPP SCADA_PROTO_H scada.proto)
-protobuf_generate_grpc_cpp(SCADA_PROTO_GRPC_CPP SCADA_PROTO_GRPC_H scada.proto)
 protobuf_generate_python(SCADA_PROTO_PY scada.proto)
+
+# find_package(gRPC)
+if (gRPC_FOUND)
+  # get_target_property(GRPC_CPP_PLUGIN grpc::grpc_cpp_plugin IMPORTED_LOCATION)
+  include(protobuf_grpc.cmake)
+  protobuf_generate_grpc_cpp(SCADA_PROTO_GRPC_CPP SCADA_PROTO_GRPC_H scada.proto)
+endif()
 
 list(APPEND SOURCES
   ${SCADA_PROTO_CPP}
@@ -26,11 +29,14 @@ target_include_directories(scada_core_remote PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(scada_core_remote PUBLIC
   protobuf::libprotobuf
-  gRPC::grpc++
   net
   scada_core
   address_space
 )
+
+if (gRPC_FOUND)
+  target_link_libraries(scada_core_remote PUBLIC gRPC::grpc++)
+endif()
 
 # Required by gRPC.
 # target_compile_definitions(scada_core_remote PUBLIC

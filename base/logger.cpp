@@ -1,6 +1,7 @@
 #include "base/logger.h"
 
 #include "base/file_logger.h"
+#include "base/file_path_util.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
@@ -11,13 +12,13 @@
 #endif
 
 std::unique_ptr<Logger> CreateFileLogger(int path_service_key,
-                                         base::FilePath::StringType base_name,
+                                         std::u16string base_name,
                                          const char* title) {
   base::FilePath path;
   base::PathService::Get(path_service_key, &path);
 
-  auto logger =
-      std::make_unique<FileLogger>(std::move(path), std::move(base_name));
+  auto logger = std::make_unique<FileLogger>(AsFilesystemPath(path),
+                                             std::move(base_name));
 
   // fill log
 

@@ -29,7 +29,7 @@ std::string SerializeToString(base::TimeDelta delta) {
 
 bool Deserialize(std::string_view str, base::TimeDelta& delta) {
   auto parts = base::SplitStringPiece(
-      ToStringPiece(str), ":", base::KEEP_WHITESPACE, base::SPLIT_WANT_ALL);
+      AsStringPiece(str), ":", base::KEEP_WHITESPACE, base::SPLIT_WANT_ALL);
   if (parts.size() != 3)
     return false;
 

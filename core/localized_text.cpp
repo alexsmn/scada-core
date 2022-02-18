@@ -7,7 +7,7 @@
 namespace scada {
 
 LocalizedText ToLocalizedText(std::string_view string) {
-  return base::WideToUTF16(base::SysNativeMBToWide(ToStringPiece(string)));
+  return base::WideToUTF16(base::SysNativeMBToWide(AsStringPiece(string)));
 }
 
 }  // namespace scada

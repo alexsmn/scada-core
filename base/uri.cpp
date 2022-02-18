@@ -5,8 +5,8 @@
 const char kHexString[] = "0123456789ABCDEF";
 
 inline char IntToHex(int i) {
-  DCHECK_GE(i, 0) << i << " not a hex value";
-  DCHECK_LE(i, 15) << i << " not a hex value";
+  // DCHECK_GE(i, 0) << i << " not a hex value";
+  // DCHECK_LE(i, 15) << i << " not a hex value";
   return kHexString[i];
 }
 
@@ -27,7 +27,7 @@ struct Charmap {
 // to +, otherwise, if spaces are in the charmap, they are converted to
 // %20. And if keep_escaped is true, %XX will be kept as it is, otherwise, if
 // '%' is in the charmap, it is converted to %25.
-std::string Escape(base::StringPiece text,
+std::string Escape(std::string_view text,
                    const Charmap& charmap,
                    bool use_plus,
                    bool keep_escaped = false) {
@@ -62,10 +62,10 @@ static const Charmap kPathCharmap = {{0xffffffffL, 0xd400002dL, 0x78000000L,
                                       0xb8000001L, 0xffffffffL, 0xffffffffL,
                                       0xffffffffL, 0xffffffffL}};
 
-std::string EscapeQueryParamValue(base::StringPiece text, bool use_plus) {
+std::string EscapeQueryParamValue(std::string_view text, bool use_plus) {
   return Escape(text, kQueryCharmap, use_plus);
 }
 
-std::string EscapePath(base::StringPiece path) {
+std::string EscapePath(std::string_view path) {
   return Escape(path, kPathCharmap, false);
 }

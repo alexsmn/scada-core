@@ -110,13 +110,13 @@ std::wstring GetWindowText(HWND window_handle) {
 int GetWindowInt(HWND window_handle) {
   std::wstring str = GetWindowText(window_handle);
   int value;
-  if (!Parse(str, value))
+  if (!Parse(base::AsString16(str), value))
     throw E_INVALIDARG;
   return value;
 }
 
 void SetWindowTextInt(HWND window_handle, int value) {
-  SetWindowText(window_handle, WideFormat(value).c_str());
+  SetWindowText(window_handle, base::AsWString(WideFormat(value)).c_str());
 }
 
 std::wstring GetListBoxItemText(HWND window_handle, int index) {

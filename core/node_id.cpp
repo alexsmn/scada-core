@@ -85,33 +85,33 @@ NodeId NodeId::FromString(std::string_view string) {
 
   std::string_view str = string;
 
-  if (base::StartsWith(ToStringPiece(str),
+  if (base::StartsWith(AsStringPiece(str),
                        "ns=", base::CompareCase::INSENSITIVE_ASCII)) {
     auto index = str.find(';');
     if (index == std::string_view::npos)
       return {};
     unsigned id = 0;
-    if (!base::StringToUint(ToStringPiece(str.substr(3, index - 3)), &id))
+    if (!base::StringToUint(AsStringPiece(str.substr(3, index - 3)), &id))
       return {};
     namespace_index = static_cast<NamespaceIndex>(id);
     str = str.substr(index + 1);
   }
 
-  if (base::StartsWith(ToStringPiece(str),
+  if (base::StartsWith(AsStringPiece(str),
                        "i=", base::CompareCase::INSENSITIVE_ASCII)) {
     unsigned numeric_id = 0;
-    if (!base::StringToUint(ToStringPiece(str.substr(2)), &numeric_id))
+    if (!base::StringToUint(AsStringPiece(str.substr(2)), &numeric_id))
       return {};
     return {numeric_id, namespace_index};
   }
 
-  if (base::StartsWith(ToStringPiece(str),
+  if (base::StartsWith(AsStringPiece(str),
                        "s=", base::CompareCase::INSENSITIVE_ASCII)) {
     auto string_id = str.substr(2);
     return {std::string{string_id}, namespace_index};
   }
 
-  if (base::StartsWith(ToStringPiece(str),
+  if (base::StartsWith(AsStringPiece(str),
                        "s=", base::CompareCase::INSENSITIVE_ASCII)) {
     auto string_id = str.substr(2);
     return {std::string{string_id}, namespace_index};

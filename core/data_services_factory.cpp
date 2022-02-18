@@ -21,8 +21,8 @@ void RegisterDataServices(DataServicesInfo info) {
 }
 
 bool EqualDataServicesName(std::string_view name1, std::string_view name2) {
-  return base::EqualsCaseInsensitiveASCII(ToStringPiece(name1),
-                                          ToStringPiece(name2));
+  return base::EqualsCaseInsensitiveASCII(AsStringPiece(name1),
+                                          AsStringPiece(name2));
 }
 
 bool CreateDataServices(std::string_view name,

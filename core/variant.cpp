@@ -1,9 +1,9 @@
 ﻿#include "core/variant.h"
 
+#include "base/debug_util.h"
 #include "base/format.h"
 #include "base/format_time.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/debug_util.h"
 #include "core/standard_node_ids.h"
 
 #include <cassert>
@@ -38,8 +38,8 @@ static_assert(std::size(kBuiltInDataTypeNames) ==
 
 }  // namespace
 
-const LocalizedText Variant::kTrueString = base::WideToUTF16(L"Да");
-const LocalizedText Variant::kFalseString = base::WideToUTF16(L"Нет");
+const char16_t Variant::kTrueString[] = u"Да";
+const char16_t Variant::kFalseString[] = u"Нет";
 
 void Variant::clear() {
   data_ = std::monostate{};
@@ -386,6 +386,6 @@ std::string ToString(const scada::Variant& value) {
   return value.get_or(std::string{});
 }
 
-std::wstring ToString16(const scada::Variant& value) {
-  return value.get_or(std::wstring{});
+std::u16string ToString16(const scada::Variant& value) {
+  return value.get_or(std::u16string{});
 }

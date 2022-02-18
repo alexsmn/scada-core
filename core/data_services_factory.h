@@ -34,7 +34,7 @@ using DataServicesFactoryMethod =
 
 struct DataServicesInfo {
   std::string name;
-  std::wstring display_name;
+  std::u16string display_name;
   DataServicesFactoryMethod factory_method;
 };
 

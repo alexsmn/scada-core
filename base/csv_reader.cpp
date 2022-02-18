@@ -2,12 +2,11 @@
 
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
-#include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 
 #include <cassert>
 
-CsvReader::CsvReader(std::istream& stream, std::wstring_view signature)
+CsvReader::CsvReader(std::istream& stream, std::u16string_view signature)
     : stream_{stream}, signature_{signature} {}
 
 bool CsvReader::NextRow() {
@@ -17,20 +16,15 @@ bool CsvReader::NextRow() {
   if (!std::getline(stream_, raw_line_))
     return false;
 
-#if defined(OS_WIN)
-  line_ = base::SysNativeMBToWide(raw_line_);
-#else
   line_ = base::UTF8ToUTF16(raw_line_);
-#endif
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.
-  base::ReplaceSubstringsAfterOffset(&line_, 0, base::WideToUTF16(L"\r\n"),
-                                     base::WideToUTF16(L"\n"));
+  base::ReplaceSubstringsAfterOffset(&line_, 0, u"\r\n", u"\n");
 
   if (!signature_.empty()) {
     if (line_.size() > signature_.size() &&
-        base::StartsWith(ToStringPiece(line_), ToStringPiece(signature_),
+        base::StartsWith(line_, AsStringPiece(signature_),
                          base::CompareCase::SENSITIVE)) {
       separator_ = line_[signature_.size()];
     }
@@ -39,7 +33,7 @@ bool CsvReader::NextRow() {
   return true;
 }
 
-bool CsvReader::NextCell(std::wstring& str) {
+bool CsvReader::NextCell(std::u16string& str) {
   str.clear();
 
   if (!has_cells_)
@@ -48,19 +42,19 @@ bool CsvReader::NextCell(std::wstring& str) {
   ++cell_index_;
 
   // Escaped.
-  if (line_pos_ < line_.size() && line_[line_pos_] == L'"') {
+  if (line_pos_ < line_.size() && line_[line_pos_] == u'"') {
     ++line_pos_;
     while (line_pos_ < line_.size()) {
-      auto p = line_.find(L'"', line_pos_);
+      auto p = line_.find(u'"', line_pos_);
       if (p == std::string::npos) {
         assert(false);
         return false;
       }
       str += line_.substr(line_pos_, p - line_pos_);
       line_pos_ = p + 1;  // skip quote
-      if (line_pos_ >= line_.size() || line_[line_pos_] != L'"')
+      if (line_pos_ >= line_.size() || line_[line_pos_] != u'"')
         break;
-      str += L'"';
+      str += u'"';
       ++line_pos_;
     }
     // Should end with line break or separator.

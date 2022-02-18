@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/strings/string16.h"
 #include "core/status.h"
 
 #include <ostream>
@@ -143,7 +144,7 @@ inline Status Qualifier::ToStatus() const {
 }  // namespace scada
 
 std::string ToString(scada::Qualifier qualifier);
-std::wstring ToString16(scada::Qualifier qualifier);
+std::u16string ToString16(scada::Qualifier qualifier);
 
 namespace scada {
 

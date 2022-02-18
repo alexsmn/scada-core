@@ -55,10 +55,13 @@ inline std::set<T> Union(const std::vector<std::set<T>>& subsets) {
   return result;
 }
 
-template <class R, class E>
-inline bool Contains(const R& range, const E& item) {
-  return std::find(std::cbegin(range), std::cend(range), item) !=
-         std::cend(range);
+template <class R>
+inline auto SortedUnique(const R& range) {
+  std::vector<std::remove_const_t<element_type_t<R>>> result(std::begin(range),
+                                                             std::end(range));
+  std::sort(result.begin(), result.end());
+  result.erase(std::unique(result.begin(), result.end()), result.end());
+  return result;
 }
 
 template <class E, class T>

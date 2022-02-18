@@ -4,12 +4,14 @@
 
 #include <string_view>
 
-inline constexpr base::StringPiece ToStringPiece(
-    std::string_view str) noexcept {
-  return {str.data(), str.size()};
+template <class CharT>
+inline constexpr base::BasicStringPiece<CharT> AsStringPiece(
+    std::basic_string_view<CharT> str) noexcept {
+  return base::BasicStringPiece<CharT>{str.data(), str.size()};
 }
 
-inline constexpr base::StringPiece16 ToStringPiece(
-    std::wstring_view str) noexcept {
-  return {str.data(), str.size()};
+template <class CharT>
+inline constexpr std::basic_string_view<CharT> AsStringView(
+    base::BasicStringPiece<CharT> str) noexcept {
+  return std::basic_string_view<CharT>{str.data(), str.size()};
 }

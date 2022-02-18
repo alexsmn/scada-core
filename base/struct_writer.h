@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/debug_util.h"
-#include "base/strings/sys_string_conversions.h"
 
 #include <ostream>
 #include <string_view>
@@ -81,6 +80,4 @@ inline void StructWriter::AddValue(const std::string& value) {
 }
 
 template <>
-inline void StructWriter::AddValue(const std::wstring& value) {
-  stream_ << "\"" << base::SysWideToNativeMB(value) << "\"";
-}
+void StructWriter::AddValue(const std::wstring& value);

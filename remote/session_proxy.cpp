@@ -29,7 +29,7 @@ namespace {
 const auto kPingDelay = 1s;
 
 std::string MakeConnectionString(std::string_view str) {
-  auto parts = base::SplitString(ToStringPiece(str), ":", base::TRIM_WHITESPACE,
+  auto parts = base::SplitString(AsStringPiece(str), ":", base::TRIM_WHITESPACE,
                                  base::SplitResult::SPLIT_WANT_ALL);
   parts.resize(2);
   if (parts[1].empty())

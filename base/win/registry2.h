@@ -6,10 +6,10 @@
 
 class Registry {
  public:
-  Registry(HKEY par, const wchar_t* key, BOOL read = FALSE) {
-    REGSAM acc = read ? KEY_QUERY_VALUE : KEY_SET_VALUE | KEY_QUERY_VALUE;
+  Registry(HKEY par, const wchar_t* key, bool read_only = false) {
+    REGSAM acc = read_only ? KEY_QUERY_VALUE : KEY_SET_VALUE | KEY_QUERY_VALUE;
     if (reg.Open(par, key, acc) != ERROR_SUCCESS) {
-      if (!read)
+      if (!read_only)
         reg.Create(par, key, NULL, 0, acc);
     }
   }

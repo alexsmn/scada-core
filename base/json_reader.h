@@ -17,7 +17,7 @@ inline bool ReadJson(const base::Value& json, std::string& value) {
 }
 
 template <>
-inline bool ReadJson(const base::Value& json, std::wstring& value) {
+inline bool ReadJson(const base::Value& json, std::u16string& value) {
   return json.GetAsString(&value);
 }
 
@@ -28,7 +28,7 @@ class JsonReader {
 
   template <class F>
   JsonReader& field(std::string_view key, F T::*field) {
-    auto* json_value = json_.FindKey(ToStringPiece(key));
+    auto* json_value = json_.FindKey(AsStringPiece(key));
     if (!json_value)
       return *this;
 

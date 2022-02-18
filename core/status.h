@@ -1,6 +1,9 @@
 #pragma once
 
+#include "base/strings/string16.h"
+
 #include <string>
+#include <ostream>
 
 namespace scada {
 
@@ -170,10 +173,10 @@ class Status {
 }  // namespace scada
 
 std::string ToString(scada::StatusCode status_code);
-std::wstring ToString16(scada::StatusCode status_code);
+std::u16string ToString16(scada::StatusCode status_code);
 
 std::string ToString(const scada::Status& status);
-std::wstring ToString16(const scada::Status& status);
+std::u16string ToString16(const scada::Status& status);
 
 namespace scada {
 

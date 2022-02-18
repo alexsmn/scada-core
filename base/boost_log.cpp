@@ -1,6 +1,7 @@
 #include "base/boost_log.h"
 
 #include "base/format.h"
+#include "base/strings/utf_string_conversions.h"
 
 #include <boost/date_time/posix_time/time_formatters.hpp>
 #include <boost/filesystem.hpp>
@@ -18,7 +19,6 @@ namespace {
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", BoostLogSeverity)
 
-// Our attribute value visitor
 struct StringFormatter {
   typedef std::string result_type;
 
@@ -26,13 +26,18 @@ struct StringFormatter {
   result_type operator()(const T& value) const {
     return Format(value);
   }
+
+  template <>
+  result_type operator()(const std::wstring& value) const {
+    return Format(base::WideToUTF16(value));
+  }
 };
 
 std::string ToString(const boost::log::attribute_value& attr) {
   // NOTE: It's not clear why long is required at least under Windows.
   using Types = boost::mpl::vector<bool, int16_t, uint16_t, int32_t, uint32_t,
                                    int64_t, uint64_t, long, float, double,
-                                   std::string, std::wstring>;
+                                   std::string, std::wstring, std::u16string>;
 
   StringFormatter::result_type result;
   boost::log::visit<Types>(attr,

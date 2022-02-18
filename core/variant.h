@@ -57,7 +57,7 @@ class Variant {
   Variant(LocalizedText str) noexcept : data_{std::move(str)} {}
   constexpr Variant(DateTime value) noexcept : data_{value} {}
   Variant(const char* str) : data_{str ? String{str} : String{}} {}
-  Variant(const wchar_t* str)
+  Variant(const char16_t* str)
       : data_{str ? LocalizedText{str} : LocalizedText{}} {}
   Variant(NodeId node_id) noexcept : data_{std::move(node_id)} {}
   Variant(ExpandedNodeId node_id) noexcept : data_{std::move(node_id)} {}
@@ -139,8 +139,8 @@ class Variant {
 
   void Dump(std::ostream& stream) const;
 
-  static const LocalizedText kTrueString;
-  static const LocalizedText kFalseString;
+  static const char16_t kTrueString[];
+  static const char16_t kFalseString[];
 
  private:
   template <class T>
@@ -254,7 +254,7 @@ Variant::Type ToBuiltInDataType(const NodeId& node_id);
 std::string ToString(scada::Variant::Type type);
 
 std::string ToString(const scada::Variant& value);
-std::wstring ToString16(const scada::Variant& value);
+std::u16string ToString16(const scada::Variant& value);
 
 namespace scada {
 

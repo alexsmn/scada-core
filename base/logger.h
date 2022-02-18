@@ -1,8 +1,7 @@
 #pragma once
 
-#include "base/files/file_path.h"
-
 #include <cstdarg>
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -45,5 +44,5 @@ class NullLogger : public Logger {
 };
 
 std::unique_ptr<Logger> CreateFileLogger(int path_service_key,
-                                         base::FilePath::StringType base_name,
+                                         std::u16string base_name,
                                          const char* title);

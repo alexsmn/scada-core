@@ -25,25 +25,25 @@ std::string ToString(scada::Qualifier qualifier) {
   return text;
 }
 
-std::wstring ToString16(scada::Qualifier qualifier) {
-  std::wstring text;
+std::u16string ToString16(scada::Qualifier qualifier) {
+  std::u16string text;
   if (qualifier.bad())
-    text += base::WideToUTF16(L"Недост ");
+    text += u"Недост ";
   if (qualifier.backup())
-    text += base::WideToUTF16(L"Резерв ");
+    text += u"Резерв ";
   if (qualifier.offline())
-    text += base::WideToUTF16(L"НетСвязи ");
+    text += u"НетСвязи ";
   if (qualifier.manual())
-    text += base::WideToUTF16(L"Ручной ");
+    text += u"Ручной ";
   if (qualifier.misconfigured())
-    text += base::WideToUTF16(L"НеСконф ");
+    text += u"НеСконф ";
   if (qualifier.simulated())
-    text += base::WideToUTF16(L"Эмулирован ");
+    text += u"Эмулирован ";
   if (qualifier.sporadic())
-    text += base::WideToUTF16(L"Спорадика ");
+    text += u"Спорадика ";
   if (qualifier.stale())
-    text += base::WideToUTF16(L"Устарел ");
+    text += u"Устарел ";
   if (qualifier.failed())
-    text += base::WideToUTF16(L"Ошибка ");
+    text += u"Ошибка ";
   return text;
 }

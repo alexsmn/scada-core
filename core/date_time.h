@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/strings/string16.h"
 #include "base/time/time.h"
 
 #include <ostream>
@@ -15,4 +16,4 @@ using Duration = base::TimeDelta;
 }  // namespace scada
 
 std::string ToString(scada::DateTime time);
-std::wstring ToString16(scada::DateTime time);
+std::u16string ToString16(scada::DateTime time);

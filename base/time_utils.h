@@ -1,8 +1,7 @@
 #pragma once
 
+#include "base/strings/string_piece.h"
 #include "base/time/time.h"
-
-#include <string_view>
 
 inline base::TimeDelta TimeDeltaFromSecondsF(double dt) {
   return base::TimeDelta::FromMicroseconds(static_cast<int64_t>(

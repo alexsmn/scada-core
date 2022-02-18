@@ -16,6 +16,9 @@ inline bool ConvertVariant(const Variant& source, Variant& target) {
   return true;
 }
 
+template <>
+bool ConvertVariant(const Variant& source, std::wstring& target);
+
 template <class T>
 inline scada::NodeId ToBuiltInDataType();
 

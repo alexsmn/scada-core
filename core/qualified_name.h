@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/strings/string16.h"
 #include "core/basic_types.h"
 #include "core/string.h"
 
@@ -46,4 +47,4 @@ inline const std::string& ToString(const scada::QualifiedName& name) {
   return name.name();
 }
 
-std::wstring ToString16(const scada::QualifiedName& name);
+std::u16string ToString16(const scada::QualifiedName& name);

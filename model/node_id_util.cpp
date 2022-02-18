@@ -61,7 +61,7 @@ bool IsNestedNodeId(const scada::NodeId& node_id,
   // levels are always strings, since they have to contain the `!` separator.
   if (is_top_parent) {
     scada::NumericId parent_numeric_id = 0;
-    if (!base::StringToUint(ToStringPiece(parent_string_id),
+    if (!base::StringToUint(AsStringPiece(parent_string_id),
                             &parent_numeric_id)) {
       return false;
     }
@@ -94,7 +94,7 @@ scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
                                ? base::NumberToString(parent_id.numeric_id())
                                : parent_id.string_id();
   auto identifier = base::StrCat(
-      {parent_namespace, parent_identifier, "!", ToStringPiece(nested_name)});
+      {parent_namespace, parent_identifier, "!", AsStringPiece(nested_name)});
 
   return scada::NodeId{std::move(identifier), namespace_index};
 }
@@ -158,11 +158,11 @@ scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
   const auto namespace_name = scada_string.substr(0, p);
   int namespace_index = FindNamespaceIndexByName(namespace_name);
   if (namespace_index == -1) {
-    if (!base::StartsWith(ToStringPiece(namespace_name), "NS",
+    if (!base::StartsWith(AsStringPiece(namespace_name), "NS",
                           base::CompareCase::INSENSITIVE_ASCII)) {
       return scada::NodeId{};
     }
-    if (!base::StringToInt(ToStringPiece(namespace_name.substr(2)),
+    if (!base::StringToInt(AsStringPiece(namespace_name.substr(2)),
                            &namespace_index)) {
       return scada::NodeId{};
     }
@@ -176,7 +176,7 @@ scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
   }
 
   scada::NumericId numeric_id = 0;
-  if (!base::StringToUint(ToStringPiece(identifier), &numeric_id)) {
+  if (!base::StringToUint(AsStringPiece(identifier), &numeric_id)) {
     return scada::NodeId{std::string{identifier},
                          static_cast<scada::NamespaceIndex>(namespace_index)};
   }
