@@ -3,7 +3,6 @@
 #include "base/boost_log.h"
 #include "base/executor_timer.h"
 #include "core/attribute_service.h"
-#include "core/configuration_types.h"
 #include "core/logging.h"
 #include "core/method_service.h"
 #include "core/monitored_item_service.h"

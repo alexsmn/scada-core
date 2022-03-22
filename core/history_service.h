@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/configuration_types.h"
 #include "core/event.h"
 #include "core/history_types.h"
 

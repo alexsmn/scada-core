@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/debug_util.h"
-#include "core/configuration_types.h"
 #include "core/expanded_node_id.h"
 #include "core/node_class.h"
 #include "core/qualified_name.h"
