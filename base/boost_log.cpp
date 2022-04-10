@@ -29,7 +29,12 @@ struct StringFormatter {
 
   template <>
   result_type operator()(const std::wstring& value) const {
-    return Format(base::WideToUTF16(value));
+    return base::WideToUTF8(value);
+  }
+
+  template <>
+  result_type operator()(const std::u16string& value) const {
+    return base::UTF16ToUTF8(value);
   }
 };
 
