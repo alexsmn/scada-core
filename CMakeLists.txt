@@ -19,10 +19,10 @@ if(WIN32)
       "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/libprotobuf.dll>"
       "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/OPCUA.dll>"
       "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/OPCUA.dll>"
-      "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/libssl-1_1.dll>"
-      "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/libssl-1_1.dll>"
-      "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/libcrypto-1_1.dll>"
-      "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/libcrypto-1_1.dll>"
+      "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/libssl-3.dll>"
+      "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/libssl-3.dll>"
+      "$<$<CONFIG:Debug>:${LIBRARY_OUTPUT_PATH}/Debug/libcrypto-3.dll>"
+      "$<$<CONFIG:RelWithDebInfo>:${LIBRARY_OUTPUT_PATH}/RelWithDebInfo/libcrypto-3.dll>"
     DESTINATION bin
     COMPONENT Common)
 

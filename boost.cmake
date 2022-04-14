@@ -3,8 +3,8 @@ set(BOOST_COMPONENTS thread log log_setup filesystem date_time program_options)
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 if(WIN32)
-  set(BOOST_DEBUG_SUFFIX "vc142-mt-gd-x32-${Boost_LIB_VERSION}")
-  set(BOOST_RELEASE_SUFFIX "vc142-mt-x32-${Boost_LIB_VERSION}")
+  set(BOOST_DEBUG_SUFFIX "vc143-mt-gd-x32-${Boost_LIB_VERSION}")
+  set(BOOST_RELEASE_SUFFIX "vc143-mt-x32-${Boost_LIB_VERSION}")
 
   foreach(BOOST_COMPONENT ${BOOST_COMPONENTS})
     if(NOT ${BOOST_COMPONENT} MATCHES "date_time")
