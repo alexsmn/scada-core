@@ -5,6 +5,7 @@ file(GLOB UT_SOURCES CONFIGURE_DEPENDS "*_unittest.*")
 
 list(REMOVE_ITEM SOURCES ${UT_SOURCES})
 
+protobuf_generate_cpp(SCADA_CORE_PROTO_CPP SCADA_CORE_PROTO_H scada_core.proto)
 protobuf_generate_cpp(SCADA_PROTO_CPP SCADA_PROTO_H scada.proto)
 protobuf_generate_python(SCADA_PROTO_PY scada.proto)
 
@@ -12,10 +13,15 @@ protobuf_generate_python(SCADA_PROTO_PY scada.proto)
 if (gRPC_FOUND)
   # get_target_property(GRPC_CPP_PLUGIN grpc::grpc_cpp_plugin IMPORTED_LOCATION)
   include(protobuf_grpc.cmake)
+  protobuf_generate_grpc_cpp(SCADA_CORE_PROTO_GRPC_CPP SCADA_CORE_PROTO_GRPC_H scada_core.proto)
   protobuf_generate_grpc_cpp(SCADA_PROTO_GRPC_CPP SCADA_PROTO_GRPC_H scada.proto)
 endif()
 
 list(APPEND SOURCES
+  ${SCADA_CORE_PROTO_CPP}
+  ${SCADA_CORE_PROTO_H}
+  ${SCADA_CORE_PROTO_GRPC_CPP}
+  ${SCADA_CORE_PROTO_GRPC_H}
   ${SCADA_PROTO_CPP}
   ${SCADA_PROTO_H}
   ${SCADA_PROTO_GRPC_CPP}

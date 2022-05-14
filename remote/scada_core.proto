@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package protocol;
+
+enum AttributeId {
+  NONE = 0;
+  NODE_ID = 1;
+  NODE_CLASS = 2;
+  BROWSE_NAME = 3;
+  DISPLAY_NAME = 4;
+  DESCRIPTION = 5;
+  WriteMask = 6;
+  UserWriteMask = 7;
+  IsAbstract = 8;
+  Symmetric = 9;
+  InverseName = 10;
+  ContainsNoLoops = 11;
+  EVENT_NOTIFIER = 12;
+  VALUE = 13;
+  DATA_TYPE = 14;
+  ValueRank = 15;
+  ArrayDimensions = 16;
+  AccessLevel = 17;
+  UserAccessLevel = 18;
+  MinimumSamplingInterval = 19;
+  Historizing = 20;
+  Executable = 21;
+  UserExecutable = 22;
+}
+
+message Attributes {
+  bytes browse_name_utf8 = 3;
+  bytes display_name_utf8 = 4;
+  Variant value = 13;
+  NodeId data_type_id = 14;
+}
+
+enum NodeClass {
+  None = 0;
+  Object = 1;
+  Variable = 2;
+  Method = 4;
+  ObjectType = 8;
+  VariableType = 16;
+  ReferenceType = 32;
+  DataType = 64;
+  View = 128;
+}
+
+
+message NodeId {
+  uint32 namespace_index = 1;
+  uint32 numeric_id = 2;
+  string string_id = 3;
+  bytes opaque_id = 4;
+}
+
+message ExpandedNodeId {
+  NodeId node_id = 1;
+}
+
+message Variant {
+  uint32 data_type     = 1;
+
+  // 0 - scalar, 1 - array
+  uint32 rank          = 2;
+
+  bool   bool_value    = 13;
+  int64  int_value     = 14;
+  double double_value  = 15;
+  // String, QualifiedName, or LocalizedText
+  bytes  string_value_utf8  = 16;
+  NodeId node_id_value = 17;
+  bytes  byte_string_value = 18;
+  int64  time_value_time = 19;
+
+  repeated bool   bool_array = 103;
+  repeated int64  int_array = 104;
+  repeated double double_array = 105;
+  // String, QualifiedName, or LocalizedText
+  repeated bytes  string_array_utf8 = 106;
+  NodeId node_id_array = 107;
+  bytes  byte_string_array = 108;
+  int64  time_array_time = 109;
+}
+
+message DataValue {
+  uint64 server_time = 1;
+  uint64 source_time = 2;
+  Variant value = 3;
+  uint32 qualifier = 4;
+  uint32 status_code = 5;
+}
+
+
+message NodeReference {
+  NodeId reference_type_id = 1;
+  bool forward = 2;
+  NodeId node_id = 3;
+}
+
+message NodeProperty {
+  NodeId declaration_id = 1;
+  Variant value = 2;
+}
+
+message Node {
+  NodeId node_id = 1;
+  NodeId type_definition_id = 2;
+  NodeClass node_class = 3;
+  Attributes attributes = 5;
+  NodeId parent_id = 6;
+  NodeId reference_type_id = 7;
+  repeated NodeReference reference = 8;
+  repeated NodeProperty property = 9;
+  repeated Node children = 10;
+}
