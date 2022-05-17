@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "core/basic_types.h"
+
+#include <string_view>
 
 namespace NamespaceIndexes {
 

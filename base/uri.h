@@ -1,7 +1,5 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
-
 #include <string>
 
 // Escapes characters in text suitable for use as a query parameter value.

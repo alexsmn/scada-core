@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "base/time/time.h"
 
 inline base::TimeDelta TimeDeltaFromSecondsF(double dt) {

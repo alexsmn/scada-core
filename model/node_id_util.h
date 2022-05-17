@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "core/node_id.h"
 
 bool IsNestedNodeId(const scada::NodeId& node_id,

@@ -4,7 +4,6 @@
 
 #include <any>
 #include <ostream>
-#include <variant>
 
 namespace scada {
 
