@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/debug_util.h"
-#include "base/strings/string16.h"
 #include "base/struct_writer.h"
 #include "core/data_value.h"
 #include "core/standard_node_ids.h"

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "base/strings/string16.h"
-
 #include <ostream>
 #include <string>
 #include <string_view>

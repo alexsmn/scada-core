@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "core/status.h"
 
 #include <ostream>
