@@ -28,6 +28,7 @@ class NodeId {
   }
 
   constexpr bool is_null() const noexcept;
+  constexpr bool is_namespace_only() const noexcept;
 
   constexpr NamespaceIndex namespace_index() const noexcept {
     return namespace_index_;
@@ -59,6 +60,12 @@ inline constexpr NodeId::NodeId(NumericId numeric_id,
 inline constexpr bool NodeId::is_null() const noexcept {
   if (namespace_index_ != 0)
     return false;
+  if (const auto* numeric_id = std::get_if<NumericId>(&identifier_))
+    return *numeric_id == 0;
+  return false;
+}
+
+inline constexpr bool NodeId::is_namespace_only() const noexcept {
   if (const auto* numeric_id = std::get_if<NumericId>(&identifier_))
     return *numeric_id == 0;
   return false;
