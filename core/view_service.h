@@ -98,10 +98,10 @@ inline void Browse(scada::ViewService& view_service,
 // Callback = void(const scada::BrowsePathResult);
 template <class Callback>
 inline void TranslateBrowsePath(scada::ViewService& view_service,
-                                const scada::BrowsePath& browse_path,
+                                scada::BrowsePath&& browse_path,
                                 const Callback& callback) {
   view_service.TranslateBrowsePaths(
-      {browse_path},
+      {std::move(browse_path)},
       [callback = std::move(callback)](
           scada::Status status, std::vector<scada::BrowsePathResult> results) {
         if (status)
@@ -165,12 +165,24 @@ inline std::ostream& operator<<(std::ostream& stream, const BrowseResult& v) {
                 << ", references: " << v.references << "}";
 }
 
+inline bool operator==(const RelativePathElement& a,
+                       const RelativePathElement& b) {
+  return std::tie(a.reference_type_id, a.inverse, a.include_subtypes,
+                  a.target_name) == std::tie(b.reference_type_id, b.inverse,
+                                             b.include_subtypes, b.target_name);
+}
+
 inline std::ostream& operator<<(std::ostream& stream,
                                 const RelativePathElement& v) {
   return stream << "{reference_type_id: " << v.reference_type_id
                 << ", inverse: " << v.inverse << ", "
                 << ", include_subtypes: " << v.include_subtypes << ", "
                 << ", target_name: " << v.target_name << "}";
+}
+
+inline bool operator==(const BrowsePath& a, const BrowsePath& b) {
+  return std::tie(a.node_id, a.relative_path) ==
+         std::tie(b.node_id, b.relative_path);
 }
 
 inline std::ostream& operator<<(std::ostream& stream, const BrowsePath& v) {
