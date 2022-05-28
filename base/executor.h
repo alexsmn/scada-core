@@ -26,12 +26,7 @@ inline void Dispatch(Executor& executor, T&& task) {
 namespace internal {
 
 template <class Task>
-class WrappedTask {
- public:
-  template <class T>
-  WrappedTask(std::shared_ptr<Executor> executor, T&& task)
-      : executor_{std::move(executor)}, task_{std::forward<T>(task)} {}
-
+struct ExecutorWrapper {
   template <class... Args>
   void operator()(Args&&... args) const {
     // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
@@ -42,14 +37,42 @@ class WrappedTask {
              });
   }
 
- private:
   const std::shared_ptr<Executor> executor_;
   Task task_;
 };
 
+template <class C, class T>
+struct CancelationWrapper {
+  template <class... Args>
+  void operator()(Args&&... args) const {
+    auto ref = cancelation_.lock();
+    if (ref)
+      std::move(task_)(std::forward<Args>(args)...);
+  }
+
+  const std::weak_ptr<C> cancelation_;
+  T task_;
+};
+
 }  // namespace internal
+
+template <class C, class T>
+inline auto BindCancelation(std::weak_ptr<C> cancelation, T&& task) {
+  return internal::CancelationWrapper<C, T>{std::move(cancelation),
+                                            std::forward<T>(task)};
+}
 
 template <class T>
 inline auto BindExecutor(std::shared_ptr<Executor> executor, T&& task) {
-  return internal::WrappedTask<T>(std::move(executor), std::forward<T>(task));
+  return internal::ExecutorWrapper<T>{std::move(executor),
+                                      std::forward<T>(task)};
+}
+
+template <class C, class T>
+inline auto BindExecutor(std::shared_ptr<Executor> executor,
+                         std::weak_ptr<C> cancelation,
+                         T&& task) {
+  return BindExecutor(
+      std::move(executor),
+      BindCancelation(std::move(cancelation), std::forward<T>(task)));
 }
