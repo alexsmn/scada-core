@@ -37,14 +37,14 @@ class Event {
 
   NodeId event_type_id;
   DateTime time;
-  unsigned change_mask = 0;
-  unsigned severity = kSeverityNormal;
+  scada::UInt32 change_mask = 0;
+  scada::UInt32 severity = kSeverityNormal;
   NodeId node_id;
   NodeId user_id;
   Variant value;
   Qualifier qualifier;
   scada::LocalizedText message;
-  bool acked = false;
+  scada::Boolean acked = false;
   EventAcknowledgeId acknowledge_id = 0;
   DateTime acknowledged_time;
   NodeId acknowledged_user_id;

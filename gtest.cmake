@@ -1,5 +1,16 @@
 include(GoogleTest)
 
+if(VCPKG_GTEST)
+
+find_package(GTest REQUIRED)
+
+# get_target_property(LIBA_INCLUDES LibraryA INCLUDE_DIRECTORIES)
+
+# set(GTEST_INCLUDE_DIRS "${GTest_DIR}/googletest/googletest/include")
+# set(GMOCK_INCLUDE_DIRS "${GTest_DIR}/googletest/googlemock/include")
+
+else()
+
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 set(GTEST_FOUND TRUE CACHE BOOL "" FORCE)
@@ -14,3 +25,5 @@ target_compile_definitions(gtest PUBLIC
 
 set(GTEST_INCLUDE_DIRS "${deps}/googletest/googletest/include")
 set(GMOCK_INCLUDE_DIRS "${deps}/googletest/googlemock/include")
+
+endif()

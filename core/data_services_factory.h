@@ -36,6 +36,7 @@ struct DataServicesInfo {
   std::string name;
   std::u16string display_name;
   DataServicesFactoryMethod factory_method;
+  std::string default_host;
 };
 
 void RegisterDataServices(DataServicesInfo info);
@@ -46,10 +47,11 @@ const DataServicesInfoList& GetDataServicesInfoList();
 
 bool EqualDataServicesName(std::string_view name1, std::string_view name2);
 
-#define REGISTER_DATA_SERVICES(name, display_name, factory_method) \
-  static bool factory_method##_registered = [] {                   \
-    RegisterDataServices({name, display_name, factory_method});    \
-    return true;                                                   \
+#define REGISTER_DATA_SERVICES(name, display_name, factory_method,            \
+                               default_host)                                  \
+  static bool factory_method##_registered = [] {                              \
+    RegisterDataServices({name, display_name, factory_method, default_host}); \
+    return true;                                                              \
   }();
 
 bool CreateDataServices(std::string_view name,
