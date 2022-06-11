@@ -123,6 +123,9 @@ class Variant {
   T get_or(T or_value) const;
 
   template <class T>
+  constexpr T* get_if() noexcept;
+
+  template <class T>
   constexpr const T* get_if() const noexcept;
 
   Variant& operator=(const Variant& source) = default;
@@ -230,6 +233,11 @@ inline bool Variant::get_int(T& value) const {
 
   value = static_cast<T>(int64_value);
   return static_cast<Int64>(value) == int64_value;
+}
+
+template <class T>
+inline constexpr T* Variant::get_if() noexcept {
+  return std::get_if<T>(&data_);
 }
 
 template <class T>
