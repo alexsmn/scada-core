@@ -83,16 +83,24 @@ inline bool Erase(std::set<K>& set, const T& item) {
   return set.erase(item) != 0;
 }
 
-template <class Range, class Mapper>
-inline auto Group(Range&& range, const Mapper& mapper) {
+template <class Range, class Mapper, class Transformer>
+inline auto Group(Range&& range,
+                  const Mapper& mapper,
+                  const Transformer& transformer) {
   using Element = std::remove_const_t<element_type_t<Range>>;
   using Key = std::invoke_result_t<Mapper, Element>;
   std::map<Key, std::vector<Element>> result;
   for (auto&& e : range) {
     auto key = mapper(e);
-    result[key].emplace_back(std::move(e));
+    result[key].emplace_back(transformer(e));
   }
   return result;
+}
+
+template <class Range, class Mapper>
+inline auto Group(Range&& range, const Mapper& mapper) {
+  return Group(std::move(range), mapper,
+               [](auto&& value) { return std::move(value); });
 }
 
 // to_set
@@ -138,20 +146,29 @@ inline static const auto flattened = ::detail::flattened_forwarder();
 
 namespace detail {
 
-template <class Mapper>
+template <class Mapper, class Transformer>
 struct grouped_forwarder {
   Mapper mapper;
+  Transformer transformer;
 };
 
 };  // namespace detail
 
-template <class R, class Mapper>
-inline auto operator|(const R& r,
-                      const ::detail::grouped_forwarder<Mapper>& forwarder) {
-  return Group(r, forwarder.mapper);
+template <class R, class Mapper, class Transformer>
+inline auto operator|(
+    const R& r,
+    const ::detail::grouped_forwarder<Mapper, Transformer>& forwarder) {
+  return Group(r, forwarder.mapper, forwarder.transformer);
+}
+
+template <class Mapper, class Transformer>
+inline auto grouped(Mapper&& mapper, Transformer&& transformer) {
+  return ::detail::grouped_forwarder<Mapper, Transformer>{
+      std::forward<Mapper>(mapper), std::forward<Transformer>(transformer)};
 }
 
 template <class Mapper>
 inline auto grouped(Mapper&& mapper) {
-  return ::detail::grouped_forwarder<Mapper>{std::forward<Mapper>(mapper)};
+  return grouped(std::forward<Mapper>(mapper),
+                 [](auto&& value) { return std::move(value); });
 }
