@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/cancelation.h"
 #include "base/common_types.h"
 
 #include <functional>
@@ -41,26 +42,7 @@ struct ExecutorWrapper {
   Task task_;
 };
 
-template <class C, class T>
-struct CancelationWrapper {
-  template <class... Args>
-  void operator()(Args&&... args) const {
-    auto ref = cancelation_.lock();
-    if (ref)
-      std::move(task_)(std::forward<Args>(args)...);
-  }
-
-  const std::weak_ptr<C> cancelation_;
-  T task_;
-};
-
 }  // namespace internal
-
-template <class C, class T>
-inline auto BindCancelation(std::weak_ptr<C> cancelation, T&& task) {
-  return internal::CancelationWrapper<C, T>{std::move(cancelation),
-                                            std::forward<T>(task)};
-}
 
 template <class T>
 inline auto BindExecutor(std::shared_ptr<Executor> executor, T&& task) {
