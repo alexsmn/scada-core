@@ -84,30 +84,32 @@ class ViewService {
 template <class Callback>
 inline void Browse(scada::ViewService& view_service,
                    const scada::BrowseDescription& input,
-                   const Callback& callback) {
-  view_service.Browse({input}, [callback = std::move(callback)](
-                                   scada::Status status,
-                                   std::vector<scada::BrowseResult> results) {
-    if (status)
-      callback(std::move(results.front()));
-    else
-      callback({status.code()});
-  });
+                   Callback&& callback) {
+  view_service.Browse({input},
+                      [callback = std::forward<Callback>(callback)](
+                          scada::Status status,
+                          std::vector<scada::BrowseResult> results) mutable {
+                        if (status)
+                          callback(std::move(results.front()));
+                        else
+                          callback({status.code()});
+                      });
 }
 
 // Callback = void(const scada::BrowsePathResult);
 template <class Callback>
 inline void TranslateBrowsePath(scada::ViewService& view_service,
                                 scada::BrowsePath&& browse_path,
-                                const Callback& callback) {
+                                Callback&& callback) {
   view_service.TranslateBrowsePaths(
       {std::move(browse_path)},
-      [callback = std::move(callback)](
-          scada::Status status, std::vector<scada::BrowsePathResult> results) {
+      [callback = std::forward<Callback>(callback)](
+          scada::Status status,
+          std::vector<scada::BrowsePathResult> results) mutable {
         if (status)
           callback(std::move(results.front()));
         else
-          callback({status.code()});
+          callback(scada::BrowsePathResult{status.code()});
       });
 }
 
