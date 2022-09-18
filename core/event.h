@@ -138,4 +138,14 @@ inline std::ostream& operator<<(std::ostream& stream,
   return stream;
 }
 
+inline std::ostream& operator<<(std::ostream& stream,
+                                const EventFilter& event_filter) {
+  StructWriter{stream}
+      .AddField("types.acked", !!(event_filter.types & EventFilter::ACKED))
+      .AddField("types.unacked", !!(event_filter.types & EventFilter::UNACKED))
+      .AddField("of_type", event_filter.of_type)
+      .AddField("child_of", event_filter.child_of);
+  return stream;
+}
+
 }  // namespace scada

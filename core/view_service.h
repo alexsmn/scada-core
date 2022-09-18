@@ -80,36 +80,34 @@ class ViewService {
       const TranslateBrowsePathsCallback& callback) = 0;
 };
 
-// Callback = void(const scada::BrowseResult);
+// Callback = void(const BrowseResult);
 template <class Callback>
-inline void Browse(scada::ViewService& view_service,
-                   const scada::BrowseDescription& input,
+inline void Browse(ViewService& view_service,
+                   const BrowseDescription& input,
                    Callback&& callback) {
-  view_service.Browse({input},
-                      [callback = std::forward<Callback>(callback)](
-                          scada::Status status,
-                          std::vector<scada::BrowseResult> results) mutable {
-                        if (status)
-                          callback(std::move(results.front()));
-                        else
-                          callback({status.code()});
-                      });
+  view_service.Browse(
+      {input}, [callback = std::forward<Callback>(callback)](
+                   Status status, std::vector<BrowseResult> results) mutable {
+        if (status)
+          callback(std::move(results.front()));
+        else
+          callback({status.code()});
+      });
 }
 
-// Callback = void(const scada::BrowsePathResult);
+// Callback = void(const BrowsePathResult);
 template <class Callback>
-inline void TranslateBrowsePath(scada::ViewService& view_service,
-                                scada::BrowsePath&& browse_path,
+inline void TranslateBrowsePath(ViewService& view_service,
+                                BrowsePath&& browse_path,
                                 Callback&& callback) {
   view_service.TranslateBrowsePaths(
       {std::move(browse_path)},
       [callback = std::forward<Callback>(callback)](
-          scada::Status status,
-          std::vector<scada::BrowsePathResult> results) mutable {
+          Status status, std::vector<BrowsePathResult> results) mutable {
         if (status)
           callback(std::move(results.front()));
         else
-          callback(scada::BrowsePathResult{status.code()});
+          callback(BrowsePathResult{status.code()});
       });
 }
 

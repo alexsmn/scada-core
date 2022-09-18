@@ -1,9 +1,12 @@
 #pragma once
 
 #include "base/containers/span.h"
+#include "core/view_service.h"
 
 #if !defined(NDEBUG)
-inline bool Validate(base::span<const scada::ReferenceDescription> references) {
+
+inline bool ValidateUnique(
+    base::span<const scada::ReferenceDescription> references) {
   std::vector<scada::ReferenceDescription> sorted_references(references.begin(),
                                                              references.end());
   std::sort(sorted_references.begin(), sorted_references.end(),
@@ -21,7 +24,7 @@ inline bool Validate(base::span<const scada::ReferenceDescription> references) {
 
 inline bool Validate(const scada::BrowseResult& result) {
   if (scada::IsGood(result.status_code)) {
-    return Validate(result.references);
+    return ValidateUnique(result.references);
   } else {
     assert(result.references.empty());
     return result.references.empty();
@@ -33,4 +36,5 @@ inline bool Validate(base::span<const scada::BrowseResult> results) {
       results.begin(), results.end(),
       [](const scada::BrowseResult& result) { return Validate(result); });
 }
+
 #endif

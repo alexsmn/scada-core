@@ -22,9 +22,12 @@ inline promise<scada::DataValue> ReadInitialValue(
   monitored_item->Subscribe([promise, monitored_item, completed = false](
                                 const scada::DataValue& data_value) mutable {
     if (!completed) {
+      // Copy promise to avoid deletion when |monitored_item| deletes along with
+      // the callback.
+      auto copied_promise = promise;
       completed = true;
       monitored_item.reset();
-      promise.resolve(data_value);
+      copied_promise.resolve(data_value);
     }
   });
   return promise;
