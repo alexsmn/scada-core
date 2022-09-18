@@ -227,20 +227,15 @@ void SessionStub::OnCall(unsigned request_id,
                          const scada::NodeId& node_id,
                          const scada::NodeId& method_id,
                          const std::vector<scada::Variant>& arguments) {
-  std::weak_ptr<SessionStub> weak_ptr = shared_from_this();
   method_service_.Call(
       node_id, method_id, arguments, service_context_->user_id,
-      BindExecutor(executor_,
-                   [weak_ptr, request_id](const scada::Status& status) {
-                     auto ptr = weak_ptr.lock();
-                     if (!ptr)
-                       return;
-
+      BindExecutor(executor_, weak_from_this(),
+                   [this, request_id](const scada::Status& status) {
                      protocol::Message message;
                      auto& response = *message.add_responses();
                      response.set_request_id(request_id);
                      Convert(status, *response.mutable_status());
-                     ptr->Send(message);
+                     Send(message);
                    }));
 }
 
@@ -254,21 +249,17 @@ void SessionStub::OnRead(const protocol::Request& request) {
 
   attribute_service_.Read(
       service_context_, inputs,
-      BindExecutor(executor_, [weak_ptr = weak_from_this(), request_id](
-                                  scada::Status status,
-                                  std::vector<scada::DataValue> results) {
-        auto ptr = weak_ptr.lock();
-        if (!ptr)
-          return;
-
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(std::move(status), *response.mutable_status());
-        Convert(std::move(results),
-                *response.mutable_read_result()->mutable_value());
-        ptr->Send(message);
-      }));
+      BindExecutor(executor_, weak_from_this(),
+                   [this, request_id](scada::Status status,
+                                      std::vector<scada::DataValue> results) {
+                     protocol::Message message;
+                     auto& response = *message.add_responses();
+                     response.set_request_id(request_id);
+                     Convert(std::move(status), *response.mutable_status());
+                     Convert(std::move(results),
+                             *response.mutable_read_result()->mutable_value());
+                     Send(message);
+                   }));
 }
 
 void SessionStub::OnWrite(const protocol::Request& request) {
@@ -281,18 +272,15 @@ void SessionStub::OnWrite(const protocol::Request& request) {
 
   attribute_service_.Write(
       service_context_, inputs,
-      BindExecutor(executor_, [weak_ptr = weak_from_this(), request_id](
-                                  scada::Status status,
-                                  std::vector<scada::StatusCode> status_codes) {
-        auto ptr = weak_ptr.lock();
-        if (!ptr)
-          return;
-
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(status, *response.mutable_status());
-        Convert(std::move(status_codes), *response.mutable_write_result());
-        ptr->Send(message);
-      }));
+      BindExecutor(
+          executor_, weak_from_this(),
+          [this, request_id](scada::Status status,
+                             std::vector<scada::StatusCode> status_codes) {
+            protocol::Message message;
+            auto& response = *message.add_responses();
+            response.set_request_id(request_id);
+            Convert(status, *response.mutable_status());
+            Convert(std::move(status_codes), *response.mutable_write_result());
+            Send(message);
+          }));
 }

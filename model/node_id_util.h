@@ -12,6 +12,10 @@ inline bool IsNestedNodeId(const scada::NodeId& node_id) {
   return IsNestedNodeId(node_id, parent_id, nested_name);
 }
 
+bool GetRootNestedNodeId(const scada::NodeId& node_id,
+                         scada::NodeId& parent_id,
+                         std::string_view& nested_name);
+
 scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
                                std::string_view nested_name);
 scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,

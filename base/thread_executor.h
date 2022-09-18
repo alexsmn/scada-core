@@ -16,7 +16,11 @@ class ThreadExecutor : public Executor {
   ThreadExecutor(const ThreadExecutor&) = delete;
   ThreadExecutor& operator=(const ThreadExecutor&) = delete;
 
-  virtual void PostDelayedTask(Duration delay, Task task) override;
+  // Executor
+  virtual void PostDelayedTask(
+      Duration delay,
+      Task task,
+      const base::Location& location = FROM_HERE) override;
   virtual size_t GetTaskCount() const override;
 
  private:
@@ -28,6 +32,9 @@ class ThreadExecutor : public Executor {
     Task task;
     TimePoint time;
     int sequence = 0;
+#ifndef NDEBUG
+    base::Location location;
+#endif
   };
 
   mutable std::mutex mutex_;

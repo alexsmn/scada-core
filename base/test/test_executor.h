@@ -8,11 +8,15 @@ class TestExecutor : public Executor {
  public:
   explicit TestExecutor(bool instant = false) : instant_{instant} {}
 
-  virtual void PostDelayedTask(Duration delay, Task task) override {
+  virtual void PostDelayedTask(
+      Duration delay,
+      Task task,
+      const base::Location& location = FROM_HERE) override {
     if (instant_ || delay == Duration{})
       task();
-    else
-      pending_tasks_.emplace_back(delay, std::move(task));
+    else {
+      pending_tasks_.push_back({delay, std::move(task), location});
+    }
   }
 
   virtual size_t GetTaskCount() const override { return 0; }
@@ -20,7 +24,7 @@ class TestExecutor : public Executor {
   void Advance(Duration delta) {
     auto run_tasks = PopRunTasks(delta);
     for (auto& t : pending_tasks_)
-      t.first -= delta;
+      t.delay -= delta;
     for (auto& task : run_tasks)
       task();
   }
@@ -28,17 +32,19 @@ class TestExecutor : public Executor {
  private:
   std::vector<Task> PopRunTasks(Duration delta) {
     // Move run tasks with |task.delay <= delta| to the end of queue.
-    auto p =
-        std::stable_partition(pending_tasks_.begin(), pending_tasks_.end(),
-                              [delta](auto& p) { return p.first > delta; });
+    auto p = std::stable_partition(
+        pending_tasks_.begin(), pending_tasks_.end(),
+        [delta](const PendingTask& p) { return p.delay > delta; });
     // Sort run tasks.
     std::stable_sort(p, pending_tasks_.end(),
-                     [](auto& a, auto& b) { return a.first < b.first; });
+                     [](const PendingTask& a, const PendingTask& b) {
+                       return a.delay < b.delay;
+                     });
     // Collect run tasks
     std::vector<Task> run_tasks;
     run_tasks.reserve(pending_tasks_.end() - p);
     for (auto i = p; i != pending_tasks_.end(); ++i)
-      run_tasks.emplace_back(std::move(i->second));
+      run_tasks.emplace_back(std::move(i->task));
     // Remove run tasks.
     pending_tasks_.erase(p, pending_tasks_.end());
     return run_tasks;
@@ -46,5 +52,11 @@ class TestExecutor : public Executor {
 
   const bool instant_;
 
-  std::vector<std::pair<Duration, Task>> pending_tasks_;
+  struct PendingTask {
+    Duration delay;
+    Task task;
+    base::Location location;
+  };
+
+  std::vector<PendingTask> pending_tasks_;
 };

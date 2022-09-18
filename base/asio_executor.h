@@ -10,7 +10,10 @@ class AsioExecutor : public Executor {
   explicit AsioExecutor(boost::asio::io_context& io_context)
       : io_context_{io_context} {}
 
-  virtual void PostDelayedTask(Duration delay, Task task) override {
+  virtual void PostDelayedTask(
+      Duration delay,
+      Task task,
+      const base::Location& location = FROM_HERE) override {
     ::PostDelayedTask(io_context_, delay, std::move(task));
   }
 

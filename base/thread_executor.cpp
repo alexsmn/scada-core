@@ -21,12 +21,17 @@ ThreadExecutor::~ThreadExecutor() {
   thread_.join();
 }
 
-void ThreadExecutor::PostDelayedTask(Duration delay, Task task) {
+void ThreadExecutor::PostDelayedTask(Duration delay,
+                                     Task task,
+                                     const base::Location& location) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (delay == Duration()) {
     task_queue_.emplace(std::move(task));
   } else {
     PendingTask pending_task;
+#ifndef NDEBUG
+    pending_task.location = location;
+#endif
     pending_task.task = std::move(task);
     pending_task.time = Clock::now() + delay;
     pending_task.sequence = sequence_++;

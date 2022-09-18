@@ -75,6 +75,22 @@ bool IsNestedNodeId(const scada::NodeId& node_id,
   return true;
 }
 
+bool GetRootNestedNodeId(const scada::NodeId& node_id,
+                         scada::NodeId& parent_id,
+                         std::string_view& nested_name) {
+  if (!IsNestedNodeId(node_id, parent_id, nested_name))
+    return false;
+
+  scada::NodeId next_parent_id;
+  std::string_view next_nested_name;
+  while (IsNestedNodeId(parent_id, next_parent_id, next_nested_name)) {
+    parent_id = std::move(next_parent_id);
+    nested_name = next_nested_name;
+  }
+
+  return true;
+}
+
 scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
                                std::string_view nested_name) {
   return MakeNestedNodeId(parent_id, nested_name, parent_id.namespace_index());
