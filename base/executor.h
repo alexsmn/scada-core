@@ -83,7 +83,16 @@ inline auto BindExecutor(std::shared_ptr<Executor> executor,
       BindCancelation(std::move(cancelation), std::forward<T>(task)), location);
 }
 
-template <class T, class C>
+template <class T>
+inline auto BindExecutor(std::shared_ptr<Executor> executor,
+                         const Cancelation& cancelation,
+                         T&& task,
+                         const base::Location& location = FROM_HERE) {
+  return BindExecutor(std::move(executor),
+                      cancelation.Bind(std::forward<T>(task)), location);
+}
+
+template <class C, class T>
 inline void Dispatch(Executor& executor,
                      std::weak_ptr<C> cancelation,
                      T&& task,
@@ -91,4 +100,12 @@ inline void Dispatch(Executor& executor,
   Dispatch(executor,
            BindCancelation(std::move(cancelation), std::forward<T>(task)),
            location);
+}
+
+template <class T>
+inline void Dispatch(Executor& executor,
+                     const Cancelation& cancelation,
+                     T&& task,
+                     const base::Location& location = FROM_HERE) {
+  Dispatch(executor, cancelation.Bind(std::forward<T>(task)), location);
 }
