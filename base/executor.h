@@ -2,8 +2,8 @@
 
 #include "base/cancelation.h"
 #include "base/common_types.h"
-#include "base/location.h"
 
+#include <boost/assert/source_location.hpp>
 #include <functional>
 #include <memory>
 
@@ -13,21 +13,25 @@ class Executor {
 
   using Task = std::function<void()>;
 
-  void PostTask(Task task, const base::Location& location = FROM_HERE) {
+  void PostTask(
+      Task task,
+      const boost::source_location& location = BOOST_CURRENT_LOCATION) {
     PostDelayedTask(Duration(), std::move(task), location);
   }
 
-  virtual void PostDelayedTask(Duration delay,
-                               Task task,
-                               const base::Location& location = FROM_HERE) = 0;
+  virtual void PostDelayedTask(
+      Duration delay,
+      Task task,
+      const boost::source_location& location = BOOST_CURRENT_LOCATION) = 0;
 
   virtual size_t GetTaskCount() const = 0;
 };
 
 template <class T>
-inline void Dispatch(Executor& executor,
-                     T&& task,
-                     const base::Location& location = FROM_HERE) {
+inline void Dispatch(
+    Executor& executor,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   executor.PostTask(std::forward<T>(task), location);
 }
 
@@ -47,7 +51,7 @@ struct ExecutorWrapper {
 #ifdef NDEBUG
         location_
 #else
-        base::Location{}
+        {}
 #endif
     );
   }
@@ -55,16 +59,17 @@ struct ExecutorWrapper {
   const std::shared_ptr<Executor> executor_;
   Task task_;
 #ifndef NDEBUG
-  const base::Location location_;
+  const boost::source_location location_;
 #endif
 };
 
 }  // namespace internal
 
 template <class T>
-inline auto BindExecutor(std::shared_ptr<Executor> executor,
-                         T&& task,
-                         const base::Location& location = FROM_HERE) {
+inline auto BindExecutor(
+    std::shared_ptr<Executor> executor,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   return internal::ExecutorWrapper<T>{std::move(executor), std::forward<T>(task)
 #ifndef NDEBUG
                                                                ,
@@ -74,38 +79,42 @@ inline auto BindExecutor(std::shared_ptr<Executor> executor,
 }
 
 template <class C, class T>
-inline auto BindExecutor(std::shared_ptr<Executor> executor,
-                         std::weak_ptr<C> cancelation,
-                         T&& task,
-                         const base::Location& location = FROM_HERE) {
+inline auto BindExecutor(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<C> cancelation,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   return BindExecutor(
       std::move(executor),
       BindCancelation(std::move(cancelation), std::forward<T>(task)), location);
 }
 
 template <class T>
-inline auto BindExecutor(std::shared_ptr<Executor> executor,
-                         const Cancelation& cancelation,
-                         T&& task,
-                         const base::Location& location = FROM_HERE) {
+inline auto BindExecutor(
+    std::shared_ptr<Executor> executor,
+    const Cancelation& cancelation,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   return BindExecutor(std::move(executor),
                       cancelation.Bind(std::forward<T>(task)), location);
 }
 
 template <class C, class T>
-inline void Dispatch(Executor& executor,
-                     std::weak_ptr<C> cancelation,
-                     T&& task,
-                     const base::Location& location = FROM_HERE) {
+inline void Dispatch(
+    Executor& executor,
+    std::weak_ptr<C> cancelation,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   Dispatch(executor,
            BindCancelation(std::move(cancelation), std::forward<T>(task)),
            location);
 }
 
 template <class T>
-inline void Dispatch(Executor& executor,
-                     const Cancelation& cancelation,
-                     T&& task,
-                     const base::Location& location = FROM_HERE) {
+inline void Dispatch(
+    Executor& executor,
+    const Cancelation& cancelation,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   Dispatch(executor, cancelation.Bind(std::forward<T>(task)), location);
 }

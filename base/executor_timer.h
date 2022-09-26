@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/executor.h"
-#include "base/location.h"
 
+#include <boost/assert/source_location.hpp>
 #include <memory>
 
 class ExecutorTimer {
@@ -10,17 +10,19 @@ class ExecutorTimer {
   ExecutorTimer(std::shared_ptr<Executor> executor)
       : executor_{std::move(executor)} {}
 
-  void StartOne(Duration period,
-                std::function<void()> callback,
-                const base::Location& location = FROM_HERE) {
+  void StartOne(
+      Duration period,
+      std::function<void()> callback,
+      const boost::source_location& location = BOOST_CURRENT_LOCATION) {
     core_ = std::make_shared<Core>(executor_, period, std::move(callback),
                                    location);
     core_->Start<false>();
   }
 
-  void StartRepeating(Duration period,
-                      std::function<void()> callback,
-                      const base::Location& location = FROM_HERE) {
+  void StartRepeating(
+      Duration period,
+      std::function<void()> callback,
+      const boost::source_location& location = BOOST_CURRENT_LOCATION) {
     core_ = std::make_shared<Core>(executor_, period, std::move(callback),
                                    location);
     core_->Start<true>();
@@ -34,7 +36,7 @@ class ExecutorTimer {
     Core(std::shared_ptr<Executor> executor,
          Duration period,
          std::function<void()> callback,
-         const base::Location& location)
+         const boost::source_location& location)
         : executor_{std::move(executor)},
 #ifndef NDEBUG
           location_{location},
@@ -56,7 +58,7 @@ class ExecutorTimer {
             }
           },
 #ifdef NDEBUG
-          base::Location {}
+          {}
 #else
           location_
 #endif
@@ -68,7 +70,7 @@ class ExecutorTimer {
     const Duration period_;
     const std::function<void()> callback_;
 #ifndef NDEBUG
-    const base::Location location_;
+    const boost::source_location location_;
 #endif
   };
 

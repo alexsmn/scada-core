@@ -8,10 +8,10 @@ class TestExecutor : public Executor {
  public:
   explicit TestExecutor(bool instant = false) : instant_{instant} {}
 
-  virtual void PostDelayedTask(
-      Duration delay,
-      Task task,
-      const base::Location& location = FROM_HERE) override {
+  virtual void PostDelayedTask(Duration delay,
+                               Task task,
+                               const boost::source_location& location =
+                                   BOOST_CURRENT_LOCATION) override {
     if (instant_ || delay == Duration{})
       task();
     else {
@@ -55,7 +55,7 @@ class TestExecutor : public Executor {
   struct PendingTask {
     Duration delay;
     Task task;
-    base::Location location;
+    boost::source_location location;
   };
 
   std::vector<PendingTask> pending_tasks_;

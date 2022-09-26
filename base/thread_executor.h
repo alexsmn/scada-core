@@ -20,7 +20,7 @@ class ThreadExecutor : public Executor {
   virtual void PostDelayedTask(
       Duration delay,
       Task task,
-      const base::Location& location = FROM_HERE) override;
+      const boost::source_location& location = BOOST_CURRENT_LOCATION) override;
   virtual size_t GetTaskCount() const override;
 
  private:
@@ -33,7 +33,7 @@ class ThreadExecutor : public Executor {
     TimePoint time;
     int sequence = 0;
 #ifndef NDEBUG
-    base::Location location;
+    boost::source_location location;
 #endif
   };
 

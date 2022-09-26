@@ -3,6 +3,7 @@
 #include "base/cancelation.h"
 #include "base/executor.h"
 
+#include <boost/assert/source_location.hpp>
 #include <promise.hpp/promise.hpp>
 
 using namespace promise_hpp;
@@ -24,7 +25,7 @@ template <class Task>
 class WrappedPromiseTask {
  public:
   template <class T>
-  WrappedPromiseTask(const base::Location& location,
+  WrappedPromiseTask(const boost::source_location& location,
                      std::shared_ptr<Executor> executor,
                      T&& task)
       : executor_{std::move(executor)},
@@ -45,7 +46,7 @@ class WrappedPromiseTask {
           ResolvePromise(promise, std::move(task), std::move(args));
         },
 #ifdef NDEBUG
-        base::Location {}
+        {}
 #else
         location_
 #endif
@@ -56,7 +57,7 @@ class WrappedPromiseTask {
  private:
   const std::shared_ptr<Executor> executor_;
 #ifndef NDEBUG
-  const base::Location location_;
+  const boost::source_location location_;
 #endif
   Task task_;
 };
@@ -64,18 +65,20 @@ class WrappedPromiseTask {
 }  // namespace internal
 
 template <class T>
-inline auto BindPromiseExecutor(std::shared_ptr<Executor> executor,
-                                T&& task,
-                                const base::Location& location = FROM_HERE) {
+inline auto BindPromiseExecutor(
+    std::shared_ptr<Executor> executor,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   return internal::WrappedPromiseTask<T>(location, std::move(executor),
                                          std::forward<T>(task));
 }
 
 template <class T, class C>
-inline auto BindPromiseExecutor(std::shared_ptr<Executor> executor,
-                                std::weak_ptr<C> cancelation,
-                                T&& task,
-                                const base::Location& location = FROM_HERE) {
+inline auto BindPromiseExecutor(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<C> cancelation,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   return BindPromiseExecutor(
       std::move(executor),
       BindCancelation(std::move(cancelation), std::forward<T>(task)), location);

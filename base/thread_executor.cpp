@@ -23,7 +23,7 @@ ThreadExecutor::~ThreadExecutor() {
 
 void ThreadExecutor::PostDelayedTask(Duration delay,
                                      Task task,
-                                     const base::Location& location) {
+                                     const boost::source_location& location) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (delay == Duration()) {
     task_queue_.emplace(std::move(task));
