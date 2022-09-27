@@ -12,8 +12,12 @@ class ConsoleLogger : public Logger {
 
   // Logger
   virtual void Write(LogSeverity severity, const char* message) const override;
-  virtual void WriteV(LogSeverity severity, const char* format, va_list args) const override;
-  virtual void WriteF(LogSeverity severity, const char* format, ...) const override;
+  virtual void WriteV(LogSeverity severity,
+                      _Printf_format_string_ const char* format,
+                      va_list args) const override PRINTF_FORMAT(3, 0);
+  virtual void WriteF(LogSeverity severity,
+                      _Printf_format_string_ const char* format,
+                      ...) const override PRINTF_FORMAT(3, 4);
 
   static const ConsoleLogger& GetInstance() {
     static const ConsoleLogger s_logger;

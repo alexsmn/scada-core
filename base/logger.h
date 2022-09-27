@@ -1,7 +1,8 @@
 #pragma once
 
+#include "base/compiler_specific.h"
+
 #include <cstdarg>
-#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -20,10 +21,10 @@ class Logger {
   virtual void Write(LogSeverity severity, const char* message) const = 0;
   virtual void WriteV(LogSeverity severity,
                       _Printf_format_string_ const char* format,
-                      va_list args) const = 0;
+                      va_list args) const PRINTF_FORMAT(3, 0) = 0;
   virtual void WriteF(LogSeverity severity,
                       _Printf_format_string_ const char* format,
-                      ...) const = 0;
+                      ...) const PRINTF_FORMAT(3, 4) = 0;
 };
 
 class NullLogger : public Logger {
@@ -32,17 +33,13 @@ class NullLogger : public Logger {
   }
   virtual void WriteV(LogSeverity severity,
                       _Printf_format_string_ const char* format,
-                      va_list args) const override {}
+                      va_list args) const override PRINTF_FORMAT(3, 0) {}
   virtual void WriteF(LogSeverity severity,
                       _Printf_format_string_ const char* format,
-                      ...) const override {}
+                      ...) const override PRINTF_FORMAT(3, 4) {}
 
   static std::shared_ptr<NullLogger> GetInstance() {
     static auto logger = std::make_shared<NullLogger>();
     return logger;
   }
 };
-
-std::unique_ptr<Logger> CreateFileLogger(int path_service_key,
-                                         std::u16string base_name,
-                                         const char* title);

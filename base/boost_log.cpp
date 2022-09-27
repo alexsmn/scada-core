@@ -15,9 +15,8 @@
 #include <boost/log/utility/setup/file.hpp>
 #include <string>
 
-namespace {
-
-BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", BoostLogSeverity)
+// GCC requires non-empty namespace for explicit specialization.
+namespace internal {
 
 struct StringFormatter {
   typedef std::string result_type;
@@ -38,15 +37,21 @@ struct StringFormatter {
   }
 };
 
+}  // namespace internal
+
+namespace {
+
+BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", BoostLogSeverity)
+
 std::string ToString(const boost::log::attribute_value& attr) {
   // NOTE: It's not clear why long is required at least under Windows.
   using Types = boost::mpl::vector<bool, int16_t, uint16_t, int32_t, uint32_t,
                                    int64_t, uint64_t, long, float, double,
                                    std::string, std::wstring, std::u16string>;
 
-  StringFormatter::result_type result;
-  boost::log::visit<Types>(attr,
-                           boost::log::save_result(StringFormatter{}, result));
+  internal::StringFormatter::result_type result;
+  boost::log::visit<Types>(
+      attr, boost::log::save_result(internal::StringFormatter{}, result));
 
   return result;
 }

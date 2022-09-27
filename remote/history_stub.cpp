@@ -1,7 +1,6 @@
 #include "remote/history_stub.h"
 
 #include "base/executor.h"
-#include "base/logger.h"
 #include "core/history_service.h"
 #include "model/node_id_util.h"
 #include "remote/message_sender.h"

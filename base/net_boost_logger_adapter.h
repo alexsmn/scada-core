@@ -18,14 +18,14 @@ class NetBoostLoggerAdapter final : public net::Logger {
 
   virtual void WriteV(net::LogSeverity severity,
                       const char* format,
-                      va_list args) const override {
+                      va_list args) const override PRINTF_FORMAT(3, 0) {
     BOOST_LOG_SEV(*boost_logger_, ToBoostLogSeverity(severity))
         << base::StringPrintV(format, args);
   }
 
   virtual void WriteF(net::LogSeverity severity,
                       const char* format,
-                      ...) const override {
+                      ...) const override PRINTF_FORMAT(3, 4) {
     va_list args;
     va_start(args, format);
     auto message = base::StringPrintV(format, args);

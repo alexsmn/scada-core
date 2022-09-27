@@ -20,7 +20,7 @@ class SyncLogger final : public Logger {
 
   virtual void WriteV(LogSeverity severity,
                       const char* format,
-                      va_list args) const override {
+                      va_list args) const override PRINTF_FORMAT(3, 0) {
     io_context_.dispatch(
         [logger = logger_, severity,
          formatted_message = base::StringPrintV(format, args)] {
@@ -30,7 +30,7 @@ class SyncLogger final : public Logger {
 
   virtual void WriteF(LogSeverity severity,
                       const char* format,
-                      ...) const override {
+                      ...) const override PRINTF_FORMAT(3, 4) {
     va_list args;
     va_start(args, format);
     io_context_.dispatch(
