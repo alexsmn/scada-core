@@ -3,7 +3,6 @@
 #include <boost/log/common.hpp>
 #include <boost/log/sources/logger.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
-#include <filesystem>
 
 enum class BoostLogSeverity { Debug, Info, Warning, Error, Critical, Count };
 
@@ -27,14 +26,3 @@ using BoostLogger =
   (logger).add_attribute((name), boost::log::attributes::make_constant(value))
 
 #define LOG_NAME(name) boost::log::keywords::channel = (name)
-
-struct BoostLogParams {
-  std::filesystem::path path;
-  size_t rotation_size = 10485760;
-  size_t max_size = 104857600;
-  size_t max_files = 1000;
-  bool console = false;
-};
-
-void InitBoostLogging(const BoostLogParams& params);
-void ShutdownBoostLogging();
