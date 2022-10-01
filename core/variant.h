@@ -108,9 +108,9 @@ class Variant {
   bool get(UInt16& value) const { return get_int<UInt16>(value); }
   bool get(Int32& value) const { return get_int<Int32>(value); }
   bool get(UInt32& value) const { return get_int<UInt32>(value); }
-  constexpr bool get(Int64& value) const;
+  bool get(Int64& value) const;
   bool get(UInt64& value) const { return get_int<UInt64>(value); }
-  constexpr bool get(Double& value) const;
+  bool get(Double& value) const;
   bool get(String& value) const;
   bool get(QualifiedName& value) const;
   bool get(LocalizedText& value) const;

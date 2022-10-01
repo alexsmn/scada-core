@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/timer.h"
+#include "base/executor_timer.h"
 
 #include <map>
 #include <memory>
@@ -11,7 +11,7 @@ bool IsTimedCacheExpired(const Value& value);
 template <class Key, class Value>
 class TimedCache {
  public:
-  explicit TimedCache(boost::asio::io_context& io_context);
+  explicit TimedCache(std::shared_ptr<Executor> executor);
 
   template <class T>
   void Add(const Key& key, T&& value);
@@ -34,7 +34,7 @@ class TimedCache {
 
   std::map<Key, CacheEntry> map_;
 
-  Timer timer_;
+  ExecutorTimer timer_;
 
 #ifdef _DEBUG
   static const unsigned kCacheDurationS = 10;
@@ -44,8 +44,8 @@ class TimedCache {
 };
 
 template <class Key, class Value>
-inline TimedCache<Key, Value>::TimedCache(boost::asio::io_context& io_context)
-    : timer_{io_context} {
+inline TimedCache<Key, Value>::TimedCache(std::shared_ptr<Executor> executor)
+    : timer_{std::move(executor)} {
   using namespace std::chrono_literals;
   timer_.StartRepeating(1s, [this] { OnTimer(); });
 }
