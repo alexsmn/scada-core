@@ -15,33 +15,25 @@
 #include <boost/log/utility/setup/file.hpp>
 #include <string>
 
-// GCC requires non-empty namespace for explicit specialization.
-namespace internal {
-
-struct StringFormatter {
-  typedef std::string result_type;
-
-  template <class T>
-  result_type operator()(const T& value) const {
-    return Format(value);
-  }
-
-  template <>
-  result_type operator()(const std::wstring& value) const {
-    return base::WideToUTF8(value);
-  }
-
-  template <>
-  result_type operator()(const std::u16string& value) const {
-    return base::UTF16ToUTF8(value);
-  }
-};
-
-}  // namespace internal
-
 namespace {
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", BoostLogSeverity)
+
+// GCC requires non-empty namespace for explicit specialization.
+template <class T>
+std::string EvaluateString(const T& value) {
+  return Format(value);
+}
+
+template <>
+std::string EvaluateString(const std::wstring& value) {
+  return base::WideToUTF8(value);
+}
+
+template <>
+std::string EvaluateString(const std::u16string& value) {
+  return base::UTF16ToUTF8(value);
+}
 
 std::string ToString(const boost::log::attribute_value& attr) {
   // NOTE: It's not clear why long is required at least under Windows.
@@ -49,9 +41,11 @@ std::string ToString(const boost::log::attribute_value& attr) {
                                    int64_t, uint64_t, long, float, double,
                                    std::string, std::wstring, std::u16string>;
 
-  internal::StringFormatter::result_type result;
+  std::string result;
   boost::log::visit<Types>(
-      attr, boost::log::save_result(internal::StringFormatter{}, result));
+      attr,
+      boost::log::save_result(
+          [](const auto& value) { return EvaluateString(value); }, result));
 
   return result;
 }

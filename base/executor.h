@@ -48,7 +48,7 @@ struct ExecutorWrapper {
          args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
           std::apply(std::move(task), std::move(args));
         },
-#ifdef NDEBUG
+#ifndef NDEBUG
         location_
 #else
         {}

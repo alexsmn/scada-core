@@ -8,7 +8,7 @@ namespace base {
 
 inline Location ToLocation(const boost::source_location& location) {
   return Location{location.function_name(), location.file_name(),
-                  static_cast<int>(location.line()), nullptr};
+                  static_cast<int>(location.line()), GetProgramCounter()};
 }
 
 }  // namespace base

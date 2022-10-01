@@ -68,7 +68,7 @@ inline std::string ToString(const T& v) {
 }
 
 template <class T>
-inline std::wstring ToString16(const T& v) {
+inline std::u16string ToString16(const T& v) {
   std::stringstream s;
   s << v;
   return base::UTF8ToUTF16(s.str());

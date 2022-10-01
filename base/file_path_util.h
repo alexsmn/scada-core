@@ -8,7 +8,7 @@ inline base::FilePath AsFilePath(const std::filesystem::path& path) {
 #if defined(WIN32)
   return base::FilePath{path.wstring()};
 #else
-  return base::FilePath{path.u16string()};
+  return base::FilePath{path.string()};
 #endif
 }
 
