@@ -127,7 +127,10 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
   if (i == channels_.end())
     return;
 
-  if (data_value.qualifier.failed()) {
+  assert(!data_value.qualifier.failed() ||
+         scada::IsBad(data_value.status_code));
+
+  if (scada::IsBad(data_value.status_code)) {
     LOG_WARNING(logger_) << "Monitored item failed"
                          << LOG_TAG("MonitoredItemId", monitored_item_id)
                          << LOG_TAG("StatusCode",

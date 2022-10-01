@@ -62,7 +62,7 @@ bool Variant::get(bool& value) const {
   return true;
 }
 
-bool Variant::get(Int64& value) const {
+constexpr bool Variant::get(Int64& value) const {
   if (!is_scalar())
     return false;
 
@@ -102,7 +102,7 @@ bool Variant::get(Int64& value) const {
   }
 }
 
-bool Variant::get(Double& value) const {
+constexpr bool Variant::get(Double& value) const {
   if (!is_scalar())
     return false;
 

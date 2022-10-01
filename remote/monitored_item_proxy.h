@@ -1,27 +1,26 @@
 #pragma once
 
-#include "core/monitored_item.h"
+#include "base/boost_log.h"
 #include "core/monitored_item_service.h"
 #include "remote/subscription.h"
 
-class SubscriptionProxy;
+class MessageSender;
+class MonitoredItemRouter;
 
-class MonitoredItemProxy : public scada::MonitoredItem {
+class MonitoredItemProxy
+    : public scada::MonitoredItem,
+      public std::enable_shared_from_this<MonitoredItemProxy> {
  public:
-  MonitoredItemProxy(SubscriptionProxy& subscription,
-                     scada::ReadValueId read_value_id,
+  MonitoredItemProxy(scada::ReadValueId value_id,
                      scada::MonitoringParameters params);
   ~MonitoredItemProxy();
 
-  void OnChannelOpened();
+  void OnChannelOpened(MonitoredItemRouter& router,
+                       MessageSender& sender,
+                       int subscription_id);
   void OnChannelClosed();
-
-  void UpdateAndForwardData(const scada::DataValue& value);
-
-  void Delete();
-
-  void NotifyDataChange(const scada::DataValue& data_value);
-  void NotifyEvent(const scada::Status& status, const std::any& event);
+  void OnDataChange(scada::DataValue value);
+  void OnEvent(scada::Status status, std::any event);
 
   // scada::MonitoredItem
   virtual void Subscribe(scada::MonitoredItemHandler handler) override;
@@ -33,21 +32,28 @@ class MonitoredItemProxy : public scada::MonitoredItem {
   void OnCreateMonitoredItemResult(const scada::Status& status,
                                    int monitored_item_id);
 
-  void UpdateQualifier(unsigned remove, unsigned add);
+  void UpdateQualifier(scada::StatusCode status_code,
+                       unsigned remove,
+                       unsigned add);
 
-  const scada::ReadValueId read_value_id_;
+  const scada::ReadValueId value_id_;
   const scada::MonitoringParameters params_;
 
-  std::optional<scada::MonitoredItemHandler> handler_;
+  BoostLogger logger_{LOG_NAME("MonitoredItemProxy")};
 
-  SubscriptionProxy* subscription_ = nullptr;
+  MonitoredItemRouter* router_ = nullptr;
+  MessageSender* sender_ = nullptr;
+  int subscription_id_ = 0;
 
   MonitoredItemId monitored_item_id_ = 0;
 
   enum class State { DELETED, CREATING, CREATED };
   State state_ = State::DELETED;
 
-  scada::DataValue current_data_;
+  scada::DataChangeHandler data_change_handler_;
+  scada::EventHandler event_handler_;
+  bool subscribed_ = false;
+  bool channel_opened_ = false;
 
-  const std::shared_ptr<bool> cancelation_;
+  scada::DataValue current_data_;
 };

@@ -1,5 +1,6 @@
 #include "remote/subscription_proxy.h"
 
+#include "base/cancelation.h"
 #include "core/monitored_item_service.h"
 #include "remote/message_sender.h"
 #include "remote/monitored_item_proxy.h"
@@ -11,14 +12,10 @@
 SubscriptionProxy::SubscriptionProxy(const SubscriptionParams& params) {}
 
 SubscriptionProxy::~SubscriptionProxy() {
-  for (auto i = monitored_items_.begin(); i != monitored_items_.end();) {
-    auto& monitored_item = **i++;
-    monitored_item.Delete();
-  }
-
-  assert(monitored_items_.empty());
-
   if (state_ == State::CREATED) {
+    for (auto& monitored_item : CollectMonitoredItems())
+      monitored_item->OnChannelClosed();
+
     protocol::Message message;
     auto& request = *message.add_requests();
     request.set_request_id(0);
@@ -34,25 +31,40 @@ std::shared_ptr<scada::MonitoredItem> SubscriptionProxy::CreateMonitoredItem(
   assert(value_id.attribute_id == scada::AttributeId::EventNotifier ||
          !value_id.node_id.is_null());
 
-  return std::make_shared<MonitoredItemProxy>(*this, value_id, params);
+  auto monitored_item = std::make_shared<MonitoredItemProxy>(value_id, params);
+
+  monitored_items_.emplace_back(monitored_item);
+
+  if (state_ == State::CREATED) {
+    assert(sender_);
+    monitored_item->OnChannelOpened(*this, *sender_, subscription_id_);
+  }
+
+  return monitored_item;
 }
 
-void SubscriptionProxy::AddMonitoredItem(MonitoredItemProxy& item) {
-  monitored_items_.insert(&item);
+void SubscriptionProxy::AddMonitoredItemDataObserver(
+    MonitoredItemId monitored_item_id,
+    MonitoredItemProxy& item) {
+  assert(monitored_item_ids_.find(monitored_item_id) ==
+         monitored_item_ids_.end());
 
-  if (state_ == State::CREATED)
-    item.OnChannelOpened();
+  monitored_item_ids_[monitored_item_id] = &item;
 }
 
-void SubscriptionProxy::RemoveMonitoredItem(MonitoredItemProxy& item) {
-  monitored_items_.erase(&item);
+void SubscriptionProxy::RemoveMonitoredItemDataObserver(
+    MonitoredItemId monitored_item_id) {
+  assert(monitored_item_ids_.find(monitored_item_id) !=
+         monitored_item_ids_.end());
+
+  monitored_item_ids_.erase(monitored_item_id);
 }
 
 void SubscriptionProxy::OnDataChange(int monitored_item_id,
                                      const scada::DataValue& data_value) {
   auto i = monitored_item_ids_.find(monitored_item_id);
   if (i != monitored_item_ids_.end())
-    i->second->UpdateAndForwardData(data_value);
+    i->second->OnDataChange(data_value);
 }
 
 void SubscriptionProxy::OnEvent(int monitored_item_id,
@@ -60,7 +72,7 @@ void SubscriptionProxy::OnEvent(int monitored_item_id,
                                 const std::any& event) {
   auto i = monitored_item_ids_.find(monitored_item_id);
   if (i != monitored_item_ids_.end())
-    i->second->NotifyEvent(status, event);
+    i->second->OnEvent(status, event);
 }
 
 void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
@@ -74,21 +86,14 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
   auto& create_subscription = *request.mutable_create_subscription();
   create_subscription;
 
-  sender_->Request(request, [this, weak_ptr = weak_from_this()](
-                                const protocol::Response& response) {
-    auto ptr = weak_ptr.lock();
-    if (!ptr)
-      return;
-
-    int subscription_id = 0;
-    if (response.has_create_subscription_result()) {
-      auto& m = response.create_subscription_result();
-      subscription_id = m.subscription_id();
-    }
-
-    OnCreateSubscriptionResult(ConvertTo<scada::Status>(response.status()),
-                               subscription_id);
-  });
+  sender_->Request(
+      request,
+      BindCancelation(
+          weak_from_this(), [this](const protocol::Response& response) {
+            OnCreateSubscriptionResult(
+                ConvertTo<scada::Status>(response.status()),
+                response.create_subscription_result().subscription_id());
+          }));
 }
 
 void SubscriptionProxy::OnChannelClosed() {
@@ -96,15 +101,11 @@ void SubscriptionProxy::OnChannelClosed() {
   assert(sender_);
 
   sender_ = nullptr;
-
-  if (state_ == State::DELETED)
-    return;
-
   state_ = State::DELETED;
   subscription_id_ = 0;
 
-  for (auto* channel : monitored_items_)
-    channel->OnChannelClosed();
+  for (auto& monitored_item : CollectMonitoredItems())
+    monitored_item->OnChannelClosed();
 }
 
 void SubscriptionProxy::OnCreateSubscriptionResult(const scada::Status& status,
@@ -123,6 +124,24 @@ void SubscriptionProxy::OnCreateSubscriptionResult(const scada::Status& status,
   state_ = State::CREATED;
   subscription_id_ = subscription_id;
 
-  for (auto* channel : monitored_items_)
-    channel->OnChannelOpened();
+  for (auto& monitored_item : CollectMonitoredItems())
+    monitored_item->OnChannelOpened(*this, *sender_, subscription_id_);
+}
+
+std::vector<std::shared_ptr<MonitoredItemProxy>>
+SubscriptionProxy::CollectMonitoredItems() {
+  std::vector<std::shared_ptr<MonitoredItemProxy>> monitored_items;
+  monitored_items.reserve(monitored_items_.size());
+  auto erase_from = std::remove_if(
+      monitored_items_.begin(), monitored_items_.end(),
+      [&monitored_items](
+          const std::weak_ptr<MonitoredItemProxy>& weak_monitored_item) {
+        auto monitored_item = weak_monitored_item.lock();
+        if (!monitored_item)
+          return true;
+        monitored_items.emplace_back(std::move(monitored_item));
+        return false;
+      });
+  monitored_items_.erase(erase_from, monitored_items_.end());
+  return monitored_items;
 }

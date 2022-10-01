@@ -45,5 +45,15 @@ void ViewServiceProxy::Browse(
 void ViewServiceProxy::TranslateBrowsePaths(
     const std::vector<scada::BrowsePath>& browse_paths,
     const scada::TranslateBrowsePathsCallback& callback) {
-  callback(scada::StatusCode::Bad, {});
+  if (!sender_)
+    return callback(scada::StatusCode::Bad_Disconnected, {});
+
+  protocol::Request request;
+  Convert(browse_paths, *request.mutable_browse_path());
+
+  sender_->Request(request, [callback](const protocol::Response& response) {
+    callback(ConvertTo<scada::Status>(response.status()),
+             ConvertTo<std::vector<scada::BrowsePathResult>>(
+                 response.browse_path_result()));
+  });
 }

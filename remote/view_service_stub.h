@@ -29,4 +29,5 @@ class ViewServiceStub final : private ViewServiceStubContext {
  private:
   void OnBrowse(unsigned request_id,
                 const std::vector<scada::BrowseDescription>& nodes);
+  void OnBrowsePaths(const protocol::Request& request);
 };

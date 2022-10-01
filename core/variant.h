@@ -108,9 +108,9 @@ class Variant {
   bool get(UInt16& value) const { return get_int<UInt16>(value); }
   bool get(Int32& value) const { return get_int<Int32>(value); }
   bool get(UInt32& value) const { return get_int<UInt32>(value); }
-  bool get(Int64& value) const;
+  constexpr bool get(Int64& value) const;
   bool get(UInt64& value) const { return get_int<UInt64>(value); }
-  bool get(Double& value) const;
+  constexpr bool get(Double& value) const;
   bool get(String& value) const;
   bool get(QualifiedName& value) const;
   bool get(LocalizedText& value) const;
@@ -147,7 +147,7 @@ class Variant {
 
  private:
   template <class T>
-  bool get_int(T& value) const;
+  constexpr bool get_int(T& value) const;
 
   template <class String>
   bool ToStringHelper(String& string_value) const;
@@ -204,6 +204,12 @@ inline constexpr bool Variant::is_scalar() const noexcept {
 }
 
 inline constexpr bool Variant::operator==(const Variant& other) const noexcept {
+  if (type() == Type::DOUBLE || other.type() == DOUBLE) {
+    double a = 0.0, b = 0.0;
+    return get(a) && other.get(b) &&
+           std::abs(a - b) < std::numeric_limits<double>::epsilon();
+  }
+
   return data_ == other.data_;
 }
 
@@ -226,7 +232,7 @@ inline bool Variant::get(T& value) const {
 }
 
 template <class T>
-inline bool Variant::get_int(T& value) const {
+inline constexpr bool Variant::get_int(T& value) const {
   Int64 int64_value;
   if (!get(int64_value))
     return false;
