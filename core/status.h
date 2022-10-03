@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <ostream>
+#include <string>
 
 namespace scada {
 
@@ -169,6 +169,8 @@ class Status {
 };
 
 }  // namespace scada
+
+const char* ToCString(scada::StatusCode status_code);
 
 std::string ToString(scada::StatusCode status_code);
 std::u16string ToString16(scada::StatusCode status_code);

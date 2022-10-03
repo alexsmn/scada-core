@@ -107,11 +107,15 @@ const Entry* FindEntry(scada::StatusCode status_code) {
 
 }  // namespace
 
-std::string ToString(scada::StatusCode status_code) {
+const char* ToCString(scada::StatusCode status_code) {
   if (auto* entry = FindEntry(status_code))
     return entry->error_string;
 
   return IsGood(status_code) ? "OK" : "Error";
+}
+
+std::string ToString(scada::StatusCode status_code) {
+  return std::string{ToCString(status_code)};
 }
 
 std::u16string ToString16(scada::StatusCode status_code) {
