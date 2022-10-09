@@ -2,6 +2,8 @@
 
 #include "core/status.h"
 
+#include <cassert>
+
 namespace scada {
 
 template <class T>

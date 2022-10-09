@@ -13,8 +13,9 @@ class EventServiceProxy : public scada::EventService {
   void OnChannelClosed();
 
   // scada::EventService
-  virtual void Acknowledge(base::span<const int> acknowledge_ids,
-                           const scada::NodeId& user_id) override;
+  virtual void Acknowledge(
+      base::span<const scada::EventAcknowledgeId> acknowledge_ids,
+      const scada::NodeId& user_id) override;
 
  private:
   MessageSender* sender_ = nullptr;

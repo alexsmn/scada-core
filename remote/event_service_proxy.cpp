@@ -15,8 +15,9 @@ void EventServiceProxy::OnChannelClosed() {
   sender_ = nullptr;
 }
 
-void EventServiceProxy::Acknowledge(base::span<const int> acknowledge_ids,
-                                    const scada::NodeId& user_id) {
+void EventServiceProxy::Acknowledge(
+    base::span<const scada::EventAcknowledgeId> acknowledge_ids,
+    const scada::NodeId& user_id) {
   if (!sender_) {
     assert(false);
     return;

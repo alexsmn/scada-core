@@ -82,12 +82,13 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
 
     if (call.has_acknowledge()) {
       auto& acknowledge = call.acknowledge();
-      auto int_acknowledge_ids = acknowledge.acknowledge_id() |
-                                 boost::adaptors::transformed([](auto v) {
-                                   return static_cast<int>(v);
-                                 }) |
-                                 to_vector;
-      event_service_.Acknowledge(int_acknowledge_ids,
+      auto typed_acknowledge_ids =
+          acknowledge.acknowledge_id() |
+          boost::adaptors::transformed([](auto v) {
+            return static_cast<scada::EventAcknowledgeId>(v);
+          }) |
+          to_vector;
+      event_service_.Acknowledge(typed_acknowledge_ids,
                                  service_context_->user_id);
       protocol::Response response;
       response.set_request_id(request.request_id());
