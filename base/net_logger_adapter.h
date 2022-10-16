@@ -17,13 +17,13 @@ class NetLoggerAdapter final : public net::Logger {
 
   virtual void WriteV(net::LogSeverity severity,
                       const char* format,
-                      va_list args) const override {
+                      va_list args) const override PRINTF_FORMAT(3, 0) {
     logger_->WriteV(static_cast<::LogSeverity>(severity), format, args);
   }
 
   virtual void WriteF(net::LogSeverity severity,
-                      const char* format,
-                      ...) const override {
+                      _Printf_format_string_ const char* format,
+                      ...) const override PRINTF_FORMAT(3, 4) {
     va_list args;
     va_start(args, format);
     logger_->WriteV(static_cast<::LogSeverity>(severity), format, args);

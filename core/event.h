@@ -35,7 +35,7 @@ class Event {
     EVT_BACKUP = 0x0100,  // locked
   };
 
-  NodeId event_type_id;
+  NodeId event_type_id = scada::id::SystemEventType;
   DateTime time;
   scada::UInt32 change_mask = 0;
   scada::UInt32 severity = kSeverityNormal;

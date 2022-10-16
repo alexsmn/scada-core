@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/event.h"
+
 class ViewEventQueue {
  public:
   using Event =
