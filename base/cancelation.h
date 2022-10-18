@@ -17,12 +17,36 @@ struct CancelationWrapper {
   T task_;
 };
 
+template <class C, class F, class CF>
+struct CancelationFuncWrapper {
+  template <class... Args>
+  auto operator()(Args&&... args) const {
+    if (auto ref = cancelation_.lock())
+      return std::move(func_)(std::forward<Args>(args)...);
+    else
+      return canceled_func_();
+  }
+
+  const std::weak_ptr<C> cancelation_;
+  F func_;
+  CF canceled_func_;
+};
+
 }  // namespace internal
 
 template <class C, class T>
 inline auto BindCancelation(std::weak_ptr<C> cancelation, T&& task) {
   return internal::CancelationWrapper<C, T>{std::move(cancelation),
                                             std::forward<T>(task)};
+}
+
+template <class C, class F, class CF>
+inline auto BindCancelationFunc(std::weak_ptr<C> cancelation,
+                                F&& func,
+                                CF&& canceled_func) {
+  return internal::CancelationFuncWrapper<C, F, CF>{
+      std::move(cancelation), std::forward<F>(func),
+      std::forward<CF>(canceled_func)};
 }
 
 class Cancelation;

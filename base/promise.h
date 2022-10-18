@@ -36,7 +36,7 @@ class WrappedPromiseTask {
   }
 
   template <class... Args>
-  auto operator()(Args&&... args) const {
+  auto operator()(Args&&... args) {
     auto promise = make_promise<std::invoke_result_t<Task, Args...>>();
     // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
     Dispatch(
@@ -44,6 +44,48 @@ class WrappedPromiseTask {
         [promise, task = std::move(task_),
          args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
           ResolvePromise(promise, std::move(task), std::move(args));
+        },
+#ifdef NDEBUG
+        {}
+#else
+        location_
+#endif
+    );
+    return promise;
+  }
+
+ private:
+  const std::shared_ptr<Executor> executor_;
+#ifndef NDEBUG
+  const boost::source_location location_;
+#endif
+  Task task_;
+};
+
+template <class Task>
+class WrappedPromiseTaskWithResult {
+ public:
+  template <class T>
+  WrappedPromiseTaskWithResult(const boost::source_location& location,
+                               std::shared_ptr<Executor> executor,
+                               T&& task)
+      : executor_{std::move(executor)},
+#ifndef NDEBUG
+        location_{location},
+#endif
+        task_{std::forward<T>(task)} {
+  }
+
+  template <class... Args>
+  auto operator()(Args&&... args) {
+    promise<> promise;
+    // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
+    Dispatch(
+        *executor_,
+        [promise, task = std::move(task_),
+         args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+          auto task_promise = std::apply(std::move(task), std::move(args));
+          task_promise.then([promise]() mutable { promise.resolve(); });
         },
 #ifdef NDEBUG
         {}
@@ -82,4 +124,26 @@ inline auto BindPromiseExecutor(
   return BindPromiseExecutor(
       std::move(executor),
       BindCancelation(std::move(cancelation), std::forward<T>(task)), location);
+}
+
+template <class T>
+inline auto BindPromiseExecutorWithResult(
+    std::shared_ptr<Executor> executor,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+  return internal::WrappedPromiseTaskWithResult<T>(
+      location, std::move(executor), std::forward<T>(task));
+}
+
+template <class T, class C>
+inline auto BindPromiseExecutorWithResult(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<C> cancelation,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+  return BindPromiseExecutorWithResult(
+      std::move(executor),
+      BindCancelationFunc(std::move(cancelation), std::forward<T>(task),
+                          [] { return make_resolved_promise(); }),
+      location);
 }
