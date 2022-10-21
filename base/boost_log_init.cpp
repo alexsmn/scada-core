@@ -27,6 +27,11 @@ std::string EvaluateString(const T& value) {
 }
 
 template <>
+std::string EvaluateString(const bool& value) {
+  return Format(value ? 1 : 0);
+}
+
+template <>
 std::string EvaluateString(const std::wstring& value) {
   return base::WideToUTF8(value);
 }

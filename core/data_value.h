@@ -23,7 +23,10 @@ class DataValue {
       : value(std::forward<T>(value)),
         qualifier(std::move(qualifier)),
         source_timestamp(source_timestamp),
-        server_timestamp(server_timestamp) {}
+        server_timestamp(server_timestamp) {
+    if (qualifier.failed())
+      status_code = StatusCode::Bad;
+  }
 
   DataValue(const DataValue&) = default;
   DataValue& operator=(const DataValue&) = default;

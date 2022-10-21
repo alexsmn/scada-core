@@ -182,6 +182,18 @@ struct FormatHelperT<LocalizedText, DateTime> {
   }
 };
 
+template <>
+struct FormatHelperT<String, bool> {
+  static inline String Format(const bool& value) { return value ? "1" : "0"; }
+};
+
+template <>
+struct FormatHelperT<LocalizedText, bool> {
+  static inline LocalizedText Format(const bool& value) {
+    return value ? Variant::kTrueString : Variant::kFalseString;
+  }
+};
+
 template <class Target, class Source>
 inline Target FormatHelper(const Source& value) {
   return FormatHelperT<Target, Source>::Format(value);
@@ -199,8 +211,7 @@ bool Variant::ToStringHelper(String& string_value) const {
       string_value.clear();
       return true;
     case BOOL:
-      string_value =
-          FormatHelper<String>(as_bool() ? kTrueString : kFalseString);
+      string_value = FormatHelper<String>(as_bool());
       return true;
     case DOUBLE:
       string_value = FormatHelper<String>(as_double());

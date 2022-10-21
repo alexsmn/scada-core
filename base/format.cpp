@@ -76,13 +76,14 @@ std::u16string WideFormat(unsigned long long value) {
   return base::NumberToString16(value);
 }
 
-std::string Format(bool value) {
+// String can be implicitly casted to bool.
+/*std::string Format(bool value) {
   return Format(value ? 1 : 0);
 }
 
 std::u16string WideFormat(bool value) {
   return WideFormat(value ? 1 : 0);
-}
+}*/
 
 std::string Format(unsigned char value) {
   return Format(static_cast<unsigned>(value));

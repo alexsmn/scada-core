@@ -39,8 +39,9 @@ std::u16string WideFormat(float value);
 std::string Format(double value);
 std::u16string WideFormat(double value);
 
-std::string Format(bool value);
-std::u16string WideFormat(bool value);
+// String can be implicitly casted to bool.
+// std::string Format(bool value);
+// std::u16string WideFormat(bool value);
 
 std::string Format(std::string_view value);
 std::u16string WideFormat(std::string_view value);
