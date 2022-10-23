@@ -98,11 +98,10 @@ const scada::NodeId DeviceType_MessagesIn{252, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType_MessagesOut{253, NamespaceIndexes::SCADA};
 const scada::NodeId DeviceType{115, NamespaceIndexes::SCADA}; // :BaseObjectType
 const scada::NodeId DeviceWatchEventType{15132, NamespaceIndexes::SCADA}; // ObjectType
-const scada::NodeId TransmissionItems{33, NamespaceIndexes::SCADA};
 const scada::NodeId TransmissionItemType_SourceAddress{225, NamespaceIndexes::SCADA};
 const scada::NodeId TransmissionItemType{34, NamespaceIndexes::SCADA};
 const scada::NodeId HasTransmissionSource{221, NamespaceIndexes::SCADA};
-const scada::NodeId HasTransmissionTarget{224, NamespaceIndexes::SCADA}; // Ref
+const scada::NodeId HasTransmissionItem{339, NamespaceIndexes::SCADA};  // ReferenceType
 const scada::NodeId ModbusModeDataType{332, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusModeDataType_EnumStrings{333, NamespaceIndexes::SCADA};
 

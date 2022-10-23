@@ -11,7 +11,7 @@ class StatusException : public std::exception {
 
   const scada::Status& status() const { return status_; }
 
-  virtual char const* what() const override {
+  virtual const char* what() const noexcept override {
     return ToCString(status_.code());
   }
 
