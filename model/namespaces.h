@@ -19,11 +19,13 @@ constexpr scada::NamespaceIndex IEC60870_DEVICE = 11;
 constexpr scada::NamespaceIndex MODBUS_PORTS = 12;
 constexpr scada::NamespaceIndex TS_FORMAT = 14;
 constexpr scada::NamespaceIndex SERVER_PARAMS = 15;
-constexpr scada::NamespaceIndex TRANSMISSION_ITEM = 16;
+constexpr scada::NamespaceIndex IEC60870_TRANSMISSION_ITEM = 16;
 constexpr scada::NamespaceIndex IEC61850_DEVICE = 17;
 constexpr scada::NamespaceIndex IEC61850_RCB = 18;
+constexpr scada::NamespaceIndex IEC61850_TRANSMISSION_ITEM = 27;
 // constexpr scada::NamespaceIndex IEC61850_SERVER = 22;
 // constexpr scada::NamespaceIndex OPC_SERVER = 25;
+constexpr scada::NamespaceIndex MODBUS_TRANSMISSION_ITEM = 26;
 
 constexpr scada::NamespaceIndex SCADA = 7;
 // constexpr scada::NamespaceIndex HISTORY = 8;
@@ -35,7 +37,7 @@ constexpr scada::NamespaceIndex FILESYSTEM_FILE = 24;
 constexpr scada::NamespaceIndex ALIAS = 23;
 // constexpr scada::NamespaceIndex METRIC = 24;
 
-constexpr scada::NamespaceIndex END = 26;
+constexpr scada::NamespaceIndex END = 28;
 
 }  // namespace NamespaceIndexes
 

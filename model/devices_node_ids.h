@@ -104,6 +104,9 @@ const scada::NodeId HasTransmissionSource{221, NamespaceIndexes::SCADA};
 const scada::NodeId HasTransmissionItem{339, NamespaceIndexes::SCADA};  // ReferenceType
 const scada::NodeId ModbusModeDataType{332, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusModeDataType_EnumStrings{333, NamespaceIndexes::SCADA};
+const scada::NodeId ModbusTransmissionItemType{342, NamespaceIndexes::SCADA};
+const scada::NodeId Iec60870TransmissionItemType{343, NamespaceIndexes::SCADA};
+const scada::NodeId Iec61850TransmissionItemType{344, NamespaceIndexes::SCADA};
 
 }
 

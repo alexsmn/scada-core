@@ -37,6 +37,8 @@ constexpr std::string_view kNamespaceNames[] = {
     "ALIAS",
     "FILESYSTEM_FILE",
     "OPC_SERVER",
+    "MODBUS_TRANSMIT",
+    "IEC61850_TRANSMIT",
 };
 
 static_assert(std::size(kNamespaceNames) == NamespaceIndexes::END);
