@@ -1,5 +1,7 @@
 #include "base/thread_executor.h"
 
+#include <cassert>
+
 bool ThreadExecutor::PendingTask::operator<(const PendingTask& other) const {
   if (time != other.time)
     return time < other.time;
@@ -16,6 +18,12 @@ ThreadExecutor::ThreadExecutor() {
 }
 
 ThreadExecutor::~ThreadExecutor() {
+  if (!stopped_)
+    Shutdown();
+}
+
+void ThreadExecutor::Shutdown() {
+  assert(!stopped_);
   stopped_ = true;
   condition_.notify_all();
   thread_.join();

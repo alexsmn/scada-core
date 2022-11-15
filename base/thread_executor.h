@@ -16,6 +16,8 @@ class ThreadExecutor : public Executor {
   ThreadExecutor(const ThreadExecutor&) = delete;
   ThreadExecutor& operator=(const ThreadExecutor&) = delete;
 
+  void Shutdown();
+
   // Executor
   virtual void PostDelayedTask(
       Duration delay,
