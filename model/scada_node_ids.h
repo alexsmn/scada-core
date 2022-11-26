@@ -16,7 +16,7 @@ const scada::NodeId MetricType{336, NamespaceIndexes::SCADA};
 const scada::NodeId MetricType_AggregateFunction{337, NamespaceIndexes::SCADA};
 const scada::NodeId MetricType_AggregateInterval{338, NamespaceIndexes::SCADA};
 
-const scada::NodeId NextId{345, NamespaceIndexes::SCADA};
+const scada::NodeId NextId{346, NamespaceIndexes::SCADA};
 
 } // namespace id
 
