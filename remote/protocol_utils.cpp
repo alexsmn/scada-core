@@ -1,6 +1,5 @@
 #include "remote/protocol_utils.h"
 
-#include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "core/standard_node_ids.h"
 
@@ -83,11 +82,11 @@ void Convert(const std::string& source, scada::ByteString& target) {
 }
 
 void Convert(const std::string& source, scada::QualifiedName& target) {
-  target = base::SysWideToNativeMB(base::SysUTF8ToWide(source));
+  target = source;
 }
 
 void Convert(const scada::QualifiedName& source, std::string& target) {
-  target = base::SysWideToUTF8(base::SysNativeMBToWide(source.name()));
+  target = source.name();
 }
 
 static_assert(static_cast<size_t>(scada::Variant::COUNT) == 19);
@@ -129,8 +128,7 @@ void Convert(const protocol::Variant& source, scada::Variant& target) {
         target = source.double_value();
         break;
       case scada::Variant::STRING:
-        target = scada::String{base::SysWideToNativeMB(
-            base::SysUTF8ToWide(source.string_value_utf8()))};
+        target = scada::String{source.string_value_utf8()};
         break;
       case scada::Variant::QUALIFIED_NAME:
         target = ConvertTo<scada::QualifiedName>(source.string_value_utf8());
@@ -253,13 +251,10 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
         target.set_double_value(source.get<scada::Double>());
         break;
       case scada::Variant::STRING:
-        target.set_string_value_utf8(
-            base::SysWideToUTF8(base::SysNativeMBToWide(source.as_string())));
+        target.set_string_value_utf8(source.as_string());
         break;
       case scada::Variant::QUALIFIED_NAME:
-        target.set_string_value_utf8(
-            base::SysWideToUTF8(base::SysNativeMBToWide(
-                source.get<scada::QualifiedName>().name())));
+        target.set_string_value_utf8(source.get<scada::QualifiedName>().name());
         break;
       case scada::Variant::LOCALIZED_TEXT:
         Convert(source.as_localized_text(),

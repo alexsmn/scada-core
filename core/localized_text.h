@@ -10,6 +10,7 @@ namespace scada {
 
 using LocalizedText = std::u16string;
 
+// Conversion from a scada::String which is a UTF-8 string.
 LocalizedText ToLocalizedText(std::string_view string);
 
 inline LocalizedText ToLocalizedText(const std::u16string_view& string) {
@@ -26,6 +27,8 @@ inline LocalizedText ToLocalizedText(std::u16string&& string) {
 
 }  // namespace scada
 
+// Builds a debug string which is a native MB string. It's not neccessary a
+// UTF-8 string like scada::String.
 std::string ToString(const scada::LocalizedText& text);
 
 inline const std::u16string& ToString16(
