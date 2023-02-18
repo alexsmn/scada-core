@@ -1,4 +1,4 @@
-set(BOOST_COMPONENTS atomic thread log log_setup filesystem date_time program_options)
+set(BOOST_COMPONENTS atomic context coroutine thread log log_setup filesystem date_time program_options)
 
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
