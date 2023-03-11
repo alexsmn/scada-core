@@ -70,7 +70,7 @@ add_executable(scada_core_remote_unittests ${UT_SOURCES})
 add_test(NAME scada_core_remote_unittests COMMAND scada_core_remote_unittests)
 target_link_libraries(scada_core_remote_unittests PUBLIC
   scada_core_remote
-  gmock_main
+  base_unittest
 )
 
 set_property(TARGET scada_core_remote_unittests PROPERTY FOLDER ${scada_folder})
