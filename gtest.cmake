@@ -1,6 +1,6 @@
 include(GoogleTest)
 
-if(VCPKG_GTEST)
+if(1)
 
 find_package(GTest REQUIRED)
 
