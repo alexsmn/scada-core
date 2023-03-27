@@ -2,7 +2,7 @@
 
 #include "base/debug_util.h"
 
-#include "base/strings/utf_string_conversions.h"
+#include <boost/locale/encoding_utf.hpp>
 
 template <class A, class B>
 inline std::ostream& operator<<(std::ostream& stream,
@@ -39,7 +39,7 @@ inline std::ostream& operator<<(std::ostream& stream,
 }
 
 template <class T>
-inline std::ostream& operator<<(std::ostream& stream, base::span<T> span) {
+inline std::ostream& operator<<(std::ostream& stream, std::span<T> span) {
   stream << "[";
   for (size_t i = 0; i < span.size(); ++i) {
     stream << span[i];
@@ -48,6 +48,11 @@ inline std::ostream& operator<<(std::ostream& stream, base::span<T> span) {
   }
   stream << "]";
   return stream;
+}
+
+template <class T>
+inline std::ostream& operator<<(std::ostream& stream, base::span<T> span) {
+  return stream << std::span<T>{span.data(), span.size()};
 }
 
 template <class T>
@@ -71,5 +76,5 @@ template <class T>
 inline std::u16string ToString16(const T& v) {
   std::stringstream s;
   s << v;
-  return base::UTF8ToUTF16(s.str());
+  return boost::locale::conv::utf_to_utf<char16_t>(s.str());
 }

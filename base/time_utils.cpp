@@ -1,9 +1,8 @@
 #include "base/time_utils.h"
 
-#include "base/string_piece_util.h"
-#include "base/strings/string_number_conversions.h"
-#include "base/strings/string_split.h"
-#include "base/strings/stringprintf.h"
+#include <base/string_piece_util.h>
+#include <base/strings/string_number_conversions.h>
+#include <base/strings/string_split.h>
 
 namespace {
 
@@ -23,8 +22,7 @@ std::string SerializeToString(base::TimeDelta delta) {
   s = s % 60;
   int64_t h = m / 60;
   m = m % 60;
-  return base::StringPrintf("%d:%02d:%02d", static_cast<int>(h),
-                            static_cast<int>(m), static_cast<int>(s));
+  return std::format("{}:{:02}:{:02}", h, m, s);
 }
 
 bool Deserialize(std::string_view str, base::TimeDelta& delta) {
@@ -47,12 +45,11 @@ bool Deserialize(std::string_view str, base::TimeDelta& delta) {
 std::string SerializeToString(base::Time time) {
   base::Time::Exploded e = {0};
   time.UTCExplode(&e);
-  auto str =
-      base::StringPrintf("%04d-%02d-%02d %02d:%02d:%02d", e.year, e.month,
+  auto str = std::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}", e.year, e.month,
                          e.day_of_month, e.hour, e.minute, e.second);
 
   if (e.millisecond != 0)
-    str += base::StringPrintf(".%03d", e.millisecond);
+    str += std::format(".{:03}", e.millisecond);
 
 #ifndef NDEBUG
   base::Time parsed_time;

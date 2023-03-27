@@ -1,9 +1,7 @@
 #include "base/csv_reader.h"
 
-#include "base/string_piece_util.h"
-#include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
-
+#include <base/strings/string_util.h>
+#include <boost/locale/encoding_utf.hpp>
 #include <cassert>
 
 CsvReader::CsvReader(std::istream& stream, std::u16string_view signature)
@@ -16,16 +14,14 @@ bool CsvReader::NextRow() {
   if (!std::getline(stream_, raw_line_))
     return false;
 
-  line_ = base::UTF8ToUTF16(raw_line_);
+  line_ = boost::locale::conv::utf_to_utf<char16_t>(raw_line_);
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.
   base::ReplaceSubstringsAfterOffset(&line_, 0, u"\r\n", u"\n");
 
   if (!signature_.empty()) {
-    if (line_.size() > signature_.size() &&
-        base::StartsWith(line_, AsStringPiece(signature_),
-                         base::CompareCase::SENSITIVE)) {
+    if (line_.size() > signature_.size() && line_.starts_with(signature_)) {
       separator_ = line_[signature_.size()];
     }
     signature_ = {};

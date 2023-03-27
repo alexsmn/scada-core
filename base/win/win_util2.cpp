@@ -2,8 +2,8 @@
 
 #include "base/format.h"
 #include "base/logging.h"
-#include "base/strings/string_util.h"
 
+#include <base/strings/string_util.h>
 #include <memory>
 #include <shellapi.h>
 

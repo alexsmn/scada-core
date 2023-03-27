@@ -1,7 +1,6 @@
 #pragma once
 
-#include "base/location.h"
-
+#include <base/location.h>
 #include <boost/assert/source_location.hpp>
 
 namespace base {

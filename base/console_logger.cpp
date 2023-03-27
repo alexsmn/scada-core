@@ -1,9 +1,9 @@
 #include "base/console_logger.h"
 
-#include <iostream>
-
 #include "base/logging.h"
-#include "base/strings/stringprintf.h"
+
+#include <base/strings/stringprintf.h>
+#include <iostream>
 
 namespace {
 

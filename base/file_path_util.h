@@ -1,7 +1,6 @@
 #pragma once
 
-#include "base/files/file_path.h"
-
+#include <base/files/file_path.h>
 #include <filesystem>
 
 inline base::FilePath AsFilePath(const std::filesystem::path& path) {

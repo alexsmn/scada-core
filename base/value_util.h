@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/string_piece_util.h"
-#include "base/values.h"
 
+#include <base/values.h>
 #include <optional>
 
 inline bool GetBool(const base::Value& value,
@@ -75,6 +75,8 @@ inline std::optional<int> GetKey(const base::Value& dict,
       dict.FindKeyOfType(AsStringPiece(key), base::Value::Type::INTEGER);
   return k ? std::make_optional(k->GetInt()) : std::nullopt;
 }
+
+const base::Value& GetKey(const base::Value& dict, std::string_view key);
 
 inline void SetKey(base::Value& dict, std::string_view key, bool value) {
   dict.SetKey(AsStringPiece(key), base::Value{value});

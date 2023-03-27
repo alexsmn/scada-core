@@ -1,7 +1,6 @@
 #pragma once
 
-#include "base/time/time.h"
-
+#include <base/time/time.h>
 #include <cassert>
 
 inline base::Time TestTimeFromString(const char* time_string) {

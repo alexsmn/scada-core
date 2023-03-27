@@ -1,8 +1,6 @@
 #include "base/uri.h"
 
-#include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
-#include "base/strings/utf_string_conversions.h"
+#include <base/strings/stringprintf.h>
 
 #include <algorithm>
 #include <gmock/gmock.h>

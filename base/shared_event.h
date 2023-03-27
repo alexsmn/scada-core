@@ -1,7 +1,6 @@
 #pragma once
 
-#include "base/win/scoped_handle.h"
-
+#include <base/win/scoped_handle.h>
 #include <cassert>
 #include <windows.h>
 

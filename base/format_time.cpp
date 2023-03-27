@@ -1,6 +1,7 @@
-#include "base/strings/stringprintf.h"
-#include "base/time/time.h"
 #include "base/format_time.h"
+
+#include <base/time/time.h>
+#include <format>
 
 std::string FormatTime(base::Time time, int flags) {
   if (time.is_null())
@@ -21,16 +22,16 @@ std::string FormatTime(base::Time time, int flags) {
   std::string text;
 
   if (flags & TIME_FORMAT_DATE)
-    text = base::StringPrintf("%02d.%02d.%04d", e.day_of_month, e.month, e.year);
+    text = std::format("{:02}.{:02}.{:04}", e.day_of_month, e.month, e.year);
 
   if (flags & TIME_FORMAT_TIME) {
-    std::string tmp = base::StringPrintf("%02d:%02d:%02d", e.hour, e.minute,
-        e.second);
+    std::string tmp =
+        std::format("{:02}:{:02}:{:02}", e.hour, e.minute, e.second);
     if (!text.empty())
       text += L' ';
     text += tmp;
     if (flags & TIME_FORMAT_MSEC)
-      text += base::StringPrintf(".%03d", e.millisecond);
+      text += std::format(".{:03}", e.millisecond);
   }
 
   return text;

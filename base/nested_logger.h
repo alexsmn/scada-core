@@ -1,10 +1,9 @@
 #pragma once
 
+#include "base/logger.h"
+
 #include <memory>
 #include <string>
-
-#include "base/base_export.h"
-#include "base/logger.h"
 
 class NestedLogger : public Logger {
  public:

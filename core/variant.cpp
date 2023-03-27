@@ -38,8 +38,8 @@ static_assert(std::size(kBuiltInDataTypeNames) ==
 
 }  // namespace
 
-const char16_t Variant::kTrueString[] = u"Да";
-const char16_t Variant::kFalseString[] = u"Нет";
+const std::u16string_view Variant::kTrueString = u"Да";
+const std::u16string_view Variant::kFalseString = u"Нет";
 
 void Variant::clear() {
   data_ = std::monostate{};
@@ -190,7 +190,8 @@ struct FormatHelperT<String, bool> {
 template <>
 struct FormatHelperT<LocalizedText, bool> {
   static inline LocalizedText Format(const bool& value) {
-    return value ? Variant::kTrueString : Variant::kFalseString;
+    return value ? LocalizedText{Variant::kTrueString}
+                 : LocalizedText{Variant::kFalseString};
   }
 };
 

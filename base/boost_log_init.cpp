@@ -2,11 +2,11 @@
 
 #include "base/boost_log.h"
 #include "base/format.h"
-#include "base/strings/utf_string_conversions.h"
 
 #include <boost/date_time/posix_time/time_formatters.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
+#include <boost/locale/encoding_utf.hpp>
 #include <boost/log/attributes.hpp>
 #include <boost/log/attributes/clock.hpp>
 #include <boost/log/attributes/value_visitation.hpp>
@@ -33,12 +33,12 @@ std::string EvaluateString(const bool& value) {
 
 template <>
 std::string EvaluateString(const std::wstring& value) {
-  return base::WideToUTF8(value);
+  return boost::locale::conv::utf_to_utf<char>(value);
 }
 
 template <>
 std::string EvaluateString(const std::u16string& value) {
-  return base::UTF16ToUTF8(value);
+  return boost::locale::conv::utf_to_utf<char>(value);
 }
 
 std::string ToString(const boost::log::attribute_value& attr) {

@@ -1,7 +1,7 @@
 #include "base/debug_util.h"
 
 std::string BitMaskToString(unsigned bit_mask,
-                            base::span<const std::string_view> bit_strings) {
+                            std::span<const std::string_view> bit_strings) {
   std::string result = "[";
   bool first = true;
   for (std::size_t i = 0; i < bit_strings.size(); ++i) {

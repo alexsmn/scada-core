@@ -1,10 +1,10 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "base/strings/stringprintf.h"
-#include "net/logger.h"
 
+#include <base/strings/stringprintf.h>
 #include <memory>
+#include <net/logger.h>
 
 class NetBoostLoggerAdapter final : public net::Logger {
  public:

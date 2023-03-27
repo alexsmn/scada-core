@@ -1,7 +1,8 @@
 #pragma once
 
 #include "base/string_piece_util.h"
-#include "base/values.h"
+
+#include <base/values.h>
 
 template <class T>
 inline bool ReadJson(const base::Value& json, T& value);

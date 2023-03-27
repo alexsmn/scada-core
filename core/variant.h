@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <variant>
 
 namespace scada {
@@ -142,8 +143,8 @@ class Variant {
 
   void Dump(std::ostream& stream) const;
 
-  static const char16_t kTrueString[];
-  static const char16_t kFalseString[];
+  static const std::u16string_view kTrueString;
+  static const std::u16string_view kFalseString;
 
  private:
   template <class T>

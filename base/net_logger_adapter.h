@@ -1,9 +1,9 @@
 #pragma once
 
 #include "base/logger.h"
-#include "net/logger.h"
 
 #include <memory>
+#include <net/logger.h>
 
 class NetLoggerAdapter final : public net::Logger {
  public:

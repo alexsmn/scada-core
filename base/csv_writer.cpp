@@ -1,9 +1,9 @@
 #include "base/csv_writer.h"
 
 #include "base/string_piece_util.h"
-#include "base/strings/string_util.h"
-#include "base/strings/sys_string_conversions.h"
-#include "base/strings/utf_string_conversions.h"
+
+#include <base/strings/string_util.h>
+#include <boost/locale/encoding_utf.hpp>
 
 namespace {
 
@@ -50,7 +50,8 @@ void CsvWriter::StartRow() {
 }
 
 void CsvWriter::WriteCell(std::string_view utf8) {
-  WriteCell(base::UTF8ToUTF16(AsStringPiece(utf8)));
+  WriteCell(boost::locale::conv::utf_to_utf<char16_t>(
+      utf8.data(), utf8.data() + utf8.size()));
 }
 
 void CsvWriter::WriteCell(std::u16string_view utf16) {
@@ -60,7 +61,7 @@ void CsvWriter::WriteCell(std::u16string_view utf16) {
 
   auto escaped = StringToCsv(utf16, delimiter, quote);
 
-  std::string encoded = base::UTF16ToUTF8(escaped);
+  std::string encoded = boost::locale::conv::utf_to_utf<char>(escaped);
 
   stream_ << encoded;
   if (!stream_)

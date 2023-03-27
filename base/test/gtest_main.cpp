@@ -1,8 +1,8 @@
 #include "base/boost_log_init.h"
 #include "base/file_path_util.h"
-#include "base/files/file_path.h"
-#include "base/path_service.h"
 
+#include <base/files/file_path.h>
+#include <base/path_service.h>
 #include <gmock/gmock.h>
 
 int main(int argc, char** argv) {

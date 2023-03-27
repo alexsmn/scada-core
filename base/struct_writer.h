@@ -24,7 +24,7 @@ class StructWriter {
 
   StructWriter& AddBitMaskField(std::string_view name,
                                 unsigned bit_mask,
-                                base::span<const std::string_view> bit_strings);
+                                std::span<const std::string_view> bit_strings);
 
  private:
   template <class T>
@@ -56,7 +56,7 @@ inline StructWriter& StructWriter::AddField(std::string_view name,
 inline StructWriter& StructWriter::AddBitMaskField(
     std::string_view name,
     unsigned bit_mask,
-    base::span<const std::string_view> bit_strings) {
+    std::span<const std::string_view> bit_strings) {
   if (count_ != 0)
     stream_ << ", ";
   stream_ << name << ": " << BitMaskToString(bit_mask, bit_strings);

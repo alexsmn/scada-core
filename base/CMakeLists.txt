@@ -26,6 +26,9 @@ target_link_libraries(scada_base PUBLIC
   promise.hpp
 )
 
+# std::format
+target_compile_features(scada_base PRIVATE cxx_std_20)
+
 if(WIN32)
   target_compile_options(scada_base PUBLIC
     /permissive-

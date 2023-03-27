@@ -1,11 +1,11 @@
 #include "base/format.h"
 
 #include "base/string_piece_util.h"
-#include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
-#include "base/third_party/dmg_fp/dmg_fp.h"
 
+#include <base/strings/string_number_conversions.h>
+#include <base/strings/string_util.h>
+#include <base/third_party/dmg_fp/dmg_fp.h>
+#include <boost/locale/encoding_utf.hpp>
 #include <memory>
 
 std::string Format(double value) {
@@ -106,11 +106,13 @@ std::string Format(std::string_view value) {
 }
 
 std::u16string WideFormat(std::string_view value) {
-  return base::UTF8ToUTF16(AsStringPiece(value));
+  return boost::locale::conv::utf_to_utf<char16_t>(value.data(),
+                                                   value.data() + value.size());
 }
 
 std::string Format(std::u16string_view value) {
-  return base::UTF16ToUTF8(AsStringPiece(value));
+  return boost::locale::conv::utf_to_utf<char>(value.data(),
+                                               value.data() + value.size());
 }
 
 std::u16string WideFormat(std::u16string_view value) {

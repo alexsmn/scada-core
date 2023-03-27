@@ -1,8 +1,5 @@
 #pragma once
 
-#include "base/strings/stringprintf.h"
-#include "build/build_config.h"
-
 #include <cassert>
 #include <exception>
 #include <stdarg.h>

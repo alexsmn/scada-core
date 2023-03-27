@@ -1,8 +1,9 @@
 ﻿#include "base/win/format_hresult.h"
-#include "base/strings/stringprintf.h"
+
 #include "base/strings/sys_string_conversions.h"
 
 #include <cassert>
+#include <format>
 #include <windows.h>
 
 std::wstring FormatHresultUTF16(HRESULT err) {
@@ -10,7 +11,7 @@ std::wstring FormatHresultUTF16(HRESULT err) {
   if (!FormatMessageW(
           FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
           err, 0, reinterpret_cast<LPWSTR>(&buf), 0, NULL))
-    return base::StringPrintf(L"Ошибка Windows %d", err);
+    return std::format(L"Ошибка Windows %d", err);
 
   assert(buf);
 
@@ -31,7 +32,7 @@ std::string FormatHresult(HRESULT err) {
   if (!FormatMessageA(
           FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
           err, 0, reinterpret_cast<LPSTR>(&buf), 0, NULL))
-    return base::StringPrintf("Windows error %d", err);
+    return std::format("Windows error %d", err);
 
   assert(buf);
 

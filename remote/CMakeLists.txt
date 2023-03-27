@@ -33,9 +33,11 @@ add_library(scada_core_remote ${SOURCES})
 # For proto generated files
 target_include_directories(scada_core_remote PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
+find_package(Net REQUIRED)
+
 target_link_libraries(scada_core_remote PUBLIC
   protobuf::libprotobuf
-  net
+  Net::net
   scada_core
   address_space
 )

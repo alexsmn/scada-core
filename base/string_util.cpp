@@ -1,26 +1,8 @@
 #include "base/string_util.h"
 
 #include <cassert>
+#include <locale>
 #include <numeric>
-
-bool IsEqualNoCase(std::string_view a, std::string_view b) {
-  if (a.size() != b.size())
-    return false;
-  if (a.empty())
-    return true;
-  return std::equal(a.begin(), a.end(), b.begin(),
-                    [](char a, char b) { return tolower(a) == tolower(b); });
-}
-
-bool IsEqualNoCase(std::u16string_view a, std::u16string_view b) {
-  if (a.size() != b.size())
-    return false;
-  if (a.empty())
-    return true;
-  return std::equal(a.begin(), a.end(), b.begin(), [](wchar_t a, wchar_t b) {
-    return tolower(a) == tolower(b);
-  });
-}
 
 // |boost::split| is not useful for delimiter string.
 // |base::SplitString| works only with base::StringView.
@@ -46,7 +28,7 @@ std::vector<std::string_view> SplitString(std::string_view str,
 }
 
 // |boost::algorithm::join| does not support |std::string_view|.
-std::string JoinStrings(base::span<const std::string_view> strings,
+std::string JoinStrings(std::span<const std::string_view> strings,
                         std::string_view delimiter) {
   if (strings.empty())
     return {};

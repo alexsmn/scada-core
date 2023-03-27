@@ -1,7 +1,6 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
-
+#include <base/strings/string_piece.h>
 #include <string_view>
 
 template <class CharT>
