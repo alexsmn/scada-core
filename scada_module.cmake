@@ -1,5 +1,3 @@
-include(GoogleTest)
-
 macro(scada_module MODULE_NAME)
   set(OPTIONS "RECURSE")
   set(ONE_VALUE_ARGS "")
@@ -35,6 +33,7 @@ macro(scada_module MODULE_NAME)
     add_executable(${MODULE_NAME}_unittests ${${MODULE_NAME}_UT_SOURCES})
     target_link_libraries(${MODULE_NAME}_unittests PUBLIC ${MODULE_NAME} base_unittest)
     set_property(TARGET ${MODULE_NAME}_unittests PROPERTY FOLDER ${scada_folder})
+    include(GoogleTest)
     # Temporary workaround of "no cmake script provided" error. Also,
     # `gtest_discover_tests` is not correctly handled by CTest. So you cannot test Linux builds.
     # In opposite, `gtest_add_tests` triggers generation on each UT modification.
