@@ -120,26 +120,26 @@ void SetWindowTextInt(HWND window_handle, int value) {
 }
 
 std::wstring GetListBoxItemText(HWND window_handle, int index) {
-  int len = SendMessage(window_handle, LB_GETTEXTLEN, index, 0L);
+  LRESULT len = SendMessage(window_handle, LB_GETTEXTLEN, index, 0L);
   if (len <= 0)
     return std::wstring();
 
   std::unique_ptr<wchar_t[]> text(new wchar_t[len + 1]);
-  int res = SendMessage(window_handle, LB_GETTEXT, index,
-                        reinterpret_cast<LPARAM>(text.get()));
+  LRESULT res = SendMessage(window_handle, LB_GETTEXT, index,
+                            reinterpret_cast<LPARAM>(text.get()));
   if (res == LB_ERR)
     return std::wstring();
   return std::wstring(text.get(), text.get() + len);
 }
 
 std::wstring GetComboBoxItemText(HWND window_handle, int index) {
-  int len = SendMessage(window_handle, CB_GETLBTEXTLEN, index, 0L);
+  LRESULT len = SendMessage(window_handle, CB_GETLBTEXTLEN, index, 0L);
   if (len <= 0)
     return std::wstring();
 
   std::unique_ptr<wchar_t[]> text(new wchar_t[len + 1]);
-  int res = SendMessage(window_handle, CB_GETLBTEXT, index,
-                        reinterpret_cast<LPARAM>(text.get()));
+  LRESULT res = SendMessage(window_handle, CB_GETLBTEXT, index,
+                            reinterpret_cast<LPARAM>(text.get()));
   if (res == LB_ERR)
     return std::wstring();
   return std::wstring(text.get(), text.get() + len);

@@ -3,8 +3,15 @@ set(BOOST_COMPONENTS atomic context coroutine thread log log_setup filesystem da
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 if(WIN32)
-  set(BOOST_DEBUG_SUFFIX "vc143-mt-gd-x32-${Boost_LIB_VERSION}")
-  set(BOOST_RELEASE_SUFFIX "vc143-mt-x32-${Boost_LIB_VERSION}")
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(BOOST_ARCH "x64")
+  else()
+    set(BOOST_ARCH "x32")
+  endif()
+  
+
+  set(BOOST_DEBUG_SUFFIX "vc143-mt-gd-${BOOST_ARCH}-${Boost_LIB_VERSION}")
+  set(BOOST_RELEASE_SUFFIX "vc143-mt-${BOOST_ARCH}-${Boost_LIB_VERSION}")
 
   foreach(BOOST_COMPONENT ${BOOST_COMPONENTS})
     if(NOT ${BOOST_COMPONENT} MATCHES "date_time")

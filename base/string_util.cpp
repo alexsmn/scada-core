@@ -34,7 +34,7 @@ std::string JoinStrings(std::span<const std::string_view> strings,
     return {};
 
   const auto strings_combined_size = std::accumulate(
-      strings.begin(), strings.end(), 0,
+      strings.begin(), strings.end(), static_cast<size_t>(0),
       [](std::size_t sum, std::string_view str) { return sum + str.size(); });
   const auto delimiters_size = delimiter.size() * (strings.size() - 1);
   const auto result_size = strings_combined_size + delimiters_size;

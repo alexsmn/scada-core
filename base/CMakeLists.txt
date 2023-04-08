@@ -36,6 +36,8 @@ if(WIN32)
     /wd4100 # unreferenced formal parameter
     /wd4458 # declaration of 'x' hides class member
     /wd4459 # declaration of 'x' hides global declaration
+    /wd4267 # conversion from 'size_t' to 'type', possible loss of data
+    # /wd4244 # conversion from 'type1' to 'type2', possible loss of data
     $<$<NOT:$<CONFIG:Debug>>:
       /wd4189 # local variable is initialized but not referenced
     >
