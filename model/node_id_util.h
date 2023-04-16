@@ -2,6 +2,7 @@
 
 #include "core/node_id.h"
 
+// Normal nodes are not considered nested.
 bool IsNestedNodeId(const scada::NodeId& node_id,
                     scada::NodeId& parent_id,
                     std::string_view& nested_name);
