@@ -29,14 +29,14 @@ using WriteCallback = MultiStatusCallback;
 
 struct WriteValue {
   NodeId node_id;
-  AttributeId attribute_id;
+  AttributeId attribute_id = scada::AttributeId::Value;
   Variant value;
   WriteFlags flags;
 };
 
 class AttributeService {
  public:
-  virtual ~AttributeService() {}
+  virtual ~AttributeService() = default;
 
   virtual void Read(
       const std::shared_ptr<const ServiceContext>& context,

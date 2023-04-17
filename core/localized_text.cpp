@@ -13,5 +13,8 @@ LocalizedText ToLocalizedText(std::string_view string) {
 }  // namespace scada
 
 std::string ToString(const scada::LocalizedText& text) {
+  // E.g. see `AuthenticationTask` on how login user name is translated to the
+  // qualified name.
   return base::SysWideToNativeMB(base::UTF16ToWide(text));
+  // return base::UTF16ToUTF8(text);
 }
