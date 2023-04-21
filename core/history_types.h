@@ -37,26 +37,24 @@ struct ItemInfo {
   base::Time change_time;
 };
 
-using ItemInfosCallback =
-    std::function<void(std::vector<ItemInfo>&& item_infos)>;
+using ItemInfosCallback = std::function<void(std::vector<ItemInfo> item_infos)>;
 
 using HistoryReadItemInfoCallback =
     std::function<void(std::optional<ItemInfo> item_info)>;
 
 struct HistoryReadRawResult {
-  Status status;
+  Status status{StatusCode::Good};
   std::vector<DataValue> values;
   ByteString continuation_point;
 };
 
-using HistoryReadRawCallback =
-    std::function<void(HistoryReadRawResult&& result)>;
+using HistoryReadRawCallback = std::function<void(HistoryReadRawResult result)>;
 
 using HistoryReadEventsCallback =
-    std::function<void(Status&& status, std::vector<Event>&& events)>;
+    std::function<void(Status status, std::vector<Event> events)>;
 
 using AcknowledgeCallback =
-    std::function<void(Status&& status, std::vector<StatusCode>&& results)>;
+    std::function<void(Status status, std::vector<StatusCode> results)>;
 
 inline bool operator==(const ItemInfo& a, const ItemInfo& b) {
   return std::tie(a.node_id, a.data_value, a.change_time) ==

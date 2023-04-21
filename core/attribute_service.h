@@ -20,7 +20,7 @@ using MultiStatusCallback =
 
 struct ReadValueId {
   NodeId node_id;
-  AttributeId attribute_id;
+  AttributeId attribute_id = scada::AttributeId::Value;
 };
 
 using ReadCallback =
@@ -69,11 +69,12 @@ template <class Callback>
 inline void Read(AttributeService& attribute_service,
                  const std::shared_ptr<const scada::ServiceContext>& context,
                  ReadValueId&& input,
-                 const Callback& callback) {
+                 Callback&& callback) {
   auto inputs = std::make_shared<std::vector<ReadValueId>>(1, std::move(input));
   attribute_service.Read(
       context, inputs,
-      [callback](Status&& status, std::vector<DataValue>&& results) {
+      [callback = std::forward<Callback>(callback)](
+          Status&& status, std::vector<DataValue>&& results) mutable {
         assert(!status || results.size() == 1);
         callback(status ? std::move(results[0]) : MakeReadError(status.code()));
       });
@@ -83,11 +84,12 @@ template <class Callback>
 inline void Write(AttributeService& attribute_service,
                   const std::shared_ptr<const scada::ServiceContext>& context,
                   WriteValue&& input,
-                  const Callback& callback) {
+                  Callback&& callback) {
   auto inputs = std::make_shared<std::vector<WriteValue>>(1, std::move(input));
   attribute_service.Write(
       context, inputs,
-      [callback](Status&& status, std::vector<StatusCode>&& results) {
+      [callback = std::forward<Callback>(callback)](
+          Status&& status, std::vector<StatusCode>&& results) mutable {
         assert(!status || results.size() == 1);
         callback(status ? Status{results[0]} : std::move(status));
       });
