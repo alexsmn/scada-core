@@ -21,6 +21,9 @@ class monitored_item {
   monitored_item() = default;
 
   bool subscribed() const { return state_ != nullptr; }
+  StatusCode status_code() const {
+    return state_ ? state_->status_code : StatusCode::Bad_Disconnected;
+  }
 
   const DataValue& data_value() const {
     static const DataValue kEmptyDataValue;
@@ -48,6 +51,7 @@ class monitored_item {
          data_change_handler = std::forward<Handler>(data_change_handler)](
             const DataValue& data_value) mutable {
           // TODO: Handle close.
+          state->status_code = data_value.status_code;
           state->data_value = data_value;
           data_change_handler(data_value);
         });
@@ -65,6 +69,7 @@ class monitored_item {
         [state = state_, event_handler = std::forward<Handler>(event_handler)](
             const Status& status, const std::any& event) {
           // TODO: Handle close.
+          state->status_code = status.code();
           state->last_event = event;
           event_handler(status, event);
         });
@@ -72,6 +77,7 @@ class monitored_item {
 
   struct state {
     // TODO: Custom state for events.
+    StatusCode status_code = StatusCode::Good;
     DataValue data_value;
     std::any last_event;
     std::shared_ptr<MonitoredItem> monitored_item;
