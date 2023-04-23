@@ -19,29 +19,33 @@ class StatusException : public std::exception {
   const scada::Status status_;
 };
 
+// WARNING: The current implementation requires a copyable callback since it has
+// to be copied both to `.then` and `.except` handlers.
 template <class Callback>
-inline auto BindCallback(Callback&& callback) {
-  return [callback = std::forward<Callback>(callback)](
-             StatusCode status_code) mutable {
-    return IsGood(status_code) ? callback()
-                               : make_resolved_promise(status_code);
-  };
+inline auto BindStatusCallback(promise<Status>& promise,
+                               const Callback& callback) {
+  return promise
+      .then([callback](scada::Status& status) {
+        callback(status);
+        return status;
+      })
+      .except([callback](const StatusException& e) { callback(e.status()); });
 }
 
-template <class Callback>
-inline auto BindError(Callback&& callback) {
-  return [callback = std::forward<Callback>(callback)](
-             StatusCode status_code) mutable {
-    if (scada::IsBad(status_code))
-      callback(status_code);
-    return status_code;
-  };
+inline promise<> ToStatusPromise(promise<Status> promise) {
+  return promise.then([](const Status& status) {
+    return status.bad() ? make_rejected_promise(StatusException{status.code()})
+                        : make_resolved_promise();
+  });
 }
 
-inline promise<> MakeStatusPromise(scada::StatusCode status_code) {
-  return IsGood(status_code)
-             ? make_resolved_promise()
-             : make_rejected_promise(StatusException{status_code});
+inline promise<> MakeRejectedStatusPromise(scada::Status status) {
+  return make_rejected_promise<>(StatusException{std::move(status)});
+}
+
+template <class T>
+inline promise<T> MakeRejectedStatusPromise(scada::Status status) {
+  return make_rejected_promise<T>(StatusException{std::move(status)});
 }
 
 }  // namespace scada

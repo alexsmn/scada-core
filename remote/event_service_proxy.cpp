@@ -17,6 +17,7 @@ void EventServiceProxy::OnChannelClosed() {
 
 void EventServiceProxy::Acknowledge(
     base::span<const scada::EventAcknowledgeId> acknowledge_ids,
+    scada::DateTime acknowledge_time,
     const scada::NodeId& user_id) {
   if (!sender_) {
     assert(false);
@@ -25,6 +26,7 @@ void EventServiceProxy::Acknowledge(
 
   protocol::Request request;
   auto& acknowledge = *request.mutable_call()->mutable_acknowledge();
+  // TODO: Write acknowledge time to the request.
   acknowledge.mutable_acknowledge_id()->Add(acknowledge_ids.begin(),
                                             acknowledge_ids.end());
 

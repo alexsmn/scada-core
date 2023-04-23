@@ -19,7 +19,8 @@ enum EventSeverity : unsigned {
   kSeverityMax = 100       // max
 };
 
-using EventAcknowledgeId = unsigned;
+// TODO: Make 64-bit.
+using EventAcknowledgeId = scada::UInt32;
 
 class Event {
  public:
@@ -35,6 +36,8 @@ class Event {
     EVT_BACKUP = 0x0100,  // locked
   };
 
+  auto operator<=>(const Event&) const = default;
+
   NodeId event_type_id = scada::id::SystemEventType;
   DateTime time;
   scada::UInt32 change_mask = 0;
@@ -48,8 +51,6 @@ class Event {
   EventAcknowledgeId acknowledge_id = 0;
   DateTime acknowledged_time;
   NodeId acknowledged_user_id;
-
-  auto operator<=>(const Event&) const = default;
 };
 
 struct ModelChangeEvent {
@@ -66,6 +67,8 @@ struct ModelChangeEvent {
     return *this;
   }
 
+  auto operator<=>(const ModelChangeEvent&) const = default;
+
   NodeId node_id;
 
   // |type_definition_id| is only set for |NodeAdded| event.
@@ -77,13 +80,15 @@ struct ModelChangeEvent {
 };
 
 struct SemanticChangeEvent {
+  auto operator<=>(const SemanticChangeEvent&) const = default;
+
   NodeId node_id;
 
   static const NumericId event_type_id = id::SemanticChangeEventType;
 };
 
 struct EventFilter {
-  enum EventType { ACKED = 1, UNACKED = 2 };
+  enum EventType { ACKED = 1 << 0, UNACKED = 1 << 1 };
 
   EventFilter& set_of_type(std::vector<NodeId> of_type) {
     this->of_type = std::move(of_type);
@@ -105,20 +110,28 @@ struct EventFilter {
     return *this;
   }
 
+  auto operator<=>(const EventFilter&) const = default;
+
+  // Bitmask of `EventType`. Zero means any type for both current events and
+  // history.
   unsigned types = 0;
 
   std::vector<NodeId> of_type;
   std::vector<NodeId> child_of;
 };
 
-inline bool operator==(const ModelChangeEvent& a, const ModelChangeEvent& b) {
-  return a.node_id == b.node_id &&
-         a.type_definition_id == b.type_definition_id && a.verb == b.verb;
-}
-
-inline bool operator==(const SemanticChangeEvent& a,
-                       const SemanticChangeEvent& b) {
-  return a.node_id == b.node_id;
+inline std::ostream& operator<<(std::ostream& stream, const Event& event) {
+  StructWriter{stream}
+      .AddField("event_type_id", event.event_type_id)
+      .AddField("time", event.time)
+      .AddField("node_id", event.node_id)
+      .AddField("value", event.value)
+      .AddField("message", event.message)
+      .AddField("acked", event.acked)
+      .AddField("acknowledge_id", event.acknowledge_id)
+      .AddField("acknowledged_user_id", event.acknowledged_user_id)
+      .AddField("acknowledged_time", event.acknowledged_time);
+  return stream;
 }
 
 inline std::ostream& operator<<(std::ostream& stream,
@@ -142,9 +155,9 @@ inline std::ostream& operator<<(std::ostream& stream,
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const EventFilter& event_filter) {
+  constexpr std::string_view kTypeBitStrings[] = {"ACKED", "UNACKED"};
   StructWriter{stream}
-      .AddField("types.acked", !!(event_filter.types & EventFilter::ACKED))
-      .AddField("types.unacked", !!(event_filter.types & EventFilter::UNACKED))
+      .AddBitMaskField("types", event_filter.types, kTypeBitStrings)
       .AddField("of_type", event_filter.of_type)
       .AddField("child_of", event_filter.child_of);
   return stream;

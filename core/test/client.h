@@ -103,60 +103,77 @@ class node {
  public:
   promise<DataValue> read(AttributeId attribute_id) const {
     if (!services_.attribute_service) {
-      return make_resolved_promise<DataValue>(MakeReadError(StatusCode::Bad));
+      return MakeRejectedStatusPromise<DataValue>(StatusCode::Bad_Disconnected);
     }
 
     return Read(*services_.attribute_service,
-                ServiceContext::default_instance(), ReadValueId{node_id_});
+                ServiceContext::default_instance(), {.node_id = node_id_})
+        .then([](const scada::DataValue& result) {
+          return scada::IsBad(result.status_code)
+                     ? MakeRejectedStatusPromise<DataValue>(result.status_code)
+                     : make_resolved_promise(result);
+        });
   }
 
   promise<DataValue> read_value() const { return read(AttributeId::Value); }
 
-  promise<Status> write(AttributeId attribute_id,
-                        const Variant& value,
-                        const ServiceContext& service_context = {}) const {
+  promise<> write(AttributeId attribute_id,
+                  const Variant& value,
+                  const ServiceContext& service_context = {}) const {
     if (!services_.attribute_service) {
-      return make_resolved_promise<Status>(StatusCode::Bad);
+      return MakeRejectedStatusPromise(StatusCode::Bad);
     }
 
-    //   TODO: Take `ServiceContext` from `client`.
-    return Write(*services_.attribute_service,
-                 std::make_shared<ServiceContext>(service_context),
-                 WriteValue{node_id_, attribute_id, value});
+    return ToStatusPromise(Write(
+        *services_.attribute_service,
+        std::make_shared<ServiceContext>(service_context),
+        {.node_id = node_id_, .attribute_id = attribute_id, .value = value}));
   }
 
-  promise<Status> write_value(
-      const Variant& value,
-      const ServiceContext& service_context = {}) const {
+  promise<> write_value(const Variant& value,
+                        const ServiceContext& service_context = {}) const {
     return write(AttributeId::Value, value, service_context);
   }
 
-  promise<Status> call_packed(const NodeId& method_id,
-                              const std::vector<Variant>& arguments) const {
+  promise<> call_packed(const ServiceContext& context,
+                        const NodeId& method_id,
+                        const std::vector<Variant>& arguments) const {
     if (!services_.method_service) {
-      return make_resolved_promise<Status>(StatusCode::Bad);
+      return MakeRejectedStatusPromise(StatusCode::Bad_Disconnected);
     }
 
     // Take `user_id` from `client`.
-    return Call(*services_.method_service, node_id_, method_id, arguments, {});
+    return ToStatusPromise(Call(*services_.method_service, node_id_, method_id,
+                                arguments, context.user_id));
   }
 
   template <class... Args>
-  promise<Status> call(const NodeId& method_id, Args&&... args) const {
+  promise<> call(const NodeId& method_id, Args&&... args) const {
     return call_packed(method_id, {std::forward<Args>(args)...});
   }
 
-  promise<std::vector<Event>> history_read_events(
-      DateTime from,
-      DateTime to,
-      const EventFilter& event_filter = {}) const {
+  template <class... Args>
+  promise<> call(const scada::ServiceContext& context,
+                 const NodeId& method_id,
+                 Args&&... args) const {
+    return call_packed(context, method_id, {std::forward<Args>(args)...});
+  }
+
+  struct event_history_details {
+    DateTime from;
+    DateTime to;
+    EventFilter filter;
+  };
+
+  promise<std::vector<Event>> read_event_history(
+      const event_history_details& details = {}) const {
     if (!services_.history_service) {
-      return make_rejected_promise<std::vector<Event>>(
-          StatusException{StatusCode::Bad_Disconnected});
+      return MakeRejectedStatusPromise<std::vector<Event>>(
+          StatusCode::Bad_Disconnected);
     }
 
-    return HistoryReadEvents(*services_.history_service, node_id_, from, to,
-                             event_filter);
+    return HistoryReadEvents(*services_.history_service, node_id_, details.from,
+                             details.to, details.filter);
   }
 
   template <class Handler>
@@ -236,8 +253,25 @@ class client {
  public:
   explicit client(services services) : services_{std::move(services)} {}
 
-  node node(const NodeId& node_id) {
+  node node(const NodeId& node_id) const {
+    assert(!node_id.is_null());
     return scada::client::node{services_, node_id};
+  }
+
+  promise<> acknowledge_events(
+      std::vector<EventAcknowledgeId> event_ids,
+      DateTime acknowledge_time,
+      const scada::ServiceContext& context = {}) const {
+    assert(!event_ids.empty());
+    return node(id::Server)
+        .call(context, scada::id::AcknowledgeableConditionType_Acknowledge,
+              std::move(event_ids), acknowledge_time);
+  }
+
+  promise<> acknowledge_event(EventAcknowledgeId event_id,
+                              DateTime acknowledge_time,
+                              const scada::ServiceContext& context = {}) const {
+    return acknowledge_events({event_id}, acknowledge_time, context);
   }
 
  private:

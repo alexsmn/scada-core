@@ -88,7 +88,9 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
             return static_cast<scada::EventAcknowledgeId>(v);
           }) |
           to_vector;
-      event_service_.Acknowledge(typed_acknowledge_ids,
+      // TODO: Read acknowledge time from the request.
+      const auto acknowledge_time = scada::DateTime::Now();
+      event_service_.Acknowledge(typed_acknowledge_ids, acknowledge_time,
                                  service_context_->user_id);
       protocol::Response response;
       response.set_request_id(request.request_id());

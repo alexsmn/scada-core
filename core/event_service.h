@@ -8,11 +8,11 @@ namespace scada {
 
 class EventService {
  public:
-  virtual ~EventService() {}
+  virtual ~EventService() = default;
 
-  virtual void Acknowledge(
-      base::span<const scada::EventAcknowledgeId> acknowledge_ids,
-      const NodeId& user_id) = 0;
+  virtual void Acknowledge(base::span<const EventAcknowledgeId> acknowledge_ids,
+                           DateTime acknowledge_time,
+                           const NodeId& user_id) = 0;
 };
 
 }  // namespace scada
