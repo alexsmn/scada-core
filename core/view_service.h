@@ -63,10 +63,9 @@ struct BrowsePathResult {
 };
 
 using BrowseCallback =
-    std::function<void(Status&& status, std::vector<BrowseResult>&& results)>;
+    std::function<void(Status status, std::vector<BrowseResult> results)>;
 using TranslateBrowsePathsCallback =
-    std::function<void(Status&& status,
-                       std::vector<BrowsePathResult>&& results)>;
+    std::function<void(Status status, std::vector<BrowsePathResult> results)>;
 
 class ViewService {
  public:

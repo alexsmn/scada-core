@@ -14,6 +14,9 @@ ThreadExecutor::ThreadExecutor() {
       if (auto task = GetTask())
         task();
     }
+    // Run all tasks on shutdown.
+    while (auto task = GetImmediateTask())
+      task();
   });
 }
 
@@ -32,29 +35,30 @@ void ThreadExecutor::Shutdown() {
 void ThreadExecutor::PostDelayedTask(Duration delay,
                                      Task task,
                                      const boost::source_location& location) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::lock_guard lock(mutex_);
   if (delay == Duration()) {
     task_queue_.emplace(std::move(task));
   } else {
-    PendingTask pending_task;
+    PendingTask pending_task = {
+        .task = std::move(task),
+        .time = Clock::now() + delay,
+        .sequence = sequence_++,
 #ifndef NDEBUG
-    pending_task.location = location;
+        .location = location,
 #endif
-    pending_task.task = std::move(task);
-    pending_task.time = Clock::now() + delay;
-    pending_task.sequence = sequence_++;
+    };
     pending_task_queue_.emplace(std::move(pending_task));
   }
   condition_.notify_one();
 }
 
 Executor::Task ThreadExecutor::GetTask() {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock lock(mutex_);
 
   while (!stopped_) {
     while (!pending_task_queue_.empty() &&
            Clock::now() >= pending_task_queue_.top().time) {
-      task_queue_.emplace(std::move(pending_task_queue_.top().task));
+      task_queue_.emplace(pending_task_queue_.top().task);
       pending_task_queue_.pop();
     }
 
@@ -75,7 +79,19 @@ Executor::Task ThreadExecutor::GetTask() {
   return nullptr;
 }
 
+Executor::Task ThreadExecutor::GetImmediateTask() {
+  std::unique_lock lock(mutex_);
+
+  if (task_queue_.empty()) {
+    return nullptr;
+  }
+
+  auto task = std::move(task_queue_.front());
+  task_queue_.pop();
+  return task;
+}
+
 size_t ThreadExecutor::GetTaskCount() const {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock lock(mutex_);
   return pending_task_queue_.size();
 }

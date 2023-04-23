@@ -22,7 +22,8 @@ class ClientTest : public testing::Test {
   std::unique_ptr<TestMonitoredItem> SubscribeValue(
       const client::node& node) const;
   std::unique_ptr<TestMonitoredItem> SubscribeEvents(
-      const client::node& node) const;
+      const client::node& node,
+      const scada::MonitoringParameters& params = {}) const;
 
   void ExpectValue(TestMonitoredItem& monitored_value,
                    const Variant& value) const;
@@ -47,7 +48,8 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeValue(
 }
 
 inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeEvents(
-    const client::node& node) const {
+    const client::node& node,
+    const scada::MonitoringParameters& params) const {
   using namespace testing;
 
   auto monitored_value = std::make_unique<TestMonitoredItem>();
@@ -55,8 +57,8 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeEvents(
   EXPECT_CALL(monitored_value->event_handler,
               Call(Status{StatusCode::Good}, _));
 
-  monitored_value->monitored_item =
-      node.subscribe_events(monitored_value->event_handler.AsStdFunction());
+  monitored_value->monitored_item = node.subscribe_events(
+      params, monitored_value->event_handler.AsStdFunction());
 
   EXPECT_TRUE(monitored_value->monitored_item.subscribed());
   EXPECT_TRUE(IsGood(monitored_value->monitored_item.status_code()));

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/attribute_service_promises.h"
+#include "core/history_service.h"
 #include "core/method_service_promises.h"
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
@@ -14,6 +15,7 @@ struct services {
   AttributeService* attribute_service = nullptr;
   MonitoredItemService* monitored_item_service = nullptr;
   MethodService* method_service = nullptr;
+  HistoryService* history_service = nullptr;
 };
 
 class monitored_item {
@@ -91,8 +93,8 @@ class monitored_item {
 namespace internal {
 
 struct no_handler {
-  void operator()(const scada::DataValue&) const {}
-  void operator()(const scada::Status&, const std::any&) const {}
+  void operator()(const DataValue&) const {}
+  void operator()(const Status&, const std::any&) const {}
 };
 
 }  // namespace internal
@@ -104,9 +106,8 @@ class node {
       return make_resolved_promise<DataValue>(MakeReadError(StatusCode::Bad));
     }
 
-    return scada::Read(*services_.attribute_service,
-                       ServiceContext::default_instance(),
-                       scada::ReadValueId{node_id_});
+    return Read(*services_.attribute_service,
+                ServiceContext::default_instance(), ReadValueId{node_id_});
   }
 
   promise<DataValue> read_value() const { return read(AttributeId::Value); }
@@ -119,10 +120,9 @@ class node {
     }
 
     //   TODO: Take `ServiceContext` from `client`.
-    return scada::Write(
-        *services_.attribute_service,
-        std::make_shared<scada::ServiceContext>(service_context),
-        WriteValue{node_id_, attribute_id, value});
+    return Write(*services_.attribute_service,
+                 std::make_shared<ServiceContext>(service_context),
+                 WriteValue{node_id_, attribute_id, value});
   }
 
   promise<Status> write_value(
@@ -138,8 +138,7 @@ class node {
     }
 
     // Take `user_id` from `client`.
-    return scada::Call(*services_.method_service, node_id_, method_id,
-                       arguments, {});
+    return Call(*services_.method_service, node_id_, method_id, arguments, {});
   }
 
   template <class... Args>
@@ -182,6 +181,7 @@ class node {
 
   template <class Handler>
   monitored_item subscribe_events(
+      const MonitoringParameters& params,
       Handler&& event_handler = internal::no_handler{}) const {
     if (!services_.monitored_item_service) {
       event_handler(StatusCode::Bad_Disconnected, {});
@@ -189,7 +189,7 @@ class node {
     }
 
     auto item = services_.monitored_item_service->CreateMonitoredItem(
-        {node_id_, AttributeId::EventNotifier}, {});
+        {node_id_, AttributeId::EventNotifier}, params);
 
     if (!item) {
       event_handler(StatusCode::Bad_WrongNodeId, {});
@@ -201,6 +201,12 @@ class node {
                             std::forward<Handler>(event_handler));
 
     return result;
+  }
+
+  template <class Handler>
+  monitored_item subscribe_events(
+      Handler&& event_handler = internal::no_handler{}) const {
+    return subscribe_events({}, std::forward<Handler>(event_handler));
   }
 
  private:

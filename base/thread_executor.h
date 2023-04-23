@@ -16,6 +16,7 @@ class ThreadExecutor : public Executor {
   ThreadExecutor(const ThreadExecutor&) = delete;
   ThreadExecutor& operator=(const ThreadExecutor&) = delete;
 
+  // Executes all pending tasks and stops the executor.
   void Shutdown();
 
   // Executor
@@ -27,6 +28,7 @@ class ThreadExecutor : public Executor {
 
  private:
   Task GetTask();
+  Task GetImmediateTask();
 
   struct PendingTask {
     bool operator<(const PendingTask& other) const;
