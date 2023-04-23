@@ -111,19 +111,24 @@ class node {
 
   promise<DataValue> read_value() const { return read(AttributeId::Value); }
 
-  promise<Status> write(AttributeId attribute_id, const Variant& value) const {
+  promise<Status> write(AttributeId attribute_id,
+                        const Variant& value,
+                        const ServiceContext& service_context = {}) const {
     if (!services_.attribute_service) {
       return make_resolved_promise<Status>(StatusCode::Bad);
     }
 
     //   TODO: Take `ServiceContext` from `client`.
-    return scada::Write(*services_.attribute_service,
-                        ServiceContext::default_instance(),
-                        WriteValue{node_id_, attribute_id, value});
+    return scada::Write(
+        *services_.attribute_service,
+        std::make_shared<scada::ServiceContext>(service_context),
+        WriteValue{node_id_, attribute_id, value});
   }
 
-  promise<Status> write_value(const Variant& value) const {
-    return write(AttributeId::Value, value);
+  promise<Status> write_value(
+      const Variant& value,
+      const ServiceContext& service_context = {}) const {
+    return write(AttributeId::Value, value, service_context);
   }
 
   promise<Status> call_packed(const NodeId& method_id,
@@ -149,11 +154,17 @@ class node {
     assert(attribute_id != AttributeId::EventNotifier);
 
     if (!services_.monitored_item_service) {
+      data_change_handler(MakeReadError(StatusCode::Bad_Disconnected));
       return {};
     }
 
     auto item = services_.monitored_item_service->CreateMonitoredItem(
         {node_id_, attribute_id}, {});
+
+    if (!item) {
+      data_change_handler(MakeReadError(StatusCode::Bad_WrongNodeId));
+      return {};
+    }
 
     monitored_item result;
     result.subscribe(std::move(item),
@@ -173,11 +184,17 @@ class node {
   monitored_item subscribe_events(
       Handler&& event_handler = internal::no_handler{}) const {
     if (!services_.monitored_item_service) {
+      event_handler(StatusCode::Bad_Disconnected, {});
       return {};
     }
 
     auto item = services_.monitored_item_service->CreateMonitoredItem(
         {node_id_, AttributeId::EventNotifier}, {});
+
+    if (!item) {
+      event_handler(StatusCode::Bad_WrongNodeId, {});
+      return {};
+    }
 
     monitored_item result;
     result.subscribe_events(std::move(item),

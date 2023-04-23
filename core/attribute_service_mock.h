@@ -23,19 +23,28 @@ class MockAttributeService : public AttributeService {
               (override));
 };
 
-class SimpleMockAttributeService final : public AttributeService {
+class SimpleMockAttributeService : public AttributeService {
  public:
+  SimpleMockAttributeService() {
+    using namespace testing;
+
+    ON_CALL(*this, Read(_))
+        .WillByDefault(Return(MakeReadError(StatusCode::Bad)));
+
+    ON_CALL(*this, Write(_, _)).WillByDefault(Return(StatusCode::Good));
+  }
+
   MOCK_METHOD(DataValue, Read, (const ReadValueId& value_id));
 
   MOCK_METHOD(StatusCode,
               Write,
-              (const std::shared_ptr<const scada::ServiceContext>& context,
+              (const std::shared_ptr<const ServiceContext>& context,
                const WriteValue& value));
 
   virtual void Read(
-      const std::shared_ptr<const scada::ServiceContext>& context,
-      const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
-      const scada::ReadCallback& callback) override {
+      const std::shared_ptr<const ServiceContext>& context,
+      const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
+      const ReadCallback& callback) override {
     std::vector<DataValue> results(inputs->size());
     for (size_t i = 0; i < inputs->size(); ++i)
       results[i] = Read((*inputs)[i]);
@@ -43,9 +52,9 @@ class SimpleMockAttributeService final : public AttributeService {
   }
 
   virtual void Write(
-      const std::shared_ptr<const scada::ServiceContext>& context,
-      const std::shared_ptr<const std::vector<scada::WriteValue>>& inputs,
-      const scada::WriteCallback& callback) override {
+      const std::shared_ptr<const ServiceContext>& context,
+      const std::shared_ptr<const std::vector<WriteValue>>& inputs,
+      const WriteCallback& callback) override {
     std::vector<StatusCode> results(inputs->size());
     for (size_t i = 0; i < inputs->size(); ++i)
       results[i] = Write(context, (*inputs)[i]);
