@@ -50,6 +50,8 @@ struct HistoryReadRawResult {
 
 using HistoryReadRawCallback = std::function<void(HistoryReadRawResult result)>;
 
+struct HistoryReadEventsResult {};
+
 using HistoryReadEventsCallback =
     std::function<void(Status status, std::vector<Event> events)>;
 

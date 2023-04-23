@@ -8,14 +8,28 @@ class TestExecutor : public Executor {
  public:
   explicit TestExecutor(bool instant = false) : instant_{instant} {}
 
+  /*~TestExecutor() {
+    // It's important to run all the remaining pending tasks. E.g.
+    // HistoricalDatabase will only close on the posted task.
+    for (;;) {
+      auto run_tasks = PopRunTasks(Duration());
+      if (run_tasks.empty()) {
+        break;
+      }
+      for (auto& task : run_tasks) {
+        task();
+      }
+    }
+  }*/
+
   virtual void PostDelayedTask(Duration delay,
                                Task task,
                                const boost::source_location& location =
                                    BOOST_CURRENT_LOCATION) override {
-    if (instant_ || delay == Duration{})
+    if (instant_ || delay == Duration{}) {
       task();
-    else {
-      pending_tasks_.push_back({delay, std::move(task), location});
+    } else {
+      pending_tasks_.emplace_back(delay, std::move(task), location);
     }
   }
 

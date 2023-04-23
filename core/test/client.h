@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/attribute_service_promises.h"
-#include "core/history_service.h"
+#include "core/history_service_promises.h"
 #include "core/method_service_promises.h"
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
@@ -144,6 +144,19 @@ class node {
   template <class... Args>
   promise<Status> call(const NodeId& method_id, Args&&... args) const {
     return call_packed(method_id, {std::forward<Args>(args)...});
+  }
+
+  promise<std::vector<Event>> history_read_events(
+      DateTime from,
+      DateTime to,
+      const EventFilter& event_filter = {}) const {
+    if (!services_.history_service) {
+      return make_rejected_promise<std::vector<Event>>(
+          StatusException{StatusCode::Bad_Disconnected});
+    }
+
+    return HistoryReadEvents(*services_.history_service, node_id_, from, to,
+                             event_filter);
   }
 
   template <class Handler>

@@ -48,6 +48,8 @@ class Event {
   EventAcknowledgeId acknowledge_id = 0;
   DateTime acknowledged_time;
   NodeId acknowledged_user_id;
+
+  auto operator<=>(const Event&) const = default;
 };
 
 struct ModelChangeEvent {
