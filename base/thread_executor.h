@@ -11,12 +11,13 @@
 class ThreadExecutor : public Executor {
  public:
   ThreadExecutor();
-  virtual ~ThreadExecutor();
+  ~ThreadExecutor();
 
   ThreadExecutor(const ThreadExecutor&) = delete;
   ThreadExecutor& operator=(const ThreadExecutor&) = delete;
 
-  // Executes all pending tasks and stops the executor.
+  // Blocks until all pending tasks are executed and stops the executor. Except
+  // when called from an own task - in that case no blocking happens.
   void Shutdown();
 
   // Executor
@@ -27,25 +28,7 @@ class ThreadExecutor : public Executor {
   virtual size_t GetTaskCount() const override;
 
  private:
-  Task GetTask();
-  Task GetImmediateTask();
+  struct State;
 
-  struct PendingTask {
-    bool operator<(const PendingTask& other) const;
-
-    Task task;
-    TimePoint time;
-    int sequence = 0;
-#ifndef NDEBUG
-    boost::source_location location;
-#endif
-  };
-
-  mutable std::mutex mutex_;
-  std::condition_variable condition_;
-  std::queue<Task> task_queue_;
-  std::priority_queue<PendingTask> pending_task_queue_;
-  int sequence_ = 0;
-  std::thread thread_;
-  std::atomic<bool> stopped_ = false;
+  std::shared_ptr<State> state_;
 };
