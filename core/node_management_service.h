@@ -4,15 +4,12 @@
 #include "core/node_attributes.h"
 #include "core/node_class.h"
 #include "core/status.h"
+#include "core/status_callback.h"
 
 #include <functional>
 #include <vector>
 
 namespace scada {
-
-using StatusCallback = std::function<void(Status&&)>;
-using MultiStatusCallback =
-    std::function<void(Status&&, std::vector<StatusCode>&&)>;
 
 struct AddNodesItem {
   NodeId requested_id;
@@ -59,7 +56,7 @@ using DeleteReferencesCallback = MultiStatusCallback;
 
 class NodeManagementService {
  public:
-  virtual ~NodeManagementService() {}
+  virtual ~NodeManagementService() = default;
 
   virtual void AddNodes(const std::vector<AddNodesItem>& inputs,
                         const AddNodesCallback& callback) = 0;

@@ -2,6 +2,7 @@
 
 #include "core/node_id.h"
 #include "core/status.h"
+#include "core/status_callback.h"
 #include "core/variant.h"
 
 #include <functional>
@@ -9,11 +10,9 @@
 
 namespace scada {
 
-using StatusCallback = std::function<void(Status&&)>;
-
 class MethodService {
  public:
-  virtual ~MethodService() {}
+  virtual ~MethodService() = default;
 
   virtual void Call(const NodeId& node_id,
                     const NodeId& method_id,

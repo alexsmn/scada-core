@@ -4,6 +4,7 @@
 #include "core/node_id.h"
 #include "core/privileges.h"
 #include "core/status.h"
+#include "core/status_callback.h"
 
 #include <boost/signals2/connection.hpp>
 #include <functional>
@@ -14,8 +15,6 @@ class TimeDelta;
 }
 
 namespace scada {
-
-using StatusCallback = std::function<void(Status&&)>;
 
 class SessionService {
  public:

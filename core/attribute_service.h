@@ -5,18 +5,13 @@
 #include "core/node_class.h"
 #include "core/node_id.h"
 #include "core/service.h"
+#include "core/status_callback.h"
 #include "core/write_flags.h"
 
 #include <cassert>
 #include <functional>
 
 namespace scada {
-
-class Status;
-
-using StatusCallback = std::function<void(Status&&)>;
-using MultiStatusCallback =
-    std::function<void(Status&&, std::vector<StatusCode>&&)>;
 
 struct ReadValueId {
   NodeId node_id;
