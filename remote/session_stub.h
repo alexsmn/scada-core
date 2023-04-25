@@ -4,6 +4,7 @@
 #include "core/attribute_service.h"
 #include "core/event.h"
 #include "remote/message_sender.h"
+#include "remote/remote_services.h"
 #include "remote/subscription.h"
 
 #include <memory>
@@ -16,15 +17,8 @@ class Response;
 }  // namespace protocol
 
 namespace scada {
-class AttributeService;
-class EventService;
-class HistoryService;
-class MethodService;
-class NodeManagementService;
-class MonitoredItemService;
-class ViewService;
 struct MonitoringParameters;
-}  // namespace scada
+}
 
 class Connection;
 class Executor;
@@ -37,13 +31,7 @@ class ViewServiceStub;
 
 struct SessionContext {
   const std::shared_ptr<Executor> executor_;
-  scada::NodeManagementService& node_management_service_;
-  scada::AttributeService& attribute_service_;
-  scada::MethodService& method_service_;
-  scada::MonitoredItemService& monitored_item_service_;
-  scada::EventService& event_service_;
-  scada::ViewService& view_service_;
-  scada::HistoryService& history_service_;
+  RemoteServices services_;
   const std::shared_ptr<const scada::ServiceContext> service_context_;
 };
 

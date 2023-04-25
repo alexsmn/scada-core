@@ -8,8 +8,12 @@ namespace scada {
 
 class MockEventService : public EventService {
  public:
-  MOCK_METHOD2(Acknowledge,
-               void(int acknowledge_id, const NodeId& user_node_id));
+  MOCK_METHOD(void,
+              Acknowledge,
+              (base::span<const EventAcknowledgeId> acknowledge_ids,
+               DateTime acknowledge_time,
+               const NodeId& user_id),
+              (override));
 };
 
 }  // namespace scada

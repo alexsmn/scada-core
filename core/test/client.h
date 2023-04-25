@@ -149,7 +149,7 @@ class node {
 
   template <class... Args>
   promise<> call(const NodeId& method_id, Args&&... args) const {
-    return call_packed(method_id, {std::forward<Args>(args)...});
+    return call_packed({}, method_id, {std::forward<Args>(args)...});
   }
 
   template <class... Args>
