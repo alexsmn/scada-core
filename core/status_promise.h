@@ -74,4 +74,19 @@ inline promise<T> MakeRejectedStatusPromise(Status status) {
   return make_rejected_promise<T>(StatusException{std::move(status)});
 }
 
+// A callback to pass to a promise:
+// Example:
+//   promise<> promise;
+//   session_proxy_.Connect("port=3000", u"username", u"password",
+//     scada::MakeStatusPromiseCallback(promise));
+inline auto MakeStatusPromiseCallback(promise<> promise) {
+  return [promise = std::move(promise)](scada::Status status) mutable {
+    if (status.bad()) {
+      promise.reject(StatusException{std::move(status)});
+    } else {
+      promise.resolve();
+    }
+  };
+}
+
 }  // namespace scada
