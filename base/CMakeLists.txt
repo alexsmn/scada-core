@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED COMPONENTS system date_time log log_setup regex)
+find_package(Boost REQUIRED COMPONENTS system date_time json log log_setup regex)
 
 add_subdirectory("${deps}/promise.hpp" "promise.hpp")
 add_subdirectory(test)
@@ -20,6 +20,7 @@ target_link_libraries(scada_base PUBLIC
   base
 #  chromium-base::chromium-base
   Boost::boost
+  Boost::json
   Boost::log
   Boost::log_setup
   Boost::system
