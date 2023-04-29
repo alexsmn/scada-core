@@ -39,8 +39,21 @@ namespace internal {
 
 template <class Task>
 struct ExecutorWrapper {
+  template <class U>
+  ExecutorWrapper(std::shared_ptr<Executor> executor,
+                  U&& task,
+                  const boost::source_location& location)
+      : executor_{std::move(executor)},
+        task_{std::forward<U>(task)}
+#ifndef NDEBUG
+        ,
+        location_{location}
+#endif
+  {
+  }
+
   template <class... Args>
-  void operator()(Args&&... args) const {
+  void operator()(Args&&... args) {
     // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
     Dispatch(
         *executor_,
@@ -70,12 +83,8 @@ inline auto BindExecutor(
     std::shared_ptr<Executor> executor,
     T&& task,
     const boost::source_location& location = BOOST_CURRENT_LOCATION) {
-  return internal::ExecutorWrapper<T>{std::move(executor), std::forward<T>(task)
-#ifndef NDEBUG
-                                                               ,
-                                      location
-#endif
-  };
+  return internal::ExecutorWrapper<T>{std::move(executor),
+                                      std::forward<T>(task), location};
 }
 
 template <class C, class T>
