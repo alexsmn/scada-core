@@ -21,26 +21,26 @@ struct BrowseDescription {
   NodeId node_id;
   BrowseDirection direction;
   NodeId reference_type_id;
-  bool include_subtypes;
+  bool include_subtypes = true;
 };
 
 struct ReferenceDescription {
   NodeId reference_type_id;
-  bool forward;
+  bool forward = true;
   NodeId node_id;
 };
 
 using ReferenceDescriptions = std::vector<ReferenceDescription>;
 
 struct BrowseResult {
-  StatusCode status_code;
+  StatusCode status_code = scada::StatusCode::Good;
   ReferenceDescriptions references;
 };
 
 struct RelativePathElement {
   NodeId reference_type_id;
-  bool inverse;
-  bool include_subtypes;
+  bool inverse = false;
+  bool include_subtypes = true;
   QualifiedName target_name;
 };
 
@@ -54,11 +54,11 @@ struct BrowsePath {
 
 struct BrowsePathTarget {
   ExpandedNodeId target_id;
-  size_t remaining_path_index;
+  size_t remaining_path_index = 0;
 };
 
 struct BrowsePathResult {
-  StatusCode status_code;
+  StatusCode status_code = scada::StatusCode::Good;
   std::vector<BrowsePathTarget> targets;
 };
 

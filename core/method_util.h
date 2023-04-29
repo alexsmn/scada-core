@@ -1,43 +1,46 @@
 #pragma once
 
-#include "core/status.h"
+#include "core/variant.h"
+
+#include <span>
 
 namespace scada {
 
 namespace {
 
 template <class A, class B>
-inline StatusCode UnpackMethodArguments(base::span<const Variant> arguments,
-                                        std::tuple<A, B>& result) {
+inline bool UnpackMethodArguments(std::span<const Variant> arguments,
+                                  std::tuple<A, B>& result) {
   if (arguments.size() != 2)
-    return StatusCode::Bad_WrongCallArguments;
+    return false;
 
   if (!arguments[0].get(std::get<0>(result)))
-    return StatusCode::Bad_WrongCallArguments;
+    return false;
 
   if (!arguments[1].get(std::get<1>(result)))
-    return StatusCode::Bad_WrongCallArguments;
+    return false;
 
-  return StatusCode::Good;
+  return true;
 }
 
 template <class Instance, class... Args>
-inline Status InvokeMethodHelper(base::span<const Variant> arguments,
-                                 const Instance& instance,
-                                 Status (Instance::*method)(const Args&...)
-                                     const) {
-  std::tuple<Args...> unpacked_arguments;
-  auto unpack_status = UnpackMethodArguments(arguments, unpacked_arguments);
-  if (IsBad(unpack_status))
-    return unpack_status;
+inline bool InvokeMethodHelper(std::span<const Variant> arguments,
+                               const Instance& instance,
+                               void (Instance::*method)(Args...) const) {
+  std::tuple<std::decay_t<Args>...> unpacked_arguments;
+  auto ok = UnpackMethodArguments(arguments, unpacked_arguments);
+  if (!ok)
+    return ok;
 
-  return (instance.*method)(std::get<0>(unpacked_arguments),
-                            std::get<1>(unpacked_arguments));
+  (instance.*method)(std::get<0>(unpacked_arguments),
+                     std::get<1>(unpacked_arguments));
+
+  return true;
 }
 
 template <class Functor>
-inline Status InvokeMethod(base::span<const Variant> arguments,
-                           const Functor& functor) {
+inline bool InvokeMethod(std::span<const Variant> arguments,
+                         const Functor& functor) {
   return InvokeMethodHelper(arguments, functor, &Functor::operator());
 }
 
