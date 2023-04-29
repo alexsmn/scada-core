@@ -6,8 +6,6 @@
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
 
-#include <mutex>
-
 namespace scada {
 
 class client;
@@ -26,18 +24,6 @@ class monitored_item {
 
   bool subscribed() const { return state_ != nullptr; }
 
-  StatusCode status_code() const {
-    return state_ ? state_->status_code() : StatusCode::Bad_Disconnected;
-  }
-
-  DataValue data_value() const {
-    return state_ ? state_->data_value() : DataValue{};
-  }
-
-  std::any last_event() const {
-    return state_ ? state_->last_event() : std::any{};
-  }
-
   void unsubscribe() { state_ = nullptr; }
 
  private:
@@ -53,7 +39,7 @@ class monitored_item {
         [state = state_,
          data_change_handler = std::forward<Handler>(data_change_handler)](
             const DataValue& data_value) mutable {
-          state->handle_data_change(data_value);
+          state->handle_status(data_value.status_code);
           data_change_handler(data_value);
         });
   }
@@ -69,7 +55,7 @@ class monitored_item {
     monitored_item->Subscribe(
         [state = state_, event_handler = std::forward<Handler>(event_handler)](
             const Status& status, const std::any& event) mutable {
-          state->handle_event(status, event);
+          state->handle_status(status.code());
           event_handler(status, event);
         });
   }
@@ -77,18 +63,11 @@ class monitored_item {
   struct state {
     explicit state(std::shared_ptr<MonitoredItem> monitored_item);
 
-    StatusCode status_code() const;
-    DataValue data_value() const;
-    std::any last_event() const;
+    void handle_status(scada::StatusCode status_code);
 
-    void handle_data_change(const DataValue& data_value);
-    void handle_event(const Status& status, const std::any& event);
-
-    mutable std::mutex mutex_;
+    // Monitored item is reset only once when bad status code is received. It's
+    // safe to keep it outside of mutex.
     std::shared_ptr<MonitoredItem> monitored_item_;
-    StatusCode status_code_ = StatusCode::Good;
-    DataValue data_value_;
-    std::any last_event_;
   };
 
   std::shared_ptr<state> state_;

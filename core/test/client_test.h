@@ -7,12 +7,11 @@
 namespace scada {
 
 struct TestMonitoredItem {
-  const DataValue& data_value() const { return monitored_item.data_value(); }
-  const Variant& value() const { return data_value().value; }
+  MockDataChangeHandler data_change_handler;
+  MockEventHandler event_handler;
 
-  testing::MockFunction<void(const DataValue& data_value)> data_change_handler;
-  testing::MockFunction<void(const Status& status, const std::any& event)>
-      event_handler;
+  scada::StatusCode status_code = StatusCode::Bad_Disconnected;
+  scada::DataValue data_value;
 
   scada::monitored_item monitored_item;
 };
@@ -38,11 +37,16 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeValue(
   EXPECT_CALL(monitored_value->data_change_handler,
               Call(Field(&DataValue::status_code, StatusCode::Good)));
 
-  monitored_value->monitored_item = node.subscribe_value(
-      monitored_value->data_change_handler.AsStdFunction());
+  monitored_value->monitored_item =
+      node.subscribe_value([&monitored_value = *monitored_value](
+                               const scada::DataValue& data_value) {
+        monitored_value.status_code = data_value.status_code;
+        monitored_value.data_value = data_value;
+        monitored_value.data_change_handler.Call(data_value);
+      });
 
   EXPECT_TRUE(monitored_value->monitored_item.subscribed());
-  EXPECT_TRUE(IsGood(monitored_value->monitored_item.status_code()));
+  EXPECT_TRUE(scada::IsGood(monitored_value->status_code));
 
   return monitored_value;
 }
@@ -58,10 +62,14 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeEvents(
               Call(Status{StatusCode::Good}, _));
 
   monitored_value->monitored_item = node.subscribe_events(
-      params, monitored_value->event_handler.AsStdFunction());
+      params, [&monitored_value = *monitored_value](const scada::Status& status,
+                                                    const std::any& event) {
+        monitored_value.status_code = status.code();
+        monitored_value.event_handler.Call(status, event);
+      });
 
   EXPECT_TRUE(monitored_value->monitored_item.subscribed());
-  EXPECT_TRUE(IsGood(monitored_value->monitored_item.status_code()));
+  EXPECT_TRUE(scada::IsGood(monitored_value->status_code));
 
   return monitored_value;
 }

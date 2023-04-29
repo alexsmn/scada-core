@@ -7,54 +7,13 @@ namespace scada {
 monitored_item::state::state(std::shared_ptr<MonitoredItem> monitored_item)
     : monitored_item_{std::move(monitored_item)} {}
 
-StatusCode monitored_item::state::status_code() const {
-  std::lock_guard lock{mutex_};
-  return status_code_;
-}
-
-DataValue monitored_item::state::data_value() const {
-  std::lock_guard lock{mutex_};
-  return data_value_;
-}
-
-std::any monitored_item::state::last_event() const {
-  std::lock_guard lock{mutex_};
-  return last_event_;
-}
-
-void monitored_item::state::handle_data_change(const DataValue& data_value) {
+void monitored_item::state::handle_status(scada::StatusCode status_code) {
   // Release monitored item on bad status code.
-  if (scada::IsBad(data_value.status_code)) {
-    // Only release monitored item outside of the mutex to avoid deadlocks.
-    std::shared_ptr<MonitoredItem> monitored_item;
-    std::lock_guard lock{mutex_};
-    monitored_item = std::move(monitored_item_);
-    status_code_ = data_value.status_code;
-    data_value_ = data_value;
-    return;
+  if (scada::IsBad(status_code)) {
+    // It's safe to reset monitored item outside of the mutex, as it's only
+    // updated once.
+    monitored_item_.reset();
   }
-
-  std::lock_guard lock{mutex_};
-  status_code_ = data_value.status_code;
-  data_value_ = data_value;
-}
-
-void monitored_item::state::handle_event(const Status& status,
-                                         const std::any& event) {
-  // Release monitored item on bad status code.
-  if (!status) {
-    // Only release monitored item outside of the mutex to avoid deadlocks.
-    std::shared_ptr<MonitoredItem> monitored_item;
-    std::lock_guard lock{mutex_};
-    monitored_item = std::move(monitored_item_);
-    status_code_ = status.code();
-    last_event_ = event;
-    return;
-  }
-
-  std::lock_guard lock{mutex_};
-  status_code_ = status.code();
-  last_event_ = event;
 }
 
 // node
