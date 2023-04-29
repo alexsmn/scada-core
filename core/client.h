@@ -6,7 +6,7 @@
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
 
-namespace scada::client {
+namespace scada {
 
 class client;
 class node;
@@ -261,7 +261,7 @@ class client {
 
   node node(const NodeId& node_id) const {
     assert(!node_id.is_null());
-    return scada::client::node{services_, node_id, context_};
+    return scada::node{services_, node_id, context_};
   }
 
   promise<> acknowledge_events(std::vector<EventAcknowledgeId> event_ids,
@@ -287,4 +287,4 @@ class client {
   const ServiceContextPtr context_ = ServiceContext::default_instance();
 };
 
-}  // namespace scada::client
+}  // namespace scada

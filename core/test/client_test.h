@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/test/client.h"
+#include "core/client.h"
 
 #include <gmock/gmock.h>
 
@@ -14,15 +14,15 @@ struct TestMonitoredItem {
   testing::MockFunction<void(const Status& status, const std::any& event)>
       event_handler;
 
-  client::monitored_item monitored_item;
+  scada::monitored_item monitored_item;
 };
 
 class ClientTest : public testing::Test {
  public:
   std::unique_ptr<TestMonitoredItem> SubscribeValue(
-      const client::node& node) const;
+      const scada::node& node) const;
   std::unique_ptr<TestMonitoredItem> SubscribeEvents(
-      const client::node& node,
+      const scada::node& node,
       const scada::MonitoringParameters& params = {}) const;
 
   void ExpectValue(TestMonitoredItem& monitored_value,
@@ -30,7 +30,7 @@ class ClientTest : public testing::Test {
 };
 
 inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeValue(
-    const client::node& node) const {
+    const scada::node& node) const {
   using namespace testing;
 
   auto monitored_value = std::make_unique<TestMonitoredItem>();
@@ -48,7 +48,7 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeValue(
 }
 
 inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeEvents(
-    const client::node& node,
+    const scada::node& node,
     const scada::MonitoringParameters& params) const {
   using namespace testing;
 
