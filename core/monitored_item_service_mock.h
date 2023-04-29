@@ -19,7 +19,7 @@ class MockMonitoredItemService : public MonitoredItemService {
     using namespace testing;
 
     ON_CALL(*this, CreateMonitoredItem(_, _))
-        .WillByDefault(Return(monitored_item_));
+        .WillByDefault(Return(default_monitored_item));
   }
 
   MOCK_METHOD2(
@@ -27,9 +27,8 @@ class MockMonitoredItemService : public MonitoredItemService {
       std::shared_ptr<MonitoredItem>(const ReadValueId& value_id,
                                      const MonitoringParameters& params));
 
-  std::shared_ptr<MockMonitoredItem> monitored_item_ =
+  const std::shared_ptr<MockMonitoredItem> default_monitored_item =
       std::make_shared<testing::NiceMock<MockMonitoredItem>>();
 };
-
 
 }  // namespace scada

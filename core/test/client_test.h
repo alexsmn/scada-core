@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/client.h"
+#include "core/monitored_item_service_mock.h"
 
 #include <gmock/gmock.h>
 
