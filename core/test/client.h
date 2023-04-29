@@ -101,13 +101,19 @@ struct no_handler {
 
 class node {
  public:
+  const ServiceContext& context() const { return *context_; }
+
+  node with_context(ServiceContext context) {
+    return node{services_, node_id_,
+                std::make_shared<ServiceContext>(std::move(context))};
+  }
+
   promise<DataValue> read(AttributeId attribute_id) const {
     if (!services_.attribute_service) {
       return MakeRejectedStatusPromise<DataValue>(StatusCode::Bad_Disconnected);
     }
 
-    return Read(*services_.attribute_service,
-                ServiceContext::default_instance(), {.node_id = node_id_})
+    return Read(*services_.attribute_service, context_, {.node_id = node_id_})
         .then([](const scada::DataValue& result) {
           return scada::IsBad(result.status_code)
                      ? MakeRejectedStatusPromise<DataValue>(result.status_code)
@@ -117,26 +123,21 @@ class node {
 
   promise<DataValue> read_value() const { return read(AttributeId::Value); }
 
-  promise<> write(AttributeId attribute_id,
-                  const Variant& value,
-                  const ServiceContext& service_context = {}) const {
+  promise<> write(AttributeId attribute_id, const Variant& value) const {
     if (!services_.attribute_service) {
       return MakeRejectedStatusPromise(StatusCode::Bad);
     }
 
     return ToStatusPromise(Write(
-        *services_.attribute_service,
-        std::make_shared<ServiceContext>(service_context),
+        *services_.attribute_service, context_,
         {.node_id = node_id_, .attribute_id = attribute_id, .value = value}));
   }
 
-  promise<> write_value(const Variant& value,
-                        const ServiceContext& service_context = {}) const {
-    return write(AttributeId::Value, value, service_context);
+  promise<> write_value(const Variant& value) const {
+    return write(AttributeId::Value, value);
   }
 
-  promise<> call_packed(const ServiceContext& context,
-                        const NodeId& method_id,
+  promise<> call_packed(const NodeId& method_id,
                         const std::vector<Variant>& arguments) const {
     if (!services_.method_service) {
       return MakeRejectedStatusPromise(StatusCode::Bad_Disconnected);
@@ -144,19 +145,12 @@ class node {
 
     // Take `user_id` from `client`.
     return ToStatusPromise(Call(*services_.method_service, node_id_, method_id,
-                                arguments, context.user_id));
+                                arguments, context_->user_id));
   }
 
   template <class... Args>
   promise<> call(const NodeId& method_id, Args&&... args) const {
-    return call_packed({}, method_id, {std::forward<Args>(args)...});
-  }
-
-  template <class... Args>
-  promise<> call(const scada::ServiceContext& context,
-                 const NodeId& method_id,
-                 Args&&... args) const {
-    return call_packed(context, method_id, {std::forward<Args>(args)...});
+    return call_packed(method_id, {std::forward<Args>(args)...});
   }
 
   struct event_history_details {
@@ -240,11 +234,16 @@ class node {
   }
 
  private:
-  node(services services, NodeId node_id)
-      : services_{std::move(services)}, node_id_{std::move(node_id)} {}
+  node(services services, NodeId node_id, ServiceContextPtr context)
+      : services_{std::move(services)},
+        node_id_{std::move(node_id)},
+        context_{std::move(context)} {
+    assert(context_);
+  }
 
   const services services_;
   const NodeId node_id_;
+  const ServiceContextPtr context_;
 
   friend class client;
 };
@@ -253,29 +252,39 @@ class client {
  public:
   explicit client(services services) : services_{std::move(services)} {}
 
-  node node(const NodeId& node_id) const {
-    assert(!node_id.is_null());
-    return scada::client::node{services_, node_id};
+  const ServiceContext& context() const { return *context_; }
+
+  client with_context(ServiceContext context) {
+    return client{services_,
+                  std::make_shared<ServiceContext>(std::move(context))};
   }
 
-  promise<> acknowledge_events(
-      std::vector<EventAcknowledgeId> event_ids,
-      DateTime acknowledge_time,
-      const scada::ServiceContext& context = {}) const {
+  node node(const NodeId& node_id) const {
+    assert(!node_id.is_null());
+    return scada::client::node{services_, node_id, context_};
+  }
+
+  promise<> acknowledge_events(std::vector<EventAcknowledgeId> event_ids,
+                               DateTime acknowledge_time) const {
     assert(!event_ids.empty());
     return node(id::Server)
-        .call(context, scada::id::AcknowledgeableConditionType_Acknowledge,
+        .call(scada::id::AcknowledgeableConditionType_Acknowledge,
               std::move(event_ids), acknowledge_time);
   }
 
   promise<> acknowledge_event(EventAcknowledgeId event_id,
-                              DateTime acknowledge_time,
-                              const scada::ServiceContext& context = {}) const {
-    return acknowledge_events({event_id}, acknowledge_time, context);
+                              DateTime acknowledge_time) const {
+    return acknowledge_events({event_id}, acknowledge_time);
   }
 
  private:
+  client(services services, std::shared_ptr<ServiceContext> context)
+      : services_{std::move(services)}, context_{std::move(context)} {
+    assert(context_);
+  }
+
   const services services_;
+  const ServiceContextPtr context_ = ServiceContext::default_instance();
 };
 
 }  // namespace scada::client

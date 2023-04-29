@@ -7,14 +7,18 @@
 
 namespace scada {
 
+struct ServiceContext;
+
+using ServiceContextPtr = std::shared_ptr<const ServiceContext>;
+
 struct ServiceContext {
-  static const std::shared_ptr<const ServiceContext>& default_instance() {
-    static auto instance = std::make_shared<const ServiceContext>();
-    return instance;
-  }
+  static const ServiceContextPtr& default_instance() { return default_ptr; }
 
   NodeId user_id;
   std::vector<std::string> locale_ids;
+
+  inline static const ServiceContextPtr default_ptr =
+      std::make_shared<ServiceContext>();
 };
 
 inline std::ostream& operator<<(std::ostream& stream,
