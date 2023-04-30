@@ -42,6 +42,46 @@ promise<> node::write(AttributeId attribute_id, const Variant& value) const {
       {.node_id = node_id_, .attribute_id = attribute_id, .value = value}));
 }
 
+promise<std::vector<ReferenceDescription>> node::browse(
+    const browse_details& details) const {
+  if (!services_.view_service) {
+    return MakeRejectedStatusPromise<std::vector<ReferenceDescription>>(
+        StatusCode::Bad_Disconnected);
+  }
+
+  promise<BrowseResult> promise;
+
+  Browse(*services_.view_service,
+         {.node_id = node_id_,
+          .direction = details.direction,
+          .reference_type_id = details.reference_type_id},
+         MakeStatusPromiseCallback(promise));
+
+  return promise.then([](const BrowseResult& result) {
+    assert(IsGood(result.status_code));
+    return result.references;
+  });
+}
+
+promise<std::vector<BrowsePathTarget>> node::translate_browse_path(
+    const RelativePath& relative_path) {
+  if (!services_.view_service) {
+    return MakeRejectedStatusPromise<std::vector<BrowsePathTarget>>(
+        StatusCode::Bad_Disconnected);
+  }
+
+  promise<BrowsePathResult> promise;
+
+  TranslateBrowsePath(*services_.view_service,
+                      {.node_id = node_id_, .relative_path = relative_path},
+                      MakeStatusPromiseCallback(promise));
+
+  return promise.then([](const BrowsePathResult& result) {
+    assert(IsGood(result.status_code));
+    return result.targets;
+  });
+}
+
 promise<> node::call_packed(const NodeId& method_id,
                             const std::vector<Variant>& arguments) const {
   if (!services_.method_service) {

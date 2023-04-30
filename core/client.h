@@ -5,6 +5,7 @@
 #include "core/method_service_promises.h"
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
+#include "core/view_service_promises.h"
 
 namespace scada {
 
@@ -16,6 +17,7 @@ struct services {
   MonitoredItemService* monitored_item_service = nullptr;
   MethodService* method_service = nullptr;
   HistoryService* history_service = nullptr;
+  ViewService* view_service = nullptr;
 };
 
 class monitored_item {
@@ -102,6 +104,23 @@ class node {
   promise<> write_value(const Variant& value) const {
     return write(AttributeId::Value, value);
   }
+
+  struct browse_details {
+    NodeId reference_type_id;
+    BrowseDirection direction = BrowseDirection::Forward;
+  };
+
+  promise<std::vector<ReferenceDescription>> browse(
+      const browse_details& details) const;
+
+  promise<std::vector<ReferenceDescription>> browse(
+      const NodeId& reference_type_id) {
+    return browse({.reference_type_id = reference_type_id});
+  }
+
+  // Use vector instead of span to simplify invocation.
+  promise<std::vector<BrowsePathTarget>> translate_browse_path(
+      const RelativePath& relative_path);
 
   promise<> call_packed(const NodeId& method_id,
                         const std::vector<Variant>& arguments) const;

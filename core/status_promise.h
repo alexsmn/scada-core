@@ -103,4 +103,15 @@ inline auto MakeStatusPromiseCallback(promise<> promise) {
   };
 }
 
+template <class T>
+inline auto MakeStatusPromiseCallback(promise<T> promise) {
+  return [promise = std::move(promise)](T&& result) mutable {
+    if (IsBad(result.status_code)) {
+      promise.reject(StatusException{result.status_code});
+    } else {
+      promise.resolve(std::move(result));
+    }
+  };
+}
+
 }  // namespace scada
