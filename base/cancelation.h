@@ -8,9 +8,14 @@ template <class C, class T>
 struct CancelationWrapper {
   template <class... Args>
   void operator()(Args&&... args) const {
-    auto ref = cancelation_.lock();
-    if (ref)
-      std::move(task_)(std::forward<Args>(args)...);
+    if (auto ref = cancelation_.lock())
+      task_(std::forward<Args>(args)...);
+  }
+
+  template <class... Args>
+  void operator()(Args&&... args) {
+    if (auto ref = cancelation_.lock())
+      task_(std::forward<Args>(args)...);
   }
 
   const std::weak_ptr<C> cancelation_;
@@ -22,7 +27,15 @@ struct CancelationFuncWrapper {
   template <class... Args>
   auto operator()(Args&&... args) const {
     if (auto ref = cancelation_.lock())
-      return std::move(func_)(std::forward<Args>(args)...);
+      return func_(std::forward<Args>(args)...);
+    else
+      return canceled_func_();
+  }
+
+  template <class... Args>
+  auto operator()(Args&&... args) {
+    if (auto ref = cancelation_.lock())
+      return func_(std::forward<Args>(args)...);
     else
       return canceled_func_();
   }

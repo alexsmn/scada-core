@@ -79,10 +79,11 @@ inline void AddNode(NodeManagementService& service,
                     const AddNodesItem& input,
                     Callback&& callback) {
   service.AddNodes(
-      {input}, [callback](Status&& status,
-                          std::vector<AddNodesResult>&& results) mutable {
-        auto result =
-            status ? std::move(results[0]) : AddNodesResult{status.code()};
+      {input}, [callback = std::forward<Callback>(callback)](
+                   Status status, std::vector<AddNodesResult> results) mutable {
+        assert(results.size() == 1);
+        auto result = status ? std::move(results[0])
+                             : AddNodesResult{.status_code = status.code()};
         callback(std::move(result));
       });
 }

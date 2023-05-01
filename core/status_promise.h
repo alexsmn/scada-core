@@ -114,4 +114,12 @@ inline auto MakeStatusPromiseCallback(promise<T> promise) {
   };
 }
 
+inline void ResolveStatusPromise(promise<> promise, scada::Status status) {
+  if (status) {
+    promise.resolve();
+  } else {
+    promise.reject(scada::StatusException{std::move(status)});
+  }
+}
+
 }  // namespace scada
