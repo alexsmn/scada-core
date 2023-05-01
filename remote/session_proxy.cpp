@@ -49,24 +49,25 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       history_proxy_{std::make_unique<HistoryProxy>()},
       ping_timer_{executor_} {}
 
-SessionProxy::~SessionProxy() {}
+SessionProxy::~SessionProxy() = default;
 
-void SessionProxy::Disconnect(const scada::StatusCallback& callback) {
+promise<> SessionProxy::Disconnect() {
   if (!session_created_)
-    return callback(scada::StatusCode::Bad_Disconnected);
+    return MakeRejectedStatusPromise(scada::StatusCode::Bad_Disconnected);
 
   protocol::Request request;
   auto& delete_session = *request.mutable_delete_session();
   delete_session;
 
-  Request(request, [this, callback](const protocol::Response& response) {
+  promise<> promise;
+  Request(request, [this, promise](const protocol::Response& response) mutable {
     auto status = ConvertTo<scada::Status>(response.status());
     if (status)
       OnSessionDeleted();
 
-    if (callback)
-      callback(std::move(status));
+    ResolveStatusPromise(promise, std::move(status));
   });
+  return promise;
 }
 
 void SessionProxy::OnTransportOpened() {
@@ -279,26 +280,26 @@ void SessionProxy::Request(protocol::Request& request,
   Send(message);
 }
 
-void SessionProxy::Connect(const std::string& host,
-                           const scada::LocalizedText& user_name,
-                           const scada::LocalizedText& password,
-                           bool allow_remote_logoff,
-                           const scada::StatusCallback& callback) {
+promise<> SessionProxy::Connect(const std::string& host,
+                                const scada::LocalizedText& user_name,
+                                const scada::LocalizedText& password,
+                                bool allow_remote_logoff) {
   assert(!transport_);
 
   if (session_created_)
-    return callback(scada::StatusCode::Bad);
+    return MakeRejectedStatusPromise(scada::StatusCode::Bad);
 
   user_name_ = user_name;
   password_ = password;
   host_ = host;
   allow_remote_logoff_ = allow_remote_logoff;
-  connect_callback_ = std::move(callback);
 
-  Reconnect();
+  return Reconnect();
 }
 
-void SessionProxy::Connect() {
+promise<> SessionProxy::Connect() {
+  connect_promise_ = promise<>{};
+
   std::string connection_string = MakeConnectionString(host_);
 
   LOG_INFO(*logger_) << "Connect" << LOG_TAG("UserName", user_name_)
@@ -310,7 +311,7 @@ void SessionProxy::Connect() {
   if (!transport) {
     LOG_WARNING(*logger_) << "Cannot create raw transport";
     OnTransportClosed(net::ERR_FAILED);
-    return;
+    return connect_promise_;
   }
 
   transport_.reset(new ProtocolMessageTransport(std::move(transport)));
@@ -318,14 +319,14 @@ void SessionProxy::Connect() {
   if (error != net::OK) {
     LOG_WARNING(*logger_) << "Cannot open message transport";
     OnTransportClosed(error);
+    return connect_promise_;
   }
+
+  return connect_promise_;
 }
 
 void SessionProxy::ForwardConnectResult(scada::Status&& status) {
-  auto callback = std::move(connect_callback_);
-  connect_callback_ = nullptr;
-  if (callback)
-    callback(std::move(status));
+  ResolveStatusPromise(connect_promise_, std::move(status));
 }
 
 void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
@@ -420,16 +421,12 @@ std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
   return subscription_->CreateMonitoredItem(read_value_id, params);
 }
 
-void SessionProxy::Reconnect() {
+promise<> SessionProxy::Reconnect() {
   if (!session_created_) {
-    Connect();
-    return;
+    return Connect();
   }
 
-  Disconnect([this](const scada::Status& status) {
-    if (status)
-      Connect();
-  });
+  return Disconnect().then([this] { return Connect(); });
 }
 
 bool SessionProxy::IsConnected(base::TimeDelta* ping_delay) const {

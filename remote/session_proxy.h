@@ -57,13 +57,12 @@ class SessionProxy : private SessionProxyContext,
   scada::ViewService& GetViewService();
 
   // scada::SessionService
-  virtual void Connect(const std::string& connection_string,
-                       const scada::LocalizedText& user_name,
-                       const scada::LocalizedText& password,
-                       bool allow_remote_logoff,
-                       const scada::StatusCallback& callback) override;
-  virtual void Reconnect() override;
-  virtual void Disconnect(const scada::StatusCallback& callback) override;
+  virtual promise<> Connect(const std::string& connection_string,
+                            const scada::LocalizedText& user_name,
+                            const scada::LocalizedText& password,
+                            bool allow_remote_logoff) override;
+  virtual promise<> Reconnect() override;
+  virtual promise<> Disconnect() override;
   virtual bool IsConnected(base::TimeDelta* ping_delay) const override;
   virtual bool HasPrivilege(scada::Privilege privilege) const override;
   virtual bool IsScada() const override { return false; }
@@ -109,7 +108,7 @@ class SessionProxy : private SessionProxyContext,
  private:
   friend class EventServiceProxy;
 
-  void Connect();
+  promise<> Connect();
 
   void OnSessionError(const scada::Status& status);
 
@@ -153,7 +152,7 @@ class SessionProxy : private SessionProxyContext,
   boost::signals2::signal<void(bool connected, const scada::Status& status)>
       session_state_changed_signal_;
 
-  scada::StatusCallback connect_callback_;
+  promise<> connect_promise_;
 
   int next_request_id_ = 1;
 

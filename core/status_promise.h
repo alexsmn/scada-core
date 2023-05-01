@@ -114,7 +114,7 @@ inline auto MakeStatusPromiseCallback(promise<T> promise) {
   };
 }
 
-inline void ResolveStatusPromise(promise<> promise, scada::Status status) {
+inline void ResolveStatusPromise(promise<>& promise, scada::Status status) {
   if (status) {
     promise.resolve();
   } else {
