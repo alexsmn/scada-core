@@ -12,14 +12,6 @@ namespace scada {
 class client;
 class node;
 
-struct services {
-  AttributeService* attribute_service = nullptr;
-  MonitoredItemService* monitored_item_service = nullptr;
-  MethodService* method_service = nullptr;
-  HistoryService* history_service = nullptr;
-  ViewService* view_service = nullptr;
-};
-
 class monitored_item {
  public:
   monitored_item() = default;
@@ -77,15 +69,6 @@ class monitored_item {
   friend class node;
 };
 
-namespace internal {
-
-struct no_handler {
-  void operator()(const DataValue&) const {}
-  void operator()(const Status&, const std::any&) const {}
-};
-
-}  // namespace internal
-
 class node {
  public:
   const ServiceContext& context() const { return *context_; }
@@ -140,25 +123,21 @@ class node {
       const event_history_details& details = {}) const;
 
   template <class Handler>
-  monitored_item subscribe(
-      AttributeId attribute_id,
-      Handler&& data_change_handler = internal::no_handler{}) const;
+  monitored_item subscribe(AttributeId attribute_id,
+                           Handler&& data_change_handler) const;
 
   template <class Handler>
-  monitored_item subscribe_value(
-      Handler&& data_change_handler = internal::no_handler{}) const {
+  monitored_item subscribe_value(Handler&& data_change_handler) const {
     return subscribe(AttributeId::Value,
                      std::forward<Handler>(data_change_handler));
   }
 
   template <class Handler>
-  monitored_item subscribe_events(
-      const MonitoringParameters& params,
-      Handler&& event_handler = internal::no_handler{}) const;
+  monitored_item subscribe_events(const EventFilter& filter,
+                                  Handler&& event_handler) const;
 
   template <class Handler>
-  monitored_item subscribe_events(
-      Handler&& event_handler = internal::no_handler{}) const {
+  monitored_item subscribe_events(Handler&& event_handler) const {
     return subscribe_events({}, std::forward<Handler>(event_handler));
   }
 
@@ -238,7 +217,7 @@ inline monitored_item node::subscribe(AttributeId attribute_id,
 }
 
 template <class Handler>
-inline monitored_item node::subscribe_events(const MonitoringParameters& params,
+inline monitored_item node::subscribe_events(const EventFilter& filter,
                                              Handler&& event_handler) const {
   if (!services_.monitored_item_service) {
     // Must specify `std::any` to avoid ambiguity when using `BindExecutor`.
@@ -247,7 +226,8 @@ inline monitored_item node::subscribe_events(const MonitoringParameters& params,
   }
 
   auto item = services_.monitored_item_service->CreateMonitoredItem(
-      {node_id_, AttributeId::EventNotifier}, params);
+      {.node_id = node_id_, .attribute_id = AttributeId::EventNotifier},
+      {.filter = filter});
 
   if (!item) {
     // Must specify `std::any` to avoid ambiguity when using `BindExecutor`.

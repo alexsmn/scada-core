@@ -51,6 +51,14 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
 
 SessionProxy::~SessionProxy() = default;
 
+scada::services SessionProxy::services() {
+  return scada::services{.attribute_service = this,
+                         .monitored_item_service = this,
+                         .method_service = this,
+                         .history_service = history_proxy_.get(),
+                         .view_service = view_service_proxy_.get()};
+}
+
 promise<> SessionProxy::Disconnect() {
   if (!session_created_)
     return MakeRejectedStatusPromise(scada::StatusCode::Bad_Disconnected);

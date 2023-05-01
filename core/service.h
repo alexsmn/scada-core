@@ -7,7 +7,20 @@
 
 namespace scada {
 
+class AttributeService;
+class MethodService;
+class MonitoredItemService;
+class HistoryService;
+class ViewService;
 struct ServiceContext;
+
+struct services {
+  AttributeService* attribute_service = nullptr;
+  MonitoredItemService* monitored_item_service = nullptr;
+  MethodService* method_service = nullptr;
+  HistoryService* history_service = nullptr;
+  ViewService* view_service = nullptr;
+};
 
 using ServiceContextPtr = std::shared_ptr<const ServiceContext>;
 

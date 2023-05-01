@@ -23,7 +23,7 @@ class ClientTest : public testing::Test {
       const scada::node& node) const;
   std::unique_ptr<TestMonitoredItem> SubscribeEvents(
       const scada::node& node,
-      const scada::MonitoringParameters& params = {}) const;
+      const scada::EventFilter& filter = {}) const;
 
   void ExpectValue(TestMonitoredItem& monitored_value,
                    const Variant& value) const;
@@ -54,7 +54,7 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeValue(
 
 inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeEvents(
     const scada::node& node,
-    const scada::MonitoringParameters& params) const {
+    const scada::EventFilter& filter) const {
   using namespace testing;
 
   auto monitored_value = std::make_unique<TestMonitoredItem>();
@@ -63,7 +63,7 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeEvents(
               Call(Status{StatusCode::Good}, _));
 
   monitored_value->monitored_item = node.subscribe_events(
-      params, [&monitored_value = *monitored_value](const scada::Status& status,
+      filter, [&monitored_value = *monitored_value](const scada::Status& status,
                                                     const std::any& event) {
         monitored_value.status_code = status.code();
         monitored_value.event_handler.Call(status, event);

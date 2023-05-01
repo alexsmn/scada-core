@@ -56,6 +56,8 @@ class SessionProxy : private SessionProxyContext,
   scada::HistoryService& GetHistoryService();
   scada::ViewService& GetViewService();
 
+  scada::services services();
+
   // scada::SessionService
   virtual promise<> Connect(const std::string& connection_string,
                             const scada::LocalizedText& user_name,
