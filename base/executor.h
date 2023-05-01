@@ -53,11 +53,13 @@ struct ExecutorWrapper {
   }
 
   template <class... Args>
-  void operator()(Args&&... args) {
+  void operator()(Args&&... args) const {
     // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
+    // WARNING: The operator may be called for multiple times. The task cannot
+    // be moved.
     Dispatch(
         *executor_,
-        [task = std::move(task_),
+        [task = task_,
          args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
           std::apply(std::move(task), std::move(args));
         },
@@ -70,7 +72,7 @@ struct ExecutorWrapper {
   }
 
   const std::shared_ptr<Executor> executor_;
-  Task task_;
+  const Task task_;
 #ifndef NDEBUG
   const boost::source_location location_;
 #endif
