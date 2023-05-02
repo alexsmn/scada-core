@@ -4,7 +4,6 @@
 #include "core/attribute_service.h"
 #include "core/event.h"
 #include "remote/message_sender.h"
-#include "remote/remote_services.h"
 #include "remote/subscription.h"
 
 #include <memory>
@@ -31,7 +30,8 @@ class ViewServiceStub;
 
 struct SessionContext {
   const std::shared_ptr<Executor> executor_;
-  RemoteServices services_;
+  // TODO: Use `scada::client`.
+  scada::services services_;
   const std::shared_ptr<const scada::ServiceContext> service_context_;
 };
 

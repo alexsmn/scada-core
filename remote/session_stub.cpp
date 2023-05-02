@@ -34,12 +34,12 @@ void SessionStub::Init() {
   const std::weak_ptr<MessageSender> sender = weak_from_this();
 
   view_service_stub_ = std::make_shared<ViewServiceStub>(
-      ViewServiceStubContext{executor_, sender, services_.view_service_});
+      ViewServiceStubContext{executor_, sender, *services_.view_service});
 
   node_management_stub_ = std::make_shared<NodeManagementStub>(
-      executor_, sender, services_.node_management_service_, service_context_);
+      executor_, sender, *services_.node_management_service, service_context_);
 
-  history_stub_ = std::make_shared<HistoryStub>(services_.history_service_,
+  history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
                                                 sender, executor_);
 }
 
@@ -148,7 +148,7 @@ void SessionStub::OnCreateSubscription(int request_id) {
   std::weak_ptr<MessageSender> sender = weak_from_this();
 
   auto subscription = std::make_shared<SubscriptionStub>(
-      executor_, sender, services_.monitored_item_service_, subscription_id,
+      executor_, sender, *services_.monitored_item_service, subscription_id,
       params);
   subscriptions_.emplace(subscription_id, std::move(subscription));
 
@@ -211,7 +211,7 @@ void SessionStub::OnCall(unsigned request_id,
                          const scada::NodeId& node_id,
                          const scada::NodeId& method_id,
                          const std::vector<scada::Variant>& arguments) {
-  services_.method_service_.Call(
+  services_.method_service->Call(
       node_id, method_id, arguments, service_context_->user_id,
       BindExecutor(executor_, weak_from_this(),
                    [this, request_id](const scada::Status& status) {
@@ -231,7 +231,7 @@ void SessionStub::OnRead(const protocol::Request& request) {
   const auto inputs = std::make_shared<const std::vector<scada::ReadValueId>>(
       ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id()));
 
-  services_.attribute_service_.Read(
+  services_.attribute_service->Read(
       service_context_, inputs,
       BindExecutor(executor_, weak_from_this(),
                    [this, request_id](scada::Status status,
@@ -254,7 +254,7 @@ void SessionStub::OnWrite(const protocol::Request& request) {
   const auto inputs = std::make_shared<const std::vector<scada::WriteValue>>(
       ConvertTo<std::vector<scada::WriteValue>>(request.write()));
 
-  services_.attribute_service_.Write(
+  services_.attribute_service->Write(
       service_context_, inputs,
       BindExecutor(
           executor_, weak_from_this(),
