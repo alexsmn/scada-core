@@ -160,14 +160,8 @@ message DeviceCommand {
   repeated Variant argument = 3;
 }
 
-message Acknowledge {
-  repeated uint64 acknowledge_id = 1;
-  bytes comment_utf8 = 2;
-}
-
 message Call {
   DeviceCommand device_command = 1;
-  Acknowledge acknowledge = 2;
 }
 
 message AggregateFilter {

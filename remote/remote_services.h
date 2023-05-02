@@ -2,7 +2,6 @@
 
 namespace scada {
 class AttributeService;
-class EventService;
 class HistoryService;
 class MethodService;
 class MonitoredItemService;
@@ -16,6 +15,5 @@ struct RemoteServices {
   scada::MethodService& method_service_;
   scada::ViewService& view_service_;
   scada::MonitoredItemService& monitored_item_service_;
-  scada::EventService& event_service_;
   scada::HistoryService& history_service_;
 };

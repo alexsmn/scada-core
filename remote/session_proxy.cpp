@@ -3,14 +3,12 @@
 #include "base/net_boost_logger_adapter.h"
 #include "base/string_piece_util.h"
 #include "base/strings/string_split.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "core/monitored_item.h"
 #include "core/status.h"
 #include "net/transport_factory.h"
 #include "net/transport_string.h"
-#include "remote/event_service_proxy.h"
 #include "remote/history_proxy.h"
 #include "remote/node_management_proxy.h"
 #include "remote/protocol.h"
@@ -34,8 +32,7 @@ std::string MakeConnectionString(std::string_view str) {
   parts.resize(2);
   if (parts[1].empty())
     parts[1] = "2000";
-  return base::StringPrintf("Host=%s;Port=%s", parts[0].c_str(),
-                            parts[1].c_str());
+  return std::format("Host={};Port={}", parts[0], parts[1]);
 }
 
 }  // namespace
@@ -45,18 +42,20 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       subscription_{std::make_shared<SubscriptionProxy>(SubscriptionParams{})},
       view_service_proxy_{std::make_unique<ViewServiceProxy>()},
       node_management_proxy_{std::make_unique<NodeManagementProxy>()},
-      event_service_proxy_{std::make_unique<EventServiceProxy>()},
       history_proxy_{std::make_unique<HistoryProxy>()},
       ping_timer_{executor_} {}
 
 SessionProxy::~SessionProxy() = default;
 
 scada::services SessionProxy::services() {
-  return scada::services{.attribute_service = this,
-                         .monitored_item_service = this,
-                         .method_service = this,
-                         .history_service = history_proxy_.get(),
-                         .view_service = view_service_proxy_.get()};
+  return scada::services{
+      .attribute_service = this,
+      .monitored_item_service = this,
+      .method_service = this,
+      .history_service = history_proxy_.get(),
+      .view_service = view_service_proxy_.get(),
+      .node_management_service = node_management_proxy_.get(),
+      .session_service = this};
 }
 
 promise<> SessionProxy::Disconnect() {
@@ -102,7 +101,6 @@ void SessionProxy::OnSessionCreated() {
   subscription_->OnChannelOpened(*this);
   view_service_proxy_->OnChannelOpened(*this);
   node_management_proxy_->OnChannelOpened(*this);
-  event_service_proxy_->OnChannelOpened(*this);
   history_proxy_->OnChannelOpened(*this);
 
   SchedulePing();
@@ -170,28 +168,11 @@ void SessionProxy::OnSessionDeleted() {
   subscription_->OnChannelClosed();
   node_management_proxy_->OnChannelClosed();
   view_service_proxy_->OnChannelClosed();
-  event_service_proxy_->OnChannelClosed();
   history_proxy_->OnChannelClosed();
 }
 
 bool SessionProxy::HasPrivilege(scada::Privilege privilege) const {
   return (user_rights_ & (1 << static_cast<int>(privilege))) != 0;
-}
-
-scada::NodeManagementService& SessionProxy::GetNodeManagementService() {
-  return *node_management_proxy_;
-}
-
-scada::EventService& SessionProxy::GetEventService() {
-  return *event_service_proxy_;
-}
-
-scada::HistoryService& SessionProxy::GetHistoryService() {
-  return *history_proxy_;
-}
-
-scada::ViewService& SessionProxy::GetViewService() {
-  return *view_service_proxy_;
 }
 
 void SessionProxy::Send(protocol::Message& message) {

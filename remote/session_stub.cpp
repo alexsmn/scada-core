@@ -3,7 +3,6 @@
 #include "base/executor.h"
 #include "base/range_util.h"
 #include "core/attribute_service.h"
-#include "core/event_service.h"
 #include "core/method_service.h"
 #include "core/write_flags.h"
 #include "model/node_id_util.h"
@@ -79,25 +78,6 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
 
   if (request.has_call()) {
     auto& call = request.call();
-
-    if (call.has_acknowledge()) {
-      auto& acknowledge = call.acknowledge();
-      auto typed_acknowledge_ids =
-          acknowledge.acknowledge_id() |
-          boost::adaptors::transformed([](auto v) {
-            return static_cast<scada::EventAcknowledgeId>(v);
-          }) |
-          to_vector;
-      // TODO: Read acknowledge time from the request.
-      const auto acknowledge_time = scada::DateTime::Now();
-      services_.event_service_.Acknowledge(
-          typed_acknowledge_ids, acknowledge_time, service_context_->user_id);
-      protocol::Response response;
-      response.set_request_id(request.request_id());
-      Convert(scada::Status{scada::StatusCode::Good},
-              *response.mutable_status());
-      SendResponse(response);
-    }
 
     if (call.has_device_command()) {
       auto& device_command = call.device_command();

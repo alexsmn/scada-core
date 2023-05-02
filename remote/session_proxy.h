@@ -28,7 +28,6 @@ class ViewService;
 }  // namespace scada
 
 class Executor;
-class EventServiceProxy;
 class NodeManagementProxy;
 class HistoryProxy;
 class SubscriptionProxy;
@@ -41,20 +40,15 @@ struct SessionProxyContext {
 };
 
 class SessionProxy : private SessionProxyContext,
-                     public scada::AttributeService,
-                     public scada::MethodService,
-                     public scada::MonitoredItemService,
-                     public scada::SessionService,
+                     private scada::AttributeService,
+                     private scada::MethodService,
+                     private scada::MonitoredItemService,
+                     private scada::SessionService,
                      public MessageSender,
                      private net::Transport::Delegate {
  public:
   explicit SessionProxy(SessionProxyContext&& context);
   virtual ~SessionProxy();
-
-  scada::NodeManagementService& GetNodeManagementService();
-  scada::EventService& GetEventService();
-  scada::HistoryService& GetHistoryService();
-  scada::ViewService& GetViewService();
 
   scada::services services();
 
@@ -135,7 +129,6 @@ class SessionProxy : private SessionProxyContext,
   const std::shared_ptr<SubscriptionProxy> subscription_;
   const std::unique_ptr<ViewServiceProxy> view_service_proxy_;
   const std::unique_ptr<NodeManagementProxy> node_management_proxy_;
-  const std::unique_ptr<EventServiceProxy> event_service_proxy_;
   const std::unique_ptr<HistoryProxy> history_proxy_;
 
   bool session_created_ = false;
