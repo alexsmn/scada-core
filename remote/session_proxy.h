@@ -52,8 +52,13 @@ class SessionProxy : private SessionProxyContext,
 
   scada::services services();
 
+  promise<> ConnectWithConnectionString(const std::string& connection_string,
+                                        const scada::LocalizedText& user_name,
+                                        const scada::LocalizedText& password,
+                                        bool allow_remote_logoff);
+
   // scada::SessionService
-  virtual promise<> Connect(const std::string& connection_string,
+  virtual promise<> Connect(const std::string& host_name,
                             const scada::LocalizedText& user_name,
                             const scada::LocalizedText& password,
                             bool allow_remote_logoff) override;
@@ -136,6 +141,7 @@ class SessionProxy : private SessionProxyContext,
   scada::LocalizedText user_name_;
   scada::LocalizedText password_;
   std::string host_;
+  std::string connection_string_;
   bool allow_remote_logoff_ = false;
 
   scada::NodeId user_node_id_;

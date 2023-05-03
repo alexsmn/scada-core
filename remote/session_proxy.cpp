@@ -281,6 +281,26 @@ promise<> SessionProxy::Connect(const std::string& host,
   user_name_ = user_name;
   password_ = password;
   host_ = host;
+  connection_string_ = MakeConnectionString(host);
+  allow_remote_logoff_ = allow_remote_logoff;
+
+  return Reconnect();
+}
+
+promise<> SessionProxy::ConnectWithConnectionString(
+    const std::string& connection_string,
+    const scada::LocalizedText& user_name,
+    const scada::LocalizedText& password,
+    bool allow_remote_logoff) {
+  assert(!transport_);
+
+  if (session_created_)
+    return MakeRejectedStatusPromise(scada::StatusCode::Bad);
+
+  user_name_ = user_name;
+  password_ = password;
+  connection_string_ = connection_string;
+  host_ = {};
   allow_remote_logoff_ = allow_remote_logoff;
 
   return Reconnect();
@@ -289,14 +309,12 @@ promise<> SessionProxy::Connect(const std::string& host,
 promise<> SessionProxy::Connect() {
   connect_promise_ = promise<>{};
 
-  std::string connection_string = MakeConnectionString(host_);
-
   LOG_INFO(*logger_) << "Connect" << LOG_TAG("UserName", user_name_)
-                     << LOG_TAG("ConnectionString", connection_string);
+                     << LOG_TAG("ConnectionString", connection_string_);
 
   auto transport_logger = std::make_shared<NetBoostLoggerAdapter>(logger_);
   auto transport = transport_factory_.CreateTransport(
-      net::TransportString(connection_string), std::move(transport_logger));
+      net::TransportString{connection_string_}, std::move(transport_logger));
   if (!transport) {
     LOG_WARNING(*logger_) << "Cannot create raw transport";
     OnTransportClosed(net::ERR_FAILED);
