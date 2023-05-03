@@ -76,14 +76,14 @@ class WrappedPromiseTaskWithResult {
 
   template <class... Args>
   auto operator()(Args&&... args) {
-    promise<> promise;
+    promise<promise_result_t<std::invoke_result_t<Task, Args...>>> promise;
     // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
     Dispatch(
         *executor_,
         [promise, task = std::move(task_),
          args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
           auto task_promise = std::apply(std::move(task), std::move(args));
-          task_promise.then([promise]() mutable { promise.resolve(); });
+          ForwardPromise(task_promise, promise);
         },
 #ifdef NDEBUG
         {}

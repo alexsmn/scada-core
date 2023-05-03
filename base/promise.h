@@ -6,6 +6,19 @@
 
 using namespace promise_hpp;
 
+template <class T>
+struct PromiseResult {
+  using type = T;
+};
+
+template <class T>
+struct PromiseResult<promise<T>> {
+  using type = T;
+};
+
+template <class T>
+using promise_result_t = typename PromiseResult<T>::type;
+
 inline promise<> MakeRejectedPromise() {
   return make_rejected_promise(std::exception{});
 }
