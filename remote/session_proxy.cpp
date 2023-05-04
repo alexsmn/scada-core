@@ -133,9 +133,9 @@ void SessionProxy::OnSessionError(const scada::Status& status) {
   session_state_changed_signal_(false, status);
 }
 
-void SessionProxy::OnTransportMessageReceived(const void* data, size_t size) {
+void SessionProxy::OnTransportMessageReceived(std::span<const char> data) {
   protocol::Message message;
-  if (!message.ParseFromArray(data, size))
+  if (!message.ParseFromArray(data.data(), data.size()))
     throw std::runtime_error("Can't parse message");
 
   OnMessageReceived(message);
@@ -321,8 +321,16 @@ promise<> SessionProxy::Connect() {
     return connect_promise_;
   }
 
-  transport_.reset(new ProtocolMessageTransport(std::move(transport)));
-  net::Error error = transport_->Open(*this);
+  transport_ = std::make_unique<ProtocolMessageTransport>(std::move(transport));
+
+  net::Error error = transport_->Open(
+      {.on_open = [this] { OnTransportOpened(); },
+       .on_close = [this](net::Error error) { OnTransportClosed(error); },
+       .on_message =
+           [this](std::span<const char> data) {
+             OnTransportMessageReceived(data);
+           }});
+
   if (error != net::OK) {
     LOG_WARNING(*logger_) << "Cannot open message transport";
     OnTransportClosed(error);

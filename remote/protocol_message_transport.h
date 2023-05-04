@@ -6,15 +6,14 @@
 
 #include "net/transport.h"
 
-class ProtocolMessageTransport final : public net::Transport,
-                                       private net::Transport::Delegate {
+class ProtocolMessageTransport final : public net::Transport {
  public:
   explicit ProtocolMessageTransport(std::unique_ptr<net::Transport> transport);
   ~ProtocolMessageTransport();
 
-  virtual net::Error Open(net::Transport::Delegate& delegate) override;
+  virtual net::Error Open(const Handlers& handlers) override;
   virtual void Close() override;
-  virtual int Read(void* data, size_t len) override;
+  virtual int Read(std::span<char> data) override;
   virtual int Write(std::span<const char> data) override;
   virtual std::string GetName() const override;
   virtual bool IsMessageOriented() const override { return true; }
@@ -24,14 +23,13 @@ class ProtocolMessageTransport final : public net::Transport,
   virtual bool IsActive() const override { return transport_->IsActive(); }
 
  private:
-  // net::Transport::Delegate
-  virtual void OnTransportOpened() override;
-  virtual void OnTransportClosed(net::Error error) override;
-  virtual void OnTransportDataReceived() override;
+  void OnTransportOpened();
+  void OnTransportClosed(net::Error error);
+  void OnTransportDataReceived();
 
   std::unique_ptr<net::Transport> transport_;
 
-  net::Transport::Delegate* delegate_ = nullptr;
+  Handlers handlers_;
 
   std::string incoming_message_;
 

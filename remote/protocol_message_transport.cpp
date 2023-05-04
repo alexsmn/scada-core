@@ -12,20 +12,23 @@ ProtocolMessageTransport::ProtocolMessageTransport(
 
 ProtocolMessageTransport::~ProtocolMessageTransport() {}
 
-net::Error ProtocolMessageTransport::Open(net::Transport::Delegate& delegate) {
-  delegate_ = &delegate;
+net::Error ProtocolMessageTransport::Open(const Handlers& handlers) {
+  handlers_ = handlers;
 
-  return transport_->Open(*this);
+  return transport_->Open(
+      {.on_open = [this] { OnTransportOpened(); },
+       .on_close = [this](net::Error error) { OnTransportClosed(error); },
+       .on_data = [this] { OnTransportDataReceived(); }});
 }
 
 void ProtocolMessageTransport::Close() {
-  delegate_ = nullptr;
+  handlers_ = {};
 
   if (transport_)
     transport_->Close();
 }
 
-int ProtocolMessageTransport::Read(void* data, size_t len) {
+int ProtocolMessageTransport::Read(std::span<char> data) {
   return net::ERR_ABORTED;
 }
 
@@ -46,19 +49,16 @@ std::string ProtocolMessageTransport::GetName() const {
 }
 
 void ProtocolMessageTransport::OnTransportOpened() {
-  if (delegate_)
-    delegate_->OnTransportOpened();
+  if (handlers_.on_open)
+    handlers_.on_open();
 }
 
 void ProtocolMessageTransport::OnTransportClosed(net::Error error) {
-  if (delegate_)
-    delegate_->OnTransportClosed(error);
+  if (handlers_.on_close)
+    handlers_.on_close(error);
 }
 
 void ProtocolMessageTransport::OnTransportDataReceived() {
-  if (!delegate_)
-    return;
-
   std::weak_ptr<bool> cancelation = cancelation_;
   while (!cancelation.expired()) {
     while (incoming_message_.size() <
@@ -66,10 +66,12 @@ void ProtocolMessageTransport::OnTransportDataReceived() {
       auto original_size = incoming_message_.size();
       auto size = protocol::GetIncomingMessageSize(incoming_message_);
       incoming_message_.resize(size);
-      auto read_count = transport_->Read(&incoming_message_[original_size],
-                                         size - original_size);
+      auto read_count = transport_->Read(
+          {&incoming_message_[original_size], size - original_size});
       if (read_count < 0) {
-        delegate_->OnTransportClosed(static_cast<net::Error>(read_count));
+        if (handlers_.on_close) {
+          handlers_.on_close(static_cast<net::Error>(read_count));
+        }
         return;
       }
       incoming_message_.resize(original_size + read_count);
@@ -80,8 +82,10 @@ void ProtocolMessageTransport::OnTransportDataReceived() {
     auto incoming_message = std::move(incoming_message_);
     incoming_message_.clear();
 
-    delegate_->OnTransportMessageReceived(
-        protocol::GetMessagePayload(incoming_message),
-        protocol::GetMessagePayloadSize(incoming_message));
+    if (handlers_.on_message) {
+      handlers_.on_message({static_cast<const char*>(
+                                protocol::GetMessagePayload(incoming_message)),
+                            protocol::GetMessagePayloadSize(incoming_message)});
+    }
   }
 }

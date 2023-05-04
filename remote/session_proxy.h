@@ -44,8 +44,7 @@ class SessionProxy : private SessionProxyContext,
                      private scada::MethodService,
                      private scada::MonitoredItemService,
                      private scada::SessionService,
-                     public MessageSender,
-                     private net::Transport::Delegate {
+                     public MessageSender {
  public:
   explicit SessionProxy(SessionProxyContext&& context);
   virtual ~SessionProxy();
@@ -99,13 +98,6 @@ class SessionProxy : private SessionProxyContext,
                     const scada::NodeId& user_id,
                     const scada::StatusCallback& callback) override;
 
- protected:
-  // net::Transport::Delegate
-  virtual void OnTransportOpened() override;
-  virtual void OnTransportClosed(net::Error error) override;
-  virtual void OnTransportMessageReceived(const void* data,
-                                          size_t size) override;
-
  private:
   friend class EventServiceProxy;
 
@@ -125,6 +117,10 @@ class SessionProxy : private SessionProxyContext,
   void Ping();
 
   bool IsMessageLogged(const protocol::Message& message) const;
+
+  void OnTransportOpened();
+  void OnTransportClosed(net::Error error);
+  void OnTransportMessageReceived(std::span<const char> data);
 
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("SessionProxy"));
