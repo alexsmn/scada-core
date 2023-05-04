@@ -29,17 +29,16 @@ int ProtocolMessageTransport::Read(void* data, size_t len) {
   return net::ERR_ABORTED;
 }
 
-int ProtocolMessageTransport::Write(const void* data, size_t len) {
+int ProtocolMessageTransport::Write(std::span<const char> data) {
   std::string message;
   protocol::PrependMessageSize(message);
-  message.insert(message.end(), static_cast<const char*>(data),
-                 static_cast<const char*>(data) + len);
+  message.insert(message.end(), data.begin(), data.end());
   protocol::UpdateMessageSize(message);
-  int res = transport_->Write(message.data(), message.size());
+  int res = transport_->Write(message);
   if (res != static_cast<int>(message.size()))
     return net::ERR_FAILED;
 
-  return len;
+  return data.size();
 }
 
 std::string ProtocolMessageTransport::GetName() const {

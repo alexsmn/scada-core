@@ -15,7 +15,7 @@ class ProtocolMessageTransport final : public net::Transport,
   virtual net::Error Open(net::Transport::Delegate& delegate) override;
   virtual void Close() override;
   virtual int Read(void* data, size_t len) override;
-  virtual int Write(const void* data, size_t len) override;
+  virtual int Write(std::span<const char> data) override;
   virtual std::string GetName() const override;
   virtual bool IsMessageOriented() const override { return true; }
   virtual bool IsConnected() const override {
