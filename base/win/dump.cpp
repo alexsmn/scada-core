@@ -1,9 +1,19 @@
 #include "base/win/dump.h"
 
 #include <dbghelp.h>
+#include <format>
 #include <windows.h>
 
 #pragma comment(lib, "dbghelp.lib")
+
+std::string GetDumpFileName(std::string_view prefix) {
+  SYSTEMTIME time;
+  GetLocalTime(&time);
+
+  return std::format("{}_{:04}{:02}{:02}_{:02}{:02}{:02}.dmp", prefix,
+                     time.wYear, time.wMonth, time.wDay, time.wHour,
+                     time.wMinute, time.wSecond);
+}
 
 bool DumpException(const wchar_t* path, const EXCEPTION_POINTERS& exc) {
   HANDLE file = CreateFileW(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
