@@ -104,22 +104,33 @@ inline auto MakeStatusPromiseCallback(promise<> promise) {
 }
 
 template <class T>
-inline auto MakeStatusPromiseCallback(promise<T> promise) {
-  return [promise = std::move(promise)](T&& result) mutable {
-    if (IsBad(result.status_code)) {
-      promise.reject(StatusException{result.status_code});
-    } else {
-      promise.resolve(std::move(result));
-    }
-  };
+inline void RejectStatusPromise(promise<T>& promise, scada::Status bad_status) {
+  assert(!bad_status);
+  promise.reject(scada::StatusException{std::move(bad_status)});
+}
+
+inline void RejectStatusPromise(promise<>& promise, scada::Status bad_status) {
+  assert(!bad_status);
+  promise.reject(scada::StatusException{std::move(bad_status)});
 }
 
 inline void ResolveStatusPromise(promise<>& promise, scada::Status status) {
   if (status) {
     promise.resolve();
   } else {
-    promise.reject(scada::StatusException{std::move(status)});
+    RejectStatusPromise(promise, std::move(status));
   }
+}
+
+template <class T>
+inline auto MakeStatusPromiseCallback(promise<T> promise) {
+  return [promise = std::move(promise)](T&& result) mutable {
+    if (IsBad(result.status_code)) {
+      RejectStatusPromise(promise, result.status_code);
+    } else {
+      promise.resolve(std::move(result));
+    }
+  };
 }
 
 }  // namespace scada
