@@ -20,8 +20,8 @@ class SessionService {
   virtual ~SessionService() = default;
 
   virtual promise<> Connect(const std::string& connection_string,
-                            const scada::LocalizedText& user_name,
-                            const scada::LocalizedText& password,
+                            const LocalizedText& user_name,
+                            const LocalizedText& password,
                             bool allow_remote_logoff) = 0;
 
   virtual promise<> Reconnect() = 0;
