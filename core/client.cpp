@@ -64,7 +64,7 @@ promise<std::vector<ReferenceDescription>> node::browse(
 }
 
 promise<std::vector<BrowsePathTarget>> node::translate_browse_path(
-    const RelativePath& relative_path) {
+    const RelativePath& relative_path) const {
   if (!services_.view_service) {
     return MakeRejectedStatusPromise<std::vector<BrowsePathTarget>>(
         StatusCode::Bad_Disconnected);
@@ -80,6 +80,25 @@ promise<std::vector<BrowsePathTarget>> node::translate_browse_path(
     assert(IsGood(result.status_code));
     return result.targets;
   });
+}
+
+promise<NodeId> node::child_id(scada::QualifiedName browse_name) const {
+  return translate_browse_path({{.reference_type_id = id::HasChild,
+                                 .target_name = std::move(browse_name)}})
+      .then([](std::vector<BrowsePathTarget> targets) {
+        return targets.size() == 1
+                   ? make_resolved_promise(targets[0].target_id.node_id())
+                   : MakeRejectedStatusPromise<NodeId>(
+                         StatusCode::Bad_BrowseNameInvalid);
+      });
+}
+
+promise<node> node::child_node(scada::QualifiedName browse_name) const {
+  return child_id(std::move(browse_name))
+      .then([services = services_,
+             context = context_](const NodeId& node_id) mutable {
+        return scada::node{std::move(services), node_id, std::move(context)};
+      });
 }
 
 promise<> node::call_packed(const NodeId& method_id,

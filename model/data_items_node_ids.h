@@ -51,6 +51,7 @@ const scada::NodeId DataItemType_Severity{144, NamespaceIndexes::SCADA};
 const scada::NodeId DataItemType_Simulated{143, NamespaceIndexes::SCADA};
 const scada::NodeId DataItemType_StalePeriod{149, NamespaceIndexes::SCADA};
 const scada::NodeId DataItemType_WriteManual{230, NamespaceIndexes::SCADA};
+const scada::NodeId DataItemType_Unlock{347, NamespaceIndexes::SCADA};
 const scada::NodeId DataItemType{239, NamespaceIndexes::SCADA};
 const scada::NodeId DiscreteItemType_Inversion{153, NamespaceIndexes::SCADA};
 const scada::NodeId DiscreteItemType{72, NamespaceIndexes::SCADA}; // :DataItemType

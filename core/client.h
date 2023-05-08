@@ -30,11 +30,13 @@ class monitored_item {
     state_ = std::make_shared<state>(monitored_item);
 
     monitored_item->Subscribe(
-        [state = state_,
+        [weak_state = std::weak_ptr{state_},
          data_change_handler = std::forward<Handler>(data_change_handler)](
             const DataValue& data_value) mutable {
-          state->handle_status(data_value.status_code);
-          data_change_handler(data_value);
+          if (auto state = weak_state.lock()) {
+            state->handle_status(data_value.status_code);
+            data_change_handler(data_value);
+          }
         });
   }
 
@@ -47,10 +49,13 @@ class monitored_item {
     state_ = std::make_shared<state>(monitored_item);
 
     monitored_item->Subscribe(
-        [state = state_, event_handler = std::forward<Handler>(event_handler)](
+        [weak_state = std::weak_ptr{state_},
+         event_handler = std::forward<Handler>(event_handler)](
             const Status& status, const std::any& event) mutable {
-          state->handle_status(status.code());
-          event_handler(status, event);
+          if (auto state = weak_state.lock()) {
+            state->handle_status(status.code());
+            event_handler(status, event);
+          }
         });
   }
 
@@ -97,13 +102,16 @@ class node {
       const browse_details& details) const;
 
   promise<std::vector<ReferenceDescription>> browse(
-      const NodeId& reference_type_id) {
+      const NodeId& reference_type_id) const {
     return browse({.reference_type_id = reference_type_id});
   }
 
   // Use vector instead of span to simplify invocation.
   promise<std::vector<BrowsePathTarget>> translate_browse_path(
-      const RelativePath& relative_path);
+      const RelativePath& relative_path) const;
+
+  promise<NodeId> child_id(scada::QualifiedName browse_name) const;
+  promise<node> child_node(scada::QualifiedName browse_name) const;
 
   promise<> call_packed(const NodeId& method_id,
                         const std::vector<Variant>& arguments) const;

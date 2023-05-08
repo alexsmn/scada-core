@@ -6,7 +6,24 @@
 
 namespace scada {
 
-namespace {
+namespace internal {
+
+inline bool UnpackMethodArguments(std::span<const Variant> arguments,
+                                  std::tuple<>& result) {
+  return arguments.empty();
+}
+
+template <class A>
+inline bool UnpackMethodArguments(std::span<const Variant> arguments,
+                                  std::tuple<A>& result) {
+  if (arguments.size() != 1)
+    return false;
+
+  if (!arguments[0].get(std::get<0>(result)))
+    return false;
+
+  return true;
+}
 
 template <class A, class B>
 inline bool UnpackMethodArguments(std::span<const Variant> arguments,
@@ -32,18 +49,18 @@ inline bool InvokeMethodHelper(std::span<const Variant> arguments,
   if (!ok)
     return ok;
 
-  (instance.*method)(std::get<0>(unpacked_arguments),
-                     std::get<1>(unpacked_arguments));
+  std::apply([&](Args... args) { (instance.*method)(std::move(args)...); },
+             unpacked_arguments);
 
   return true;
 }
 
+}  // namespace internal
+
 template <class Functor>
 inline bool InvokeMethod(std::span<const Variant> arguments,
                          const Functor& functor) {
-  return InvokeMethodHelper(arguments, functor, &Functor::operator());
+  return internal::InvokeMethodHelper(arguments, functor, &Functor::operator());
 }
-
-}  // namespace
 
 }  // namespace scada
