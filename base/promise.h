@@ -87,3 +87,7 @@ inline promise<T> ForwardPromise(promise<T> source_promise,
       });
   return target_promise;
 }
+
+inline promise<> FoldPromises(promise<> a, promise<> b) {
+  return a.then([b]() mutable { return b; });
+}

@@ -7,7 +7,7 @@
 
 namespace scada {
 
-struct TestMonitoredItem {
+struct ClientTestMonitoredItem {
   MockDataChangeHandler data_change_handler;
   MockEventHandler event_handler;
 
@@ -19,21 +19,23 @@ struct TestMonitoredItem {
 
 class ClientTest : public testing::Test {
  public:
-  std::unique_ptr<TestMonitoredItem> SubscribeValue(
+  std::unique_ptr<ClientTestMonitoredItem> SubscribeValue(
       const scada::node& node) const;
-  std::unique_ptr<TestMonitoredItem> SubscribeEvents(
+  std::unique_ptr<ClientTestMonitoredItem> SubscribeEvents(
       const scada::node& node,
       const scada::EventFilter& filter = {}) const;
 
-  void ExpectValue(TestMonitoredItem& monitored_value,
+  void ExpectValue(ClientTestMonitoredItem& monitored_value,
                    const Variant& value) const;
+
+  promise<> ExpectValue(const scada::node& node, const Variant& value) const;
 };
 
-inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeValue(
+inline std::unique_ptr<ClientTestMonitoredItem> ClientTest::SubscribeValue(
     const scada::node& node) const {
   using namespace testing;
 
-  auto monitored_value = std::make_unique<TestMonitoredItem>();
+  auto monitored_value = std::make_unique<ClientTestMonitoredItem>();
 
   EXPECT_CALL(monitored_value->data_change_handler,
               Call(Field(&DataValue::status_code, StatusCode::Good)));
@@ -52,12 +54,12 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeValue(
   return monitored_value;
 }
 
-inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeEvents(
+inline std::unique_ptr<ClientTestMonitoredItem> ClientTest::SubscribeEvents(
     const scada::node& node,
     const scada::EventFilter& filter) const {
   using namespace testing;
 
-  auto monitored_value = std::make_unique<TestMonitoredItem>();
+  auto monitored_value = std::make_unique<ClientTestMonitoredItem>();
 
   EXPECT_CALL(monitored_value->event_handler,
               Call(Status{StatusCode::Good}, _));
@@ -75,13 +77,27 @@ inline std::unique_ptr<TestMonitoredItem> ClientTest::SubscribeEvents(
   return monitored_value;
 }
 
-inline void ClientTest::ExpectValue(TestMonitoredItem& monitored_value,
+inline void ClientTest::ExpectValue(ClientTestMonitoredItem& monitored_value,
                                     const Variant& value) const {
   using namespace testing;
 
   EXPECT_CALL(monitored_value.data_change_handler,
               Call(AllOf(Field(&DataValue::value, value),
                          Field(&DataValue::status_code, StatusCode::Good))));
+}
+
+inline promise<> ClientTest::ExpectValue(const scada::node& node,
+                                         const Variant& value) const {
+  using namespace testing;
+
+  auto monitored_value = std::make_shared<ClientTestMonitoredItem>();
+
+  promise<> promise;
+  EXPECT_CALL(monitored_value->data_change_handler,
+              Call(AllOf(Field(&DataValue::value, value),
+                         Field(&DataValue::status_code, StatusCode::Good))))
+      .WillOnce(Invoke([promise]() mutable { promise.resolve(); }));
+  return promise;
 }
 
 }  // namespace scada

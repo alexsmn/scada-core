@@ -37,13 +37,15 @@ inline Status GetExceptionStatus(const std::exception_ptr& e) {
 template <class Callback>
 inline promise<> BindStatusCallback(promise<Status> promise,
                                     const Callback& callback) {
+  // Explicit `callback` copy is required to make it mutable. Mutability is
+  // needed e.g. when capturing promises.
   return promise
-      .then([callback](const Status& status) {
+      .then([callback = callback](const Status& status) mutable {
         // Invoke callback with the actual `status`.
         // TODO: Avoid copy.
         callback(Status{status});
       })
-      .except([callback](const std::exception_ptr& e) {
+      .except([callback = callback](const std::exception_ptr& e) mutable {
         callback(GetExceptionStatus(e));
       });
 }
@@ -53,8 +55,11 @@ inline promise<> BindStatusCallback(promise<Status> promise,
 template <class Callback>
 inline promise<> BindStatusCallback(promise<> promise,
                                     const Callback& callback) {
-  return promise.then([callback] { callback(StatusCode::Good); })
-      .except([callback](const std::exception_ptr& e) {
+  // Explicit `callback` copy is required to make it mutable. Mutability is
+  // needed e.g. when capturing promises.
+  return promise
+      .then([callback = callback]() mutable { callback(StatusCode::Good); })
+      .except([callback = callback](const std::exception_ptr& e) mutable {
         callback(GetExceptionStatus(e));
       });
 }

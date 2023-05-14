@@ -7,13 +7,18 @@ namespace scada {
 
 // TODO: Must be thread-safe, as it's used in history tests. Historical
 // databases run in separate threads.
-class TestMonitoredEventItem : public MonitoredItem {
+class TestMonitoredItem : public MonitoredItem {
  public:
   virtual void Subscribe(MonitoredItemHandler handler) override {
+    assert(!data_change_handler_);
     assert(!event_handler_);
 
-    event_handler_ = std::move(std::get<EventHandler>(handler));
-    assert(event_handler_);
+    if (auto* data_change_handler = std::get_if<DataChangeHandler>(&handler))
+      data_change_handler_ = std::move(*data_change_handler);
+    else if (auto* event_handler = std::get_if<EventHandler>(&handler))
+      event_handler_ = std::move(*event_handler);
+    else
+      assert(false);
 
     subscribed_promise_.resolve();
   }
@@ -21,6 +26,13 @@ class TestMonitoredEventItem : public MonitoredItem {
   bool subscribed() const { return event_handler_ != nullptr; }
 
   void WaitForSubscription() { subscribed_promise_.get(); }
+
+  void NotifyDataChange(const scada::DataValue& data_value) {
+    if (!data_change_handler_)
+      return;
+
+    data_change_handler_(data_value);
+  }
 
   void NotifyEvent(const std::any& event) {
     if (!event_handler_)
@@ -30,6 +42,7 @@ class TestMonitoredEventItem : public MonitoredItem {
   }
 
  private:
+  DataChangeHandler data_change_handler_;
   EventHandler event_handler_;
 
   promise<void> subscribed_promise_;

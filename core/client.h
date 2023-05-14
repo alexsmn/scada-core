@@ -121,6 +121,9 @@ class node {
     return call_packed(method_id, {std::forward<Args>(args)...});
   }
 
+  promise<HistoryReadRawResult> read_value_history(
+      const HistoryReadRawDetails& details) const;
+
   struct event_history_details {
     DateTime from;
     DateTime to;
@@ -181,6 +184,18 @@ class client {
   }
 
   scada::node server_node() const { return node(id::Server); }
+
+  template <class Handler>
+  monitored_item subscribe_events(const scada::EventFilter& filter,
+                                  Handler&& handler) const {
+    return server_node().subscribe_events(filter,
+                                          std::forward<Handler>(handler));
+  }
+
+  template <class Handler>
+  monitored_item subscribe_events(Handler&& handler) const {
+    return server_node().subscribe_events(std::forward<Handler>(handler));
+  }
 
   promise<> acknowledge_events(std::vector<EventAcknowledgeId> event_ids,
                                DateTime acknowledge_time) const;

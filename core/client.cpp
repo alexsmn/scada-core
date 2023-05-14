@@ -112,6 +112,16 @@ promise<> node::call_packed(const NodeId& method_id,
                               arguments, context_->user_id));
 }
 
+promise<HistoryReadRawResult> node::read_value_history(
+    const HistoryReadRawDetails& details) const {
+  if (!services_.history_service) {
+    return MakeRejectedStatusPromise<HistoryReadRawResult>(
+        StatusCode::Bad_Disconnected);
+  }
+
+  return HistoryReadRaw(*services_.history_service, details);
+}
+
 promise<std::vector<Event>> node::read_event_history(
     const event_history_details& details) const {
   if (!services_.history_service) {
