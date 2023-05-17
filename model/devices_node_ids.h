@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/node_id.h"
 #include "model/namespaces.h"
 
 namespace devices {
