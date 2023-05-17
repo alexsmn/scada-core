@@ -35,6 +35,8 @@ class TestExecutor : public Executor {
 
   virtual size_t GetTaskCount() const override { return 0; }
 
+  void Poll() { Advance({}); }
+
   void Advance(Duration delta) {
     auto run_tasks = PopRunTasks(delta);
     for (auto& t : pending_tasks_)
