@@ -76,6 +76,7 @@ const scada::NodeId LinkType{116, NamespaceIndexes::SCADA}; // :Device
 const scada::NodeId ModbusDeviceType_Address{168, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusDeviceType_SendRetryCount{169, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusDeviceType_ResponseTimeout{298, NamespaceIndexes::SCADA};
+const scada::NodeId ModbusDeviceType_SuspendDuration{349, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusDeviceType{118, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusLinkProtocol{130, NamespaceIndexes::SCADA};
 const scada::NodeId ModbusLinkProtocol_EnumStrings{303, NamespaceIndexes::SCADA};
