@@ -106,10 +106,12 @@ class node {
     return browse({.reference_type_id = reference_type_id});
   }
 
-  // Use vector instead of span to simplify invocation.
+  // Takes vector instead of span as a parameter to simplify invocation.
+  // Requires `ViewService`.
   promise<std::vector<BrowsePathTarget>> translate_browse_path(
       const RelativePath& relative_path) const;
 
+  // Requires `ViewService`.
   promise<NodeId> child_id(scada::QualifiedName browse_name) const;
   promise<node> child_node(scada::QualifiedName browse_name) const;
 

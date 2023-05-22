@@ -16,6 +16,7 @@ class SessionService;
 class ViewService;
 struct ServiceContext;
 
+// TODO: Sort services by names.
 struct services {
   AttributeService* attribute_service = nullptr;
   MonitoredItemService* monitored_item_service = nullptr;
