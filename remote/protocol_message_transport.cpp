@@ -12,10 +12,10 @@ ProtocolMessageTransport::ProtocolMessageTransport(
 
 ProtocolMessageTransport::~ProtocolMessageTransport() {}
 
-net::Error ProtocolMessageTransport::Open(const Handlers& handlers) {
+void ProtocolMessageTransport::Open(const Handlers& handlers) {
   handlers_ = handlers;
 
-  return transport_->Open(
+  transport_->Open(
       {.on_open = [this] { OnTransportOpened(); },
        .on_close = [this](net::Error error) { OnTransportClosed(error); },
        .on_data = [this] { OnTransportDataReceived(); }});

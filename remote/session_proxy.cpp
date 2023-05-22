@@ -323,19 +323,13 @@ promise<> SessionProxy::Connect() {
 
   transport_ = std::make_unique<ProtocolMessageTransport>(std::move(transport));
 
-  net::Error error = transport_->Open(
+  transport_->Open(
       {.on_open = [this] { OnTransportOpened(); },
        .on_close = [this](net::Error error) { OnTransportClosed(error); },
        .on_message =
            [this](std::span<const char> data) {
              OnTransportMessageReceived(data);
            }});
-
-  if (error != net::OK) {
-    LOG_WARNING(*logger_) << "Cannot open message transport";
-    OnTransportClosed(error);
-    return connect_promise_;
-  }
 
   return connect_promise_;
 }
