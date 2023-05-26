@@ -1,6 +1,6 @@
 find_package(Boost REQUIRED COMPONENTS system date_time json log log_setup regex)
+find_package(PromiseHpp REQUIRED COMPONENTS system date_time json log log_setup regex)
 
-add_subdirectory("${deps}/promise.hpp" "promise.hpp")
 add_subdirectory(test)
 
 scada_module(scada_base)
