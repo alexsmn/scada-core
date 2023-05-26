@@ -22,3 +22,7 @@ inline auto InMilliseconds(std::chrono::nanoseconds duration) {
 inline auto InSeconds(std::chrono::nanoseconds duration) {
   return std::chrono::duration_cast<std::chrono::seconds>(duration).count();
 }
+
+inline auto AsChrono(base::TimeDelta delta) {
+  return std::chrono::nanoseconds{delta.InNanoseconds()};
+}
