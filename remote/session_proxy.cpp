@@ -194,9 +194,8 @@ void SessionProxy::Send(protocol::Message& message) {
   if (!message.AppendToString(&string))
     throw std::runtime_error("Can't serialize message");
 
-  int res = transport_->Write(string);
-  if (res != static_cast<int>(string.size()))
-    throw std::runtime_error("Can't send message");
+  // TODO: Handle write result.
+  transport_->Write(string);
 }
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {

@@ -32,16 +32,13 @@ int ProtocolMessageTransport::Read(std::span<char> data) {
   return net::ERR_ABORTED;
 }
 
-int ProtocolMessageTransport::Write(std::span<const char> data) {
+net::promise<size_t> ProtocolMessageTransport::Write(
+    std::span<const char> data) {
   std::string message;
   protocol::PrependMessageSize(message);
   message.insert(message.end(), data.begin(), data.end());
   protocol::UpdateMessageSize(message);
-  int res = transport_->Write(message);
-  if (res != static_cast<int>(message.size()))
-    return net::ERR_FAILED;
-
-  return data.size();
+  return transport_->Write(message);
 }
 
 std::string ProtocolMessageTransport::GetName() const {
