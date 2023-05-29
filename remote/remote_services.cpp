@@ -4,8 +4,8 @@
 #include "remote/session_proxy.h"
 #include "remote/view_service_proxy.h"
 
-bool CreateScadaServices(const DataServicesContext& context,
-                         DataServices& services) {
+bool CreateRemoteServices(const DataServicesContext& context,
+                          DataServices& services) {
   auto session_proxy = std::make_shared<SessionProxy>(SessionProxyContext{
       context.executor, context.transport_factory, context.service_log_params});
 

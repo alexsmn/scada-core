@@ -171,6 +171,7 @@ class node {
 
 class client {
  public:
+  client() {}
   explicit client(services services) : services_{std::move(services)} {}
 
   const ServiceContext& context() const { return *context_; }
@@ -179,6 +180,17 @@ class client {
     return client{services_,
                   std::make_shared<ServiceContext>(std::move(context))};
   }
+
+  struct connect_params {
+    std::string connection_string;
+    LocalizedText user_name;
+    LocalizedText password;
+    bool allow_remote_logoff = false;
+  };
+
+  promise<> connect(const connect_params& params) const;
+
+  promise<> disconnect() const;
 
   scada::node node(const NodeId& node_id) const {
     assert(!node_id.is_null());
@@ -213,8 +225,8 @@ class client {
     assert(context_);
   }
 
-  const services services_;
-  const ServiceContextPtr context_ = ServiceContext::default_instance();
+  services services_;
+  ServiceContextPtr context_ = ServiceContext::default_instance();
 };
 
 template <class Handler>

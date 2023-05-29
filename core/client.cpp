@@ -1,5 +1,7 @@
 #include "core/client.h"
 
+#include "core/session_service.h"
+
 namespace scada {
 
 // monitored_item::state
@@ -134,6 +136,26 @@ promise<std::vector<Event>> node::read_event_history(
 }
 
 // client
+
+promise<> client::connect(const connect_params& params) const {
+  if (!services_.session_service) {
+    return scada::MakeRejectedStatusPromise(
+        scada::StatusCode::Bad_Disconnected);
+  }
+
+  return services_.session_service->Connect(params.connection_string,
+                                            params.user_name, params.password,
+                                            params.allow_remote_logoff);
+}
+
+promise<> client::disconnect() const {
+  if (!services_.session_service) {
+    return scada::MakeRejectedStatusPromise(
+        scada::StatusCode::Bad_Disconnected);
+  }
+
+  return services_.session_service->Disconnect();
+}
 
 promise<> client::acknowledge_events(std::vector<EventAcknowledgeId> event_ids,
                                      DateTime acknowledge_time) const {

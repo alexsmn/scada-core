@@ -12,6 +12,7 @@ class SessionService;
 class ViewService;
 }
 
+// TODO: Replace with `std::shared_ptr<scada::services>`.
 struct DataServices {
   std::shared_ptr<scada::SessionService> session_service_;
   std::shared_ptr<scada::ViewService> view_service_;
