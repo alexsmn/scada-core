@@ -268,39 +268,19 @@ void SessionProxy::Request(protocol::Request& request,
   Send(message);
 }
 
-promise<> SessionProxy::Connect(const std::string& host,
-                                const scada::LocalizedText& user_name,
-                                const scada::LocalizedText& password,
-                                bool allow_remote_logoff) {
+promise<> SessionProxy::Connect(const scada::SessionConnectParams& params) {
   assert(!transport_);
 
   if (session_created_)
     return MakeRejectedStatusPromise(scada::StatusCode::Bad);
 
-  user_name_ = user_name;
-  password_ = password;
-  host_ = host;
-  connection_string_ = MakeConnectionString(host);
-  allow_remote_logoff_ = allow_remote_logoff;
-
-  return Reconnect();
-}
-
-promise<> SessionProxy::ConnectWithConnectionString(
-    const std::string& connection_string,
-    const scada::LocalizedText& user_name,
-    const scada::LocalizedText& password,
-    bool allow_remote_logoff) {
-  assert(!transport_);
-
-  if (session_created_)
-    return MakeRejectedStatusPromise(scada::StatusCode::Bad);
-
-  user_name_ = user_name;
-  password_ = password;
-  connection_string_ = connection_string;
-  host_ = {};
-  allow_remote_logoff_ = allow_remote_logoff;
+  user_name_ = params.user_name;
+  password_ = params.password;
+  host_ = params.host;
+  connection_string_ = host_.empty()
+                           ? params.connection_string
+                           : MakeConnectionString(params.connection_string);
+  allow_remote_logoff_ = params.allow_remote_logoff;
 
   return Reconnect();
 }

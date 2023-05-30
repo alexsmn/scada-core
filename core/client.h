@@ -5,6 +5,7 @@
 #include "core/method_service_promises.h"
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
+#include "core/session_service.h"
 #include "core/view_service_promises.h"
 
 namespace scada {
@@ -181,14 +182,7 @@ class client {
                   std::make_shared<ServiceContext>(std::move(context))};
   }
 
-  struct connect_params {
-    std::string connection_string;
-    LocalizedText user_name;
-    LocalizedText password;
-    bool allow_remote_logoff = false;
-  };
-
-  promise<> connect(const connect_params& params) const;
+  promise<> connect(const SessionConnectParams& params) const;
 
   promise<> disconnect() const;
 

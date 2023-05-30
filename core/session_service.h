@@ -15,14 +15,19 @@ class TimeDelta;
 
 namespace scada {
 
+struct SessionConnectParams {
+  std::string host;
+  std::string connection_string;
+  LocalizedText user_name;
+  LocalizedText password;
+  bool allow_remote_logoff = false;
+};
+
 class SessionService {
  public:
   virtual ~SessionService() = default;
 
-  virtual promise<> Connect(const std::string& connection_string,
-                            const LocalizedText& user_name,
-                            const LocalizedText& password,
-                            bool allow_remote_logoff) = 0;
+  virtual promise<> Connect(const SessionConnectParams& params) = 0;
 
   virtual promise<> Reconnect() = 0;
 
