@@ -73,6 +73,11 @@ inline promise<T> MakeRejectedStatusPromise(Status status) {
   return make_rejected_promise<T>(StatusException{std::move(status)});
 }
 
+inline promise<> MakeCompletedStatusPromise(Status status) {
+  return status ? make_resolved_promise()
+                : make_rejected_promise<>(StatusException{std::move(status)});
+}
+
 inline promise<> ToStatusPromise(promise<Status> promise) {
   return promise.then([](const Status& status) {
     return status.bad() ? MakeRejectedStatusPromise(status)

@@ -10,13 +10,19 @@ struct awaiter {
             std::bind_front(&state::handle_data_change, state_))} {}
 
   template <class T>
-  promise<> when(T&& matcher) {
-    if (matcher(state_->data_value_)) {
-      return make_resolved_promise();
+  promise<scada::DataValue> when(T&& matcher) {
+    if (state_->data_value_.has_value() &&
+        matcher(state_->data_value_.value())) {
+      return make_resolved_promise(state_->data_value_.value());
     }
 
-    return state_->matchers_.emplace_back(std::forward<T>(matcher), promise<>{})
+    return state_->matchers_
+        .emplace_back(std::forward<T>(matcher), promise<scada::DataValue>{})
         .second;
+  }
+
+  promise<scada::DataValue> when_any() {
+    return when([](const scada::DataValue& data_value) { return true; });
   }
 
  private:
@@ -29,16 +35,16 @@ struct awaiter {
           [](const auto& p) { return p.first; });
 
       for (auto& [m, p] : matching) {
-        p.resolve();
+        p.resolve(data_value);
       }
 
       matchers_.erase(matching.begin(), matching.end());
     }
 
-    scada::DataValue data_value_;
+    std::optional<scada::DataValue> data_value_;
 
     using matcher = std::function<bool(const scada::DataValue& data_value)>;
-    std::vector<std::pair<matcher, promise<>>> matchers_;
+    std::vector<std::pair<matcher, promise<scada::DataValue>>> matchers_;
   };
 
   const std::shared_ptr<state> state_ = std::make_shared<state>();

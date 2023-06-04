@@ -10,10 +10,7 @@ class MockSessionService : public SessionService {
  public:
   MOCK_METHOD(promise<>,
               Connect,
-              (const std::string& connection_string,
-               const LocalizedText& user_name,
-               const LocalizedText& password,
-               bool allow_remote_logoff),
+              (const scada::SessionConnectParams& params),
               (override));
 
   MOCK_METHOD(promise<>, Reconnect, (), (override));

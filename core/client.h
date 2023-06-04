@@ -95,17 +95,12 @@ class node {
   }
 
   struct browse_details {
-    NodeId reference_type_id;
-    BrowseDirection direction = BrowseDirection::Forward;
+    NodeId reference_type_id = id::References;
+    BrowseDirection direction = BrowseDirection::Both;
   };
 
   promise<std::vector<ReferenceDescription>> browse(
-      const browse_details& details) const;
-
-  promise<std::vector<ReferenceDescription>> browse(
-      const NodeId& reference_type_id) const {
-    return browse({.reference_type_id = reference_type_id});
-  }
+      const browse_details& details = {}) const;
 
   // Takes vector instead of span as a parameter to simplify invocation.
   // Requires `ViewService`.
