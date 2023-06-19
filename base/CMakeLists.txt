@@ -11,14 +11,10 @@ endif()
 
 target_include_directories(scada_base PUBLIC "..")
 
-set(CHROME_BASE_ROOT "${deps}/chromebase")
-add_subdirectory(${CHROME_BASE_ROOT} chromebase)
-
-# find_package(chromium-base REQUIRED)
+find_package(ChromiumBase REQUIRED)
 
 target_link_libraries(scada_base PUBLIC
-  base
-#  chromium-base::chromium-base
+  ChromiumBase::base
   Boost::boost
   Boost::json
   Boost::log
