@@ -112,14 +112,35 @@ promise<> node::call_packed(const NodeId& method_id,
                               arguments, context_->user_id));
 }
 
-promise<HistoryReadRawResult> node::read_value_history(
+promise<std::vector<scada::DataValue>> node::read_value_history(
     const HistoryReadRawDetails& details) const {
+  assert(details.node_id.is_null());
+  assert(details.continuation_point.empty());
+
+  if (!services_.history_service) {
+    return MakeRejectedStatusPromise<std::vector<scada::DataValue>>(
+        StatusCode::Bad_Disconnected);
+  }
+
+  auto sanitized_details = details;
+  sanitized_details.node_id = node_id_;
+
+  return HistoryReadRaw(*services_.history_service, sanitized_details);
+}
+
+promise<HistoryReadRawResult> node::read_value_history_chunk(
+    const HistoryReadRawDetails& details) const {
+  assert(details.node_id.is_null());
+
   if (!services_.history_service) {
     return MakeRejectedStatusPromise<HistoryReadRawResult>(
         StatusCode::Bad_Disconnected);
   }
 
-  return HistoryReadRaw(*services_.history_service, details);
+  auto sanitized_details = details;
+  sanitized_details.node_id = node_id_;
+
+  return HistoryReadRawChunk(*services_.history_service, sanitized_details);
 }
 
 promise<std::vector<Event>> node::read_event_history(

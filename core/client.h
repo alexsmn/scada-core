@@ -79,6 +79,8 @@ class node {
  public:
   const ServiceContext& context() const { return *context_; }
 
+  node() = default;
+
   node with_context(ServiceContext context) const {
     return node{services_, node_id_,
                 std::make_shared<ServiceContext>(std::move(context))};
@@ -119,7 +121,15 @@ class node {
     return call_packed(method_id, {std::forward<Args>(args)...});
   }
 
-  promise<HistoryReadRawResult> read_value_history(
+  // `details.node_id` is overridden by the node ID and doesn't have
+  // to be set.
+  promise<std::vector<scada::DataValue>> read_value_history(
+      const HistoryReadRawDetails& details) const;
+
+  // `details.node_id` is overridden by the node ID and doesn't have
+  // to be set. Returns either good `HistoryReadRawResult.status_code` or
+  // rejected status promise.
+  promise<HistoryReadRawResult> read_value_history_chunk(
       const HistoryReadRawDetails& details) const;
 
   struct event_history_details {
@@ -160,7 +170,7 @@ class node {
 
   const services services_;
   const NodeId node_id_;
-  const ServiceContextPtr context_;
+  const ServiceContextPtr context_ = ServiceContext::default_instance();
 
   friend class client;
 };
