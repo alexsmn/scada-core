@@ -1,6 +1,7 @@
 macro(scada_module_unittests MODULE_NAME)
   cmake_parse_arguments(ARG "" "" "SOURCES" ${ARGN})
 
+  # TODO: Only add UTs when there are cpp files (not stubs or mocks).
   if (ARG_SOURCES)
     message("scada_module_unittests(${MODULE_NAME})")
 
