@@ -1,7 +1,7 @@
 #include "remote/remote_services.h"
 
 #include "base/logger.h"
-#include "base/test/asio_test.h"
+#include "base/test/asio_test_environment.h"
 #include "base/test/network_port_generator.h"
 #include "base/test/test_executor.h"
 #include "core/authentication_mock.h"
@@ -14,10 +14,11 @@
 
 using namespace testing;
 
-class Server {
+class TestServer {
  public:
-  Server(AsioTest& asio, const NetworkTestEnvironment& network)
-      : asio_{asio}, network_{network} {
+  TestServer(AsioTestEnvironment& asio_env,
+             const NetworkTestEnvironment& network)
+      : asio_env_{asio_env}, network_{network} {
     ON_CALL(authenticator_, Call(_, _))
         .WillByDefault(Return(make_resolved_promise(
             scada::AuthenticationResult{.user_id = {1, 1}})));
@@ -29,10 +30,10 @@ class Server {
               scada::MakeReadResult(123));
         }));
 
-    asio_.Wait(session_manager_.Init());
+    asio_env_.Wait(session_manager_.Init());
   }
 
-  AsioTest& asio_;
+  AsioTestEnvironment& asio_env_;
   const NetworkTestEnvironment& network_;
 
   NiceMock<scada::MockAuthenticator> authenticator_;
@@ -40,10 +41,10 @@ class Server {
   NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
 
   RemoteSessionManager session_manager_{
-      {.executor_ = asio_.executor_,
+      {.executor_ = asio_env_.executor,
        .services_ = {.monitored_item_service = &monitored_item_service_},
        .authenticator_ = authenticator_.AsStdFunction(),
-       .transport_factory_ = asio_.transport_factory_,
+       .transport_factory_ = asio_env_.transport_factory,
        .endpoints_ = {net::TransportString{network_.server_transport_string}}}};
 };
 
@@ -52,11 +53,11 @@ class RemoteServicesTest : public Test {
   virtual void SetUp() override;
   virtual void TearDown() override;
 
-  AsioTest asio_;
+  AsioTestEnvironment asio_env_;
 
   const NetworkTestEnvironment network_env_ = GenerateNetworkTestEnvironment();
 
-  Server server_{asio_, network_env_};
+  TestServer server_{asio_env_, network_env_};
 
   DataServices data_services_;
 
@@ -69,14 +70,14 @@ void RemoteServicesTest::SetUp() {
   ASSERT_TRUE(CreateRemoteServices(
       DataServicesContext{.logger = NullLogger::GetInstance(),
                           .executor = std::make_shared<TestExecutor>(),
-                          .transport_factory = asio_.transport_factory_},
+                          .transport_factory = asio_env_.transport_factory},
       data_services_));
 
   client_ = scada::client{
       {.monitored_item_service = data_services_.monitored_item_service_.get(),
        .session_service = data_services_.session_service_.get()}};
 
-  asio_.Wait(client_.connect(
+  asio_env_.Wait(client_.connect(
       {.connection_string = network_env_.client_transport_string,
        .user_name = u"username",
        .password = u"password"}));
@@ -86,7 +87,7 @@ void RemoteServicesTest::SetUp() {
 
 void RemoteServicesTest::TearDown() {
   if (connected_) {
-    asio_.Wait(client_.disconnect());
+    asio_env_.Wait(client_.disconnect());
   }
 }
 
@@ -104,5 +105,5 @@ TEST_F(RemoteServicesTest, Test) {
   auto monitored_item = client_.node(node_id).subscribe_value(
       data_change_handler.AsStdFunction());
 
-  asio_.Wait(promise);
+  asio_env_.Wait(promise);
 }

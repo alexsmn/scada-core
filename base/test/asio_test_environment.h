@@ -5,12 +5,12 @@
 
 #include <net/transport_factory_impl.h>
 
-struct AsioTest {
+struct AsioTestEnvironment {
   template <class T>
   T Wait(promise<T> promise) {
     using namespace std::chrono_literals;
     while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-      io_context_.run_for(100ms);
+      io_context.run_for(100ms);
     }
     return promise.get();
   }
@@ -18,19 +18,19 @@ struct AsioTest {
   void Wait(promise<> promise) {
     using namespace std::chrono_literals;
     while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-      io_context_.run_for(100ms);
+      io_context.run_for(100ms);
     }
     promise.get();
   }
 
   void Poll() {
-    while (io_context_.poll() != 0) {
+    while (io_context.poll() != 0) {
     }
   }
 
-  boost::asio::io_context io_context_;
-  net::TransportFactoryImpl transport_factory_{io_context_};
+  boost::asio::io_context io_context;
+  net::TransportFactoryImpl transport_factory{io_context};
 
-  std::shared_ptr<AsioExecutor> executor_ =
-      std::make_shared<AsioExecutor>(io_context_);
+  const std::shared_ptr<AsioExecutor> executor =
+      std::make_shared<AsioExecutor>(io_context);
 };
