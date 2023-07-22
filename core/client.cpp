@@ -1,5 +1,9 @@
 #include "core/client.h"
 
+#include "core/history_service_promises.h"
+#include "core/node_management_service.h"
+#include "core/view_service_promises.h"
+
 namespace scada {
 
 // monitored_item::state
@@ -61,6 +65,16 @@ promise<std::vector<ReferenceDescription>> node::browse(
     assert(IsGood(result.status_code));
     return result.references;
   });
+}
+
+promise<scada::node> node::browse_node(const browse_details& details) const {
+  return browse(details).then(
+      [*this](const std::vector<ReferenceDescription>& results) {
+        return results.size() == 1
+                   ? make_resolved_promise(
+                         scada::node{services_, results[0].node_id, context_})
+                   : MakeRejectedStatusPromise<scada::node>(StatusCode::Bad);
+      });
 }
 
 promise<std::vector<BrowsePathTarget>> node::translate_browse_path(
@@ -172,6 +186,32 @@ promise<> client::disconnect() const {
   }
 
   return services_.session_service->Disconnect();
+}
+
+promise<scada::node> client::add_node(const AddNodesItem& item) {
+  if (!services_.node_management_service) {
+    return MakeRejectedStatusPromise<scada::node>(StatusCode::Bad_Disconnected);
+  }
+
+  promise<scada::NodeId> promise;
+  services_.node_management_service->AddNodes(
+      {item}, [promise](Status&& status,
+                        std::vector<AddNodesResult>&& results) mutable {
+        if (!status) {
+          scada::RejectStatusPromise(promise, std::move(status));
+          return;
+        }
+        assert(results.size() == 1);
+        const auto& [status_code, node_id] = results[0];
+        if (scada::IsBad(status_code)) {
+          scada::RejectStatusPromise(promise, status_code);
+          return;
+        }
+        promise.resolve(node_id);
+      });
+
+  return promise.then(
+      [*this](const scada::NodeId& node_id) { return node(node_id); });
 }
 
 promise<> client::acknowledge_events(std::vector<EventAcknowledgeId> event_ids,

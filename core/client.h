@@ -1,17 +1,18 @@
 #pragma once
 
 #include "core/attribute_service_promises.h"
-#include "core/history_service_promises.h"
+#include "core/history_service.h"
 #include "core/method_service_promises.h"
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
 #include "core/session_service.h"
-#include "core/view_service_promises.h"
+#include "core/view_service.h"
 
 namespace scada {
 
 class client;
 class node;
+struct AddNodesItem;
 
 class monitored_item {
  public:
@@ -86,6 +87,8 @@ class node {
                 std::make_shared<ServiceContext>(std::move(context))};
   }
 
+  const scada::NodeId& id() const { return node_id_; }
+
   promise<DataValue> read(AttributeId attribute_id) const;
 
   promise<DataValue> read_value() const { return read(AttributeId::Value); }
@@ -103,6 +106,18 @@ class node {
 
   promise<std::vector<ReferenceDescription>> browse(
       const browse_details& details = {}) const;
+
+  promise<scada::node> browse_node(const browse_details& details = {}) const;
+
+  promise<scada::node> parent() const {
+    return browse_node({.reference_type_id = id::HierarchicalReferences,
+                        .direction = BrowseDirection::Inverse});
+  }
+
+  promise<scada::node> type_definition() const {
+    return browse_node({.reference_type_id = id::HasTypeDefinition,
+                        .direction = BrowseDirection::Forward});
+  }
 
   // Takes vector instead of span as a parameter to simplify invocation.
   // Requires `ViewService`.
@@ -197,6 +212,8 @@ class client {
   }
 
   scada::node server_node() const { return node(id::Server); }
+
+  promise<scada::node> add_node(const AddNodesItem& item);
 
   template <class Handler>
   monitored_item subscribe_events(const scada::EventFilter& filter,
