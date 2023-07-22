@@ -16,16 +16,9 @@ inline int GenerateTestNetworkPort() {
 }
 
 struct NetworkTestEnvironment {
-  int port = 0;
-  std::string server_transport_string;
-  std::string client_transport_string;
-};
-
-inline NetworkTestEnvironment GenerateNetworkTestEnvironment() {
-  int port = GenerateTestNetworkPort();
-  // std::format("INPROCESS;Passive;Name={}", port)
-  // std::format("INPROCESS;Active;Name={}", port)
-  return {.port = port,
-          .server_transport_string = std::format("TCP;Passive;Port={}", port),
-          .client_transport_string = std::format("TCP;Active;Port={}", port)};
+  const int port = GenerateTestNetworkPort();
+  const std::string server_transport_string =
+      std::format("TCP;Passive;Port={}", port);
+  const std::string client_transport_string =
+      std::format("TCP;Active;Port={}", port);
 };

@@ -54,8 +54,7 @@ class RemoteServicesTest : public Test {
   virtual void TearDown() override;
 
   AsioTestEnvironment asio_env_;
-
-  const NetworkTestEnvironment network_env_ = GenerateNetworkTestEnvironment();
+  NetworkTestEnvironment network_env_;
 
   TestServer server_{asio_env_, network_env_};
 
