@@ -13,6 +13,7 @@
 #include "remote/protocol_message_reader.h"
 #include "remote/protocol_message_transport.h"
 #include "remote/protocol_utils.h"
+#include "remote/session_proxy_debuger.h"
 #include "remote/subscription_proxy.h"
 #include "remote/view_service_proxy.h"
 #include "scada/monitored_item.h"
@@ -39,6 +40,7 @@ std::string MakeConnectionString(std::string_view str) {
 
 SessionProxy::SessionProxy(SessionProxyContext&& context)
     : SessionProxyContext{std::move(context)},
+      debugger_{std::make_unique<SessionProxyDebugger>()},
       subscription_{std::make_shared<SubscriptionProxy>(SubscriptionParams{})},
       view_service_proxy_{std::make_unique<ViewServiceProxy>()},
       node_management_proxy_{std::make_unique<NodeManagementProxy>()},
@@ -157,8 +159,12 @@ void SessionProxy::OnSessionDeleted() {
     auto requests = std::move(requests_);
     for (auto& p : requests) {
       response.set_request_id(p.first);
-      if (p.second)
+      if (p.second) {
         p.second(response);
+      }
+      debugger_->NotifyRequestEvent(
+          {.id = static_cast<scada::SessionDebugger::RequestId>(p.first),
+           .phase = scada::SessionDebugger::RequestPhase::Failed});
     }
   }
 
@@ -209,6 +215,11 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
     if (i != requests_.end()) {
       auto handler = std::move(i->second);
       requests_.erase(i);
+      debugger_->NotifyRequestEvent(
+          {.id = static_cast<scada::SessionDebugger::RequestId>(
+               response.request_id()),
+           .phase = scada::SessionDebugger::RequestPhase::Succeeded,
+           .response_body = response.DebugString()});
       handler(response);
     }
   }
@@ -259,6 +270,12 @@ void SessionProxy::Request(protocol::Request& request,
 
   if (response_handler)
     requests_[request_id] = std::move(response_handler);
+
+  debugger_->NotifyRequestEvent(
+      {.id = request_id,
+       .phase = scada::SessionDebugger::RequestPhase::Running,
+       .title = request.ShortDebugString().substr(0, 30),
+       .body = request.DebugString()});
 
   request.set_request_id(request_id);
   assert(request.IsInitialized());
@@ -514,5 +531,5 @@ boost::signals2::scoped_connection SessionProxy::SubscribeSessionStateChanged(
 }
 
 scada::SessionDebugger* SessionProxy::GetSessionDebugger() {
-  return nullptr;
+  return debugger_.get();
 }

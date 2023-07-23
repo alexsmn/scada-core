@@ -2,6 +2,8 @@
 
 #include "base/boost_log.h"
 #include "base/executor_timer.h"
+#include "net/transport.h"
+#include "remote/message_sender.h"
 #include "scada/attribute_service.h"
 #include "scada/logging.h"
 #include "scada/method_service.h"
@@ -9,8 +11,6 @@
 #include "scada/privileges.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
-#include "net/transport.h"
-#include "remote/message_sender.h"
 
 #include <boost/signals2/signal.hpp>
 #include <map>
@@ -32,6 +32,7 @@ class NodeManagementProxy;
 class HistoryProxy;
 class SubscriptionProxy;
 class ViewServiceProxy;
+class SessionProxyDebugger;
 
 struct SessionProxyContext {
   const std::shared_ptr<Executor> executor_;
@@ -119,6 +120,8 @@ class SessionProxy : private SessionProxyContext,
       std::make_shared<BoostLogger>(LOG_NAME("SessionProxy"));
 
   std::unique_ptr<net::Transport> transport_;
+
+  const std::unique_ptr<SessionProxyDebugger> debugger_;
 
   const std::shared_ptr<SubscriptionProxy> subscription_;
   const std::unique_ptr<ViewServiceProxy> view_service_proxy_;
