@@ -1,0 +1,153 @@
+#pragma once
+
+#include "scada/basic_types.h"
+#include "scada/string.h"
+
+#include <cassert>
+#include <memory>
+#include <ostream>
+#include <string_view>
+#include <variant>
+
+namespace scada {
+
+enum class NodeIdType { Numeric, String, Opaque };
+
+using NumericId = uint32_t;
+
+class NodeId {
+ public:
+  constexpr NodeId() noexcept = default;
+  constexpr NodeId(NumericId numeric_id,
+                   NamespaceIndex namespace_index = 0) noexcept;
+  NodeId(String string_id, NamespaceIndex namespace_index);
+  NodeId(ByteString opaque_id, NamespaceIndex namespace_index);
+
+  constexpr NodeIdType type() const noexcept {
+    return static_cast<NodeIdType>(identifier_.index());
+  }
+
+  constexpr bool is_null() const noexcept;
+  constexpr bool is_namespace_only() const noexcept;
+
+  constexpr NamespaceIndex namespace_index() const noexcept {
+    return namespace_index_;
+  }
+  void set_namespace_index(NamespaceIndex index) noexcept {
+    namespace_index_ = index;
+  }
+
+  constexpr NumericId numeric_id() const;
+  const String& string_id() const;
+  const ByteString& opaque_id() const;
+
+  String ToString() const;
+  static NodeId FromString(std::string_view string);
+
+ private:
+  using SharedStringId = std::shared_ptr<const String>;
+  using SharedByteString = std::shared_ptr<const ByteString>;
+  std::variant<NumericId, SharedStringId, SharedByteString> identifier_ =
+      static_cast<NumericId>(0);
+
+  NamespaceIndex namespace_index_ = 0;
+};
+
+inline constexpr NodeId::NodeId(NumericId numeric_id,
+                                NamespaceIndex namespace_index) noexcept
+    : identifier_{numeric_id}, namespace_index_{namespace_index} {}
+
+inline constexpr bool NodeId::is_null() const noexcept {
+  if (namespace_index_ != 0)
+    return false;
+  if (const auto* numeric_id = std::get_if<NumericId>(&identifier_))
+    return *numeric_id == 0;
+  return false;
+}
+
+inline constexpr bool NodeId::is_namespace_only() const noexcept {
+  if (const auto* numeric_id = std::get_if<NumericId>(&identifier_))
+    return *numeric_id == 0;
+  return false;
+}
+
+inline constexpr NumericId NodeId::numeric_id() const {
+  assert(type() == NodeIdType::Numeric);
+  return std::get<NumericId>(identifier_);
+}
+
+inline constexpr bool operator==(const NodeId& a, const NodeId& b) noexcept {
+  if (a.namespace_index() != b.namespace_index())
+    return false;
+
+  if (a.type() != b.type())
+    return false;
+
+  switch (a.type()) {
+    case NodeIdType::Numeric:
+      return a.numeric_id() == b.numeric_id();
+    case NodeIdType::String:
+      return a.string_id() == b.string_id();
+    case NodeIdType::Opaque:
+      return a.opaque_id() == b.opaque_id();
+    default:
+      assert(false);
+      return false;
+  }
+}
+
+inline constexpr bool operator!=(const NodeId& a, const NodeId& b) noexcept {
+  return !operator==(a, b);
+}
+
+inline constexpr bool operator<(const NodeId& a, const NodeId& b) noexcept {
+  if (a.namespace_index() != b.namespace_index())
+    return a.namespace_index() < b.namespace_index();
+
+  if (a.type() != b.type())
+    return a.type() < b.type();
+
+  switch (a.type()) {
+    case NodeIdType::Numeric:
+      return a.numeric_id() < b.numeric_id();
+    case NodeIdType::String:
+      return a.string_id() < b.string_id();
+    case NodeIdType::Opaque:
+      return a.opaque_id() < b.opaque_id();
+    default:
+      assert(false);
+      return false;
+  }
+}
+
+inline constexpr bool operator==(const NodeId& a, NumericId b) noexcept {
+  return a.namespace_index() == 0 && a.type() == NodeIdType::Numeric &&
+         a.numeric_id() == b;
+}
+
+inline constexpr bool operator!=(const NodeId& a, NumericId b) noexcept {
+  return !(a == b);
+}
+
+inline constexpr bool operator==(NumericId a, const NodeId& b) noexcept {
+  return b == a;
+}
+
+inline constexpr bool operator!=(NumericId a, const NodeId& b) noexcept {
+  return !operator==(a, b);
+}
+
+inline std::ostream& operator<<(std::ostream& stream, const NodeId& node_id) {
+  return stream << "\"" << node_id.ToString() << "\"";
+}
+
+}  // namespace scada
+
+namespace std {
+
+template <>
+struct hash<scada::NodeId> {
+  std::size_t operator()(const scada::NodeId& node_id) const noexcept;
+};
+
+}  // namespace std

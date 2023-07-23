@@ -3,7 +3,7 @@ include(scada_module.cmake)
 include(install_dll.cmake)
 
 add_subdirectory(base)
-add_subdirectory(core)
+add_subdirectory(scada)
 add_subdirectory(model)
 add_subdirectory(remote)
 

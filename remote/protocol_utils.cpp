@@ -1,7 +1,7 @@
 #include "remote/protocol_utils.h"
 
 #include "base/strings/utf_string_conversions.h"
-#include "core/standard_node_ids.h"
+#include "scada/standard_node_ids.h"
 
 namespace {
 

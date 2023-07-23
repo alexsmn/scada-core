@@ -1,0 +1,23 @@
+#include "scada/attribute_ids.h"
+
+#include "base/strings/string_number_conversions.h"
+
+std::string ToString(scada::AttributeId attribute_id) {
+  static const char* kStrings[] = {
+      "Unknown",         "NodeId",
+      "NodeClass",       "BrowseName",
+      "DisplayName",     "Description",
+      "WriteMask",       "UserWriteMask",
+      "IsAbstract",      "Symmetric",
+      "InverseName",     "ContainsNoLoops",
+      "EventNotifier",   "Value",
+      "DataType",        "ValueRank",
+      "ArrayDimensions", "AccessLevel",
+      "UserAccessLevel", "MinimumSamplingInterval",
+      "Historizing",     "Executable",
+      "UserExecutable",
+  };
+  static_assert(std::size(kStrings) ==
+                static_cast<size_t>(scada::AttributeId::Count));
+  return kStrings[static_cast<size_t>(attribute_id)];
+}

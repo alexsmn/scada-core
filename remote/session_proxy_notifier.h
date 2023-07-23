@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/session_service.h"
+#include "scada/session_service.h"
 
 template <class Proxy>
 class SessionProxyNotifier {

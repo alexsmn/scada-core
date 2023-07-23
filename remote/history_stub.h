@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "core/history_types.h"
+#include "scada/history_types.h"
 
 #include <map>
 

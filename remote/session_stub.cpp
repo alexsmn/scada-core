@@ -2,9 +2,9 @@
 
 #include "base/executor.h"
 #include "base/range_util.h"
-#include "core/attribute_service.h"
-#include "core/method_service.h"
-#include "core/write_flags.h"
+#include "scada/attribute_service.h"
+#include "scada/method_service.h"
+#include "scada/write_flags.h"
 #include "model/node_id_util.h"
 #include "remote/connection.h"
 #include "remote/history_stub.h"

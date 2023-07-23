@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
 
-#include "core/node_id.h"
+#include "scada/node_id.h"
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"

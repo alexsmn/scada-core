@@ -1,7 +1,7 @@
 #include "remote/view_service_proxy.h"
 
-#include "core/standard_node_ids.h"
-#include "core/status.h"
+#include "scada/standard_node_ids.h"
+#include "scada/status.h"
 #include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"

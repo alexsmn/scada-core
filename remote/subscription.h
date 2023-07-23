@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/attribute_ids.h"
-#include "core/data_value.h"
+#include "scada/attribute_ids.h"
+#include "scada/data_value.h"
 
 #include <functional>
 #include <string_view>

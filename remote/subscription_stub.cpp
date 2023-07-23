@@ -1,8 +1,8 @@
 #include "remote/subscription_stub.h"
 
 #include "base/executor.h"
-#include "core/monitored_item.h"
-#include "core/monitored_item_service.h"
+#include "scada/monitored_item.h"
+#include "scada/monitored_item_service.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/standard_node_ids.h"
+#include "scada/standard_node_ids.h"
 #include "model/namespaces.h"
 
 namespace scada {

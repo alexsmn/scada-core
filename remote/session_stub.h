@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "core/attribute_service.h"
-#include "core/event.h"
+#include "scada/attribute_service.h"
+#include "scada/event.h"
 #include "remote/message_sender.h"
 #include "remote/subscription.h"
 

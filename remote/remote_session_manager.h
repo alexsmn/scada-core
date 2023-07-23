@@ -6,8 +6,8 @@
 #include "base/promise.h"
 #include "common/node_state.h"
 #include "common/view_events_subscription.h"
-#include "core/authentication.h"
-#include "core/view_service.h"
+#include "scada/authentication.h"
+#include "scada/view_service.h"
 
 #include <functional>
 #include <map>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/view_service.h"
+#include "scada/view_service.h"
 
 #include <memory>
 

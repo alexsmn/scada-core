@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/history_service.h"
+#include "scada/history_service.h"
 
 class MessageSender;
 

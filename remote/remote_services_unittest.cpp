@@ -4,10 +4,10 @@
 #include "base/test/asio_test_environment.h"
 #include "base/test/network_port_generator.h"
 #include "base/test/test_executor.h"
-#include "core/authentication_mock.h"
-#include "core/client.h"
-#include "core/data_services_factory.h"
-#include "core/monitored_item_service_mock.h"
+#include "scada/authentication_mock.h"
+#include "scada/client.h"
+#include "scada/data_services_factory.h"
+#include "scada/monitored_item_service_mock.h"
 #include "remote/remote_session_manager.h"
 
 #include <gmock/gmock.h>

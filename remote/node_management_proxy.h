@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "base/boost_log.h"
-#include "core/node_management_service.h"
+#include "scada/node_management_service.h"
 
 class MessageSender;
 

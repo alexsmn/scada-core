@@ -3,8 +3,8 @@
 #include <functional>
 #include <memory>
 
-#include "core/node_id.h"
-#include "core/status.h"
+#include "scada/node_id.h"
+#include "scada/status.h"
 #include "net/transport.h"
 #include "remote/connection.h"
 

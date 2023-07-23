@@ -1,9 +1,9 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "core/node_attributes.h"
-#include "core/node_id.h"
-#include "core/node_management_service.h"
+#include "scada/node_attributes.h"
+#include "scada/node_id.h"
+#include "scada/node_management_service.h"
 
 #include <memory>
 #include <vector>

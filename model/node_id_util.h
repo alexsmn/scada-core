@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/node_id.h"
+#include "scada/node_id.h"
 
 // Normal nodes are not considered nested.
 bool IsNestedNodeId(const scada::NodeId& node_id,

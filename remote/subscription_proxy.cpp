@@ -1,7 +1,7 @@
 #include "remote/subscription_proxy.h"
 
 #include "base/cancelation.h"
-#include "core/monitored_item_service.h"
+#include "scada/monitored_item_service.h"
 #include "remote/message_sender.h"
 #include "remote/monitored_item_proxy.h"
 #include "remote/protocol.h"

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/attribute_ids.h"
-#include "core/status.h"
+#include "scada/attribute_ids.h"
+#include "scada/status.h"
 #include "remote/monitored_item_router.h"
 #include "remote/subscription.h"
 

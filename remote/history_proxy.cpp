@@ -1,6 +1,6 @@
 #include "remote/history_proxy.h"
 
-#include "core/standard_node_ids.h"
+#include "scada/standard_node_ids.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"

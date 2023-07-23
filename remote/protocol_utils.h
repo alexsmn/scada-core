@@ -1,13 +1,13 @@
 #pragma once
 
-#include "core/aggregate_filter.h"
-#include "core/data_value.h"
-#include "core/event.h"
-#include "core/monitored_item_service.h"
-#include "core/node_attributes.h"
-#include "core/node_management_service.h"
-#include "core/status.h"
-#include "core/view_service.h"
+#include "scada/aggregate_filter.h"
+#include "scada/data_value.h"
+#include "scada/event.h"
+#include "scada/monitored_item_service.h"
+#include "scada/node_attributes.h"
+#include "scada/node_management_service.h"
+#include "scada/status.h"
+#include "scada/view_service.h"
 #include "remote/protocol.h"
 
 #include <set>

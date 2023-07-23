@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/basic_types.h"
+#include "scada/basic_types.h"
 
 #include <string_view>
 
