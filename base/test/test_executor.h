@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/executor.h"
+#include "base/executor_factory.h"
 
 #include <algorithm>
 
@@ -76,3 +77,7 @@ class TestExecutor : public Executor {
 
   std::vector<PendingTask> pending_tasks_;
 };
+
+inline ExecutorFactory MakeTestExecutorFactory() {
+  return MakeSingleExecutorFactory(std::make_shared<TestExecutor>());
+}

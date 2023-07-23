@@ -1,8 +1,10 @@
 #pragma once
 
 #include "base/asio_executor.h"
+#include "base/executor_factory.h"
 #include "base/promise.h"
 
+#include <boost/asio/io_context.hpp>
 #include <net/transport_factory_impl.h>
 
 struct AsioTestEnvironment {
@@ -31,6 +33,7 @@ struct AsioTestEnvironment {
   boost::asio::io_context io_context;
   net::TransportFactoryImpl transport_factory{io_context};
 
-  const std::shared_ptr<AsioExecutor> executor =
+  const std::shared_ptr<Executor> executor =
       std::make_shared<AsioExecutor>(io_context);
+  const ExecutorFactory executor_factory = MakeSingleExecutorFactory(executor);
 };

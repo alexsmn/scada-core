@@ -41,7 +41,7 @@ class TestServer {
   NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
 
   RemoteSessionManager session_manager_{
-      {.executor_ = asio_env_.executor,
+      {.executor_ = std::make_shared<TestExecutor>(),
        .services_ = {.monitored_item_service = &monitored_item_service_},
        .authenticator_ = authenticator_.AsStdFunction(),
        .transport_factory_ = asio_env_.transport_factory,
