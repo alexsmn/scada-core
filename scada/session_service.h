@@ -15,6 +15,8 @@ class TimeDelta;
 
 namespace scada {
 
+class SessionDebugger;
+
 struct SessionConnectParams {
   std::string host;
   std::string connection_string;
@@ -40,12 +42,15 @@ class SessionService {
 
   virtual std::string GetHostName() const = 0;
 
+  // TODO: Describe and explain the need.
   virtual bool IsScada() const = 0;
 
   using SessionStateChangedCallback =
       std::function<void(bool connected, const Status& status)>;
   virtual boost::signals2::scoped_connection SubscribeSessionStateChanged(
       const SessionStateChangedCallback& callback) = 0;
+
+  virtual SessionDebugger* GetSessionDebugger() = 0;
 };
 
 }  // namespace scada

@@ -5,8 +5,6 @@
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "scada/monitored_item.h"
-#include "scada/status.h"
 #include "net/transport_factory.h"
 #include "net/transport_string.h"
 #include "remote/history_proxy.h"
@@ -17,6 +15,8 @@
 #include "remote/protocol_utils.h"
 #include "remote/subscription_proxy.h"
 #include "remote/view_service_proxy.h"
+#include "scada/monitored_item.h"
+#include "scada/status.h"
 
 #include <stdexcept>
 
@@ -511,4 +511,8 @@ bool SessionProxy::IsMessageLogged(const protocol::Message& message) const {
 boost::signals2::scoped_connection SessionProxy::SubscribeSessionStateChanged(
     const SessionStateChangedCallback& callback) {
   return session_state_changed_signal_.connect(callback);
+}
+
+scada::SessionDebugger* SessionProxy::GetSessionDebugger() {
+  return nullptr;
 }

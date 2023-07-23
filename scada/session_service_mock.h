@@ -33,6 +33,8 @@ class MockSessionService : public SessionService {
               SubscribeSessionStateChanged,
               (const SessionStateChangedCallback& callback),
               (override));
+
+  MOCK_METHOD(SessionDebugger*, GetSessionDebugger, (), (override));
 };
 
 }  // namespace scada

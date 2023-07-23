@@ -62,6 +62,7 @@ class SessionProxy : private SessionProxyContext,
   virtual std::string GetHostName() const override;
   virtual boost::signals2::scoped_connection SubscribeSessionStateChanged(
       const SessionStateChangedCallback& callback) override;
+  virtual scada::SessionDebugger* GetSessionDebugger() override;
 
   // MessageSender
   virtual void Send(protocol::Message& message) override;
