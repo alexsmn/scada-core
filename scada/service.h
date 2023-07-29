@@ -32,6 +32,11 @@ using ServiceContextPtr = std::shared_ptr<const ServiceContext>;
 struct ServiceContext {
   static const ServiceContextPtr& default_instance() { return default_ptr; }
 
+  static ServiceContextPtr ForUser(scada::NodeId user_id) {
+    return std::make_shared<ServiceContext>(std::move(user_id),
+                                            std::vector<std::string>{});
+  }
+
   NodeId user_id;
   std::vector<std::string> locale_ids;
 
