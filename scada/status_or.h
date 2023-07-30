@@ -13,9 +13,21 @@ template <class T>
 using StatusCodeOr = std::pair<StatusCode, T>;
 
 template <class T>
+inline auto MakeStatusOr(T&& value) {
+  return StatusOr<std::decay_t<T>>{scada::StatusCode::Good,
+                                   std::forward<T>(value)};
+}
+
+template <class T>
+inline auto MakeStatusOr(scada::Status status) {
+  assert(!status);
+  return StatusOr<T>{std::move(status), {}};
+}
+
+template <class T>
 inline auto MakeStatusCodeOr(T&& value) {
   return StatusCodeOr<std::decay_t<T>>{scada::StatusCode::Good,
-                                       std::move(value)};
+                                       std::forward<T>(value)};
 }
 
 template <class T>

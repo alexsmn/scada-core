@@ -35,5 +35,6 @@ struct AsioTestEnvironment {
 
   const std::shared_ptr<Executor> executor =
       std::make_shared<AsioExecutor>(io_context);
+
   const ExecutorFactory executor_factory = MakeSingleExecutorFactory(executor);
 };
