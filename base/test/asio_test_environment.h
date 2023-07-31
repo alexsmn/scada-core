@@ -31,6 +31,10 @@ struct AsioTestEnvironment {
   }
 
   boost::asio::io_context io_context;
+  // Work guard to prevent io_context from stopping when there are no more
+  // tasks.
+  boost::asio::io_context::work io_work{io_context};
+
   net::TransportFactoryImpl transport_factory{io_context};
 
   const std::shared_ptr<Executor> executor =

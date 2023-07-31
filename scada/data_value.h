@@ -44,8 +44,6 @@ class DataValue {
            qualifier == other.qualifier && status_code == other.status_code;
   }
 
-  bool operator!=(const DataValue& other) const { return !operator==(other); }
-
   Variant value;
   Qualifier qualifier;
   DateTime source_timestamp;

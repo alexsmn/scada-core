@@ -36,14 +36,18 @@ promise<DataValue> node::read(AttributeId attribute_id) const {
       });
 }
 
-promise<> node::write(AttributeId attribute_id, const Variant& value) const {
+promise<> node::write(AttributeId attribute_id,
+                      const Variant& value,
+                      scada::WriteFlags flags) const {
   if (!services_.attribute_service) {
     return MakeRejectedStatusPromise(StatusCode::Bad);
   }
 
-  return ToStatusPromise(Write(
-      *services_.attribute_service, context_,
-      {.node_id = node_id_, .attribute_id = attribute_id, .value = value}));
+  return ToStatusPromise(Write(*services_.attribute_service, context_,
+                               {.node_id = node_id_,
+                                .attribute_id = attribute_id,
+                                .value = value,
+                                .flags = flags}));
 }
 
 promise<std::vector<ReferenceDescription>> node::browse(

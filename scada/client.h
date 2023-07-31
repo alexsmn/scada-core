@@ -93,10 +93,13 @@ class node {
 
   promise<DataValue> read_value() const { return read(AttributeId::Value); }
 
-  promise<> write(AttributeId attribute_id, const Variant& value) const;
+  promise<> write(AttributeId attribute_id,
+                  const Variant& value,
+                  scada::WriteFlags flags = {}) const;
 
-  promise<> write_value(const Variant& value) const {
-    return write(AttributeId::Value, value);
+  promise<> write_value(const Variant& value,
+                        scada::WriteFlags flags = {}) const {
+    return write(AttributeId::Value, value, flags);
   }
 
   struct browse_details {
