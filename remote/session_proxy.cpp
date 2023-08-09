@@ -27,9 +27,10 @@ namespace {
 
 const auto kPingDelay = 1s;
 
-std::string MakeConnectionString(std::string_view str) {
-  auto parts = base::SplitString(AsStringPiece(str), ":", base::TRIM_WHITESPACE,
-                                 base::SplitResult::SPLIT_WANT_ALL);
+std::string MakeConnectionString(std::string_view host_name) {
+  auto parts =
+      base::SplitString(AsStringPiece(host_name), ":", base::TRIM_WHITESPACE,
+                        base::SplitResult::SPLIT_WANT_ALL);
   parts.resize(2);
   if (parts[1].empty())
     parts[1] = "2000";
@@ -294,9 +295,9 @@ promise<> SessionProxy::Connect(const scada::SessionConnectParams& params) {
   user_name_ = params.user_name;
   password_ = params.password;
   host_ = params.host;
-  connection_string_ = host_.empty()
-                           ? params.connection_string
-                           : MakeConnectionString(params.connection_string);
+  // TODO: Add a UT for this condition.
+  connection_string_ = host_.empty() ? params.connection_string
+                                     : MakeConnectionString(params.host);
   allow_remote_logoff_ = params.allow_remote_logoff;
 
   return Reconnect();
