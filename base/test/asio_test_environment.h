@@ -3,11 +3,17 @@
 #include "base/asio_executor.h"
 #include "base/executor_factory.h"
 #include "base/promise.h"
+#include "base/test/test_net_interceptors.h"
 
 #include <boost/asio/io_context.hpp>
+#include <net/intercepting_transport_factory.h>
 #include <net/transport_factory_impl.h>
 
 struct AsioTestEnvironment {
+  AsioTestEnvironment() {
+    transport_factory.set_interceptor(&transport_interceptor);
+  }
+
   template <class T>
   T Wait(promise<T> promise) {
     using namespace std::chrono_literals;
@@ -35,7 +41,9 @@ struct AsioTestEnvironment {
   // tasks.
   boost::asio::io_context::work io_work{io_context};
 
-  net::TransportFactoryImpl transport_factory{io_context};
+  net::TransportFactoryImpl transport_factory_impl{io_context};
+  TestNetInterceptor transport_interceptor;
+  net::InterceptingTransportFactory transport_factory{transport_factory_impl};
 
   const std::shared_ptr<Executor> executor =
       std::make_shared<AsioExecutor>(io_context);
