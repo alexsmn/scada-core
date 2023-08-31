@@ -6,6 +6,7 @@
 #include <boost/assert/source_location.hpp>
 #include <functional>
 #include <memory>
+#include <stop_token>
 
 class Executor {
  public:
@@ -108,6 +109,17 @@ inline auto BindExecutor(
     const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   return BindExecutor(std::move(executor),
                       cancelation.Bind(std::forward<T>(task)), location);
+}
+
+template <class T>
+inline auto BindExecutor(
+    std::shared_ptr<Executor> executor,
+    std::stop_token stop_token,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+  return BindExecutor(
+      std::move(executor),
+      BindStopToken(std::move(stop_token), std::forward<T>(task)), location);
 }
 
 template <class C, class T>

@@ -42,6 +42,7 @@ class monitored_item {
         });
   }
 
+  // Handler = void(const Status& status, const std::any& event)
   template <class Handler>
   void subscribe_events(std::shared_ptr<MonitoredItem> monitored_item,
                         Handler&& event_handler) {
@@ -169,13 +170,41 @@ class node {
                      std::forward<Handler>(data_change_handler));
   }
 
+  // Handler = void(const Status& status, const std::any& event)
+  //
+  // Example:
+  //
+  // auto monitored_item = client.node(node_id).subscribe_events(
+  //     /*filter*/ {},
+  //     [](const scada::Status& status, const std::any& event) {
+  //       if (const auto* system_event = std::any_cast<scada::Event>(&event)) {
+  //         std::cout << ToString(*system_event);
+  //       }
+  //     });
   template <class Handler>
   monitored_item subscribe_events(const EventFilter& filter,
                                   Handler&& event_handler) const;
 
+  // Handler = void(const Status& status, const Event& system_event)
+  //
+  // Example:
+  //
+  // auto monitored_item = client.node(node_id).subscribe_events(
+  //     /*filter*/ {},
+  //     [](const scada::Status& status, const scada::Event& system_event) {
+  //         std::cout << ToString(system_event);
+  //     });
   template <class Handler>
-  monitored_item subscribe_events(Handler&& event_handler) const {
-    return subscribe_events({}, std::forward<Handler>(event_handler));
+  monitored_item subscribe_system_events(const EventFilter& filter,
+                                         Handler&& system_event_handler) const {
+    return subscribe_events(
+        filter,
+        [system_event_handler = std::forward<Handler>(system_event_handler)](
+            const Status& status, const std::any& event) mutable {
+          if (const auto* system_event = std::any_cast<scada::Event>(&event)) {
+            system_event_handler(status, *system_event);
+          }
+        });
   }
 
  private:

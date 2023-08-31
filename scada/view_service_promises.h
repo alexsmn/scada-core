@@ -6,6 +6,7 @@
 
 namespace scada {
 
+// TODO: Use status promise.
 inline promise<BrowseResult> Browse(ViewService& service,
                                     const BrowseDescription& input) {
   promise<BrowseResult> promise;
@@ -15,20 +16,24 @@ inline promise<BrowseResult> Browse(ViewService& service,
   return promise;
 }
 
+// TODO: Use status promise.
 inline promise<StatusCodeOr<NodeId>> BrowseParentId(
     ViewService& service,
     const scada::NodeId& node_id) {
   return Browse(service,
                 scada::BrowseDescription{node_id, BrowseDirection::Inverse,
                                          id::HierarchicalReferences, true})
-      .then([](const scada::BrowseResult& result) {
-        if (IsBad(result.status_code))
-          return MakeStatusCodeOr<scada::NodeId>(result.status_code);
-        if (result.references.empty())
-          return MakeStatusCodeOr(scada::NodeId{});
-        assert(result.references.size() == 1);
-        return MakeStatusCodeOr(result.references[0].node_id);
-      });
+      .then(
+          [](const scada::BrowseResult& result) -> StatusCodeOr<scada::NodeId> {
+            if (IsBad(result.status_code)) {
+              return result.status_code;
+            } else if (result.references.empty()) {
+              return scada::NodeId{};
+            } else {
+              assert(result.references.size() == 1);
+              return result.references[0].node_id;
+            }
+          });
 }
 
 }  // namespace scada

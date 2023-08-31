@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <stop_token>
 
 namespace internal {
 
@@ -45,6 +46,26 @@ struct CancelationFuncWrapper {
   CF canceled_func_;
 };
 
+template <class T>
+struct StopTokenWrapper {
+  template <class... Args>
+  void operator()(Args&&... args) const {
+    if (!stop_token_.stop_requested()) {
+      task_(std::forward<Args>(args)...);
+    }
+  }
+
+  template <class... Args>
+  void operator()(Args&&... args) {
+    if (!stop_token_.stop_requested()) {
+      task_(std::forward<Args>(args)...);
+    }
+  }
+
+  const std::stop_token stop_token_;
+  T task_;
+};
+
 }  // namespace internal
 
 template <class C, class T>
@@ -60,6 +81,12 @@ inline auto BindCancelationFunc(std::weak_ptr<C> cancelation,
   return internal::CancelationFuncWrapper<C, F, CF>{
       std::move(cancelation), std::forward<F>(func),
       std::forward<CF>(canceled_func)};
+}
+
+template <class T>
+inline auto BindStopToken(std::stop_token stop_token, T&& task) {
+  return internal::StopTokenWrapper<T>{std::move(stop_token),
+                                       std::forward<T>(task)};
 }
 
 class Cancelation;

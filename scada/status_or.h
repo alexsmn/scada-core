@@ -3,58 +3,121 @@
 #include "scada/status.h"
 
 #include <cassert>
+#include <ostream>
+#include <variant>
 
 namespace scada {
 
 template <class T>
-using StatusOr = std::pair<Status, T>;
+class [[nodiscard]] StatusOr {
+ public:
+  StatusOr(Status status) : value_{std::move(status)} {}
+
+  StatusOr(StatusCode status_code) : StatusOr{Status(status_code)} {}
+
+  StatusOr(T value) : value_{std::move(value)} {}
+
+  bool ok() const { return std::holds_alternative<T>(value_); }
+
+  const Status& status() const& {
+    assert(!ok());
+    return std::get<Status>(value_);
+  }
+
+  Status status() && {
+    assert(!ok());
+    return std::get<Status>(std::move(value_));
+  }
+
+  T& operator*() {
+    assert(ok());
+    return std::get<T>(value_);
+  }
+
+  const T& operator*() const {
+    assert(ok());
+    return std::get<T>(value_);
+  }
+
+  T* operator->() {
+    assert(ok());
+    return &std::get<T>(value_);
+  }
+
+  const T* operator->() const {
+    assert(ok());
+    return &std::get<T>(value_);
+  }
+
+ private:
+  std::variant<Status, T> value_;
+};
 
 template <class T>
-using StatusCodeOr = std::pair<StatusCode, T>;
+class [[nodiscard]] StatusCodeOr {
+ public:
+  StatusCodeOr(StatusCode status_code) : value_{status_code} {}
 
-template <class T>
-inline auto MakeStatusOr(T&& value) {
-  return StatusOr<std::decay_t<T>>{scada::StatusCode::Good,
-                                   std::forward<T>(value)};
-}
+  StatusCodeOr(T value) : value_{std::move(value)} {}
 
-template <class T>
-inline auto MakeStatusOr(scada::Status status) {
-  assert(!status);
-  return StatusOr<T>{std::move(status), {}};
-}
+  bool ok() const { return std::holds_alternative<T>(value_); }
 
-template <class T>
-inline auto MakeStatusCodeOr(T&& value) {
-  return StatusCodeOr<std::decay_t<T>>{scada::StatusCode::Good,
-                                       std::forward<T>(value)};
-}
+  const StatusCode& status_code() const& {
+    assert(!ok());
+    return std::get<StatusCode>(value_);
+  }
 
-template <class T>
-inline auto MakeStatusCodeOr(scada::StatusCode error_code) {
-  assert(scada::IsBad(error_code));
-  return StatusCodeOr<T>{error_code, {}};
-}
+  StatusCode status_code() && {
+    assert(!ok());
+    return std::get<StatusCode>(std::move(value_));
+  }
 
-template <class T, class F>
-inline auto MapStatusCodeOr(const scada::StatusCodeOr<T>& value, F&& f) {
-  using R = std::invoke_result_t<F, T>;
-  return scada::IsGood(value.first) ? f(value.second) : R{value.first, {}};
-}
+  T& operator*() {
+    assert(ok());
+    return std::get<T>(value_);
+  }
 
-template <class T, class F>
-inline auto MapStatusCodeOr(scada::StatusCodeOr<T>&& value, F&& f) {
-  using R = std::invoke_result_t<F, T>;
-  return scada::IsGood(value.first) ? f(std::move(value.second))
-                                    : R{value.first, {}};
-}
+  const T& operator*() const {
+    assert(ok());
+    return std::get<T>(value_);
+  }
 
-template <class F>
-inline auto TransformStatusCodeOr(F&& f) {
-  return [&](auto&& value) {
-    return MapStatusCodeOr(std::forward<decltype(value)>(value),
-                           std::forward<F>(f));
-  };
-}
+  T* operator->() {
+    assert(ok());
+    return &std::get<T>(value_);
+  }
+
+  const T* operator->() const {
+    assert(ok());
+    return &std::get<T>(value_);
+  }
+
+  template <class T, class F>
+  inline auto map(F&& f) const& {
+    // using R = std::invoke_result_t<F, T>;
+    return ok() ? f(*this) : status_code();
+  }
+
+  template <class T, class F>
+  inline auto map(F&& f) && {
+    // using R = std::invoke_result_t<F, T>;
+    return ok() ? f(*std::move(this)) : status_code();
+  }
+
+ private:
+  std::variant<StatusCode, T> value_;
+};
 
 }  // namespace scada
+
+template <class T>
+inline std::ostream& operator<<(std::ostream& os,
+                                const scada::StatusOr<T>& st) {
+  return st.ok() ? (os << *st) : (os << st.status());
+}
+
+template <class T>
+inline std::ostream& operator<<(std::ostream& os,
+                                const scada::StatusCodeOr<T>& st) {
+  return st.ok() ? (os << *st) : (os << st.status_code());
+}
