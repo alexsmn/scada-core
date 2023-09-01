@@ -6,7 +6,7 @@
 #include "base/promise_executor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "scada/status.h"
-#include "scada/status_promise.h"
+#include "scada/promise.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "net/transport_factory.h"

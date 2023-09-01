@@ -1,7 +1,7 @@
 #pragma once
 
 #include "scada/history_service.h"
-#include "scada/status_promise.h"
+#include "scada/promise.h"
 
 namespace scada {
 
