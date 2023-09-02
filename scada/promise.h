@@ -3,7 +3,12 @@
 #include "base/promise.h"
 #include "scada/status.h"
 
+#include <promise.hpp/promise.hpp>
+
 namespace scada {
+
+template <class T = void>
+using promise = promise_hpp::promise<T>;
 
 class StatusException : public std::exception {
  public:
@@ -62,6 +67,11 @@ inline promise<> BindStatusCallback(promise<> promise,
       .except([callback = callback](const std::exception_ptr& e) mutable {
         callback(GetExceptionStatus(e));
       });
+}
+
+template <class T>
+inline auto MakeResolvedStatusPromise(T&& value) {
+  return make_resolved_promise(std::forward<T>(value));
 }
 
 inline promise<> MakeRejectedStatusPromise(Status status) {
