@@ -36,11 +36,6 @@ inline promise<U> ToValuePromise(promise<> promise, const U& value) {
   return promise.then([value] { return value; });
 }
 
-template <class T, class U>
-inline promise<U> ToValuePromise(promise<T> promise, const U& value) {
-  return promise.then([value](const T& value) { return value; });
-}
-
 template <class T>
 inline promise<> ToRejectedPromise(promise<T> promise) {
   return promise.then(

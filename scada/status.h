@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <ostream>
 #include <string>
 
@@ -95,13 +96,13 @@ inline constexpr StatusSeverity GetSeverity(StatusCode code) noexcept {
   return static_cast<StatusSeverity>(static_cast<unsigned>(code) >> 14);
 }
 
-inline constexpr uint16_t GetSubCode(StatusCode code) noexcept {
+inline constexpr std::uint16_t GetSubCode(StatusCode code) noexcept {
   return static_cast<unsigned>(code) & ((1 << 14) - 1);
 }
 
 inline constexpr StatusCode MakeStatusCode(StatusSeverity severity,
-                                           uint16_t sub_code) noexcept {
-  return static_cast<StatusCode>((static_cast<uint32_t>(severity) << 14) |
+                                           std::uint16_t sub_code) noexcept {
+  return static_cast<StatusCode>((static_cast<std::uint32_t>(severity) << 14) |
                                  sub_code);
 }
 
