@@ -56,17 +56,28 @@ std::string ToString(const boost::log::attribute_value& attr) {
   return result;
 }
 
-const char* ToString(BoostLogSeverity severity) {
-  const char* strs[] = {"Debug", "Info", "Warning", "Error", "Critical"};
-  static_assert(std::size(strs) == static_cast<size_t>(BoostLogSeverity::Count),
-                "No severities");
-  return strs[static_cast<size_t>(severity)];
+std::string_view ToString(BoostLogSeverity severity) {
+  switch (severity) {
+    case BoostLogSeverity::debug:
+      return "Debug";
+    case BoostLogSeverity::info:
+      return "Info";
+    case BoostLogSeverity::warning:
+      return "Warning";
+    case BoostLogSeverity::error:
+      return "Error";
+    case BoostLogSeverity::fatal:
+      return "Critical";
+    default:
+      assert(false);
+      return "Unknown";
+  }
 }
 
 void FormatLogRecord(const boost::log::record_view& record,
                      bool console,
                      boost::log::formatting_ostream& stream) {
-  auto severity = BoostLogSeverity::Info;
+  auto severity = BoostLogSeverity::info;
   std::string channel;
   std::string line_id;
   using TimeStamp = boost::log::attributes::local_clock::value_type;
@@ -78,7 +89,7 @@ void FormatLogRecord(const boost::log::record_view& record,
 
   for (auto& attr : record.attribute_values()) {
     if (attr.first == boost::log::aux::default_attribute_names::severity()) {
-      severity = attr.second.extract_or_default(BoostLogSeverity::Info);
+      severity = attr.second.extract_or_default(BoostLogSeverity::info);
       continue;
     } else if (attr.first ==
                boost::log::aux::default_attribute_names::timestamp()) {
@@ -149,7 +160,7 @@ void InitBoostLogging(const BoostLogParams& params) {
     auto sink = boost::log::add_console_log();
     boost::log::core::get()->add_sink(sink);
     sink->set_formatter(&FormatLogRecordT<true>);
-    sink->set_filter(severity >= BoostLogSeverity::Info);
+    sink->set_filter(severity >= BoostLogSeverity::info);
     console_installed = true;
   }
 

@@ -211,6 +211,7 @@ promise<scada::node> client::add_node(const AddNodesItem& item) {
           scada::RejectStatusPromise(promise, status_code);
           return;
         }
+        assert(!node_id.is_null());
         promise.resolve(node_id);
       });
 

@@ -2,22 +2,23 @@
 
 #include <boost/log/common.hpp>
 #include <boost/log/sources/logger.hpp>
+#include <boost/log/trivial.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
 
-enum class BoostLogSeverity { Debug, Info, Warning, Error, Critical, Count };
+using BoostLogSeverity = boost::log::trivial::severity_level;
 
 using BoostLogger =
     boost::log::sources::severity_channel_logger_mt<BoostLogSeverity>;
 
-#define LOG_DEBUG(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Debug)
-#define LOG_INFO(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Info)
-#define LOG_WARNING(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Warning)
-#define LOG_ERROR(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Error)
-#define LOG_CRITICAL(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::Critical)
+#define LOG_DEBUG(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::debug)
+#define LOG_INFO(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::info)
+#define LOG_WARNING(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::warning)
+#define LOG_ERROR(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::error)
+#define LOG_CRITICAL(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::fatal)
 #define LOG_SEV(logger, severity) BOOST_LOG_SEV(logger, severity)
 #define LOG_STATUS(logger, status) \
   LOG_SEV(logger,                  \
-          status ? ::BoostLogSeverity::Info : ::BoostLogSeverity::Warning)
+          status ? ::BoostLogSeverity::info : ::BoostLogSeverity::warning)
 
 #define LOG_TAG(name, value) boost::log::add_value(name, value)
 #define LOG_SCOPED_TAG(logger, name, value) \

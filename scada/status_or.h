@@ -11,7 +11,9 @@ namespace scada {
 template <class T>
 class [[nodiscard]] StatusOr {
  public:
-  StatusOr(Status status) : value_{std::move(status)} {}
+  StatusOr(Status status) : value_{std::move(status)} {
+    assert(!this->status());
+  }
 
   StatusOr(StatusCode status_code) : StatusOr{Status(status_code)} {}
 
@@ -56,7 +58,9 @@ class [[nodiscard]] StatusOr {
 template <class T>
 class [[nodiscard]] StatusCodeOr {
  public:
-  StatusCodeOr(StatusCode status_code) : value_{status_code} {}
+  StatusCodeOr(StatusCode status_code) : value_{status_code} {
+    assert(IsBad(this->status_code()));
+  }
 
   StatusCodeOr(T value) : value_{std::move(value)} {}
 

@@ -34,16 +34,16 @@ class BoostLogAdapter : public Logger {
   static BoostLogSeverity ToBoostLogSeverity(LogSeverity severity) {
     switch (severity) {
       case LogSeverity::Normal:
-        return BoostLogSeverity::Info;
+        return BoostLogSeverity::info;
       case LogSeverity::Warning:
-        return BoostLogSeverity::Warning;
+        return BoostLogSeverity::warning;
       case LogSeverity::Error:
-        return BoostLogSeverity::Error;
+        return BoostLogSeverity::error;
       case LogSeverity::Fatal:
-        return BoostLogSeverity::Critical;
+        return BoostLogSeverity::fatal;
       default:
         assert(false);
-        return BoostLogSeverity::Info;
+        return BoostLogSeverity::info;
     }
   }
 

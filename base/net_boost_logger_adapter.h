@@ -38,16 +38,16 @@ class NetBoostLoggerAdapter final : public net::Logger {
   static BoostLogSeverity ToBoostLogSeverity(net::LogSeverity severity) {
     switch (severity) {
       case net::LogSeverity::Normal:
-        return BoostLogSeverity::Info;
+        return BoostLogSeverity::info;
       case net::LogSeverity::Warning:
-        return BoostLogSeverity::Warning;
+        return BoostLogSeverity::warning;
       case net::LogSeverity::Error:
-        return BoostLogSeverity::Error;
+        return BoostLogSeverity::error;
       case net::LogSeverity::Fatal:
-        return BoostLogSeverity::Critical;
+        return BoostLogSeverity::fatal;
       default:
         assert(false);
-        return BoostLogSeverity::Info;
+        return BoostLogSeverity::info;
     }
   }
 
