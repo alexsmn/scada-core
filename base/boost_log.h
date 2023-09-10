@@ -4,6 +4,7 @@
 #include <boost/log/sources/logger.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
+#include <optional>
 
 using BoostLogSeverity = boost::log::trivial::severity_level;
 
@@ -27,3 +28,6 @@ using BoostLogger =
   (logger).add_attribute((name), boost::log::attributes::make_constant(value))
 
 #define LOG_NAME(name) boost::log::keywords::channel = (name)
+
+std::optional<BoostLogSeverity> ParseLogSeverity(std::string_view str);
+std::string_view ToStringView(BoostLogSeverity log_severity);

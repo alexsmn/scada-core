@@ -4,6 +4,35 @@
 
 #include <boost/locale/encoding_utf.hpp>
 
+namespace internal {
+
+// TODO: Extend for forward-only ranges.
+template <class L>
+inline void PrintList(const L& list, std::ostream& stream) {
+  stream << "[";
+  if (auto i = list.begin(); i != list.end()) {
+    stream << *i;
+    for (; i != list.end(); ++i) {
+      stream << ", " << *i;
+    }
+  }
+  stream << "]";
+}
+
+template <class D>
+inline void PrintDict(const D& dict, std::ostream& stream) {
+  stream << "{";
+  if (auto i = dict.begin(); i != dict.end()) {
+    stream << i->first << ": " << i->second;
+    for (; i != dict.end(); ++i) {
+      stream << ", " << i->first << ": " << i->second;
+    }
+  }
+  stream << "}";
+}
+
+}  // namespace internal
+
 template <class A, class B>
 inline std::ostream& operator<<(std::ostream& stream,
                                 const std::pair<A, B>& pair) {
@@ -12,41 +41,27 @@ inline std::ostream& operator<<(std::ostream& stream,
 
 template <class T>
 inline std::ostream& operator<<(std::ostream& stream, const std::vector<T>& v) {
-  stream << "[";
-  for (size_t i = 0; i < v.size(); ++i) {
-    stream << v[i];
-    if (i != v.size() - 1)
-      stream << ", ";
-  }
-  stream << "]";
+  internal::PrintList(v, stream);
   return stream;
 }
 
 template <class K, class V>
 inline std::ostream& operator<<(std::ostream& stream,
                                 const std::map<K, V>& map) {
-  stream << "{";
-  auto i = map.begin();
-  if (i != map.end()) {
-    stream << i->first << ": " << i->second;
-    for (; i != map.end(); ++i) {
-      stream << ", ";
-      stream << i->first << ": " << i->second;
-    }
-  }
-  stream << "}";
+  internal::PrintDict(map, stream);
+  return stream;
+}
+
+template <class K, class V>
+inline std::ostream& operator<<(std::ostream& stream,
+                                const std::unordered_map<K, V>& map) {
+  internal::PrintDict(map, stream);
   return stream;
 }
 
 template <class T>
 inline std::ostream& operator<<(std::ostream& stream, std::span<T> span) {
-  stream << "[";
-  for (size_t i = 0; i < span.size(); ++i) {
-    stream << span[i];
-    if (i != span.size() - 1)
-      stream << ", ";
-  }
-  stream << "]";
+  internal::PrintList(span, stream);
   return stream;
 }
 

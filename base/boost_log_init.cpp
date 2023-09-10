@@ -20,6 +20,13 @@ namespace {
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", BoostLogSeverity)
 
+constexpr std::pair<BoostLogSeverity, std::string_view> kLogSeverities[] = {
+    {BoostLogSeverity::debug, "Debug"},
+    {BoostLogSeverity::info, "Info"},
+    {BoostLogSeverity::warning, "Warning"},
+    {BoostLogSeverity::error, "Error"},
+    {BoostLogSeverity::fatal, "Critical"}};
+
 // GCC requires non-empty namespace for explicit specialization.
 template <class T>
 std::string EvaluateString(const T& value) {
@@ -54,24 +61,6 @@ std::string ToString(const boost::log::attribute_value& attr) {
           [](const auto& value) { return EvaluateString(value); }, result));
 
   return result;
-}
-
-std::string_view ToString(BoostLogSeverity severity) {
-  switch (severity) {
-    case BoostLogSeverity::debug:
-      return "Debug";
-    case BoostLogSeverity::info:
-      return "Info";
-    case BoostLogSeverity::warning:
-      return "Warning";
-    case BoostLogSeverity::error:
-      return "Error";
-    case BoostLogSeverity::fatal:
-      return "Critical";
-    default:
-      assert(false);
-      return "Unknown";
-  }
 }
 
 void FormatLogRecord(const boost::log::record_view& record,
@@ -117,7 +106,7 @@ void FormatLogRecord(const boost::log::record_view& record,
   if (!console)
     stream << "[" << boost::posix_time::to_simple_string(timestamp) << "] ";
 
-  stream << "[" << ToString(severity) << "] ";
+  stream << "[" << ToStringView(severity) << "] ";
 
   if (!channel.empty())
     stream << channel << ": ";
@@ -148,6 +137,20 @@ std::filesystem::path GetLogTarget(const std::filesystem::path& path) {
 
 }  // namespace
 
+std::optional<BoostLogSeverity> ParseLogSeverity(std::string_view str) {
+  auto i =
+      std::ranges::find(kLogSeverities, str, [](auto&& p) { return p.second; });
+  return i == std::end(kLogSeverities)
+             ? std::optional<BoostLogSeverity>{}
+             : std::optional<BoostLogSeverity>{i->first};
+}
+
+std::string_view ToStringView(BoostLogSeverity severity) {
+  auto i = std::ranges::find(kLogSeverities, severity,
+                             [](auto&& p) { return p.first; });
+  return i == std::end(kLogSeverities) ? "Info" : i->second;
+}
+
 void InitBoostLogging(const BoostLogParams& params) {
   static bool attributes_installed = false;
   if (!attributes_installed) {
@@ -160,7 +163,7 @@ void InitBoostLogging(const BoostLogParams& params) {
     auto sink = boost::log::add_console_log();
     boost::log::core::get()->add_sink(sink);
     sink->set_formatter(&FormatLogRecordT<true>);
-    sink->set_filter(severity >= BoostLogSeverity::info);
+    sink->set_filter(severity >= params.console_log_severity);
     console_installed = true;
   }
 
