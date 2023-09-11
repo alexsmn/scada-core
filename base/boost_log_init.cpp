@@ -3,6 +3,7 @@
 #include "base/boost_log.h"
 #include "base/format.h"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/time_formatters.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
@@ -138,8 +139,9 @@ std::filesystem::path GetLogTarget(const std::filesystem::path& path) {
 }  // namespace
 
 std::optional<BoostLogSeverity> ParseLogSeverity(std::string_view str) {
-  auto i =
-      std::ranges::find(kLogSeverities, str, [](auto&& p) { return p.second; });
+  auto i = std::ranges::find_if(
+      kLogSeverities, [str](auto&& x) { return boost::iequals(str, x); },
+      [](auto&& p) { return p.second; });
   return i == std::end(kLogSeverities)
              ? std::optional<BoostLogSeverity>{}
              : std::optional<BoostLogSeverity>{i->first};
