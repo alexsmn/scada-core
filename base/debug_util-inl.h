@@ -41,27 +41,27 @@ inline std::ostream& operator<<(std::ostream& stream,
 
 template <class T>
 inline std::ostream& operator<<(std::ostream& stream, const std::vector<T>& v) {
-  internal::PrintList(v, stream);
+  ::internal::PrintList(v, stream);
   return stream;
 }
 
 template <class K, class V>
 inline std::ostream& operator<<(std::ostream& stream,
                                 const std::map<K, V>& map) {
-  internal::PrintDict(map, stream);
+  ::internal::PrintDict(map, stream);
   return stream;
 }
 
 template <class K, class V>
 inline std::ostream& operator<<(std::ostream& stream,
                                 const std::unordered_map<K, V>& map) {
-  internal::PrintDict(map, stream);
+  ::internal::PrintDict(map, stream);
   return stream;
 }
 
 template <class T>
 inline std::ostream& operator<<(std::ostream& stream, std::span<T> span) {
-  internal::PrintList(span, stream);
+  ::internal::PrintList(span, stream);
   return stream;
 }
 

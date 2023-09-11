@@ -42,8 +42,7 @@ macro(scada_module_sources MODULE_NAME SOURCE_DIR)
   
   file(${SCADA_MODULE_GLOB} ${MODULE_NAME}_UT_SOURCES CONFIGURE_DEPENDS
     "${SOURCE_DIR}/*_unittest.*"
-    "${SOURCE_DIR}/*_mock.*"
-    "${SOURCE_DIR}/test/*.*")
+    "${SOURCE_DIR}/*_mock.*")
 
   if (WIN32)
     file(GLOB ${MODULE_NAME}_SOURCES_WIN CONFIGURE_DEPENDS "${SOURCE_DIR}/win/*.cpp" "${SOURCE_DIR}/win/*.h")
