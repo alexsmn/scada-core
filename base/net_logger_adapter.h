@@ -33,3 +33,9 @@ class NetLoggerAdapter final : public net::Logger {
  private:
   const std::shared_ptr<const ::Logger> logger_;
 };
+
+inline std::shared_ptr<net::Logger> CreateNetLoggerAdapter(
+    std::shared_ptr<const ::Logger> logger) {
+  return logger ? std::make_shared<NetLoggerAdapter>(std::move(logger))
+                : nullptr;
+}

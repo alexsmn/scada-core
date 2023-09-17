@@ -4,8 +4,8 @@
 
 namespace scada {
 
-struct awaiter {
-  explicit awaiter(const scada::node& node)
+struct data_value_awaiter {
+  explicit data_value_awaiter(const scada::node& node)
       : monitored_item_{node.subscribe_value(
             std::bind_front(&state::handle_data_change, state_))} {}
 

@@ -25,6 +25,7 @@ struct HistoryReadRawDetails {
 };
 
 struct HistoryReadEventsDetails {
+  // Defines the root source node.
   NodeId node_id;
   base::Time from;
   base::Time to;
