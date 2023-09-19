@@ -20,6 +20,7 @@ enum EventSeverity : unsigned {
 };
 
 // TODO: Make 64-bit.
+// TODO: Comment if ack ID allows zeroes.
 using EventAcknowledgeId = scada::UInt32;
 
 class Event {
