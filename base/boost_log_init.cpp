@@ -22,11 +22,9 @@ namespace {
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", BoostLogSeverity)
 
 constexpr std::pair<BoostLogSeverity, std::string_view> kLogSeverities[] = {
-    {BoostLogSeverity::debug, "Debug"},
-    {BoostLogSeverity::info, "Info"},
-    {BoostLogSeverity::warning, "Warning"},
-    {BoostLogSeverity::error, "Error"},
-    {BoostLogSeverity::fatal, "Critical"}};
+    {BoostLogSeverity::trace, "Trace"}, {BoostLogSeverity::debug, "Debug"},
+    {BoostLogSeverity::info, "Info"},   {BoostLogSeverity::warning, "Warning"},
+    {BoostLogSeverity::error, "Error"}, {BoostLogSeverity::fatal, "Critical"}};
 
 // GCC requires non-empty namespace for explicit specialization.
 template <class T>

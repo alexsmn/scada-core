@@ -11,6 +11,8 @@ using BoostLogSeverity = boost::log::trivial::severity_level;
 using BoostLogger =
     boost::log::sources::severity_channel_logger_mt<BoostLogSeverity>;
 
+#define LOG_TRACE(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::trace)
+// Debug level is only logged in debug builds.
 #define LOG_DEBUG(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::debug)
 #define LOG_INFO(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::info)
 #define LOG_WARNING(logger) BOOST_LOG_SEV(logger, ::BoostLogSeverity::warning)

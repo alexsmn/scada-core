@@ -91,6 +91,8 @@ struct SemanticChangeEvent {
 struct EventFilter {
   enum EventType { ACKED = 1 << 0, UNACKED = 1 << 1 };
 
+  static const unsigned ALL_TYPES = 0;
+
   EventFilter& set_of_type(std::vector<NodeId> of_type) {
     this->of_type = std::move(of_type);
     return *this;
@@ -113,8 +115,8 @@ struct EventFilter {
 
   auto operator<=>(const EventFilter&) const = default;
 
-  // Bitmask of `EventType`. Zero means any type for both current events and
-  // history.
+  // A bit mask of `EventType`. Zero means no filter, for both real-time and
+  // historical events.
   unsigned types = 0;
 
   std::vector<NodeId> of_type;
