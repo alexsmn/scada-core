@@ -1,16 +1,16 @@
 #pragma once
 
 #include "scada/history_service.h"
-#include "scada/promise.h"
+#include "scada/status_promise.h"
 
 namespace scada {
 
 // Returns either good `HistoryReadRawResult.status_code` or rejected status
 // promise.
-inline promise<HistoryReadRawResult> HistoryReadRawChunk(
+inline status_promise<HistoryReadRawResult> HistoryReadRawChunk(
     HistoryService& history_service,
     const HistoryReadRawDetails& details) {
-  promise<HistoryReadRawResult> promise;
+  status_promise<HistoryReadRawResult> promise;
   history_service.HistoryReadRaw(
       details, [promise](HistoryReadRawResult&& result) mutable {
         if (result.status)
@@ -62,13 +62,13 @@ inline promise<std::vector<scada::DataValue>> HistoryReadRaw(
   return std::make_shared<State>(history_service, details)->Start();
 }
 
-inline promise<std::vector<Event>> HistoryReadEvents(
+inline status_promise<std::vector<Event>> HistoryReadEvents(
     HistoryService& history_service,
     const NodeId& node_id,
     DateTime from,
     DateTime to,
     const EventFilter& event_filter = {}) {
-  promise<std::vector<Event>> promise;
+  status_promise<std::vector<Event>> promise;
   history_service.HistoryReadEvents(
       node_id, from, to, event_filter,
       [promise](Status status, std::vector<Event> events) mutable {

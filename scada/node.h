@@ -3,7 +3,7 @@
 #include "scada/history_service.h"
 #include "scada/monitored_item.h"
 #include "scada/monitored_item_service.h"
-#include "scada/promise.h"
+#include "scada/status_promise.h"
 #include "scada/view_service.h"
 
 namespace scada {

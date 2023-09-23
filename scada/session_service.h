@@ -3,7 +3,7 @@
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
 #include "scada/privileges.h"
-#include "scada/promise.h"
+#include "scada/status_promise.h"
 
 #include <boost/signals2/connection.hpp>
 #include <functional>

@@ -7,12 +7,13 @@
 
 namespace scada {
 
-template <class T = void>
-using promise = promise_hpp::promise<T>;
+// A promise that can only use `std::status_exception` on reject.
+template <class T>
+using status_promise = promise_hpp::promise<T>;
 
-class StatusException : public std::exception {
+class status_exception : public std::exception {
  public:
-  explicit StatusException(Status status) : status_{std::move(status)} {}
+  explicit status_exception(Status status) : status_{std::move(status)} {}
 
   const Status& status() const { return status_; }
 
@@ -27,7 +28,7 @@ class StatusException : public std::exception {
 inline Status GetExceptionStatus(const std::exception_ptr& e) {
   try {
     std::rethrow_exception(e);
-  } catch (const StatusException& e) {
+  } catch (const status_exception& e) {
     return e.status();
   } catch (...) {
     return StatusCode::Bad;
@@ -40,8 +41,8 @@ inline Status GetExceptionStatus(const std::exception_ptr& e) {
 // WARNING: The current implementation requires a copyable callback since it has
 // to be copied both to `.then` and to `.except` handlers.
 template <class Callback>
-inline promise<> BindStatusCallback(promise<Status> promise,
-                                    const Callback& callback) {
+inline status_promise<void> BindStatusCallback(status_promise<Status> promise,
+                                               const Callback& callback) {
   // Explicit `callback` copy is required to make it mutable. Mutability is
   // needed e.g. when capturing promises.
   return promise
@@ -58,8 +59,8 @@ inline promise<> BindStatusCallback(promise<Status> promise,
 // WARNING: The current implementation requires a copyable callback since it has
 // to be copied both to `.then` and to `.except` handlers.
 template <class Callback>
-inline promise<> BindStatusCallback(promise<> promise,
-                                    const Callback& callback) {
+inline status_promise<void> BindStatusCallback(status_promise<void> promise,
+                                               const Callback& callback) {
   // Explicit `callback` copy is required to make it mutable. Mutability is
   // needed e.g. when capturing promises.
   return promise
@@ -74,35 +75,36 @@ inline auto MakeResolvedStatusPromise(T&& value) {
   return make_resolved_promise(std::forward<T>(value));
 }
 
-inline promise<> MakeRejectedStatusPromise(Status status) {
-  return make_rejected_promise<>(StatusException{std::move(status)});
+inline status_promise<void> MakeRejectedStatusPromise(Status status) {
+  return make_rejected_promise<>(status_exception{std::move(status)});
 }
 
 template <class T>
-inline promise<T> MakeRejectedStatusPromise(Status status) {
-  return make_rejected_promise<T>(StatusException{std::move(status)});
+inline status_promise<T> MakeRejectedStatusPromise(Status status) {
+  return make_rejected_promise<T>(status_exception{std::move(status)});
 }
 
-inline promise<> MakeCompletedStatusPromise(Status status) {
+inline status_promise<void> MakeCompletedStatusPromise(Status status) {
   return status ? make_resolved_promise()
-                : make_rejected_promise<>(StatusException{std::move(status)});
+                : make_rejected_promise<>(status_exception{std::move(status)});
 }
 
-inline promise<> ToStatusPromise(promise<Status> promise) {
+inline status_promise<void> ToStatusPromise(promise<Status> promise) {
   return promise.then([](const Status& status) {
     return status.bad() ? MakeRejectedStatusPromise(status)
                         : make_resolved_promise();
   });
 }
 
-inline promise<> ToStatusPromise(promise<StatusCode> promise) {
+inline status_promise<void> ToStatusPromise(promise<StatusCode> promise) {
   return promise.then([](StatusCode status_code) {
     return IsBad(status_code) ? MakeRejectedStatusPromise(status_code)
                               : make_resolved_promise();
   });
 }
 
-inline promise<StatusCode> ToExplicitStatusCodePromise(promise<> promise) {
+inline promise<StatusCode> ToExplicitStatusCodePromise(
+    status_promise<void> promise) {
   return promise.then(
       [] { return StatusCode::Good; },
       [](const std::exception_ptr& e) { return GetExceptionStatus(e).code(); });
@@ -110,13 +112,13 @@ inline promise<StatusCode> ToExplicitStatusCodePromise(promise<> promise) {
 
 // A callback to pass to a promise:
 // Example:
-//   promise<> promise;
+//   status_promise<> promise;
 //   session_proxy_.Connect("port=3000", u"username", u"password",
 //     MakeStatusPromiseCallback(promise));
-inline auto MakeStatusPromiseCallback(promise<> promise) {
+inline auto MakeStatusPromiseCallback(status_promise<void> promise) {
   return [promise = std::move(promise)](Status status) mutable {
     if (status.bad()) {
-      promise.reject(StatusException{std::move(status)});
+      promise.reject(status_exception{std::move(status)});
     } else {
       promise.resolve();
     }
@@ -124,17 +126,20 @@ inline auto MakeStatusPromiseCallback(promise<> promise) {
 }
 
 template <class T>
-inline void RejectStatusPromise(promise<T>& promise, scada::Status bad_status) {
+inline void RejectStatusPromise(status_promise<T>& promise,
+                                scada::Status bad_status) {
   assert(!bad_status);
-  promise.reject(scada::StatusException{std::move(bad_status)});
+  promise.reject(scada::status_exception{std::move(bad_status)});
 }
 
-inline void RejectStatusPromise(promise<>& promise, scada::Status bad_status) {
+inline void RejectStatusPromise(status_promise<void>& promise,
+                                scada::Status bad_status) {
   assert(!bad_status);
-  promise.reject(scada::StatusException{std::move(bad_status)});
+  promise.reject(scada::status_exception{std::move(bad_status)});
 }
 
-inline void ResolveStatusPromise(promise<>& promise, scada::Status status) {
+inline void ResolveStatusPromise(status_promise<void>& promise,
+                                 scada::Status status) {
   if (status) {
     promise.resolve();
   } else {
@@ -143,7 +148,7 @@ inline void ResolveStatusPromise(promise<>& promise, scada::Status status) {
 }
 
 template <class T>
-inline auto MakeStatusPromiseCallback(promise<T> promise) {
+inline auto MakeStatusPromiseCallback(status_promise<T> promise) {
   return [promise = std::move(promise)](T&& result) mutable {
     if (IsBad(result.status_code)) {
       RejectStatusPromise(promise, result.status_code);
