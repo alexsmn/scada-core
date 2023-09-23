@@ -1,14 +1,11 @@
 #pragma once
 
-#include "base/time/time.h"
-
-#include <ostream>
-#include <string>
+#include "base/interval.h"
+#include "scada/date_time.h"
 
 namespace scada {
 
-using DateTime = base::Time;
-using Duration = base::TimeDelta;
+using DateTimeRange = Interval<DateTime>;
 
 }  // namespace scada
 
