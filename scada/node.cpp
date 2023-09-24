@@ -7,20 +7,6 @@
 
 namespace scada {
 
-// monitored_item::state
-
-monitored_item::state::state(std::shared_ptr<MonitoredItem> monitored_item)
-    : monitored_item_{std::move(monitored_item)} {}
-
-void monitored_item::state::handle_status(scada::StatusCode status_code) {
-  // Release monitored item on bad status code.
-  if (scada::IsBad(status_code)) {
-    // It's safe to reset monitored item outside of the mutex, as it's only
-    // updated once.
-    monitored_item_.reset();
-  }
-}
-
 // node
 
 promise<DataValue> node::read(AttributeId attribute_id) const {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "scada/history_service.h"
-#include "scada/monitored_item.h"
 #include "scada/monitored_item_service.h"
 #include "scada/status_promise.h"
 #include "scada/view_service.h"
@@ -9,70 +8,8 @@
 namespace scada {
 
 class client;
+class monitored_item;
 class node;
-
-class monitored_item {
- public:
-  monitored_item() = default;
-
-  bool subscribed() const { return state_ != nullptr; }
-
-  void unsubscribe() { state_ = nullptr; }
-
- private:
-  template <class Handler>
-  void subscribe(std::shared_ptr<MonitoredItem> monitored_item,
-                 Handler&& data_change_handler) {
-    assert(!state_);
-    assert(monitored_item);
-
-    state_ = std::make_shared<state>(monitored_item);
-
-    monitored_item->Subscribe(
-        [weak_state = std::weak_ptr{state_},
-         data_change_handler = std::forward<Handler>(data_change_handler)](
-            const DataValue& data_value) mutable {
-          if (auto state = weak_state.lock()) {
-            state->handle_status(data_value.status_code);
-            data_change_handler(data_value);
-          }
-        });
-  }
-
-  // Handler = void(const Status& status, const std::any& event)
-  template <class Handler>
-  void subscribe_events(std::shared_ptr<MonitoredItem> monitored_item,
-                        Handler&& event_handler) {
-    assert(!state_);
-    assert(monitored_item);
-
-    state_ = std::make_shared<state>(monitored_item);
-
-    monitored_item->Subscribe(
-        [weak_state = std::weak_ptr{state_},
-         event_handler = std::forward<Handler>(event_handler)](
-            const Status& status, const std::any& event) mutable {
-          if (auto state = weak_state.lock()) {
-            state->handle_status(status.code());
-            event_handler(status, event);
-          }
-        });
-  }
-
-  struct state {
-    explicit state(std::shared_ptr<MonitoredItem> monitored_item);
-
-    void handle_status(scada::StatusCode status_code);
-
-    // Monitored item is reset only once when bad status code is received. It's
-    // safe to keep it outside of mutex.
-    std::shared_ptr<MonitoredItem> monitored_item_;
-  };
-
-  std::shared_ptr<state> state_;
-
-  friend class node;
-};
 
 class node {
  public:
@@ -157,53 +94,6 @@ class node {
   promise<std::vector<Event>> read_event_history(
       const event_history_details& details = {}) const;
 
-  template <class Handler>
-  monitored_item subscribe(AttributeId attribute_id,
-                           Handler&& data_change_handler) const;
-
-  template <class Handler>
-  monitored_item subscribe_value(Handler&& data_change_handler) const {
-    return subscribe(AttributeId::Value,
-                     std::forward<Handler>(data_change_handler));
-  }
-
-  // Handler = void(const Status& status, const std::any& event)
-  //
-  // Example:
-  //
-  // auto monitored_item = client.node(node_id).subscribe_events(
-  //     /*filter*/ {},
-  //     [](const scada::Status& status, const std::any& event) {
-  //       if (const auto* system_event = std::any_cast<scada::Event>(&event)) {
-  //         std::cout << ToString(*system_event);
-  //       }
-  //     });
-  template <class Handler>
-  monitored_item subscribe_events(const EventFilter& filter,
-                                  Handler&& event_handler) const;
-
-  // Handler = void(const Status& status, const Event& system_event)
-  //
-  // Example:
-  //
-  // auto monitored_item = client.node(node_id).subscribe_events(
-  //     /*filter*/ {},
-  //     [](const scada::Status& status, const scada::Event& system_event) {
-  //         std::cout << ToString(system_event);
-  //     });
-  template <class Handler>
-  monitored_item subscribe_system_events(const EventFilter& filter,
-                                         Handler&& system_event_handler) const {
-    return subscribe_events(
-        filter,
-        [system_event_handler = std::forward<Handler>(system_event_handler)](
-            const Status& status, const std::any& event) mutable {
-          if (const auto* system_event = std::any_cast<scada::Event>(&event)) {
-            system_event_handler(status, *system_event);
-          }
-        });
-  }
-
  private:
   node(services services, NodeId node_id, ServiceContextPtr context)
       : services_{std::move(services)},
@@ -217,56 +107,7 @@ class node {
   const ServiceContextPtr context_ = ServiceContext::default_instance();
 
   friend class client;
+  friend class monitored_item;
 };
-
-template <class Handler>
-inline monitored_item node::subscribe(AttributeId attribute_id,
-                                      Handler&& data_change_handler) const {
-  assert(attribute_id != AttributeId::EventNotifier);
-
-  if (!services_.monitored_item_service) {
-    data_change_handler(MakeReadError(StatusCode::Bad_Disconnected));
-    return {};
-  }
-
-  auto item = services_.monitored_item_service->CreateMonitoredItem(
-      {node_id_, attribute_id}, {});
-
-  if (!item) {
-    data_change_handler(MakeReadError(StatusCode::Bad_WrongNodeId));
-    return {};
-  }
-
-  monitored_item result;
-  result.subscribe(std::move(item), std::forward<Handler>(data_change_handler));
-
-  return result;
-}
-
-template <class Handler>
-inline monitored_item node::subscribe_events(const EventFilter& filter,
-                                             Handler&& event_handler) const {
-  if (!services_.monitored_item_service) {
-    // Must specify `std::any` to avoid ambiguity when using `BindExecutor`.
-    event_handler(StatusCode::Bad_Disconnected, std::any{});
-    return {};
-  }
-
-  auto item = services_.monitored_item_service->CreateMonitoredItem(
-      {.node_id = node_id_, .attribute_id = AttributeId::EventNotifier},
-      {.filter = filter});
-
-  if (!item) {
-    // Must specify `std::any` to avoid ambiguity when using `BindExecutor`.
-    event_handler(StatusCode::Bad_WrongNodeId, std::any{});
-    return {};
-  }
-
-  monitored_item result;
-  result.subscribe_events(std::move(item),
-                          std::forward<Handler>(event_handler));
-
-  return result;
-}
 
 }  // namespace scada

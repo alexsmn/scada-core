@@ -5,13 +5,10 @@
 namespace scada {
 
 struct event_awaiter {
-  explicit event_awaiter(const scada::node& node)
-      : monitored_item_{node.subscribe_system_events(
-            /*filter*/ {},
-            std::bind_front(&state::handle_system_event, state_))} {
-    if (!monitored_item_.subscribed()) {
-      state_->set_subscription_failed();
-    }
+  explicit event_awaiter(const scada::node& node) {
+    monitored_item_.subscribe_system_events(
+        node,
+        /*params*/ {}, std::bind_front(&state::handle_system_event, state_));
   }
 
   template <class T>
@@ -25,21 +22,8 @@ struct event_awaiter {
 
  private:
   struct state {
-    void set_subscription_failed() {
-      subscription_failed_ = true;
-
-      for (auto& [m, p] : matchers_) {
-        scada::RejectStatusPromise(p, scada::StatusCode::Bad_Disconnected);
-      }
-    }
-
     template <class T>
     promise<scada::Event> when(T&& matcher) {
-      if (subscription_failed_) {
-        return scada::MakeRejectedStatusPromise<scada::Event>(
-            scada::StatusCode::Bad_Disconnected);
-      }
-
       return matchers_
           .emplace_back(std::forward<T>(matcher), promise<scada::Event>{})
           .second;
@@ -58,14 +42,12 @@ struct event_awaiter {
       matchers_.erase(matching.begin(), matching.end());
     }
 
-    bool subscription_failed_ = false;
-
     using matcher = std::function<bool(const scada::Event& event)>;
     std::vector<std::pair<matcher, promise<scada::Event>>> matchers_;
   };
 
   const std::shared_ptr<state> state_ = std::make_shared<state>();
-  const scada::monitored_item monitored_item_;
+  scada::monitored_item monitored_item_;
 };
 
 }  // namespace scada

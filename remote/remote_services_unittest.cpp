@@ -7,6 +7,7 @@
 #include "remote/remote_session_manager.h"
 #include "scada/authentication_mock.h"
 #include "scada/client.h"
+#include "scada/client_monitored_item.h"
 #include "scada/data_services_factory.h"
 #include "scada/monitored_item_service_mock.h"
 
@@ -101,8 +102,9 @@ TEST_F(RemoteServicesTest, Test) {
         promise.resolve(data_value);
       }));
 
-  auto monitored_item = client_.node(node_id).subscribe_value(
-      data_change_handler.AsStdFunction());
+  scada::monitored_item monitored_item;
+  monitored_item.subscribe_value(client_.node(node_id), /*params*/ {},
+                                 data_change_handler.AsStdFunction());
 
   asio_env_.Wait(promise);
 }

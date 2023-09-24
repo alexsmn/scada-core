@@ -32,18 +32,6 @@ class client {
 
   promise<scada::node> add_node(const AddNodesItem& item);
 
-  template <class Handler>
-  monitored_item subscribe_events(const scada::EventFilter& filter,
-                                  Handler&& handler) const {
-    return server_node().subscribe_events(filter,
-                                          std::forward<Handler>(handler));
-  }
-
-  template <class Handler>
-  monitored_item subscribe_events(Handler&& handler) const {
-    return server_node().subscribe_events(std::forward<Handler>(handler));
-  }
-
   promise<> acknowledge_events(std::vector<EventAcknowledgeId> event_ids,
                                DateTime acknowledge_time) const;
 

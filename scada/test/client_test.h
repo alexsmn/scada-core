@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scada/client.h"
+#include "scada/client_monitored_item.h"
 #include "scada/monitored_item_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -40,9 +40,10 @@ inline std::unique_ptr<ClientTestMonitoredItem> ClientTest::SubscribeValue(
   EXPECT_CALL(monitored_value->data_change_handler,
               Call(Field(&DataValue::status_code, StatusCode::Good)));
 
-  monitored_value->monitored_item =
-      node.subscribe_value([&monitored_value = *monitored_value](
-                               const scada::DataValue& data_value) {
+  monitored_value->monitored_item.subscribe_value(
+      node, /*params*/ {},
+      [&monitored_value =
+           *monitored_value](const scada::DataValue& data_value) {
         monitored_value.status_code = data_value.status_code;
         monitored_value.data_value = data_value;
         monitored_value.data_change_handler.Call(data_value);
@@ -64,9 +65,10 @@ inline std::unique_ptr<ClientTestMonitoredItem> ClientTest::SubscribeEvents(
   EXPECT_CALL(monitored_value->event_handler,
               Call(Status{StatusCode::Good}, _));
 
-  monitored_value->monitored_item = node.subscribe_events(
-      filter, [&monitored_value = *monitored_value](const scada::Status& status,
-                                                    const std::any& event) {
+  monitored_value->monitored_item.subscribe_events(
+      node, {.filter = filter},
+      [&monitored_value = *monitored_value](const scada::Status& status,
+                                            const std::any& event) {
         monitored_value.status_code = status.code();
         monitored_value.event_handler.Call(status, event);
       });

@@ -1,5 +1,6 @@
 #include "scada/client.h"
 
+#include "scada/client_monitored_item.h"
 #include "scada/monitored_item_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -26,8 +27,9 @@ TEST_F(ClientTest, MonitoredItemSubscriptionFail) {
   EXPECT_CALL(data_change_handler, Call(Field(&DataValue::status_code,
                                               StatusCode::Bad_WrongNodeId)));
 
-  auto monitored_item =
-      client.node(node_id).subscribe_value(data_change_handler.AsStdFunction());
+  scada::monitored_item monitored_item;
+  monitored_item.subscribe_value(client.node(node_id), /*params*/ {},
+                                 data_change_handler.AsStdFunction());
 }
 
 TEST_F(ClientTest, MonitoredItemSubscriptionClose) {
@@ -41,8 +43,10 @@ TEST_F(ClientTest, MonitoredItemSubscriptionClose) {
   EXPECT_CALL(data_change_handler, Call(Field(&DataValue::status_code,
                                               StatusCode::Bad_Disconnected)));
 
-  auto monitored_item =
-      client.node(node_id).subscribe_value(data_change_handler.AsStdFunction());
+  scada::monitored_item monitored_item;
+  monitored_item.subscribe_value(client.node(node_id),
+                                 /*params*/ {},
+                                 data_change_handler.AsStdFunction());
 
   std::get<DataChangeHandler>(std::move(server_item_handler))(
       MakeReadError(StatusCode::Bad_Disconnected));
