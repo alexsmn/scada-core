@@ -5,8 +5,6 @@
 #include "base/net_boost_logger_adapter.h"
 #include "base/promise_executor.h"
 #include "base/strings/utf_string_conversions.h"
-#include "scada/status.h"
-#include "scada/promise.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "net/transport_factory.h"
@@ -18,6 +16,7 @@
 #include "remote/remote_connection.h"
 #include "remote/remote_listener.h"
 #include "remote/session_stub.h"
+#include "scada/status_promise.h"
 
 #include "base/debug_util-inl.h"
 
