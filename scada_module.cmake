@@ -1,4 +1,4 @@
-macro(scada_module_unittests MODULE_NAME)
+function(scada_module_unittests MODULE_NAME)
   cmake_parse_arguments(ARG "" "" "SOURCES" ${ARGN})
 
   # TODO: Only add UTs when there are cpp files (not stubs or mocks).
@@ -7,7 +7,7 @@ macro(scada_module_unittests MODULE_NAME)
 
     if (NOT TARGET ${MODULE_NAME}_unittests)
       add_executable(${MODULE_NAME}_unittests)
-      target_link_libraries(${MODULE_NAME}_unittests PUBLIC ${MODULE_NAME} base_unittest)
+      target_link_libraries(${MODULE_NAME}_unittests PRIVATE ${MODULE_NAME} base_unittest)
       set_property(TARGET ${MODULE_NAME}_unittests PROPERTY FOLDER ${scada_folder})
       include(GoogleTest)
       # Temporary workaround of "no cmake script provided" error. Also,
@@ -18,11 +18,11 @@ macro(scada_module_unittests MODULE_NAME)
       # gtest_add_tests(TARGET ${MODULE_NAME}_unittests)
     endif()
 
-    target_sources(${MODULE_NAME}_unittests PUBLIC ${ARG_SOURCES})
+    target_sources(${MODULE_NAME}_unittests PRIVATE ${ARG_SOURCES})
   endif()
-endmacro()
+endfunction()
 
-macro(scada_module_sources MODULE_NAME SOURCE_DIR)
+function(scada_module_sources_helper MODULE_NAME SCOPE SOURCE_DIR)
   set(OPTIONS "RECURSE")
   set(ONE_VALUE_ARGS "")
   set(MULTI_VALUE_ARGS "")
@@ -34,7 +34,7 @@ macro(scada_module_sources MODULE_NAME SOURCE_DIR)
     set(SCADA_MODULE_GLOB "GLOB")
   endif()
 
-  message("scada_module_sources(${MODULE_NAME} ${SOURCE_DIR} ${SCADA_MODULE_GLOB})")
+  message("scada_module_sources(${MODULE_NAME} ${SCOPE} ${SOURCE_DIR} ${SCADA_MODULE_GLOB})")
 
   file(${SCADA_MODULE_GLOB} ${MODULE_NAME}_SOURCES CONFIGURE_DEPENDS
     "${SOURCE_DIR}/*.cpp"
@@ -63,16 +63,37 @@ macro(scada_module_sources MODULE_NAME SOURCE_DIR)
     list(REMOVE_ITEM ${MODULE_NAME}_SOURCES ${${MODULE_NAME}_UT_SOURCES})
   endif()
 
-  target_sources(${MODULE_NAME} PRIVATE ${${MODULE_NAME}_SOURCES})
+  target_sources(${MODULE_NAME} ${SCOPE} ${${MODULE_NAME}_SOURCES})
 
   scada_module_unittests(${MODULE_NAME} SOURCES ${${MODULE_NAME}_UT_SOURCES})
-endmacro()
+endfunction()
 
-macro(scada_module MODULE_NAME)
-  message("scada_module(${MODULE_NAME})")
+function(scada_module_sources MODULE_NAME)
+  cmake_parse_arguments(ARG "" "" "PRIVATE;PUBLIC;INTERFACE" ${ARGN})
+  foreach(SOURCE_DIR ${ARG_PRIVATE})
+	scada_module_sources_helper(${MODULE_NAME} PRIVATE ${SOURCE_DIR} ${ARG_UNPARSED_ARGUMENTS})
+  endforeach()
+  foreach(SOURCE_DIR ${ARG_PUBLIC})
+	scada_module_sources_helper(${MODULE_NAME} PUBLIC ${SOURCE_DIR} ${ARG_UNPARSED_ARGUMENTS})
+  endforeach()
+  foreach(SOURCE_DIR ${ARG_INTERFACE})
+	scada_module_sources_helper(${MODULE_NAME} INTERFACE ${SOURCE_DIR} ${ARG_UNPARSED_ARGUMENTS})
+  endforeach()
+endfunction()
 
-  add_library(${MODULE_NAME})
+function(scada_module MODULE_NAME)
+  cmake_parse_arguments(ARG "INTERFACE" "" "" ${ARGN})
+
+  set(SOURCE_SCOPE "PRIVATE")
+  if (ARG_INTERFACE)
+    set(LIBRARY_TYPE "INTERFACE")
+    set(SOURCE_SCOPE "INTERFACE")
+  endif()
+
+  message("scada_module(${MODULE_NAME} ${LIBRARY_TYPE} ${ARG_UNPARSED_ARGUMENTS})")
+
+  add_library(${MODULE_NAME} ${LIBRARY_TYPE})
   set_property(TARGET ${MODULE_NAME} PROPERTY FOLDER ${scada_folder})
 
-  scada_module_sources(${MODULE_NAME} ${CMAKE_CURRENT_SOURCE_DIR} ${ARGN})
-endmacro()
+  scada_module_sources(${MODULE_NAME} ${ARG_UNPARSED_ARGUMENTS} ${SOURCE_SCOPE} ${CMAKE_CURRENT_SOURCE_DIR})
+endfunction()
