@@ -4,7 +4,6 @@
 #include "base/nested_logger.h"
 #include "base/observer_list.h"
 #include "base/promise.h"
-#include "common/node_state.h"
 #include "scada/authentication.h"
 #include "scada/service.h"
 #include "scada/view_service.h"

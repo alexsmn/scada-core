@@ -2,7 +2,6 @@
 
 #include "base/boost_log.h"
 #include "base/executor_timer.h"
-#include "net/transport.h"
 #include "remote/message_sender.h"
 #include "scada/attribute_service.h"
 #include "scada/logging.h"
@@ -13,10 +12,12 @@
 #include "scada/status.h"
 
 #include <boost/signals2/signal.hpp>
-#include <map>
+#include <net/base/net_errors.h>
+#include <unordered_map>
 
 namespace net {
 class Logger;
+class Transport;
 class TransportFactory;
 }  // namespace net
 
@@ -140,7 +141,7 @@ class SessionProxy : private SessionProxyContext,
   unsigned user_rights_ = 0;
   std::string session_token_;
 
-  std::map<int /*request_id*/, ResponseHandler> requests_;
+  std::unordered_map<int /*request_id*/, ResponseHandler> requests_;
 
   boost::signals2::signal<void(bool connected, const scada::Status& status)>
       session_state_changed_signal_;

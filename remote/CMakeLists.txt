@@ -35,15 +35,15 @@ target_include_directories(scada_core_remote PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 find_package(Net REQUIRED)
 
-target_link_libraries(scada_core_remote PUBLIC
+target_link_libraries(scada_core_remote PRIVATE
   protobuf::libprotobuf
   Net::net
-  scada_core
-  address_space
 )
 
+target_link_libraries(scada_core_remote PUBLIC scada_core)
+
 if (gRPC_FOUND)
-  target_link_libraries(scada_core_remote PUBLIC gRPC::grpc++)
+  target_link_libraries(scada_core_remote PRIVATE gRPC::grpc++)
 endif()
 
 # Required by gRPC.
@@ -70,9 +70,11 @@ endif()
 
 add_executable(scada_core_remote_unittests ${UT_SOURCES})
 add_test(NAME scada_core_remote_unittests COMMAND scada_core_remote_unittests)
-target_link_libraries(scada_core_remote_unittests PUBLIC
-  scada_core_remote
+target_link_libraries(scada_core_remote_unittests PRIVATE
   base_unittest
+  scada_core_remote
+  scada_model
+  Net::net
 )
 
 set_property(TARGET scada_core_remote_unittests PROPERTY FOLDER ${scada_folder})

@@ -25,11 +25,26 @@ class Qualifier {
     SIMULATED = 0x0100,
     SPORADIC = 0x0400,
 
-    BAD = 0x0001,            // Data with invalid flag
-    FAILED = 0x0040,         // Can't connect object on server
-    MISCONFIGURED = 0x0200,  // Configuration is incorrect or device is disabled
-    OFFLINE = 0x0020,        // Device connection is broken
-    STALE = 0x0080,          // Device value is too old
+    // Data with invalid flag. Represents bad quality in OPC
+    // classic.
+    BAD = 0x0001,
+
+    // Can't connect object on server. A final error, the monitored item was
+    // deleted. No more updates can follow after this status.
+    FAILED = 0x0040,
+
+    // Configuration is incorrect or device is
+    // disabled. Represents bad quality in OPC classic.
+    MISCONFIGURED = 0x0200,
+
+    // Device connection is broken. Represents bad quality in
+    // OPC classic.
+    OFFLINE = 0x0020,
+
+    // Device value is too old. Represents uncertain quality in
+    // OPC classic.
+    STALE = 0x0080,
+
     GENERAL_BAD = BAD | FAILED | MISCONFIGURED | OFFLINE | STALE,
 
     // Flags only for current time.
