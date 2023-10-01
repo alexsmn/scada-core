@@ -72,7 +72,9 @@ bool IsNestedNodeId(const scada::NodeId& node_id,
   }
 
   nested_name = string_id.substr(p + 1);
-  return true;
+
+  // Check missing nested name, e.g. `123!`.
+  return !nested_name.empty();
 }
 
 bool GetRootNestedNodeId(const scada::NodeId& node_id,
@@ -101,6 +103,10 @@ scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
                                scada::NamespaceIndex namespace_index) {
   assert(!parent_id.is_null());
   assert(!nested_name.empty());
+
+  if (parent_id.is_null() || nested_name.empty()) {
+    return {};
+  }
 
   auto parent_namespace =
       namespace_index != parent_id.namespace_index()

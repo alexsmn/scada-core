@@ -1,9 +1,12 @@
-#include <gmock/gmock.h>
+#include "model/node_id_util.h"
 
-#include "scada/node_id.h"
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
-#include "model/node_id_util.h"
+#include "scada/node_id.h"
+
+#include <gmock/gmock.h>
+
+using namespace testing;
 
 TEST(NodeIdUtil, NodeIdFromScadaString) {
   EXPECT_EQ(scada::NodeId(53, NamespaceIndexes::TS),
@@ -61,6 +64,14 @@ TEST(NodeIdUtil, IsNestedNodeId) {
   ASSERT_TRUE(IsNestedNodeId(kNodeId, parent_id, nested_name));
   EXPECT_EQ(scada::NodeId(123, NamespaceIndexes::MODBUS_DEVICES), parent_id);
   EXPECT_EQ("Online", std::string{nested_name});
+}
+
+TEST(NodeIdUtil, IsNestedNodeId_Empty) {
+  scada::NodeId kNodeId{"123!", NamespaceIndexes::MODBUS_DEVICES};
+  scada::NodeId parent_id;
+  std::string_view nested_name;
+  ASSERT_FALSE(IsNestedNodeId(kNodeId, parent_id, nested_name));
+  EXPECT_THAT(nested_name, IsEmpty());
 }
 
 TEST(NodeIdUtil, IsNestedNodeId_LevelTwo) {
