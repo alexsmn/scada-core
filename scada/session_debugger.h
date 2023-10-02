@@ -8,11 +8,14 @@ namespace scada {
 class SessionDebugger {
  public:
   using RequestId = int;
+
+  // All notifications must be in `Succeeded` phase, so they are not preserved
+  // among running requests.
   enum class RequestPhase { Running, Succeeded, Failed };
 
   struct RequestEvent {
-    RequestId id;
-    RequestPhase phase;
+    RequestId id = 0;
+    RequestPhase phase = RequestPhase::Running;
     std::string_view title;
     std::string_view body;
     std::string_view response_body;

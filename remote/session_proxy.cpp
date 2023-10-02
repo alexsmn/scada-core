@@ -220,12 +220,18 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
           {.id = static_cast<scada::SessionDebugger::RequestId>(
                response.request_id()),
            .phase = scada::SessionDebugger::RequestPhase::Succeeded,
+           .title = response.GetTypeName(),
            .response_body = response.DebugString()});
       handler(response);
     }
   }
 
   for (auto& notification : message.notifications()) {
+    debugger_->NotifyRequestEvent(
+        {.phase = scada::SessionDebugger::RequestPhase::Succeeded,
+         .title = notification.GetTypeName(),
+         .body = notification.DebugString()});
+
     auto status_code =
         notification.has_status_code()
             ? ConvertTo<scada::StatusCode>(notification.status_code())
@@ -275,7 +281,7 @@ void SessionProxy::Request(protocol::Request& request,
   debugger_->NotifyRequestEvent(
       {.id = request_id,
        .phase = scada::SessionDebugger::RequestPhase::Running,
-       .title = request.ShortDebugString().substr(0, 30),
+       .title = request.GetTypeName(),
        .body = request.DebugString()});
 
   request.set_request_id(request_id);
