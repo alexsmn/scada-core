@@ -11,7 +11,12 @@ struct BoostLogParams {
   size_t max_files = 1000;
   bool console = false;
   // Minimal severity level for console logging.
-  BoostLogSeverity console_log_severity = BoostLogSeverity::info;
+  BoostLogSeverity console_log_severity =
+#if defined(NDEBUG)
+      BoostLogSeverity::debug;
+#else
+      BoostLogSeverity::info;
+#endif
 };
 
 void InitBoostLogging(const BoostLogParams& params);
