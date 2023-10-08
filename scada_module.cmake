@@ -1,24 +1,34 @@
 function(scada_module_unittests MODULE_NAME)
-  cmake_parse_arguments(ARG "" "" "SOURCES" ${ARGN})
-
   # TODO: Only add UTs when there are cpp files (not stubs or mocks).
-  if (ARG_SOURCES)
-    message("scada_module_unittests(${MODULE_NAME})")
-
-    if (NOT TARGET ${MODULE_NAME}_unittests)
-      add_executable(${MODULE_NAME}_unittests)
-      target_link_libraries(${MODULE_NAME}_unittests PRIVATE ${MODULE_NAME} base_unittest)
-      set_property(TARGET ${MODULE_NAME}_unittests PROPERTY FOLDER ${scada_folder})
-      include(GoogleTest)
-      # Temporary workaround of "no cmake script provided" error. Also,
-      # `gtest_discover_tests` is not correctly handled by CTest. So you cannot test Linux builds.
-      # In opposite, `gtest_add_tests` triggers generation on each UT modification.
-      gtest_discover_tests(${MODULE_NAME}_unittests)
-      # gtest_discover_tests(${MODULE_NAME}_unittests DISCOVERY_MODE PRE_TEST)
-      # gtest_add_tests(TARGET ${MODULE_NAME}_unittests)
+  if (ARGN)
+    get_target_property(MODULE_TYPE ${MODULE_NAME} TYPE)
+    if (MODULE_TYPE STREQUAL "INTERFACE_LIBRARY")
+      set(SCOPE "INTERFACE")
+    else()
+      set(SCOPE "PRIVATE")
     endif()
 
-    target_sources(${MODULE_NAME}_unittests PRIVATE ${ARG_SOURCES})
+    message("scada_module_unittests(${MODULE_NAME} ${SCOPE})")
+
+    if (NOT TARGET ${MODULE_NAME}_unittests)
+      if (MODULE_TYPE STREQUAL "INTERFACE_LIBRARY")
+		add_library(${MODULE_NAME}_unittests INTERFACE)
+	  else()
+        add_executable(${MODULE_NAME}_unittests)
+
+        include(GoogleTest)
+        # Temporary workaround of "no cmake script provided" error. Also,
+        # `gtest_discover_tests` is not correctly handled by CTest. So you cannot test Linux builds.
+        # In opposite, `gtest_add_tests` triggers generation on each UT modification.
+        gtest_discover_tests(${MODULE_NAME}_unittests)
+        # gtest_discover_tests(${MODULE_NAME}_unittests DISCOVERY_MODE PRE_TEST)
+        # gtest_add_tests(TARGET ${MODULE_NAME}_unittests)
+      endif()
+
+      target_link_libraries(${MODULE_NAME}_unittests ${SCOPE} ${MODULE_NAME} base_unittest)
+    endif()
+
+    target_sources(${MODULE_NAME}_unittests ${SCOPE} ${ARGN})
   endif()
 endfunction()
 
@@ -65,9 +75,14 @@ function(scada_module_sources_helper MODULE_NAME SCOPE SOURCE_DIR)
 
   target_sources(${MODULE_NAME} ${SCOPE} ${${MODULE_NAME}_SOURCES})
 
-  scada_module_unittests(${MODULE_NAME} SOURCES ${${MODULE_NAME}_UT_SOURCES})
+  if (${MODULE_NAME}_UT_SOURCES)
+    scada_module_unittests(${MODULE_NAME} ${${MODULE_NAME}_UT_SOURCES})
+  endif()
 endfunction()
 
+#[[
+    scada_module_sources(my_module PRIVATE "qt")
+]]
 function(scada_module_sources MODULE_NAME)
   cmake_parse_arguments(ARG "" "" "PRIVATE;PUBLIC;INTERFACE" ${ARGN})
   foreach(SOURCE_DIR ${ARG_PRIVATE})
@@ -81,6 +96,10 @@ function(scada_module_sources MODULE_NAME)
   endforeach()
 endfunction()
 
+#[[
+    scada_module(my_module)
+    scada_module(my_module INTERFACE)
+]]
 function(scada_module MODULE_NAME)
   cmake_parse_arguments(ARG "INTERFACE" "" "" ${ARGN})
 
@@ -93,7 +112,6 @@ function(scada_module MODULE_NAME)
   message("scada_module(${MODULE_NAME} ${LIBRARY_TYPE} ${ARG_UNPARSED_ARGUMENTS})")
 
   add_library(${MODULE_NAME} ${LIBRARY_TYPE})
-  set_property(TARGET ${MODULE_NAME} PROPERTY FOLDER ${scada_folder})
 
   scada_module_sources(${MODULE_NAME} ${ARG_UNPARSED_ARGUMENTS} ${SOURCE_SCOPE} ${CMAKE_CURRENT_SOURCE_DIR})
 endfunction()
