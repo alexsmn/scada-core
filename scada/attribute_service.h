@@ -60,6 +60,7 @@ inline DataValue MakeReadError(StatusCode status_code) {
   return DataValue{status_code, timestamp};
 }
 
+// callback: void(DataValue&&)
 template <class Callback>
 inline void Read(AttributeService& attribute_service,
                  const std::shared_ptr<const scada::ServiceContext>& context,

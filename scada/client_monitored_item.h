@@ -128,8 +128,11 @@ inline void monitored_item::subscribe(const node& node,
        data_change_handler = std::forward<Handler>(data_change_handler)](
           const DataValue& data_value) mutable {
         if (auto state = weak_state.lock()) {
-          state->handle_status(data_value.status_code);
           data_change_handler(data_value);
+          // When `data_value.status_code` is bad, this call may destroy the
+          // calling monitored item with the lambda and captured
+          // `data_change_handler`.
+          state->handle_status(data_value.status_code);
         }
       });
 }

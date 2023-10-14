@@ -29,6 +29,12 @@ class NodeId {
 
   constexpr bool is_null() const noexcept;
   constexpr bool is_namespace_only() const noexcept;
+  constexpr bool is_numeric() const noexcept {
+    return type() == NodeIdType::Numeric;
+  }
+  constexpr bool is_string() const noexcept {
+    return type() == NodeIdType::String;
+  }
 
   constexpr NamespaceIndex namespace_index() const noexcept {
     return namespace_index_;
