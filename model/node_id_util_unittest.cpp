@@ -85,6 +85,18 @@ TEST(NodeIdUtil, IsNestedNodeId_LevelTwo) {
   EXPECT_EQ("ENIP2BAYCTRL", std::string{nested_name});
 }
 
+TEST(NodeIdUtil, IsNestedNodeId_StringIdParent) {
+  scada::NodeId kNodeId{"Test.OpcServerProgId\\BranchB.LeafBA!Output",
+                        NamespaceIndexes::OPC};
+  scada::NodeId parent_id;
+  std::string_view nested_name;
+  ASSERT_TRUE(IsNestedNodeId(kNodeId, parent_id, nested_name));
+  EXPECT_EQ(scada::NodeId("Test.OpcServerProgId\\BranchB.LeafBA",
+                          NamespaceIndexes::OPC),
+            parent_id);
+  EXPECT_EQ("Output", std::string{nested_name});
+}
+
 TEST(NodeIdUtil, MakeNestedNodeId) {
   const scada::NodeId kParentId{456, NamespaceIndexes::MODBUS_DEVICES};
   EXPECT_EQ(scada::NodeId("456!Active", NamespaceIndexes::MODBUS_DEVICES),
