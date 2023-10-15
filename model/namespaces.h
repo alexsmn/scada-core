@@ -24,7 +24,7 @@ constexpr scada::NamespaceIndex IEC61850_DEVICE = 17;
 constexpr scada::NamespaceIndex IEC61850_RCB = 18;
 constexpr scada::NamespaceIndex IEC61850_TRANSMISSION_ITEM = 27;
 // constexpr scada::NamespaceIndex IEC61850_SERVER = 22;
-// constexpr scada::NamespaceIndex OPC_SERVER = 25;
+constexpr scada::NamespaceIndex OPC = 25;
 constexpr scada::NamespaceIndex MODBUS_TRANSMISSION_ITEM = 26;
 
 constexpr scada::NamespaceIndex SCADA = 7;
