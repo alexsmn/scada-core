@@ -66,11 +66,6 @@ inline std::ostream& operator<<(std::ostream& stream, std::span<T> span) {
 }
 
 template <class T>
-inline std::ostream& operator<<(std::ostream& stream, base::span<T> span) {
-  return stream << std::span<T>{span.data(), span.size()};
-}
-
-template <class T>
 inline std::ostream& operator<<(std::ostream& stream,
                                 const std::optional<T>& v) {
   if (v.has_value())

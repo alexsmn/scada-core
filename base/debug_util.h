@@ -1,6 +1,9 @@
 #pragma once
 
-#include <base/containers/span.h>
+// WARNING: For `std::wstring` and `std::u16string` logging include
+// `base/logging.h` directly. It's intentionally omitted to avoid heavy
+// includes.
+
 #include <map>
 #include <optional>
 #include <ostream>
@@ -25,9 +28,6 @@ std::ostream& operator<<(std::ostream& stream,
 
 template <class T>
 std::ostream& operator<<(std::ostream& stream, std::span<T> span);
-
-template <class T>
-std::ostream& operator<<(std::ostream& stream, base::span<T> span);
 
 template <class T>
 std::ostream& operator<<(std::ostream& stream, const std::optional<T>& v);
