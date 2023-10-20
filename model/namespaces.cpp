@@ -36,7 +36,7 @@ constexpr std::string_view kNamespaceNames[] = {
     "IEC61850_SERVER",
     "ALIAS",
     "FILESYSTEM_FILE",
-    "OPC_SERVER",
+    "OPC",
     "MODBUS_TRANSMIT",
     "IEC61850_TRANSMIT",
     "VIDICON",
