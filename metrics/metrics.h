@@ -30,11 +30,11 @@ class Metrics {
       return;
     }
 
-    Set(name + ".Count", aggregated_metric.count());
-    Set(name + ".Min", aggregated_metric.min());
-    Set(name + ".Max", aggregated_metric.max());
-    Set(name + ".Mean", aggregated_metric.mean());
-    Set(name + ".Total", aggregated_metric.total());
+    Set(name + ".count", aggregated_metric.count());
+    Set(name + ".min", aggregated_metric.min());
+    Set(name + ".max", aggregated_metric.max());
+    Set(name + ".mean", aggregated_metric.mean());
+    Set(name + ".total", aggregated_metric.total());
 
     aggregated_metric.reset();
   }
