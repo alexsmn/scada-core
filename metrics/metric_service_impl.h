@@ -2,6 +2,7 @@
 
 #include "base/executor_timer.h"
 #include "metrics/metric_service.h"
+#include "metrics/metrics.h"
 
 #include <algorithm>
 #include <vector>
@@ -20,8 +21,8 @@ class MetricServiceImpl : public MetricService {
         std::bind_front(&MetricServiceImpl::ReportMetrics, this));
   }
 
-  virtual void RegisterProvider(const Provider& provider,
-                                const CancelationRef& cancelation) override {
+  virtual void RegisterProvider(const CancelationRef& cancelation,
+                                const Provider& provider) override {
     providers_.emplace_back(cancelation, provider);
   }
 

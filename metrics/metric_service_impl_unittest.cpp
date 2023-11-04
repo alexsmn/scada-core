@@ -9,8 +9,8 @@ using namespace testing;
 class MetricServiceImplTest : public Test {
  public:
   MetricServiceImplTest() {
-    metric_service_impl_.RegisterProvider(metric_provider_.AsStdFunction(),
-                                          cancelation_.ref());
+    metric_service_impl_.RegisterProvider(cancelation_.ref(),
+                                          metric_provider_.AsStdFunction());
   }
 
  protected:
@@ -19,10 +19,9 @@ class MetricServiceImplTest : public Test {
 
   Cancelation cancelation_;
 
-  StrictMock<MockFunction<void(MetricService::Metrics&)>> metric_provider_;
+  StrictMock<MockFunction<void(Metrics&)>> metric_provider_;
 
-  StrictMock<MockFunction<void(const MetricService::Metrics&)>>
-      metric_reporter_;
+  StrictMock<MockFunction<void(const Metrics&)>> metric_reporter_;
 
   MetricServiceImpl metric_service_impl_{executor_, kReportPeriod,
                                          metric_reporter_.AsStdFunction()};
@@ -36,24 +35,19 @@ class MetricServiceImplTest : public Test {
 TEST_F(MetricServiceImplTest, DoesntTriggerMetricReporterByDefault) {}
 
 TEST_F(MetricServiceImplTest, WhenNoMetricsWereCollected_ReportsEmptyMetrics) {
-  EXPECT_CALL(metric_provider_, Call(_))
-      .WillOnce(Invoke([](MetricService::Metrics& metrics) {}));
-
-  EXPECT_CALL(metric_reporter_,
-              Call(Property(&MetricService::Metrics::empty, IsTrue())));
+  EXPECT_CALL(metric_provider_, Call(_));
+  EXPECT_CALL(metric_reporter_, Call(Property(&Metrics::empty, IsTrue())));
 
   executor_->Advance(kReportPeriod);
 }
 
 TEST_F(MetricServiceImplTest, WhenMetricWasCollected_ReportsIt) {
-  EXPECT_CALL(metric_provider_, Call(_))
-      .WillOnce(Invoke([](MetricService::Metrics& metrics) {
-        metrics.Set(kMetricName, kMetricValue);
-      }));
-
+  EXPECT_CALL(metric_provider_, Call(_)).WillOnce(Invoke([](Metrics& metrics) {
+    metrics.Set(kMetricName, kMetricValue);
+  }));
   EXPECT_CALL(
       metric_reporter_,
-      Call(Property(&MetricService::Metrics::ToUnorderedMap,
+      Call(Property(&Metrics::ToUnorderedMap,
                     UnorderedElementsAre(Pair(kMetricName, kMetricValue)))));
 
   executor_->Advance(kReportPeriod);
@@ -61,9 +55,7 @@ TEST_F(MetricServiceImplTest, WhenMetricWasCollected_ReportsIt) {
 
 TEST_F(MetricServiceImplTest, WhenProviderIsCanceled_DoesntInvokeIt) {
   cancelation_.Cancel();
-
-  EXPECT_CALL(metric_reporter_,
-              Call(Property(&MetricService::Metrics::empty, IsTrue())));
+  EXPECT_CALL(metric_reporter_, Call(Property(&Metrics::empty, IsTrue())));
 
   executor_->Advance(kReportPeriod);
 }

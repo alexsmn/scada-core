@@ -93,12 +93,25 @@ class Cancelation;
 
 class CancelationRef {
  public:
-  explicit CancelationRef(const Cancelation& cancelation);
+  explicit CancelationRef(const Cancelation& cancelation) noexcept;
 
-  bool canceled() const { return cancelation_.expired(); }
+  bool canceled() const { return weak_ptr_.expired(); }
+
+  template <class T>
+  static CancelationRef FromWeakPtr(const std::weak_ptr<T>& weak_ptr) {
+    return CancelationRef{weak_ptr};
+  }
+
+  template <class T>
+  static CancelationRef FromSharedPtr(const std::shared_ptr<T>& shared_ptr) {
+    return CancelationRef{std::weak_ptr<T>{shared_ptr}};
+  }
 
  private:
-  std::weak_ptr<bool> cancelation_;
+  explicit CancelationRef(const std::weak_ptr<void>& weak_ptr) noexcept
+      : weak_ptr_{weak_ptr} {}
+
+  std::weak_ptr<void> weak_ptr_;
 };
 
 class Cancelation {
@@ -107,17 +120,18 @@ class Cancelation {
 
   template <class T>
   auto Bind(T&& task) const {
-    return BindCancelation(std::weak_ptr<bool>{cancelation_},
+    return BindCancelation(std::weak_ptr<void>{shared_ptr_},
                            std::forward<T>(task));
   }
 
-  void Cancel() { cancelation_ = std::make_shared<bool>(); }
+  void Cancel() { shared_ptr_ = std::make_shared<bool>(); }
 
  private:
-  std::shared_ptr<bool> cancelation_ = std::make_shared<bool>();
+  std::shared_ptr<void> shared_ptr_ = std::make_shared<bool>();
 
   friend class CancelationRef;
 };
 
-inline CancelationRef::CancelationRef(const Cancelation& cancelation)
-    : cancelation_{std::weak_ptr<bool>{cancelation.cancelation_}} {}
+// Requires `Cancelation` to be defined.
+inline CancelationRef::CancelationRef(const Cancelation& cancelation) noexcept
+    : weak_ptr_{cancelation.shared_ptr_} {}

@@ -1,32 +1,35 @@
 #pragma once
 
-template <class Value>
+#include <cassert>
+#include <string>
+
+template <class T>
 class AggregatedMetric {
  public:
   std::size_t count() const { return count_; }
   bool empty() const { return count_ == 0; }
 
-  Value min() const {
+  T min() const {
     assert(!empty());
     return min_;
   }
 
-  Value max() const {
+  T max() const {
     assert(!empty());
     return max_;
   }
 
-  Value mean() const {
+  T mean() const {
     assert(!empty());
     return sum_ / count_;
   }
 
-  Value total() const {
+  T total() const {
     assert(!empty());
     return sum_;
   }
 
-  AggregatedMetric& operator()(Value value) {
+  AggregatedMetric& operator()(T value) {
     if (count_ == 0) {
       min_ = max_ = sum_ = value;
       count_ = 1;
@@ -46,8 +49,8 @@ class AggregatedMetric {
   void reset() { count_ = 0; }
 
  private:
-  Value max_;
-  Value min_;
-  Value sum_;
   std::size_t count_ = 0;
+  T max_;
+  T min_;
+  T sum_;
 };
