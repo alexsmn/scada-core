@@ -29,3 +29,13 @@ TEST(BindPromiseExecutorWithResult, VoidReturnTypeWithCancelation) {
 
   binding().get();
 }
+
+TEST(BindPromiseExecutorWithResult, IntReturnTypeWithCancelation) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto cancelation = std::make_shared<int>();
+  std::function<promise<int>()> binding =
+      BindPromiseExecutorWithResult(executor, std::weak_ptr{cancelation},
+                                    [] { return make_resolved_promise(42); });
+
+  EXPECT_EQ(binding().get(), 42);
+}

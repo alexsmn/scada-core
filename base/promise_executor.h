@@ -133,6 +133,20 @@ inline auto BindPromiseExecutorWithResult(
       location, std::move(executor), std::forward<T>(task));
 }
 
+namespace internal {
+
+template <class T>
+struct CancelationPromiseFunc {
+  template <class... Args>
+  auto operator()(Args&&... args) const {
+    using ReturnPromiseType = std::invoke_result_t<T, Args...>;
+    return make_rejected_promise<ReturnPromiseType::value_type>(
+        std::exception{});
+  }
+};
+
+}  // namespace internal
+
 template <class T, class C>
 inline auto BindPromiseExecutorWithResult(
     std::shared_ptr<Executor> executor,
@@ -142,6 +156,6 @@ inline auto BindPromiseExecutorWithResult(
   return BindPromiseExecutorWithResult(
       std::move(executor),
       BindCancelationFunc(std::move(cancelation), std::forward<T>(task),
-                          [] { return make_resolved_promise(); }),
+                          internal::CancelationPromiseFunc<T>{}),
       location);
 }

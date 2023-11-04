@@ -30,7 +30,7 @@ struct CancelationFuncWrapper {
     if (auto ref = cancelation_.lock())
       return func_(std::forward<Args>(args)...);
     else
-      return canceled_func_();
+      return canceled_func_(std::forward<Args>(args)...);
   }
 
   template <class... Args>
@@ -38,7 +38,7 @@ struct CancelationFuncWrapper {
     if (auto ref = cancelation_.lock())
       return func_(std::forward<Args>(args)...);
     else
-      return canceled_func_();
+      return canceled_func_(std::forward<Args>(args)...);
   }
 
   const std::weak_ptr<C> cancelation_;
