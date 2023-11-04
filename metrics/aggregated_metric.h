@@ -1,7 +1,7 @@
 #pragma once
 
 template <class Value>
-class Metric {
+class AggregatedMetric {
  public:
   std::size_t count() const { return count_; }
   bool empty() const { return count_ == 0; }
@@ -26,7 +26,7 @@ class Metric {
     return sum_;
   }
 
-  Metric& operator()(Value value) {
+  AggregatedMetric& operator()(Value value) {
     if (count_ == 0) {
       min_ = max_ = sum_ = value;
       count_ = 1;

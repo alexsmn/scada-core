@@ -18,7 +18,8 @@ class MetricService {
       values_.insert_or_assign(name, value);
     }
 
-    // visitor: (const std::string& name, const MetricValue& value)
+    // visitor: (const std::string& name,
+    //           const MetricService::MetricValue& value)
     template <class T>
     void Visit(T&& visitor) const {
       for (const auto& [name, value] : values_) {

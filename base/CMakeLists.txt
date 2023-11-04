@@ -4,6 +4,7 @@ find_package(PromiseHpp REQUIRED COMPONENTS system date_time json log log_setup 
 add_subdirectory(test)
 
 scada_module(scada_base)
+scada_module_sources(scada_base PRIVATE "metrics")
 
 if(NOT WIN32)
   target_link_libraries(scada_base PUBLIC stdc++fs pthread)
