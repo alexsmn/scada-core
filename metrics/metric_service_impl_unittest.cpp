@@ -10,6 +10,7 @@ class MetricServiceImplTest : public Test {
  public:
   MetricServiceImplTest() {
     metric_service_impl_.RegisterProvider(metric_provider_.AsStdFunction());
+    metric_service_impl_.RegisterSink(metric_sink_.AsStdFunction());
   }
 
  protected:
@@ -23,14 +24,11 @@ class MetricServiceImplTest : public Test {
       std::make_shared<TestExecutor>();
 
   StrictMock<MockFunction<promise<Metrics>()>> metric_provider_;
+  StrictMock<MockFunction<void(const Metrics&)>> metric_sink_;
 
-  StrictMock<MockFunction<void(const Metrics&)>> metric_reporter_;
-
-  MetricServiceImpl metric_service_impl_{executor_, kReportPeriod,
-                                         metric_reporter_.AsStdFunction()};
+  MetricServiceImpl metric_service_impl_{executor_, kReportPeriod};
 
   inline static const std::chrono::milliseconds kReportPeriod{1000};
-
   inline static const char kMetricName[] = "Metric";
   inline static const int kMetricValue = 42;
 };
@@ -40,7 +38,7 @@ TEST_F(MetricServiceImplTest, DoesntTriggerMetricReporterByDefault) {}
 TEST_F(MetricServiceImplTest, WhenNoMetricsWereCollected_ReportsEmptyMetrics) {
   EXPECT_CALL(metric_provider_, Call())
       .WillOnce(Return(make_resolved_promise(Metrics{})));
-  EXPECT_CALL(metric_reporter_, Call(Property(&Metrics::empty, IsTrue())));
+  EXPECT_CALL(metric_sink_, Call(Property(&Metrics::empty, IsTrue())));
 
   executor_->Advance(kReportPeriod);
 }
@@ -49,7 +47,7 @@ TEST_F(MetricServiceImplTest, WhenMetricWasCollected_ReportsIt) {
   EXPECT_CALL(metric_provider_, Call())
       .WillOnce(Return(make_resolved_promise(MakeMetrics())));
   EXPECT_CALL(
-      metric_reporter_,
+      metric_sink_,
       Call(Property(&Metrics::ToUnorderedMap,
                     UnorderedElementsAre(Pair(kMetricName, kMetricValue)))));
 

@@ -11,11 +11,11 @@ class MetricServiceImpl::ProviderReporter
   ProviderReporter(std::shared_ptr<Executor> executor,
                    Duration report_metrics_period,
                    const Provider& provider,
-                   const MetricReporter& metric_reporter)
+                   const Sink& sink)
       : executor_{std::move(executor)},
         report_metrics_period_{report_metrics_period},
         provider_{provider},
-        metric_reporter_{metric_reporter} {}
+        sink_{sink} {}
 
   void Schedule() {
     executor_->PostDelayedTask(
@@ -26,7 +26,7 @@ class MetricServiceImpl::ProviderReporter
  private:
   void Report() {
     provider_().then([this, ref = shared_from_this()](const Metrics& metrics) {
-      metric_reporter_(metrics);
+      sink_(metrics);
       Schedule();
     });
   }
@@ -34,20 +34,28 @@ class MetricServiceImpl::ProviderReporter
   const std::shared_ptr<Executor> executor_;
   const Duration report_metrics_period_;
   const Provider provider_;
-  const MetricReporter metric_reporter_;
+  const Sink sink_;
 };
 
 // MetricServiceImpl
 
 MetricServiceImpl::MetricServiceImpl(std::shared_ptr<Executor> executor,
-                                     Duration report_metrics_period,
-                                     const MetricReporter& metric_reporter)
+                                     Duration report_metrics_period)
     : executor_{std::move(executor)},
-      report_metrics_period_{report_metrics_period},
-      metric_reporter_{metric_reporter} {}
+      report_metrics_period_{report_metrics_period} {
+  fork_sink_ = [this](const Metrics& metrics) {
+    for (const auto& sink : sinks_) {
+      sink(metrics);
+    }
+  };
+}
 
 void MetricServiceImpl::RegisterProvider(const Provider& provider) {
   std::make_shared<ProviderReporter>(executor_, report_metrics_period_,
-                                     provider, metric_reporter_)
+                                     provider, fork_sink_)
       ->Schedule();
+}
+
+void MetricServiceImpl::RegisterSink(const Sink& sink) {
+  Dispatch(*executor_, [this, sink] { sinks_.emplace_back(sink); });
 }

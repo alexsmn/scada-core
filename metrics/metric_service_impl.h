@@ -7,19 +7,19 @@ class Executor;
 
 class MetricServiceImpl final : public MetricService {
  public:
-  using MetricReporter = std::function<void(const Metrics& metrics)>;
-
   MetricServiceImpl(std::shared_ptr<Executor> executor,
-                    Duration report_metrics_period,
-                    const MetricReporter& metric_reporter);
+                    Duration report_metrics_period);
 
   // MetricService
   virtual void RegisterProvider(const Provider& provider) override;
+  virtual void RegisterSink(const Sink& sink) override;
 
  private:
   class ProviderReporter;
 
   const std::shared_ptr<Executor> executor_;
   const Duration report_metrics_period_;
-  const MetricReporter metric_reporter_;
+
+  std::vector<Sink> sinks_;
+  Sink fork_sink_;
 };

@@ -16,5 +16,10 @@ class MetricService {
   // `BindPromiseExecutorWithResult()`.
   using Provider = std::function<promise<Metrics>()>;
 
+  // To unsubscribe, return a canceled promise.
   virtual void RegisterProvider(const Provider& provider) = 0;
+
+  using Sink = std::function<void(const Metrics& metrics)>;
+
+  virtual void RegisterSink(const Sink& sink) = 0;
 };
