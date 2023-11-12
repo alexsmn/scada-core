@@ -25,10 +25,12 @@ class MetricServiceImpl::ProviderReporter
 
  private:
   void Report() {
-    provider_().then([this, ref = shared_from_this()](const Metrics& metrics) {
-      sink_(metrics);
-      Schedule();
-    });
+    // Cycling stops when the promise is rejected.
+    provider_().then(BindExecutor(
+        executor_, [this, ref = shared_from_this()](const Metrics& metrics) {
+          sink_(metrics);
+          Schedule();
+        }));
   }
 
   const std::shared_ptr<Executor> executor_;
@@ -43,7 +45,7 @@ MetricServiceImpl::MetricServiceImpl(std::shared_ptr<Executor> executor,
                                      Duration report_metrics_period)
     : executor_{std::move(executor)},
       report_metrics_period_{report_metrics_period} {
-  fork_sink_ = [this](const Metrics& metrics) {
+  broadcast_sink_ = [this](const Metrics& metrics) {
     for (const auto& sink : sinks_) {
       sink(metrics);
     }
@@ -52,7 +54,7 @@ MetricServiceImpl::MetricServiceImpl(std::shared_ptr<Executor> executor,
 
 void MetricServiceImpl::RegisterProvider(const Provider& provider) {
   std::make_shared<ProviderReporter>(executor_, report_metrics_period_,
-                                     provider, fork_sink_)
+                                     provider, broadcast_sink_)
       ->Schedule();
 }
 

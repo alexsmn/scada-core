@@ -5,6 +5,7 @@
 
 class Executor;
 
+// Thread-safe.
 class MetricServiceImpl final : public MetricService {
  public:
   MetricServiceImpl(std::shared_ptr<Executor> executor,
@@ -21,5 +22,5 @@ class MetricServiceImpl final : public MetricService {
   const Duration report_metrics_period_;
 
   std::vector<Sink> sinks_;
-  Sink fork_sink_;
+  Sink broadcast_sink_;
 };
