@@ -19,10 +19,10 @@ enum EventSeverity : unsigned {
   kSeverityMax = 100       // max
 };
 
-// TODO: Make 64-bit.
 // TODO: Comment if ack ID allows zeroes.
-using EventAcknowledgeId = scada::UInt32;
+using EventAcknowledgeId = scada::UInt64;
 
+// TODO: Introduce an event ID and remove the ack ID.
 class Event {
  public:
   enum ChangeFlags {
@@ -49,6 +49,7 @@ class Event {
   Qualifier qualifier;
   scada::LocalizedText message;
   scada::Boolean acked = false;
+  // TODO: use optional.
   EventAcknowledgeId acknowledge_id = 0;
   DateTime acknowledged_time;
   NodeId acknowledged_user_id;
@@ -128,6 +129,7 @@ inline std::ostream& operator<<(std::ostream& stream, const Event& event) {
       .AddField("event_type_id", event.event_type_id)
       .AddField("time", event.time)
       .AddField("node_id", event.node_id)
+      .AddField("user_id", event.user_id)
       .AddField("value", event.value)
       .AddField("message", event.message)
       .AddField("acked", event.acked)
