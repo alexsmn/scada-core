@@ -51,7 +51,7 @@ promise<scada::node> client::add_node(const AddNodesItem& item) {
       [*this](const scada::NodeId& node_id) { return node(node_id); });
 }
 
-promise<> client::acknowledge_events(std::vector<EventAcknowledgeId> event_ids,
+promise<> client::acknowledge_events(std::vector<EventId> event_ids,
                                      DateTime acknowledge_time) const {
   assert(!event_ids.empty());
   return server_node().call(scada::id::AcknowledgeableConditionType_Acknowledge,

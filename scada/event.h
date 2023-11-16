@@ -19,8 +19,8 @@ enum EventSeverity : unsigned {
   kSeverityMax = 100       // max
 };
 
-// TODO: Comment if ack ID allows zeroes.
-using EventAcknowledgeId = scada::UInt64;
+// Cannot be zero.
+using EventId = scada::UInt64;
 
 // TODO: Introduce an event ID and remove the ack ID.
 class Event {
@@ -40,6 +40,7 @@ class Event {
   auto operator<=>(const Event&) const = default;
 
   NodeId event_type_id = scada::id::SystemEventType;
+  EventId event_id = 0;
   DateTime time;
   scada::UInt32 change_mask = 0;
   scada::UInt32 severity = kSeverityNormal;
@@ -50,7 +51,7 @@ class Event {
   scada::LocalizedText message;
   scada::Boolean acked = false;
   // TODO: use optional.
-  EventAcknowledgeId acknowledge_id = 0;
+  EventId acknowledge_id = 0;
   DateTime acknowledged_time;
   NodeId acknowledged_user_id;
 };
@@ -127,6 +128,7 @@ struct EventFilter {
 inline std::ostream& operator<<(std::ostream& stream, const Event& event) {
   StructWriter{stream}
       .AddField("event_type_id", event.event_type_id)
+      .AddField("event_id", event.event_id)
       .AddField("time", event.time)
       .AddField("node_id", event.node_id)
       .AddField("user_id", event.user_id)

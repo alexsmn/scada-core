@@ -32,10 +32,10 @@ class client {
 
   promise<scada::node> add_node(const AddNodesItem& item);
 
-  promise<> acknowledge_events(std::vector<EventAcknowledgeId> event_ids,
+  promise<> acknowledge_events(std::vector<EventId> event_ids,
                                DateTime acknowledge_time) const;
 
-  promise<> acknowledge_event(EventAcknowledgeId event_id,
+  promise<> acknowledge_event(EventId event_id,
                               DateTime acknowledge_time) const {
     return acknowledge_events({event_id}, acknowledge_time);
   }
