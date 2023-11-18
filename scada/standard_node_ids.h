@@ -36,6 +36,8 @@ constexpr NumericId Organizes = 35;
 constexpr NumericId HasTypeDefinition = 40;
 constexpr NumericId HasSubtype = 45;
 constexpr NumericId HasModellingRule = 37;
+constexpr NumericId HasEventSource = 36;
+constexpr NumericId HasNotifier = 48;
 
 constexpr NumericId BaseObjectType = 58;
 constexpr NumericId BaseVariableType = 62;

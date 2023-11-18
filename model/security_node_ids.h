@@ -1,6 +1,7 @@
 #pragma once
 
 #include "model/namespaces.h"
+#include "scada/node_id.h"
 
 namespace security {
 
