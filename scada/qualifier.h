@@ -61,22 +61,25 @@ class Qualifier {
     qualifier_ = (qualifier_ & ~remove) | add;
   }
 
-  void set_flag(unsigned flag, bool set) {
+  Qualifier& set_flag(unsigned flag, bool set) {
     if (set)
       qualifier_ |= flag;
     else
       qualifier_ &= ~flag;
+    return *this;
   }
 
-  void set_bad(bool set) { set_flag(BAD, set); }
-  void set_manual(bool set) { set_flag(MANUAL, set); }
-  void set_backup(bool set) { set_flag(BACKUP, set); }
-  void set_online(bool set) { set_flag(OFFLINE, !set); }
-  void set_failed(bool set) { set_flag(FAILED, set); }
-  void set_stale(bool set) { set_flag(STALE, set); }
-  void set_simulated(bool set) { set_flag(SIMULATED, set); }
-  void set_misconfigured(bool set) { set_flag(MISCONFIGURED, set); }
-  void set_sporadic(bool set) { set_flag(SPORADIC, set); }
+  Qualifier& set_bad(bool set) { return set_flag(BAD, set); }
+  Qualifier& set_manual(bool set) { return set_flag(MANUAL, set); }
+  Qualifier& set_backup(bool set) { return set_flag(BACKUP, set); }
+  Qualifier& set_online(bool set) { return set_flag(OFFLINE, !set); }
+  Qualifier& set_failed(bool set) { return set_flag(FAILED, set); }
+  Qualifier& set_stale(bool set) { return set_flag(STALE, set); }
+  Qualifier& set_simulated(bool set) { return set_flag(SIMULATED, set); }
+  Qualifier& set_misconfigured(bool set) {
+    return set_flag(MISCONFIGURED, set);
+  }
+  Qualifier& set_sporadic(bool set) { return set_flag(SPORADIC, set); }
 
   void set_limit(Limit limit) {
     qualifier_ =

@@ -381,6 +381,7 @@ void Convert(const scada::Status& source, protocol::Status& target) {
 }
 
 void Convert(const protocol::Event& source, scada::Event& target) {
+  target.event_id = source.event_id();
   target.time = base::Time::FromInternalValue(source.time());
   target.severity = source.severity();
   if (source.has_source_node_id())
@@ -392,15 +393,18 @@ void Convert(const protocol::Event& source, scada::Event& target) {
   target.qualifier = scada::Qualifier(source.qualifier());
   target.message = base::UTF8ToUTF16(source.message_utf8());
   target.acked = source.acknowledged();
-  target.acknowledge_id = source.acknowledge_id();
-  if (source.acknowledge_time())
+  if (source.acknowledge_time()) {
     target.acknowledged_time =
         base::Time::FromInternalValue(source.acknowledge_time());
+  }
   if (source.has_acknowledge_user_id())
     Convert(source.acknowledge_user_id(), target.acknowledged_user_id);
 }
 
 void Convert(const scada::Event& source, protocol::Event& target) {
+  assert(source.event_id != 0);
+
+  target.set_event_id(source.event_id);
   target.set_time(source.time.ToInternalValue());
   target.set_severity(source.severity);
   if (!source.node_id.is_null())
@@ -415,13 +419,10 @@ void Convert(const scada::Event& source, protocol::Event& target) {
     target.set_message_utf8(base::UTF16ToUTF8(source.message));
   if (source.acked)
     target.set_acknowledged(true);
-  if (source.acknowledge_id)
-    target.set_acknowledge_id(source.acknowledge_id);
   if (!source.acknowledged_time.is_null())
     target.set_acknowledge_time(source.acknowledged_time.ToInternalValue());
   if (!source.acknowledged_user_id.is_null())
     Convert(source.acknowledged_user_id, *target.mutable_acknowledge_user_id());
-  target.set_acknowledge_id(source.acknowledge_id);
 }
 
 void Convert(const protocol::EventFilter& source, scada::EventFilter& target) {

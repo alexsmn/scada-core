@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package protocol;
 
+// TODO: Describe the purpose of this file.
+// TODO: Introduce core protocol version.
+
 enum AttributeId {
   NONE = 0;
   NODE_ID = 1;
@@ -114,4 +117,73 @@ message Node {
   repeated NodeReference reference = 8;
   repeated NodeProperty property = 9;
   repeated Node children = 10;
+}
+
+
+enum ConstantNodeId {
+  NULL = 0;
+  ROOT = 13;
+  TYPES = 15;
+  OBJECTS = 100;
+  DEVICES = 109;
+}
+
+enum Severity {
+  // Good value.
+  Good = 0;
+  // Value is not up-to-date.
+  Uncertain = 1;
+  // Subscription has failed.
+  Bad = 2;
+}
+
+message StatusCode {
+  Severity severity = 1;
+  uint32 sub_code = 2;
+  bool structure_changed = 3;
+  bool semantics_changed = 4;
+}
+
+message Status {
+  StatusCode code = 1;
+}
+
+message Qualifier {
+  enum SubCode {
+    GOOD_NORMAL = 0;
+    GOOD_BACKUP = 1;
+    GOOD_MANUAL = 2;
+    GOOD_SIMULATED = 3;
+    UNCERTAIN_DEVICE = 10;
+    UNCERTAIN_OFFLINE = 11;
+    UNCERTAIN_MISCONFIGURED = 12;
+    UNCERTAIN_STALE = 13;
+    BAD_FAILED = 20;
+  }
+
+  enum Limit {
+    NORMAL = 0;
+    LO = 1;
+    HI = 2;
+    LOLO = 3;
+    HIHI = 4;
+  }
+
+  Severity severity = 1;
+  SubCode sub_code = 2;
+  Limit limit = 3;
+}
+
+message Event {
+  uint64 event_id = 1;
+  uint64 time = 2;
+  uint32 severity = 3;
+  NodeId source_node_id = 4;
+  NodeId user_node_id = 5;
+  Variant value = 6;
+  uint32 qualifier = 7;
+  bytes message_utf8 = 8;
+  bool acknowledged = 9;
+  uint64 acknowledge_time = 11;
+  NodeId acknowledge_user_id = 12;
 }

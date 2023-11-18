@@ -39,20 +39,26 @@ class Event {
 
   auto operator<=>(const Event&) const = default;
 
+  // TODO: Remove. This event class always uses `scada::id::SystemEventType`.
   NodeId event_type_id = scada::id::SystemEventType;
+  // `event_id` cannot be zero.
   EventId event_id = 0;
+  // `time` cannot be null.
   DateTime time;
   scada::UInt32 change_mask = 0;
   scada::UInt32 severity = kSeverityNormal;
+  // `node_id` cannot be null.
   NodeId node_id;
+  // `user_id` can be null.
   NodeId user_id;
+  // `value` can be null.
   Variant value;
   Qualifier qualifier;
   scada::LocalizedText message;
-  scada::Boolean acked = false;
-  // TODO: use optional.
-  EventId acknowledge_id = 0;
+  bool acked = false;
+  // `acknowledged_time` must be non-null if `acked` is true.
   DateTime acknowledged_time;
+  // `acknowledged_user_id` can be null if `acked` is true.
   NodeId acknowledged_user_id;
 };
 
@@ -135,7 +141,6 @@ inline std::ostream& operator<<(std::ostream& stream, const Event& event) {
       .AddField("value", event.value)
       .AddField("message", event.message)
       .AddField("acked", event.acked)
-      .AddField("acknowledge_id", event.acknowledge_id)
       .AddField("acknowledged_user_id", event.acknowledged_user_id)
       .AddField("acknowledged_time", event.acknowledged_time);
   return stream;
