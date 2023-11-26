@@ -6,15 +6,21 @@
 namespace scada {
 
 struct event_awaiter {
-  explicit event_awaiter(const scada::node& node) {
+  explicit event_awaiter(const scada::node& node,
+                         const scada::MonitoringParameters& params = {}) {
     monitored_item_.subscribe_system_events(
-        node,
-        /*params*/ {}, std::bind_front(&state::handle_system_event, state_));
+        node, params, std::bind_front(&state::handle_system_event, state_));
   }
 
   template <class T>
   status_promise<scada::Event> when(T&& matcher) {
     return state_->when(std::forward<T>(matcher));
+  }
+
+  status_promise<scada::Event> when_node(const scada::NodeId& node_id) {
+    return state_->when([node_id](const scada::Event& event) {
+      return event.node_id == node_id;
+    });
   }
 
   status_promise<scada::Event> when_any() {
