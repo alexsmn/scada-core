@@ -135,3 +135,8 @@ class Cancelation {
 // Requires `Cancelation` to be defined.
 inline CancelationRef::CancelationRef(const Cancelation& cancelation) noexcept
     : weak_ptr_{cancelation.shared_ptr_} {}
+
+template <class T>
+inline auto BindCancelation(const Cancelation& cancelation, T&& task) {
+  return cancelation.Bind(std::forward<T>(task));
+}
