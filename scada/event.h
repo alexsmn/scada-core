@@ -22,6 +22,8 @@ enum EventSeverity : unsigned {
 // Cannot be zero.
 using EventId = scada::UInt64;
 
+// Corresponds to the `BaseEventType`.
+// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4.2
 // TODO: Introduce an event ID and remove the ack ID.
 class Event {
  public:
@@ -37,23 +39,30 @@ class Event {
     EVT_BACKUP = 0x0100,  // locked
   };
 
+  [[nodiscard]] bool is_valid() const;
+
   auto operator<=>(const Event&) const = default;
 
-  // TODO: Remove. This event class always uses `scada::id::SystemEventType`.
   NodeId event_type_id = scada::id::SystemEventType;
-  // `event_id` cannot be zero.
+  // `event_id` is zero until it's processed by server. And never can become
+  // zero after that.
   EventId event_id = 0;
   // `time` cannot be null.
   DateTime time;
+  // `receive_time` is assigned by server. It's null until the event is
+  // processed by server.
+  DateTime receive_time;
   scada::UInt32 change_mask = 0;
   scada::UInt32 severity = kSeverityNormal;
-  // `node_id` cannot be null.
+  // `node_id` can be null. TODO: Describe when it's null.
+  // TODO: Rename to `source_node_id`.
   NodeId node_id;
   // `user_id` can be null.
   NodeId user_id;
   // `value` can be null.
   Variant value;
   Qualifier qualifier;
+  // TODO: Require non-empty message.
   scada::LocalizedText message;
   bool acked = false;
   // `acknowledged_time` must be non-null if `acked` is true.
@@ -131,11 +140,30 @@ struct EventFilter {
   std::vector<NodeId> child_of;
 };
 
+inline bool Event::is_valid() const {
+  if (event_id == 0 || time.is_null() || receive_time.is_null()) {
+    return false;
+  }
+
+  if (acked) {
+    if (acknowledged_time.is_null()) {
+      return false;
+    }
+  } else {
+    if (!acknowledged_time.is_null() || !acknowledged_user_id.is_null()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 inline std::ostream& operator<<(std::ostream& stream, const Event& event) {
   StructWriter{stream}
       .AddField("event_type_id", event.event_type_id)
       .AddField("event_id", event.event_id)
       .AddField("time", event.time)
+      .AddField("receive_time", event.receive_time)
       .AddField("node_id", event.node_id)
       .AddField("user_id", event.user_id)
       .AddField("value", event.value)
