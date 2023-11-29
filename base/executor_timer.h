@@ -78,3 +78,25 @@ class ExecutorTimer {
 
   std::shared_ptr<Core> core_;
 };
+
+inline void StartRepeatableTimer(
+    std::shared_ptr<Executor> executor,
+    Duration period,
+    const std::weak_ptr<bool>& cancelation,
+    Executor::Task task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+  // |BindCancelation| is not effective, as |cancelation| has to be captured by
+  // the lambda anyway.
+  executor->PostDelayedTask(
+      period,
+      [executor, period, cancelation, task = std::move(task),
+       location]() mutable {
+        if (cancelation.expired()) {
+          return;
+        }
+        task();
+        StartRepeatableTimer(std::move(executor), period, cancelation,
+                             std::move(task), location);
+      },
+      location);
+}
