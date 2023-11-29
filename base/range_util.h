@@ -172,3 +172,12 @@ inline auto grouped(Mapper&& mapper) {
   return grouped(std::forward<Mapper>(mapper),
                  [](auto&& value) { return std::move(value); });
 }
+
+template <class T, class U>
+inline std::vector<U> CastVector(const std::vector<T>& v) {
+  std::vector<U> result;
+  for (const auto& e : v) {
+    result.emplace_back(static_cast<T>(e));
+  }
+  return result;
+}

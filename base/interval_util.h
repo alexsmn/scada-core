@@ -76,3 +76,14 @@ inline bool UnionIntervals(std::vector<Interval<T>>& intervals,
   assert(std::is_sorted(intervals.begin(), intervals.end()));
   return true;
 }
+
+
+template <class U, class T>
+inline std::vector<Interval<U>> CastIntervals(
+    const std::vector<Interval<T>>& v) {
+  std::vector<Interval<U>> result;
+  for (const auto& [start, end] : v) {
+    result.emplace_back(static_cast<T>(start), static_cast<T>(end));
+  }
+  return result;
+}

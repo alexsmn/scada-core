@@ -12,7 +12,7 @@ inline void PrintList(const L& list, std::ostream& stream) {
   stream << "[";
   if (auto i = list.begin(); i != list.end()) {
     stream << *i;
-    for (; i != list.end(); ++i) {
+    for (++i; i != list.end(); ++i) {
       stream << ", " << *i;
     }
   }
