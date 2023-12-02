@@ -23,7 +23,6 @@ class TransportFactory;
 
 namespace scada {
 class NodeManagementService;
-class EventService;
 class HistoryService;
 class ViewService;
 }  // namespace scada
