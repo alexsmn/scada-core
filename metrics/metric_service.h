@@ -14,6 +14,7 @@ class MetricService {
 
   // Returning a rejected promise stops polling. It's handled automatically by
   // `BindPromiseExecutorWithResult()`.
+  // TODO: Rename to a "source", similar to Boost.Log source/sink.
   using Provider = std::function<promise<Metrics>()>;
 
   // To unsubscribe, return a canceled promise.

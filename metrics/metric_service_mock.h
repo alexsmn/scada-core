@@ -6,8 +6,7 @@
 
 class MockMetricService : public MetricService {
  public:
-  MOCK_METHOD(void,
-              RegisterProvider,
-              (const CancelationRef& cancelation, const Provider& provider),
-              (override));
+  MOCK_METHOD(void, RegisterProvider, (const Provider& provider), (override));
+
+  MOCK_METHOD(void, RegisterSink, (const Sink& sink), (override));
 };
