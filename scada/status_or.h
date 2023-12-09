@@ -21,14 +21,9 @@ class [[nodiscard]] StatusOr {
 
   bool ok() const { return std::holds_alternative<T>(value_); }
 
-  const Status& status() const& {
-    assert(!ok());
-    return std::get<Status>(value_);
-  }
-
-  Status status() && {
-    assert(!ok());
-    return std::get<Status>(std::move(value_));
+  Status status() const {
+    const auto* status = std::get_if<Status>(&value_);
+    return status ? *status : Status{StatusCode::Good};
   }
 
   T& operator*() {
@@ -66,14 +61,9 @@ class [[nodiscard]] StatusCodeOr {
 
   bool ok() const { return std::holds_alternative<T>(value_); }
 
-  const StatusCode& status_code() const& {
-    assert(!ok());
-    return std::get<StatusCode>(value_);
-  }
-
-  StatusCode status_code() && {
-    assert(!ok());
-    return std::get<StatusCode>(std::move(value_));
+  StatusCode status_code() const {
+    const auto* status_code = std::get_if<StatusCode>(&value_);
+    return status_code ? *status_code : StatusCode::Good;
   }
 
   T& operator*() {
