@@ -32,17 +32,6 @@ struct HistoryReadEventsDetails {
   EventFilter filter;
 };
 
-struct ItemInfo {
-  NodeId node_id;
-  DataValue data_value;
-  base::Time change_time;
-};
-
-using ItemInfosCallback = std::function<void(std::vector<ItemInfo> item_infos)>;
-
-using HistoryReadItemInfoCallback =
-    std::function<void(std::optional<ItemInfo> item_info)>;
-
 struct HistoryReadRawResult {
   Status status{StatusCode::Good};
   std::vector<DataValue> values;
@@ -58,18 +47,5 @@ using HistoryReadEventsCallback =
 
 using AcknowledgeCallback =
     std::function<void(Status status, std::vector<StatusCode> results)>;
-
-inline bool operator==(const ItemInfo& a, const ItemInfo& b) {
-  return std::tie(a.node_id, a.data_value, a.change_time) ==
-         std::tie(b.node_id, b.data_value, b.change_time);
-}
-
-inline std::ostream& operator<<(std::ostream& stream, const ItemInfo& x) {
-  StructWriter{stream}
-      .AddField("node_id", x.node_id)
-      .AddField("data_value", x.data_value)
-      .AddField("change_time", x.change_time);
-  return stream;
-}
 
 }  // namespace scada
