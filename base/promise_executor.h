@@ -140,7 +140,7 @@ struct CancelationPromiseFunc {
   template <class... Args>
   auto operator()(Args&&... args) const {
     using ReturnPromiseType = std::invoke_result_t<T, Args...>;
-    return make_rejected_promise<ReturnPromiseType::value_type>(
+    return make_rejected_promise<typename ReturnPromiseType::value_type>(
         std::exception{});
   }
 };

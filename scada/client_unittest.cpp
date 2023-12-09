@@ -11,15 +11,15 @@ namespace scada {
 
 class ClientTest : public Test {
  protected:
-  MockMonitoredItemService monitored_item_service;
+  MockMonitoredItemService monitored_item_service_;
 
-  client client{services{.monitored_item_service = &monitored_item_service}};
+  client client_{services{.monitored_item_service = &monitored_item_service_}};
 
   inline static const NodeId node_id{1, 1};
 };
 
 TEST_F(ClientTest, MonitoredItemSubscriptionFail) {
-  EXPECT_CALL(monitored_item_service, CreateMonitoredItem(_, _))
+  EXPECT_CALL(monitored_item_service_, CreateMonitoredItem(_, _))
       .WillOnce(Return(nullptr));
 
   MockDataChangeHandler data_change_handler;
@@ -28,15 +28,15 @@ TEST_F(ClientTest, MonitoredItemSubscriptionFail) {
                                               StatusCode::Bad_WrongNodeId)));
 
   scada::monitored_item monitored_item;
-  monitored_item.subscribe_value(client.node(node_id), /*params*/ {},
+  monitored_item.subscribe_value(client_.node(node_id), /*params*/ {},
                                  data_change_handler.AsStdFunction());
 }
 
 TEST_F(ClientTest, MonitoredItemSubscriptionClose) {
-  EXPECT_CALL(monitored_item_service, CreateMonitoredItem(_, _));
+  EXPECT_CALL(monitored_item_service_, CreateMonitoredItem(_, _));
 
   MonitoredItemHandler server_item_handler;
-  EXPECT_CALL(*monitored_item_service.default_monitored_item, Subscribe(_))
+  EXPECT_CALL(*monitored_item_service_.default_monitored_item, Subscribe(_))
       .WillOnce(SaveArg<0>(&server_item_handler));
 
   MockDataChangeHandler data_change_handler;
@@ -44,7 +44,7 @@ TEST_F(ClientTest, MonitoredItemSubscriptionClose) {
                                               StatusCode::Bad_Disconnected)));
 
   scada::monitored_item monitored_item;
-  monitored_item.subscribe_value(client.node(node_id),
+  monitored_item.subscribe_value(client_.node(node_id),
                                  /*params*/ {},
                                  data_change_handler.AsStdFunction());
 

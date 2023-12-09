@@ -96,13 +96,13 @@ class [[nodiscard]] StatusCodeOr {
     return &std::get<T>(value_);
   }
 
-  template <class T, class F>
+  template <class F>
   inline auto map(F&& f) const& {
     // using R = std::invoke_result_t<F, T>;
     return ok() ? f(*this) : status_code();
   }
 
-  template <class T, class F>
+  template <class F>
   inline auto map(F&& f) && {
     // using R = std::invoke_result_t<F, T>;
     return ok() ? f(*std::move(this)) : status_code();

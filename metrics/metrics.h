@@ -30,7 +30,7 @@ class Metrics {
       return;
     }
 
-    Set(name + ".count", aggregated_metric.count());
+    Set(name + ".count", static_cast<int64_t>(aggregated_metric.count()));
     Set(name + ".min", aggregated_metric.min());
     Set(name + ".max", aggregated_metric.max());
     Set(name + ".mean", aggregated_metric.mean());

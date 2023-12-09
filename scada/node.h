@@ -43,9 +43,14 @@ class node {
   };
 
   promise<std::vector<ReferenceDescription>> browse(
-      const browse_details& details = {}) const;
+      const browse_details& details = browse_details{
+          .reference_type_id = id::References,
+          .direction = BrowseDirection::Both}) const;
 
-  promise<scada::node> browse_node(const browse_details& details = {}) const;
+  promise<scada::node> browse_node(
+      const browse_details& details = browse_details{
+          .reference_type_id = id::References,
+          .direction = BrowseDirection::Both}) const;
 
   promise<scada::node> parent() const {
     return browse_node({.reference_type_id = id::HierarchicalReferences,
