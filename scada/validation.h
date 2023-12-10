@@ -1,40 +1,43 @@
 #pragma once
 
-#include "base/containers/span.h"
-#include "scada/view_service.h"
-
 #if !defined(NDEBUG)
 
-inline bool ValidateUnique(
-    base::span<const scada::ReferenceDescription> references) {
-  std::vector<scada::ReferenceDescription> sorted_references(references.begin(),
-                                                             references.end());
-  std::sort(sorted_references.begin(), sorted_references.end(),
-            [](const scada::ReferenceDescription& a,
-               const scada::ReferenceDescription& b) {
-              return std::tie(a.reference_type_id, a.forward, a.node_id) <
-                     std::tie(b.reference_type_id, b.forward, b.node_id);
-            });
-  bool contain_duplicates =
-      std::adjacent_find(sorted_references.begin(), sorted_references.end(),
-                         std::equal_to{}) != sorted_references.end();
-  assert(!contain_duplicates);
-  return !contain_duplicates;
+#include "scada/view_service.h"
+
+#include <algorithm>
+#include <span>
+
+template <class Container, class Comp = std::ranges::less>
+inline bool ValidateUnique(const Container& container, Comp comp = {}) {
+  std::vector<typename Container::value_type> sorted_container(container);
+  std::ranges::sort(sorted_container, std::move(comp));
+
+  bool contains_duplicates =
+      std::ranges::adjacent_find(sorted_container, std::equal_to{}) !=
+      sorted_container.end();
+
+  assert(!contains_duplicates);
+  return !contains_duplicates;
 }
 
 inline bool Validate(const scada::BrowseResult& result) {
   if (scada::IsGood(result.status_code)) {
-    return ValidateUnique(result.references);
+    return ValidateUnique(
+        result.references, [](const scada::ReferenceDescription& a,
+                              const scada::ReferenceDescription& b) {
+          return std::tie(a.reference_type_id, a.forward, a.node_id) <
+                 std::tie(b.reference_type_id, b.forward, b.node_id);
+        });
   } else {
     assert(result.references.empty());
     return result.references.empty();
   }
 }
 
-inline bool Validate(base::span<const scada::BrowseResult> results) {
-  return std::all_of(
-      results.begin(), results.end(),
-      [](const scada::BrowseResult& result) { return Validate(result); });
+inline bool Validate(std::span<const scada::BrowseResult> results) {
+  return std::ranges::all_of(results, [](const scada::BrowseResult& result) {
+    return Validate(result);
+  });
 }
 
 #endif
