@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <optional>
+#include <utility>
 
 // Example:
 //
