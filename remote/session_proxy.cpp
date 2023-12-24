@@ -126,7 +126,7 @@ void SessionProxy::OnTransportClosed(net::Error error) {
 }
 
 void SessionProxy::OnSessionError(const scada::Status& status) {
-  transport_.reset();
+  net_sender_.reset();
 
   OnSessionDeleted();
 
@@ -187,7 +187,7 @@ void SessionProxy::Send(protocol::Message& message) {
 
   // TODO: This check shall be changed on assert when all proxy object will
   // support MonitoredItemService reconnection.
-  if (!transport_.get()) {
+  if (!net_sender_) {
     assert(false);
     return;
   }
@@ -202,7 +202,7 @@ void SessionProxy::Send(protocol::Message& message) {
     throw std::runtime_error("Can't serialize message");
 
   // TODO: Handle write result.
-  transport_->Write(string);
+  net_sender_->Write(string);
 }
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {
@@ -293,7 +293,7 @@ void SessionProxy::Request(protocol::Request& request,
 }
 
 promise<> SessionProxy::Connect(const scada::SessionConnectParams& params) {
-  assert(!transport_);
+  assert(!net_sender_);
 
   if (session_created_)
     return MakeRejectedStatusPromise(scada::StatusCode::Bad);
@@ -324,9 +324,14 @@ promise<> SessionProxy::Connect() {
     return connect_promise_;
   }
 
-  transport_ = std::make_unique<ProtocolMessageTransport>(std::move(transport));
+  auto protocol_transport =
+      std::make_unique<ProtocolMessageTransport>(std::move(transport));
 
-  transport_->Open(
+  auto* protocol_transport_ptr = protocol_transport.get();
+
+  net_sender_ = std::move(protocol_transport);
+
+  protocol_transport_ptr->Open(
       {.on_open = [this] { OnTransportOpened(); },
        .on_close = [this](net::Error error) { OnTransportClosed(error); },
        .on_message =

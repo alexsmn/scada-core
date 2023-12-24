@@ -16,8 +16,7 @@
 #include <unordered_map>
 
 namespace net {
-class Logger;
-class Transport;
+class Sender;
 class TransportFactory;
 }  // namespace net
 
@@ -119,7 +118,7 @@ class SessionProxy : private SessionProxyContext,
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("SessionProxy"));
 
-  std::unique_ptr<net::Transport> transport_;
+  std::unique_ptr<net::Sender> net_sender_;
 
   const std::unique_ptr<SessionProxyDebugger> debugger_;
 
