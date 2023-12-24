@@ -68,8 +68,12 @@ promise<> RemoteSessionManager::Init() {
       return make_rejected_promise(std::exception{});
     }
 
+    auto listener_name = transport->GetName();
+
     auto& listener = listeners_.emplace_back(std::make_unique<RemoteListener>(
-        logger_, std::move(transport), session_accept_handler));
+        logger_, std::move(transport), std::move(listener_name),
+        session_accept_handler));
+
     promises.emplace_back(listener->Open());
   }
 

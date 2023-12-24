@@ -302,8 +302,8 @@ promise<> SessionProxy::Connect(const scada::SessionConnectParams& params) {
   password_ = params.password;
   host_ = params.host;
   // TODO: Add a UT for this condition.
-  connection_string_ = host_.empty() ? params.connection_string
-                                     : MakeConnectionString(params.host);
+  connection_string_ = params.host.empty() ? params.connection_string
+                                           : MakeConnectionString(params.host);
   allow_remote_logoff_ = params.allow_remote_logoff;
 
   return Reconnect();
