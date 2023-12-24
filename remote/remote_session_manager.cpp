@@ -71,10 +71,10 @@ promise<> RemoteSessionManager::Init() {
     auto listener_name = transport->GetName();
 
     auto& listener = listeners_.emplace_back(std::make_unique<RemoteListener>(
-        logger_, std::move(transport), std::move(listener_name),
+        logger_, net::connector{std::move(transport)}, std::move(listener_name),
         session_accept_handler));
 
-    promises.emplace_back(listener->Open());
+    promises.emplace_back(listener->Init());
   }
 
   return make_all_promise_void(std::move(promises));
