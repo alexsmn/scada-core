@@ -126,7 +126,7 @@ void SessionProxy::OnTransportClosed(net::Error error) {
 }
 
 void SessionProxy::OnSessionError(const scada::Status& status) {
-  net_sender_.reset();
+  transport_.close();
 
   OnSessionDeleted();
 
@@ -145,8 +145,8 @@ void SessionProxy::OnTransportMessageReceived(std::span<const char> data) {
 }
 
 void SessionProxy::OnSessionDeleted() {
-  // When OnSessionCloased is called on connection, channel actually is still
-  // not opened.
+  // When `OnSessionClosed` is called on the connection, the channel can be not
+  // opened yet.
   if (!session_created_)
     return;
 
@@ -187,7 +187,7 @@ void SessionProxy::Send(protocol::Message& message) {
 
   // TODO: This check shall be changed on assert when all proxy object will
   // support MonitoredItemService reconnection.
-  if (!net_sender_) {
+  if (!transport_) {
     assert(false);
     return;
   }
@@ -198,11 +198,12 @@ void SessionProxy::Send(protocol::Message& message) {
   }
 
   std::string string;
-  if (!message.AppendToString(&string))
+  if (!message.AppendToString(&string)) {
     throw std::runtime_error("Can't serialize message");
+  }
 
   // TODO: Handle write result.
-  net_sender_->Write(string);
+  transport_.write(string);
 }
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {
@@ -293,7 +294,7 @@ void SessionProxy::Request(protocol::Request& request,
 }
 
 promise<> SessionProxy::Connect(const scada::SessionConnectParams& params) {
-  assert(!net_sender_);
+  assert(!transport_);
 
   if (session_created_)
     return MakeRejectedStatusPromise(scada::StatusCode::Bad);
@@ -329,7 +330,7 @@ promise<> SessionProxy::Connect() {
 
   auto* protocol_transport_ptr = protocol_transport.get();
 
-  net_sender_ = std::move(protocol_transport);
+  transport_ = net::opened_transport{std::move(protocol_transport)};
 
   protocol_transport_ptr->Open(
       {.on_open = [this] { OnTransportOpened(); },

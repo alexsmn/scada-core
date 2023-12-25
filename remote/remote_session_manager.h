@@ -39,6 +39,7 @@ struct RemoteSessionManagerContext {
   const std::vector<net::TransportString> endpoints_;
 };
 
+// Accepts remote sessions and managers them.
 class RemoteSessionManager final : private RemoteSessionManagerContext {
  public:
   class Observer {
@@ -52,8 +53,6 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
   // Throws an exception on error.
   promise<> Init();
-
-  SessionStub* FindUserSession(const scada::NodeId& user_id) const;
 
   void CloseUserSessions(const scada::NodeId& user_id);
 
@@ -72,6 +71,8 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
                             bool delete_existing);
   SessionStub& CreateNewSession(const scada::NodeId& user_id,
                                 const scada::LocalizedText& user_name);
+
+  SessionStub* FindUserSession(const scada::NodeId& user_id) const;
 
   void OnSessionAccepted(std::unique_ptr<net::Transport> transport);
 
