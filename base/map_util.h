@@ -14,14 +14,26 @@ using MappedType = typename Map::mapped_type;
 }  // namespace internal
 
 template <typename Map, typename Key>
-constexpr const internal::MappedType<Map>* FindOrNull(const Map& map,
-                                                      const Key& key) {
+constexpr internal::MappedType<Map> FindOrNull(const Map& map, const Key& key) {
+  auto it = map.find(key);
+  return it != map.end() ? it->second : nullptr;
+}
+
+template <typename Map, typename Key>
+constexpr internal::MappedType<Map> FindOrNull(Map& map, const Key& key) {
+  auto it = map.find(key);
+  return it != map.end() ? it->second : nullptr;
+}
+
+template <typename Map, typename Key>
+constexpr const internal::MappedType<Map>* FindPtr(const Map& map,
+                                                   const Key& key) {
   auto it = map.find(key);
   return it != map.end() ? &it->second : nullptr;
 }
 
 template <typename Map, typename Key>
-constexpr internal::MappedType<Map>* FindOrNull(Map& map, const Key& key) {
+constexpr internal::MappedType<Map>* FindPtr(Map& map, const Key& key) {
   auto it = map.find(key);
   return it != map.end() ? &it->second : nullptr;
 }

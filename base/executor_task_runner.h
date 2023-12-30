@@ -31,8 +31,10 @@ inline bool ExecutorTaskRunner::PostDelayedTask(const base::Location& from_here,
                                                 base::OnceClosure task,
                                                 base::TimeDelta delay) {
   executor_->PostDelayedTask(
-      AsChrono(delay), [task = std::make_shared<base::OnceClosure>(
-                            std::move(task))] { std::move(*task).Run(); });
+      AsChrono<Duration>(delay),
+      [task = std::make_shared<base::OnceClosure>(std::move(task))] {
+        std::move(*task).Run();
+      });
 
   return true;
 }

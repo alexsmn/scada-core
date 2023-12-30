@@ -14,17 +14,36 @@ bool Deserialize(std::string_view str, base::TimeDelta& delta);
 std::string SerializeToString(base::Time time);
 bool Deserialize(std::string_view str, base::Time& time);
 
-inline auto InMilliseconds(std::chrono::nanoseconds duration) {
+template <class Rep, class Period>
+inline auto InMilliseconds(const std::chrono::duration<Rep, Period>& duration) {
   return std::chrono::duration_cast<std::chrono::milliseconds>(duration)
       .count();
 }
 
-inline auto InSeconds(std::chrono::nanoseconds duration) {
+template <class Rep, class Period>
+inline auto InSeconds(const std::chrono::duration<Rep, Period>& duration) {
   return std::chrono::duration_cast<std::chrono::seconds>(duration).count();
 }
 
+template <class T>
 inline auto AsChrono(base::TimeDelta delta) {
+  return std::chrono::duration_cast<T>(
+      std::chrono::nanoseconds{delta.InNanoseconds()});
+}
+
+template <>
+inline auto AsChrono<std::chrono::nanoseconds>(base::TimeDelta delta) {
   return std::chrono::nanoseconds{delta.InNanoseconds()};
+}
+
+template <>
+inline auto AsChrono<std::chrono::milliseconds>(base::TimeDelta delta) {
+  return std::chrono::milliseconds{delta.InMilliseconds()};
+}
+
+template <typename T = std::chrono::system_clock::time_point>
+inline auto AsChrono(base::Time time) {
+  return T{AsChrono<typename T::duration>(time - base::Time::UnixEpoch())};
 }
 
 // Example of truncation to a second:

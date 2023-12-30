@@ -1,12 +1,12 @@
 #pragma once
 
-#include <functional>
-#include <memory>
-
+#include "remote/connection.h"
 #include "scada/node_id.h"
 #include "scada/status.h"
-#include "net/transport.h"
-#include "remote/connection.h"
+
+#include <net/transport.h>
+#include <functional>
+#include <memory>
 
 namespace protocol {
 class Request;

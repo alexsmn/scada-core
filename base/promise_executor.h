@@ -159,3 +159,13 @@ inline auto BindPromiseExecutorWithResult(
                           internal::CancelationPromiseFunc<T>{}),
       location);
 }
+
+inline promise<void> Delay(
+    Executor& executor,
+    Duration delay,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+  promise<void> p;
+  executor.PostDelayedTask(delay, std::bind_front(&promise<void>::resolve, p),
+                           location);
+  return p;
+}

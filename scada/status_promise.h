@@ -40,18 +40,33 @@ inline Status GetExceptionStatus(const std::exception_ptr& e) {
 //
 // WARNING: The current implementation requires a copyable callback since it has
 // to be copied both to `.then` and to `.except` handlers.
+template <class T, class Callback>
+inline status_promise<void> BindStatusCallback(status_promise<T> promise,
+                                               const Callback& callback) {
+  // Explicit `callback` copy is required to make it mutable. Mutability is
+  // needed e.g. when capturing promises.
+  return promise.then(callback, [callback](const std::exception_ptr& e) {
+    callback({.status = GetExceptionStatus(e)});
+  });
+}
+
+// Properly assigns status callback to a status promise. The callback is invoked
+// when status exception is triggered.
+//
+// WARNING: The current implementation requires a copyable callback since it has
+// to be copied both to `.then` and to `.except` handlers.
 template <class Callback>
 inline status_promise<void> BindStatusCallback(status_promise<Status> promise,
                                                const Callback& callback) {
   // Explicit `callback` copy is required to make it mutable. Mutability is
   // needed e.g. when capturing promises.
   return promise
-      .then([callback = callback](const Status& status) mutable {
+      .then([callback](const Status& status) {
         // Invoke callback with the actual `status`.
         // TODO: Avoid copy.
         callback(Status{status});
       })
-      .except([callback = callback](const std::exception_ptr& e) mutable {
+      .except([callback](const std::exception_ptr& e) {
         callback(GetExceptionStatus(e));
       });
 }
@@ -63,9 +78,8 @@ inline status_promise<void> BindStatusCallback(status_promise<void> promise,
                                                const Callback& callback) {
   // Explicit `callback` copy is required to make it mutable. Mutability is
   // needed e.g. when capturing promises.
-  return promise
-      .then([callback = callback]() mutable { callback(StatusCode::Good); })
-      .except([callback = callback](const std::exception_ptr& e) mutable {
+  return promise.then([callback]() mutable { callback(StatusCode::Good); })
+      .except([callback](const std::exception_ptr& e) mutable {
         callback(GetExceptionStatus(e));
       });
 }
