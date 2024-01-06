@@ -164,6 +164,17 @@ inline void ResolveStatusPromise(status_promise<void>& promise,
 template <class T>
 inline auto MakeStatusPromiseCallback(status_promise<T> promise) {
   return [promise = std::move(promise)](T&& result) mutable {
+    if (!result.status) {
+      RejectStatusPromise(promise, std::move(result.status));
+    } else {
+      promise.resolve(std::move(result));
+    }
+  };
+}
+
+template <class T>
+inline auto MakeStatusCodePromiseCallback(status_promise<T> promise) {
+  return [promise = std::move(promise)](T&& result) mutable {
     if (IsBad(result.status_code)) {
       RejectStatusPromise(promise, result.status_code);
     } else {

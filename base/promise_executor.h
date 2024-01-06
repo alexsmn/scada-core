@@ -147,6 +147,18 @@ struct CancelationPromiseFunc {
 
 }  // namespace internal
 
+template <class F>
+inline auto DispatchPromise(Executor& executor, F&& func) {
+  using P = std::invoke_result_t<F>;
+  P p;
+
+  Dispatch(executor, [func = std::forward<F>(func), p]() mutable {
+    ForwardPromise(func(), p);
+  });
+
+  return p;
+}
+
 template <class T, class C>
 inline auto BindPromiseExecutorWithResult(
     std::shared_ptr<Executor> executor,

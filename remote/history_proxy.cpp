@@ -1,9 +1,9 @@
 #include "remote/history_proxy.h"
 
-#include "scada/standard_node_ids.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/standard_node_ids.h"
 
 HistoryProxy::HistoryProxy() {}
 
@@ -38,10 +38,10 @@ void HistoryProxy::HistoryReadRaw(
     if (!callback)
       return;
 
-    callback({ConvertTo<scada::Status>(response.status()),
-              ConvertTo<std::vector<scada::DataValue>>(
+    callback({.status = ConvertTo<scada::Status>(response.status()),
+              .values = ConvertTo<std::vector<scada::DataValue>>(
                   response.history_read_raw_result().value()),
-              ConvertTo<scada::ByteString>(
+              .continuation_point = ConvertTo<scada::ByteString>(
                   response.history_read_raw_result().continuation_point())});
   });
 }
@@ -71,9 +71,9 @@ void HistoryProxy::HistoryReadEvents(
         if (!callback)
           return;
 
-        callback(ConvertTo<scada::Status>(response.status()),
-                 ConvertTo<std::vector<scada::Event>>(
-                     response.history_read_events_result().event()));
+        callback({.status = ConvertTo<scada::Status>(response.status()),
+                  .events = ConvertTo<std::vector<scada::Event>>(
+                      response.history_read_events_result().event())});
       });
 }
 

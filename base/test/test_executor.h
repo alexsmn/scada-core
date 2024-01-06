@@ -11,7 +11,7 @@ class TestExecutor : public Executor {
 
   /*~TestExecutor() {
     // It's important to run all the remaining pending tasks. E.g.
-    // HistoricalWriteDb will only close on the posted task.
+    // HistoricalDb will only close on the posted task.
     for (;;) {
       auto run_tasks = PopRunTasks(Duration());
       if (run_tasks.empty()) {

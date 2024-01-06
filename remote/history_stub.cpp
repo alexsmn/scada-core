@@ -1,11 +1,11 @@
 #include "remote/history_stub.h"
 
 #include "base/executor.h"
-#include "scada/history_service.h"
 #include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/history_service.h"
 
 #include "base/debug_util-inl.h"
 
@@ -136,21 +136,20 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
 
   service_.HistoryReadEvents(
       node_id, from, to, filter,
-      BindExecutor(executor_, [request_id, ref = shared_from_this(), this](
-                                  scada::Status status,
-                                  std::vector<scada::Event> events) {
+      BindExecutor(executor_, [request_id, ref = shared_from_this(),
+                               this](scada::HistoryReadEventsResult result) {
         LOG_INFO(logger_) << "History read events completed"
                           << LOG_TAG("RequestId", request_id)
-                          << LOG_TAG("Status", ToString(status))
-                          << LOG_TAG("EventCount", events.size());
+                          << LOG_TAG("Status", ToString(result.status))
+                          << LOG_TAG("EventCount", result.events.size());
 
         protocol::Message message;
         auto& response = *message.add_responses();
         response.set_request_id(request_id);
-        Convert(status, *response.mutable_status());
-        if (!events.empty()) {
+        Convert(result.status, *response.mutable_status());
+        if (!result.events.empty()) {
           Convert(
-              std::move(events),
+              std::move(result.events),
               *response.mutable_history_read_events_result()->mutable_event());
         }
 

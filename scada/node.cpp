@@ -50,7 +50,7 @@ promise<std::vector<ReferenceDescription>> node::browse(
          {.node_id = node_id_,
           .direction = details.direction,
           .reference_type_id = details.reference_type_id},
-         MakeStatusPromiseCallback(promise));
+         MakeStatusCodePromiseCallback(promise));
 
   return promise.then([](const BrowseResult& result) {
     assert(IsGood(result.status_code));
@@ -79,7 +79,7 @@ promise<std::vector<BrowsePathTarget>> node::translate_browse_path(
 
   TranslateBrowsePath(*services_.view_service,
                       {.node_id = node_id_, .relative_path = relative_path},
-                      MakeStatusPromiseCallback(promise));
+                      MakeStatusCodePromiseCallback(promise));
 
   return promise.then([](const BrowsePathResult& result) {
     assert(IsGood(result.status_code));
@@ -156,7 +156,10 @@ promise<std::vector<Event>> node::read_event_history(
   }
 
   return HistoryReadEvents(*services_.history_service, node_id_, details.from,
-                           details.to, details.filter);
+                           details.to, details.filter)
+      .then([](const scada::HistoryReadEventsResult& result) {
+        return result.events;
+      });
 }
 
 }  // namespace scada

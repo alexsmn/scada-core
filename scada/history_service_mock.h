@@ -13,8 +13,7 @@ class MockHistoryService : public HistoryService {
     ON_CALL(*this, HistoryReadRaw(_, _))
         .WillByDefault(InvokeArgument<1>(scada::HistoryReadRawResult{}));
     ON_CALL(*this, HistoryReadEvents(_, _, _, _, _))
-        .WillByDefault(InvokeArgument<4>(scada::StatusCode::Good,
-                                         std::vector<scada::Event>{}));
+        .WillByDefault(InvokeArgument<4>(scada::HistoryReadEventsResult{}));
   }
 
   MOCK_METHOD(void,

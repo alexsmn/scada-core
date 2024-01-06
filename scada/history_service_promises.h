@@ -11,13 +11,9 @@ inline status_promise<HistoryReadRawResult> HistoryReadRawChunk(
     HistoryService& history_service,
     const HistoryReadRawDetails& details) {
   status_promise<HistoryReadRawResult> promise;
-  history_service.HistoryReadRaw(
-      details, [promise](HistoryReadRawResult&& result) mutable {
-        if (result.status)
-          promise.resolve(std::move(result));
-        else
-          RejectStatusPromise(promise, std::move(result.status));
-      });
+  // Cannot use `MakeStatusPromiseCallback` because it requires
+  // `HistoryReadRawResult` to have `status` field.
+  history_service.HistoryReadRaw(details, MakeStatusPromiseCallback(promise));
   return promise;
 }
 
@@ -62,21 +58,15 @@ inline promise<std::vector<scada::DataValue>> HistoryReadRaw(
   return std::make_shared<State>(history_service, details)->Start();
 }
 
-inline status_promise<std::vector<Event>> HistoryReadEvents(
+inline status_promise<scada::HistoryReadEventsResult> HistoryReadEvents(
     HistoryService& history_service,
     const NodeId& node_id,
     DateTime from,
     DateTime to,
     const EventFilter& event_filter = {}) {
-  status_promise<std::vector<Event>> promise;
-  history_service.HistoryReadEvents(
-      node_id, from, to, event_filter,
-      [promise](Status status, std::vector<Event> events) mutable {
-        if (status)
-          promise.resolve(std::move(events));
-        else
-          RejectStatusPromise(promise, std::move(status));
-      });
+  status_promise<scada::HistoryReadEventsResult> promise;
+  history_service.HistoryReadEvents(node_id, from, to, event_filter,
+                                    MakeStatusPromiseCallback(promise));
   return promise;
 }
 

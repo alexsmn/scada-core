@@ -40,10 +40,13 @@ struct HistoryReadRawResult {
 
 using HistoryReadRawCallback = std::function<void(HistoryReadRawResult result)>;
 
-struct HistoryReadEventsResult {};
+struct HistoryReadEventsResult {
+  Status status{StatusCode::Good};
+  std::vector<Event> events;
+};
 
 using HistoryReadEventsCallback =
-    std::function<void(Status status, std::vector<Event> events)>;
+    std::function<void(HistoryReadEventsResult result)>;
 
 using AcknowledgeCallback =
     std::function<void(Status status, std::vector<StatusCode> results)>;
