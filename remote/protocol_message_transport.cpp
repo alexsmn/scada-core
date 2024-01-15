@@ -1,7 +1,9 @@
 #include "remote/protocol_message_transport.h"
 
-#include "net/transport_string.h"
 #include "remote/protocol_buffer.h"
+
+#include <net/transport_string.h>
+#include <net/transport_util.h>
 
 ProtocolMessageTransport::ProtocolMessageTransport(
     std::unique_ptr<net::Transport> transport)
@@ -12,13 +14,16 @@ ProtocolMessageTransport::ProtocolMessageTransport(
 
 ProtocolMessageTransport::~ProtocolMessageTransport() {}
 
-void ProtocolMessageTransport::Open(const Handlers& handlers) {
-  handlers_ = handlers;
+net::promise<void> ProtocolMessageTransport::Open(const Handlers& handlers) {
+  auto [p, promise_handlers] = net::MakePromiseHandlers(handlers);
+  handlers_ = std::move(promise_handlers);
 
   transport_->Open(
       {.on_open = [this] { OnTransportOpened(); },
        .on_close = [this](net::Error error) { OnTransportClosed(error); },
        .on_data = [this] { OnTransportDataReceived(); }});
+
+  return p;
 }
 
 void ProtocolMessageTransport::Close() {

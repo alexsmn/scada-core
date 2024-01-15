@@ -11,7 +11,7 @@ class ProtocolMessageTransport final : public net::Transport {
   explicit ProtocolMessageTransport(std::unique_ptr<net::Transport> transport);
   ~ProtocolMessageTransport();
 
-  virtual void Open(const Handlers& handlers) override;
+  virtual net::promise<void> Open(const Handlers& handlers) override;
   virtual void Close() override;
   virtual int Read(std::span<char> data) override;
   virtual net::promise<size_t> Write(std::span<const char> data) override;
