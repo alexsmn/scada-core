@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <optional>
 
 // Stores a value. When the value changes, calls a handler.
 //
@@ -23,7 +22,7 @@ class Cell {
  private:
   const ChangeHandler change_handler_;
 
-  std::optional<T> value_;
+  T value_;
 };
 
 template <class T>
@@ -34,7 +33,7 @@ template <class T>
 inline Cell<T>::~Cell() {
   // TODO: Remove the change handler triggering on destruction.
   // Avoid unset value.
-  if (value_ == true) {
+  if (value_) {
     change_handler_(true);
   }
 }
