@@ -33,5 +33,5 @@ class ProtocolMessageTransport final : public net::Transport {
 
   std::string incoming_message_;
 
-  std::shared_ptr<bool> cancelation_;
+  std::shared_ptr<bool> cancelation_ = std::make_shared<bool>(false);
 };

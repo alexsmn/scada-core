@@ -7,12 +7,11 @@
 
 ProtocolMessageTransport::ProtocolMessageTransport(
     std::unique_ptr<net::Transport> transport)
-    : transport_(std::move(transport)),
-      cancelation_(std::make_shared<bool>(false)) {
+    : transport_{std::move(transport)} {
   assert(!transport_->IsMessageOriented());
 }
 
-ProtocolMessageTransport::~ProtocolMessageTransport() {}
+ProtocolMessageTransport::~ProtocolMessageTransport() = default;
 
 net::promise<void> ProtocolMessageTransport::Open(const Handlers& handlers) {
   auto [p, promise_handlers] = net::MakePromiseHandlers(handlers);
