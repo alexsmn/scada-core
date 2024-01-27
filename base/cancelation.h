@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <source_location>
 #include <stop_token>
 
 namespace internal {
@@ -9,18 +10,24 @@ template <class C, class T>
 struct CancelationWrapper {
   template <class... Args>
   void operator()(Args&&... args) const {
-    if (auto ref = cancelation_.lock())
+    if (auto ref = cancelation_.lock()) {
       task_(std::forward<Args>(args)...);
+    }
   }
 
   template <class... Args>
   void operator()(Args&&... args) {
-    if (auto ref = cancelation_.lock())
+    if (auto ref = cancelation_.lock()) {
       task_(std::forward<Args>(args)...);
+    }
   }
 
   const std::weak_ptr<C> cancelation_;
   T task_;
+
+#ifndef NDEBUG
+  std::source_location location_;
+#endif
 };
 
 template <class C, class F, class CF>
@@ -44,6 +51,10 @@ struct CancelationFuncWrapper {
   const std::weak_ptr<C> cancelation_;
   F func_;
   CF canceled_func_;
+
+#ifndef NDEBUG
+  std::source_location location_;
+#endif
 };
 
 template <class T>
@@ -69,18 +80,33 @@ struct StopTokenWrapper {
 }  // namespace internal
 
 template <class C, class T>
-inline auto BindCancelation(std::weak_ptr<C> cancelation, T&& task) {
+inline auto BindCancelation(
+    std::weak_ptr<C> cancelation,
+    T&& task,
+    const std::source_location& location = std::source_location::current()) {
   return internal::CancelationWrapper<C, T>{std::move(cancelation),
-                                            std::forward<T>(task)};
+                                            std::forward<T>(task)
+#ifndef NDEBUG
+                                                ,
+                                            location
+#endif
+  };
 }
 
 template <class C, class F, class CF>
-inline auto BindCancelationFunc(std::weak_ptr<C> cancelation,
-                                F&& func,
-                                CF&& canceled_func) {
+inline auto BindCancelationFunc(
+    std::weak_ptr<C> cancelation,
+    F&& func,
+    CF&& canceled_func,
+    const std::source_location& location = std::source_location::current()) {
   return internal::CancelationFuncWrapper<C, F, CF>{
       std::move(cancelation), std::forward<F>(func),
-      std::forward<CF>(canceled_func)};
+      std::forward<CF>(canceled_func)
+#ifndef NDEBUG
+          ,
+      location
+#endif
+  };
 }
 
 template <class T>
