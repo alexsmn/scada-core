@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <net/executor.h>
+#include <source_location>
 
 class NetExecutorAdapter {
  public:
@@ -25,8 +26,10 @@ class NetExecutorAdapter {
   }
 
   template <class F>
-  void execute(F&& f) const {
-    executor_->PostTask(MakeExecutorTask(std::forward<F>(f)));
+  void execute(F&& f,
+               const std::source_location& location =
+                   std::source_location::current()) const {
+    executor_->PostTask(MakeExecutorTask(std::forward<F>(f)), location);
   }
 
  private:
