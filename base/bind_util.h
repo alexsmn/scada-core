@@ -50,3 +50,13 @@ inline auto WrapTaskRunner(scoped_refptr<base::TaskRunner> task_runner,
   return WrappedLambda<Lambda>{std::move(task_runner), location,
                                std::forward<Lambda>(lambda)};
 }
+
+template <typename C, typename A>
+inline auto BindFrontWeakPtr(C&& callable, std::weak_ptr<A> weak_arg) {
+  return [callable = std::forward<C>(callable),
+          weak_arg = std::move(weak_arg)](auto&&... args) {
+    if (auto arg = weak_arg.lock()) {
+      std::invoke(callable, arg.get(), std::forward<decltype(args)>(args)...);
+    }
+  };
+}
