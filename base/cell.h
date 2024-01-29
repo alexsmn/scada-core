@@ -22,7 +22,7 @@ class Cell {
  private:
   const ChangeHandler change_handler_;
 
-  T value_;
+  T value_{};
 };
 
 template <class T>
@@ -34,7 +34,7 @@ inline Cell<T>::~Cell() {
   // TODO: Remove the change handler triggering on destruction.
   // Avoid unset value.
   if (value_) {
-    change_handler_(true);
+    change_handler_(false);
   }
 }
 
