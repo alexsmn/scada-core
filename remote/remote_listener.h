@@ -1,6 +1,6 @@
 #pragma once
 
-#include <net/connector.h>
+#include <net/acceptor.h>
 
 class RemoteListener {
  public:
@@ -9,18 +9,18 @@ class RemoteListener {
 
   // `listener_name` is used for logging purposes.
   RemoteListener(std::shared_ptr<BoostLogger> logger,
-                 net::connector connector,
+                 net::acceptor acceptor,
                  std::string listener_name,
                  SessionAcceptedHandler session_accepted_handler)
       : logger_{std::move(logger)},
-        connector_{std::move(connector)},
+        acceptor_{std::move(acceptor)},
         listener_name_{std::move(listener_name)},
         session_accepted_handler_{std::move(session_accepted_handler)} {}
 
   promise<> Init() {
     LOG_INFO(*logger_) << "Listening..." << LOG_TAG("Listener", listener_name_);
 
-    connector_.open(
+    acceptor_.open(
         {.on_open = [this] { OnTransportOpened(); },
          .on_close = [this](net::Error error) { OnTransportClosed(error); },
          .on_accept =
@@ -57,7 +57,7 @@ class RemoteListener {
   }
 
   const std::shared_ptr<BoostLogger> logger_;
-  net::connector connector_;
+  net::acceptor acceptor_;
   const std::string listener_name_;
   const SessionAcceptedHandler session_accepted_handler_;
 

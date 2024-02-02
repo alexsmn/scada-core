@@ -12,7 +12,7 @@
 #include "scada/status.h"
 
 #include <boost/signals2/signal.hpp>
-#include <net/opened_transport.h>
+#include <net/any_transport.h>
 #include <unordered_map>
 
 namespace net {
@@ -118,7 +118,7 @@ class SessionProxy : private SessionProxyContext,
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("SessionProxy"));
 
-  net::opened_transport transport_;
+  net::any_transport transport_;
 
   const std::unique_ptr<SessionProxyDebugger> debugger_;
 

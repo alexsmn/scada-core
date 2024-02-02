@@ -6,7 +6,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/time_formatters.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/format.hpp>
 #include <boost/locale/encoding_utf.hpp>
 #include <boost/log/attributes.hpp>
 #include <boost/log/attributes/clock.hpp>

@@ -1,12 +1,11 @@
 #include "remote/session_proxy.h"
 
 #include "base/net_boost_logger_adapter.h"
+#include "base/net_executor_adapter.h"
 #include "base/string_piece_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "net/transport_factory.h"
-#include "net/transport_string.h"
 #include "remote/history_proxy.h"
 #include "remote/node_management_proxy.h"
 #include "remote/protocol.h"
@@ -19,6 +18,8 @@
 #include "scada/monitored_item.h"
 #include "scada/status.h"
 
+#include <net/transport_factory.h>
+#include <net/transport_string.h>
 #include <stdexcept>
 
 using namespace std::chrono_literals;
@@ -318,7 +319,8 @@ promise<> SessionProxy::Connect() {
 
   auto transport_logger = std::make_shared<NetBoostLoggerAdapter>(logger_);
   auto transport = transport_factory_.CreateTransport(
-      net::TransportString{connection_string_}, std::move(transport_logger));
+      net::TransportString{connection_string_}, NetExecutorAdapter{executor_},
+      std::move(transport_logger));
   if (!transport) {
     LOG_WARNING(*logger_) << "Cannot create raw transport";
     OnTransportClosed(net::ERR_FAILED);
@@ -330,7 +332,7 @@ promise<> SessionProxy::Connect() {
 
   auto* protocol_transport_ptr = protocol_transport.get();
 
-  transport_ = net::opened_transport{std::move(protocol_transport)};
+  transport_ = net::any_transport{std::move(protocol_transport)};
 
   protocol_transport_ptr->Open(
       {.on_open = [this] { OnTransportOpened(); },

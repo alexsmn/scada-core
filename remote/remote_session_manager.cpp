@@ -3,12 +3,11 @@
 #include "base/boost_log_adapter.h"
 #include "base/debug_util.h"
 #include "base/net_boost_logger_adapter.h"
+#include "base/net_executor_adapter.h"
 #include "base/promise_executor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
-#include "net/transport_factory.h"
-#include "net/transport_string.h"
 #include "remote/protocol.h"
 #include "remote/protocol_message_reader.h"
 #include "remote/protocol_message_transport.h"
@@ -17,6 +16,9 @@
 #include "remote/remote_listener.h"
 #include "remote/session_stub.h"
 #include "scada/status_promise.h"
+
+#include <net/transport_factory.h>
+#include <net/transport_string.h>
 
 #include "base/debug_util-inl.h"
 
@@ -61,8 +63,8 @@ promise<> RemoteSessionManager::Init() {
 
   std::vector<promise<>> promises;
   for (auto& endpoint : endpoints_) {
-    auto transport =
-        transport_factory_.CreateTransport(endpoint, transport_logger);
+    auto transport = transport_factory_.CreateTransport(
+        endpoint, NetExecutorAdapter{executor_}, transport_logger);
     if (!transport) {
       LOG_ERROR(*logger_) << "Cannot create listener transport";
       return make_rejected_promise(std::exception{});
@@ -71,7 +73,7 @@ promise<> RemoteSessionManager::Init() {
     auto listener_name = transport->GetName();
 
     auto& listener = listeners_.emplace_back(std::make_unique<RemoteListener>(
-        logger_, net::connector{std::move(transport)}, std::move(listener_name),
+        logger_, net::acceptor{std::move(transport)}, std::move(listener_name),
         session_accept_handler));
 
     promises.emplace_back(listener->Init());
