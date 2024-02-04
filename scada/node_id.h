@@ -27,6 +27,8 @@ class NodeId {
     return static_cast<NodeIdType>(identifier_.index());
   }
 
+  constexpr auto operator<=>(const NodeId&) const noexcept = default;
+
   constexpr bool is_null() const noexcept;
   constexpr bool is_namespace_only() const noexcept;
   constexpr bool is_numeric() const noexcept {
@@ -80,50 +82,6 @@ inline constexpr bool NodeId::is_namespace_only() const noexcept {
 inline constexpr NumericId NodeId::numeric_id() const {
   assert(type() == NodeIdType::Numeric);
   return std::get<NumericId>(identifier_);
-}
-
-inline constexpr bool operator==(const NodeId& a, const NodeId& b) noexcept {
-  if (a.namespace_index() != b.namespace_index())
-    return false;
-
-  if (a.type() != b.type())
-    return false;
-
-  switch (a.type()) {
-    case NodeIdType::Numeric:
-      return a.numeric_id() == b.numeric_id();
-    case NodeIdType::String:
-      return a.string_id() == b.string_id();
-    case NodeIdType::Opaque:
-      return a.opaque_id() == b.opaque_id();
-    default:
-      assert(false);
-      return false;
-  }
-}
-
-inline constexpr bool operator!=(const NodeId& a, const NodeId& b) noexcept {
-  return !operator==(a, b);
-}
-
-inline constexpr bool operator<(const NodeId& a, const NodeId& b) noexcept {
-  if (a.namespace_index() != b.namespace_index())
-    return a.namespace_index() < b.namespace_index();
-
-  if (a.type() != b.type())
-    return a.type() < b.type();
-
-  switch (a.type()) {
-    case NodeIdType::Numeric:
-      return a.numeric_id() < b.numeric_id();
-    case NodeIdType::String:
-      return a.string_id() < b.string_id();
-    case NodeIdType::Opaque:
-      return a.opaque_id() < b.opaque_id();
-    default:
-      assert(false);
-      return false;
-  }
 }
 
 inline constexpr bool operator==(const NodeId& a, NumericId b) noexcept {
