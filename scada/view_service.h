@@ -25,6 +25,8 @@ struct BrowseDescription {
 };
 
 struct ReferenceDescription {
+  auto operator<=>(const ReferenceDescription&) const = default;
+
   NodeId reference_type_id;
   bool forward = true;
   NodeId node_id;
@@ -143,12 +145,6 @@ inline std::ostream& operator<<(std::ostream& stream,
   return stream << "{node_id: " << v.node_id << ", direction: " << v.direction
                 << ", reference_type_id: " << v.reference_type_id
                 << ", include_subtypes: " << v.include_subtypes << "}";
-}
-
-inline bool operator==(const ReferenceDescription& a,
-                       const ReferenceDescription& b) {
-  return std::tie(a.reference_type_id, a.forward, a.node_id) ==
-         std::tie(b.reference_type_id, b.forward, b.node_id);
 }
 
 inline std::ostream& operator<<(std::ostream& stream,
