@@ -13,6 +13,6 @@ inline unsigned TimeToMins(const base::Time& time) {
 }
 
 inline base::Time MinsToTime(unsigned mins) {
-  int64 time = mins * __int64(60e7) + *(__int64*)&MinsEpoch;
+  int64_t time = mins * __int64(60e7) + *(__int64*)&MinsEpoch;
   return base::Time::FromInternalValue(time);
 }

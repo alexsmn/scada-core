@@ -28,6 +28,12 @@ target_link_libraries(scada_base PUBLIC
 target_compile_features(scada_base PRIVATE cxx_std_20)
 
 if(WIN32)
+  target_compile_definitions(scada_base PUBLIC
+    NOMINMAX
+    UNICODE
+    WIN32_LEAN_AND_MEAN
+  )
+
   target_compile_options(scada_base PUBLIC
     /permissive-
     /W4
