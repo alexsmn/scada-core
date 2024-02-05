@@ -9,7 +9,7 @@
 
 namespace {
 
-static std::pair<std::string_view, scada::NodeId> kPredefinedScadaStrings[] = {
+const std::pair<std::string_view, scada::NodeId> kPredefinedScadaStrings[] = {
     {"Server!CPU", data_items::id::Statistics_TotalCPUUsage},
     {"Server!Mem", data_items::id::Statistics_TotalMemoryUsage},
     {"Server!PCPU", data_items::id::Statistics_ServerCPUUsage},
@@ -17,16 +17,14 @@ static std::pair<std::string_view, scada::NodeId> kPredefinedScadaStrings[] = {
 };
 
 scada::NodeId NodeIdFromPredefinedScadaString(std::string_view scada_string) {
-  auto i = std::find_if(
-      std::cbegin(kPredefinedScadaStrings), std::cend(kPredefinedScadaStrings),
-      [scada_string](const auto& p) { return p.first == scada_string; });
+  auto i = std::ranges::find(kPredefinedScadaStrings, scada_string,
+                             [](const auto& p) { return p.first; });
   return i != std::cend(kPredefinedScadaStrings) ? i->second : scada::NodeId{};
 }
 
 std::string_view NodeIdToPredefinedScadaString(const scada::NodeId& node_id) {
-  auto i = std::find_if(
-      std::cbegin(kPredefinedScadaStrings), std::cend(kPredefinedScadaStrings),
-      [node_id](const auto& p) { return p.second == node_id; });
+  auto i = std::ranges::find(kPredefinedScadaStrings, node_id,
+                             [](const auto& p) { return p.second; });
   return i != std::cend(kPredefinedScadaStrings) ? i->first
                                                  : std::string_view{};
 }
