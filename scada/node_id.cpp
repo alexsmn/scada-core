@@ -37,29 +37,49 @@ std::size_t hash<scada::NodeId>::operator()(
 namespace scada {
 
 NodeId::NodeId(String string_id, NamespaceIndex namespace_index)
-    : identifier_{std::make_shared<String>(std::move(string_id))},
+    : identifier_{SharedValue<String>{std::move(string_id)}},
       namespace_index_{namespace_index} {}
 
 NodeId::NodeId(ByteString opaque_id, NamespaceIndex namespace_index)
-    : identifier_{std::make_shared<ByteString>(std::move(opaque_id))},
+    : identifier_{SharedValue<ByteString>(std::move(opaque_id))},
       namespace_index_{namespace_index} {}
+
+NodeId::NodeId(NodeId&& source) noexcept
+    : identifier_{std::move(source.identifier_)},
+      namespace_index_{source.namespace_index_} {
+  source.identifier_ = static_cast<NumericId>(0);
+  source.namespace_index_ = 0;
+  assert(source.is_null());
+}
+
+NodeId& NodeId::operator=(NodeId&& source) noexcept {
+  if (this != &source) {
+    namespace_index_ = source.namespace_index_;
+    identifier_ = std::move(source.identifier_);
+    source.identifier_ = {};
+    source.namespace_index_ = 0;
+    assert(source.is_null());
+  }
+  return *this;
+}
 
 const String& NodeId::string_id() const {
   assert(type() == NodeIdType::String);
-  return *std::get<SharedStringId>(identifier_);
+  return std::get<SharedValue<String>>(identifier_).get();
 }
 
 const ByteString& NodeId::opaque_id() const {
   assert(type() == NodeIdType::Opaque);
-  return *std::get<SharedByteString>(identifier_);
+  return std::get<SharedValue<ByteString>>(identifier_).get();
 }
 
 String NodeId::ToString() const {
   std::string result;
 
-  if (namespace_index_ != 0)
+  if (namespace_index_ != 0) {
     base::StringAppendF(&result, "ns=%u;",
                         static_cast<unsigned>(namespace_index_));
+  }
 
   switch (type()) {
     case NodeIdType::Numeric:

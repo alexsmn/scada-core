@@ -11,20 +11,12 @@ namespace scada {
 struct AggregateFilter {
   bool is_null() const { return interval.is_zero(); }
 
+  auto operator<=>(const AggregateFilter&) const = default;
+
   DateTime start_time;
   Duration interval;
   NodeId aggregate_type;
 };
-
-inline bool operator<(const AggregateFilter& a, const AggregateFilter& b) {
-  return std::tie(a.start_time, a.interval, a.aggregate_type) <
-         std::tie(b.start_time, b.interval, b.aggregate_type);
-}
-
-inline bool operator==(const AggregateFilter& a, const AggregateFilter& b) {
-  return std::tie(a.start_time, a.interval, a.aggregate_type) ==
-         std::tie(b.start_time, b.interval, b.aggregate_type);
-}
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const AggregateFilter& filter) {

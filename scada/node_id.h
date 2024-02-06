@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scada/basic_types.h"
+#include "scada/shared_value.h"
 #include "scada/string.h"
 
 #include <cassert>
@@ -22,6 +23,13 @@ class NodeId {
                    NamespaceIndex namespace_index = 0) noexcept;
   NodeId(String string_id, NamespaceIndex namespace_index);
   NodeId(ByteString opaque_id, NamespaceIndex namespace_index);
+
+  NodeId(const NodeId& source) = default;
+  NodeId& operator=(const NodeId& source) = default;
+
+  // The move source becomes null.
+  NodeId(NodeId&& source) noexcept;
+  NodeId& operator=(NodeId&& source) noexcept;
 
   constexpr NodeIdType type() const noexcept {
     return static_cast<NodeIdType>(identifier_.index());
@@ -47,14 +55,14 @@ class NodeId {
   const String& string_id() const;
   const ByteString& opaque_id() const;
 
+  auto operator<=>(const NodeId&) const = default;
+
   String ToString() const;
   static NodeId FromString(std::string_view string);
 
  private:
-  using SharedStringId = std::shared_ptr<const String>;
-  using SharedByteString = std::shared_ptr<const ByteString>;
-  std::variant<NumericId, SharedStringId, SharedByteString> identifier_ =
-      static_cast<NumericId>(0);
+  std::variant<NumericId, SharedValue<String>, SharedValue<ByteString>>
+      identifier_;
 
   NamespaceIndex namespace_index_ = 0;
 };
@@ -80,50 +88,6 @@ inline constexpr bool NodeId::is_namespace_only() const noexcept {
 inline constexpr NumericId NodeId::numeric_id() const {
   assert(type() == NodeIdType::Numeric);
   return std::get<NumericId>(identifier_);
-}
-
-inline constexpr bool operator==(const NodeId& a, const NodeId& b) noexcept {
-  if (a.namespace_index() != b.namespace_index())
-    return false;
-
-  if (a.type() != b.type())
-    return false;
-
-  switch (a.type()) {
-    case NodeIdType::Numeric:
-      return a.numeric_id() == b.numeric_id();
-    case NodeIdType::String:
-      return a.string_id() == b.string_id();
-    case NodeIdType::Opaque:
-      return a.opaque_id() == b.opaque_id();
-    default:
-      assert(false);
-      return false;
-  }
-}
-
-inline constexpr bool operator!=(const NodeId& a, const NodeId& b) noexcept {
-  return !operator==(a, b);
-}
-
-inline constexpr bool operator<(const NodeId& a, const NodeId& b) noexcept {
-  if (a.namespace_index() != b.namespace_index())
-    return a.namespace_index() < b.namespace_index();
-
-  if (a.type() != b.type())
-    return a.type() < b.type();
-
-  switch (a.type()) {
-    case NodeIdType::Numeric:
-      return a.numeric_id() < b.numeric_id();
-    case NodeIdType::String:
-      return a.string_id() < b.string_id();
-    case NodeIdType::Opaque:
-      return a.opaque_id() < b.opaque_id();
-    default:
-      assert(false);
-      return false;
-  }
 }
 
 inline constexpr bool operator==(const NodeId& a, NumericId b) noexcept {
