@@ -22,10 +22,10 @@ class MockMonitoredItemService : public MonitoredItemService {
         .WillByDefault(Return(default_monitored_item));
   }
 
-  MOCK_METHOD2(
-      CreateMonitoredItem,
-      std::shared_ptr<MonitoredItem>(const ReadValueId& value_id,
-                                     const MonitoringParameters& params));
+  MOCK_METHOD(std::shared_ptr<MonitoredItem>,
+              CreateMonitoredItem,
+              (const ReadValueId& value_id, const MonitoringParameters& params),
+              (override));
 
   const std::shared_ptr<MockMonitoredItem> default_monitored_item =
       std::make_shared<testing::NiceMock<MockMonitoredItem>>();

@@ -2,6 +2,7 @@
 
 #include "base/executor_timer.h"
 
+#include <concepts>
 #include <map>
 #include <memory>
 
@@ -9,6 +10,7 @@ template <class Value>
 bool IsTimedCacheExpired(const Value& value);
 
 template <class Key, class Value>
+  requires std::totally_ordered<Key>
 class TimedCache {
  public:
   explicit TimedCache(std::shared_ptr<Executor> executor);
@@ -44,6 +46,7 @@ class TimedCache {
 };
 
 template <class Key, class Value>
+  requires std::totally_ordered<Key>
 inline TimedCache<Key, Value>::TimedCache(std::shared_ptr<Executor> executor)
     : timer_{std::move(executor)} {
   using namespace std::chrono_literals;
@@ -51,12 +54,14 @@ inline TimedCache<Key, Value>::TimedCache(std::shared_ptr<Executor> executor)
 }
 
 template <class Key, class Value>
+  requires std::totally_ordered<Key>
 inline Value TimedCache<Key, Value>::Find(const Key& key) const {
   auto i = map_.find(key);
   return i != map_.end() ? i->second.value : nullptr;
 }
 
 template <class Key, class Value>
+  requires std::totally_ordered<Key>
 template <class T>
 inline void TimedCache<Key, Value>::Add(const Key& key, T&& value) {
   assert(map_.find(key) == map_.end());
@@ -65,6 +70,7 @@ inline void TimedCache<Key, Value>::Add(const Key& key, T&& value) {
 }
 
 template <class Key, class Value>
+  requires std::totally_ordered<Key>
 inline void TimedCache<Key, Value>::OnTimer() {
   base::TimeTicks time = base::TimeTicks::Now();
   for (auto i = map_.begin(); i != map_.end();) {

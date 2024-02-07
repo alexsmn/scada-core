@@ -4,6 +4,7 @@
 #include "scada/date_time.h"
 #include "scada/node_id.h"
 
+#include <concepts>
 #include <ostream>
 
 namespace scada {
@@ -11,12 +12,14 @@ namespace scada {
 struct AggregateFilter {
   bool is_null() const { return interval.is_zero(); }
 
-  auto operator<=>(const AggregateFilter&) const = default;
+  std::strong_ordering operator<=>(const AggregateFilter&) const = default;
 
   DateTime start_time;
   Duration interval;
   NodeId aggregate_type;
 };
+
+static_assert(std::totally_ordered<AggregateFilter>);
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const AggregateFilter& filter) {
