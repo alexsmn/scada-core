@@ -172,6 +172,19 @@ inline auto BindPromiseExecutorWithResult(
       location);
 }
 
+template <class T, class C>
+inline auto BindPromiseExecutorWithResult(
+    std::shared_ptr<Executor> executor,
+    const Cancelation& cancelation,
+    T&& task,
+    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+  return BindPromiseExecutorWithResult(
+      std::move(executor),
+      BindCancelationFunc(cancelation.weak_ptr(), std::forward<T>(task),
+                          internal::CancelationPromiseFunc<T>{}),
+      location);
+}
+
 inline promise<void> Delay(
     Executor& executor,
     Duration delay,

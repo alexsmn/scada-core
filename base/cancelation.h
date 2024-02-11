@@ -144,6 +144,8 @@ class Cancelation {
  public:
   CancelationRef ref() const { return CancelationRef{*this}; }
 
+  std::weak_ptr<void> weak_ptr() const { return shared_ptr_; }
+
   template <class T>
   auto Bind(T&& task) const {
     return BindCancelation(std::weak_ptr<void>{shared_ptr_},
