@@ -138,9 +138,9 @@ namespace internal {
 template <class T>
 struct CancelationPromiseFunc {
   template <class... Args>
-  auto operator()(Args&&... args) const {
-    using ReturnPromiseType = std::invoke_result_t<T, Args...>;
-    return make_rejected_promise<typename ReturnPromiseType::value_type>(
+  auto operator()(Args&&...) const {
+    using FuncResultType = std::invoke_result_t<T, Args...>;
+    return make_rejected_promise<promise_result_t<FuncResultType>>(
         std::exception{});
   }
 };

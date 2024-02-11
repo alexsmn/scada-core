@@ -5,6 +5,7 @@
 
 namespace scada {
 
+// Prefer `scada::client{...}.node(input.node_id).read(input.attribute_id)`.
 inline promise<DataValue> Read(
     AttributeService& attribute_service,
     const std::shared_ptr<const ServiceContext>& context,

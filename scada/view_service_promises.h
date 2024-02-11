@@ -52,6 +52,9 @@ inline status_promise<std::vector<BrowsePathResult>> TranslateBrowsePaths(
   return promise;
 }
 
+// Prefer:
+// client_.node(filesystem::id::FileSystem)
+//    .translate_browse_path(relative_path);
 inline status_promise<std::vector<BrowsePathTarget>> TranslateBrowsePath(
     ViewService& service,
     const BrowsePath& browse_path) {
@@ -68,6 +71,10 @@ inline status_promise<std::vector<BrowsePathTarget>> TranslateBrowsePath(
       });
 }
 
+// Prefer:
+// client_.node(filesystem::id::FileSystem)
+//    .translate_browse_path(relative_path)
+//    .then(&GetOnlyTargetId);
 inline status_promise<scada::NodeId> TranslateBrowsePathToOneTarget(
     ViewService& service,
     const BrowsePath& browse_path) {

@@ -87,6 +87,6 @@ inline [[nodiscard]] promise<> FoldPromises(promise<> a, promise<> b) {
 }
 
 template <typename T>
-inline [[nodiscard]] promise<void> IgnoreException(promise<T> promise) {
+inline [[nodiscard]] promise<void> IgnoreResult(promise<T> promise) {
   return promise.then([] {}, [](std::exception_ptr e) {});
 }
