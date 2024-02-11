@@ -19,7 +19,8 @@ struct ReadValueId {
 };
 
 using ReadCallback =
-    std::function<void(Status&&, std::vector<DataValue>&& results)>;
+    std::function<void(Status, std::vector<DataValue> results)>;
+
 using WriteCallback = MultiStatusCallback;
 
 struct WriteValue {

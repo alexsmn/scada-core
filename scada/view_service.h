@@ -59,6 +59,7 @@ struct BrowsePathTarget {
   size_t remaining_path_index = 0;
 };
 
+// TODO: Replace with `StatusCodeOr`.
 struct BrowsePathResult {
   StatusCode status_code = scada::StatusCode::Good;
   std::vector<BrowsePathTarget> targets;
