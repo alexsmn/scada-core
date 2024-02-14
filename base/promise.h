@@ -5,17 +5,30 @@
 using namespace promise_hpp;
 
 template <class T>
-struct PromiseResult {
+struct add_promise {
+  using type = promise<T>;
+};
+
+template <class T>
+struct add_promise<promise<T>> {
+  using type = promise<T>;
+};
+
+template <class T>
+using add_promise_t = typename add_promise<T>::type;
+
+template <class T>
+struct remove_promise {
   using type = T;
 };
 
 template <class T>
-struct PromiseResult<promise<T>> {
+struct remove_promise<promise<T>> {
   using type = T;
 };
 
 template <class T>
-using promise_result_t = typename PromiseResult<T>::type;
+using remove_promise_t = typename remove_promise<T>::type;
 
 inline [[nodiscard]] promise<> MakeRejectedPromise() {
   return make_rejected_promise(std::exception{});
@@ -48,6 +61,13 @@ inline [[nodiscard]] promise<R> ToRejectedPromise(promise<T> promise) {
   return promise.then([](const T& value) {
     return make_rejected_promise<R>(std::exception{});
   });
+}
+
+// An overload accepting a non-promise value as a source.
+template <class T, class U>
+inline promise<T> ForwardPromise(U&& source_value, promise<T> target_promise) {
+  target_promise.resolve(std::forward<U>(source_value));
+  return target_promise;
 }
 
 inline promise<> ForwardPromise(promise<> source_promise,

@@ -4,7 +4,27 @@
 
 #include <gmock/gmock.h>
 
-TEST(DispatchPromise, Test) {
+TEST(DispatchPromise, ClosureReturnsVoid) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  auto dispatched_promise = DispatchPromise(
+      *executor, [&] { EXPECT_TRUE(executor->is_current_executor()); });
+
+  dispatched_promise.get();
+}
+
+TEST(DispatchPromise, ClosureReturnsValue) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  auto dispatched_promise = DispatchPromise(*executor, [&] {
+    EXPECT_TRUE(executor->is_current_executor());
+    return 42;
+  });
+
+  EXPECT_EQ(dispatched_promise.get(), 42);
+}
+
+TEST(DispatchPromise, ClosureReturnsPromise) {
   auto executor = std::make_shared<TestExecutor>();
 
   auto dispatched_promise = DispatchPromise(*executor, [&] {
@@ -15,23 +35,36 @@ TEST(DispatchPromise, Test) {
   EXPECT_EQ(dispatched_promise.get(), 42);
 }
 
-TEST(BindPromiseExecutor, ResolverReturnsConstant) {
+TEST(BindPromiseExecutor, FuncReturnsVoid) {
   auto executor = std::make_shared<TestExecutor>();
-  std::function<promise<int>()> binding =
-      BindPromiseExecutor(executor, [] { return 42; });
+
+  std::function<promise<void>()> binding = BindPromiseExecutor(
+      executor, [&] { EXPECT_TRUE(executor->is_current_executor()); });
+
+  binding().get();
+}
+
+TEST(BindPromiseExecutor, FuncReturnsValue) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  std::function<promise<int>()> binding = BindPromiseExecutor(executor, [&] {
+    EXPECT_TRUE(executor->is_current_executor());
+    return 42;
+  });
 
   EXPECT_EQ(binding().get(), 42);
 }
 
-/*TEST(BindPromiseExecutorWithResult, ResolverReturnsConstant) {
+/*TEST(BindPromiseExecutorWithResult, FuncReturnsValue) {
   auto executor = std::make_shared<TestExecutor>();
+
   std::function<promise<void>()> binding =
       BindPromiseExecutorWithResult(executor, [] { return 42; });
 
   binding().get();
 }*/
 
-TEST(BindPromiseExecutorWithResult, ResolverReturnsVoidPromise) {
+TEST(BindPromiseExecutorWithResult, FuncReturnsVoidPromise) {
   auto executor = std::make_shared<TestExecutor>();
 
   std::function<promise<void>()> binding =
@@ -43,7 +76,7 @@ TEST(BindPromiseExecutorWithResult, ResolverReturnsVoidPromise) {
   binding().get();
 }
 
-TEST(BindPromiseExecutorWithResult, ResolverReturnsValuePromise) {
+TEST(BindPromiseExecutorWithResult, FuncReturnsValuePromise) {
   auto executor = std::make_shared<TestExecutor>();
 
   std::function<promise<int>()> binding =
@@ -55,7 +88,7 @@ TEST(BindPromiseExecutorWithResult, ResolverReturnsValuePromise) {
   EXPECT_EQ(binding().get(), 42);
 }
 
-TEST(BindPromiseExecutorWithResult, ResolverReturnsVoidPromiseWithCancelation) {
+TEST(BindPromiseExecutorWithResult, WithCancelation_FuncReturnsVoidPromise) {
   auto executor = std::make_shared<TestExecutor>();
   auto cancelation = std::make_shared<int>();
 
@@ -68,8 +101,7 @@ TEST(BindPromiseExecutorWithResult, ResolverReturnsVoidPromiseWithCancelation) {
   binding().get();
 }
 
-TEST(BindPromiseExecutorWithResult,
-     ResolverReturnsValuePromiseWithCancelation) {
+TEST(BindPromiseExecutorWithResult, WithCancelation_FuncReturnsValuePromise) {
   auto executor = std::make_shared<TestExecutor>();
   auto cancelation = std::make_shared<int>();
 

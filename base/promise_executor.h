@@ -6,23 +6,24 @@
 
 #include <source_location>
 
-// `closure` must return a promise.
+// `closure` can a promise, or a value, or void.
 template <class F>
 inline auto DispatchPromise(
     Executor& executor,
     F&& closure,
     const std::source_location& location = std::source_location::current()) {
-  using P = std::invoke_result_t<F>;
-  static_assert(
-      is_promise_v<P>,
-      "DispatchPromise can only accept a closure returning a promise");
-
-  P p;
+  using R = std::invoke_result_t<F>;
+  add_promise_t<R> p;
 
   Dispatch(
       executor,
       [closure = std::forward<F>(closure), p]() mutable {
-        ForwardPromise(closure(), p);
+        if constexpr (std::is_void_v<R>) {
+          closure();
+          p.resolve();
+        } else {
+          ForwardPromise(closure(), p);
+        }
       },
       location);
 
@@ -155,7 +156,7 @@ struct CancelationPromiseFunc {
   template <class... Args>
   auto operator()(Args&&...) const {
     using FuncResultType = std::invoke_result_t<T, Args...>;
-    return make_rejected_promise<promise_result_t<FuncResultType>>(
+    return make_rejected_promise<remove_promise_t<FuncResultType>>(
         std::exception{});
   }
 };
