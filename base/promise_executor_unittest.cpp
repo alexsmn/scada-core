@@ -69,6 +69,17 @@ TEST(BindPromiseExecutorWithResult, FuncReturnsValue) {
 }
 #endif
 
+TEST(BindPromiseExecutor, WithCancelation_FuncReturnsVoid) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto cancelation = std::make_shared<int>();
+
+  std::function<promise<void>()> binding = BindPromiseExecutor(
+      executor, std::weak_ptr{cancelation},
+      [&] { EXPECT_TRUE(executor->is_current_executor()); });
+
+  binding().get();
+}
+
 TEST(BindPromiseExecutorWithResult, FuncReturnsVoidPromise) {
   auto executor = std::make_shared<TestExecutor>();
 

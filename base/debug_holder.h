@@ -1,13 +1,11 @@
 #pragma once
 
-#include <source_location>
-
 #if defined(NDEBUG)
 
 template <class T>
 class DebugHolder {
  public:
-  explicit DebugHolder(const std::source_location& location) {}
+  explicit DebugHolder(const T&) {}
 
   T get() const { return {}; }
 };

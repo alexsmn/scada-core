@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/debug_holder.h"
+
 #include <memory>
 #include <source_location>
 #include <stop_token>
@@ -24,10 +26,7 @@ struct CancelationWrapper {
 
   const std::weak_ptr<C> cancelation_;
   T task_;
-
-#ifndef NDEBUG
-  std::source_location location_;
-#endif
+  const DebugHolder<std::source_location> location_;
 };
 
 template <class C, class F, class CF>
@@ -51,10 +50,7 @@ struct CancelationFuncWrapper {
   const std::weak_ptr<C> cancelation_;
   F func_;
   CF canceled_func_;
-
-#ifndef NDEBUG
-  std::source_location location_;
-#endif
+  const DebugHolder<std::source_location> location_;
 };
 
 template <class T>
@@ -84,13 +80,8 @@ inline auto BindCancelation(
     std::weak_ptr<C> cancelation,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
-  return internal::CancelationWrapper<C, T>{std::move(cancelation),
-                                            std::forward<T>(task)
-#ifndef NDEBUG
-                                                ,
-                                            location
-#endif
-  };
+  return internal::CancelationWrapper<C, T>{
+      std::move(cancelation), std::forward<T>(task), DebugHolder{location}};
 }
 
 template <class C, class F, class CF>
@@ -101,12 +92,7 @@ inline auto BindCancelationFunc(
     const std::source_location& location = std::source_location::current()) {
   return internal::CancelationFuncWrapper<C, F, CF>{
       std::move(cancelation), std::forward<F>(func),
-      std::forward<CF>(canceled_func)
-#ifndef NDEBUG
-          ,
-      location
-#endif
-  };
+      std::forward<CF>(canceled_func), DebugHolder{location}};
 }
 
 template <class T>
