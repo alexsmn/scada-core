@@ -6,9 +6,10 @@
 
 #include <source_location>
 
+// A `Dispatch` version that returns a promise.
 // `closure` can a promise, or a value, or void.
 template <class F>
-inline auto DispatchPromise(
+inline [[nodiscard]] auto DispatchAsPromise(
     Executor& executor,
     F&& closure,
     const std::source_location& location = std::source_location::current()) {
@@ -107,7 +108,7 @@ class WrappedPromiseTaskWithResult {
           return std::apply(std::move(task), std::move(args));
         };
 
-    return DispatchPromise(*executor_, std::move(closure), location_);
+    return DispatchAsPromise(*executor_, std::move(closure), location_);
   }
 
  private:

@@ -4,19 +4,19 @@
 
 #include <gmock/gmock.h>
 
-TEST(DispatchPromise, ClosureReturnsVoid) {
+TEST(DispatchAsPromise, ClosureReturnsVoid) {
   auto executor = std::make_shared<TestExecutor>();
 
-  auto dispatched_promise = DispatchPromise(
+  auto dispatched_promise = DispatchAsPromise(
       *executor, [&] { EXPECT_TRUE(executor->is_current_executor()); });
 
   dispatched_promise.get();
 }
 
-TEST(DispatchPromise, ClosureReturnsValue) {
+TEST(DispatchAsPromise, ClosureReturnsValue) {
   auto executor = std::make_shared<TestExecutor>();
 
-  auto dispatched_promise = DispatchPromise(*executor, [&] {
+  auto dispatched_promise = DispatchAsPromise(*executor, [&] {
     EXPECT_TRUE(executor->is_current_executor());
     return 42;
   });
@@ -24,10 +24,10 @@ TEST(DispatchPromise, ClosureReturnsValue) {
   EXPECT_EQ(dispatched_promise.get(), 42);
 }
 
-TEST(DispatchPromise, ClosureReturnsPromise) {
+TEST(DispatchAsPromise, ClosureReturnsPromise) {
   auto executor = std::make_shared<TestExecutor>();
 
-  auto dispatched_promise = DispatchPromise(*executor, [&] {
+  auto dispatched_promise = DispatchAsPromise(*executor, [&] {
     EXPECT_TRUE(executor->is_current_executor());
     return make_resolved_promise(42);
   });
