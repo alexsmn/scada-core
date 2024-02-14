@@ -38,14 +38,14 @@ inline void Dispatch(
 
 namespace internal {
 
-template <class Task>
-struct ExecutorWrapper {
+template <class F>
+struct ExecutorBoundFunc {
   template <class U>
-  ExecutorWrapper(std::shared_ptr<Executor> executor,
-                  U&& task,
-                  const std::source_location& location)
+  ExecutorBoundFunc(std::shared_ptr<Executor> executor,
+                    U&& func,
+                    const std::source_location& location)
       : executor_{std::move(executor)},
-        task_{std::forward<U>(task)}
+        func_{std::forward<U>(func)}
 #ifndef NDEBUG
         ,
         location_{location}
@@ -56,24 +56,26 @@ struct ExecutorWrapper {
   template <class... Args>
   void operator()(Args&&... args) const {
     // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
-    // WARNING: The operator may be called for multiple times. The task cannot
-    // be moved.
-    Dispatch(
-        *executor_,
-        [task = task_,
-         args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-          std::apply(std::move(task), std::move(args));
-        },
+    auto closure = [func = func_, args = std::make_tuple(
+                                      std::forward<Args>(args)...)]() mutable {
+      std::apply(std::move(func), args);
+    };
+
+    Dispatch(*executor_, std::move(closure),
 #ifndef NDEBUG
-        location_
+             location_
 #else
-        {}
+             {}
 #endif
     );
   }
 
   const std::shared_ptr<Executor> executor_;
-  const Task task_;
+
+  // WARNING: The operator may be called for multiple times. The functor must
+  // not be moved.
+  const F func_;
+
 #ifndef NDEBUG
   const std::source_location location_;
 #endif
@@ -86,8 +88,8 @@ inline auto BindExecutor(
     std::shared_ptr<Executor> executor,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
-  return internal::ExecutorWrapper<T>{std::move(executor),
-                                      std::forward<T>(task), location};
+  return internal::ExecutorBoundFunc<T>{std::move(executor),
+                                        std::forward<T>(task), location};
 }
 
 template <class C, class T>
