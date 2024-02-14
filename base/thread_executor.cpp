@@ -12,7 +12,7 @@ struct ThreadExecutor::State : public std::enable_shared_from_this<State> {
     TimePoint time;
     int sequence = 0;
 #ifndef NDEBUG
-    boost::source_location location;
+    std::source_location location;
 #endif
   };
 
@@ -24,7 +24,7 @@ struct ThreadExecutor::State : public std::enable_shared_from_this<State> {
 
   void PostDelayedTask(Duration delay,
                        Task task,
-                       const boost::source_location& location);
+                       const std::source_location& location);
   size_t GetTaskCount() const;
 
   mutable std::mutex mutex_;
@@ -70,7 +70,7 @@ void ThreadExecutor::State::Stop() {
 void ThreadExecutor::State::PostDelayedTask(
     Duration delay,
     Task task,
-    const boost::source_location& location) {
+    const std::source_location& location) {
   std::lock_guard lock(mutex_);
   if (delay == Duration()) {
     task_queue_.emplace(std::move(task));
@@ -157,7 +157,7 @@ void ThreadExecutor::Shutdown() {
 
 void ThreadExecutor::PostDelayedTask(Duration delay,
                                      Task task,
-                                     const boost::source_location& location) {
+                                     const std::source_location& location) {
   state_->PostDelayedTask(delay, std::move(task), location);
 }
 

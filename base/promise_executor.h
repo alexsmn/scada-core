@@ -4,7 +4,30 @@
 #include "base/executor.h"
 #include "base/promise.h"
 
-#include <boost/assert/source_location.hpp>
+#include <source_location>
+
+// `closure` must return a promise.
+template <class F>
+inline auto DispatchPromise(
+    Executor& executor,
+    F&& closure,
+    const std::source_location& location = std::source_location::current()) {
+  using P = std::invoke_result_t<F>;
+  static_assert(
+      is_promise_v<P>,
+      "DispatchPromise can only accept a closure returning a promise");
+
+  P p;
+
+  Dispatch(
+      executor,
+      [closure = std::forward<F>(closure), p]() mutable {
+        ForwardPromise(closure(), p);
+      },
+      location);
+
+  return p;
+}
 
 namespace internal {
 
@@ -23,7 +46,7 @@ template <class Task>
 class WrappedPromiseTask {
  public:
   template <class T>
-  WrappedPromiseTask(const boost::source_location& location,
+  WrappedPromiseTask(const std::source_location& location,
                      std::shared_ptr<Executor> executor,
                      T&& task)
       : executor_{std::move(executor)},
@@ -35,7 +58,8 @@ class WrappedPromiseTask {
 
   template <class... Args>
   auto operator()(Args&&... args) {
-    auto promise = make_promise<std::invoke_result_t<Task, Args...>>();
+    using TaskResult = std::invoke_result_t<Task, Args...>;
+    auto promise = make_promise<TaskResult>();
     // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
     Dispatch(
         *executor_,
@@ -55,7 +79,7 @@ class WrappedPromiseTask {
  private:
   const std::shared_ptr<Executor> executor_;
 #ifndef NDEBUG
-  const boost::source_location location_;
+  const std::source_location location_;
 #endif
   Task task_;
 };
@@ -64,7 +88,7 @@ template <class Task>
 class WrappedPromiseTaskWithResult {
  public:
   template <class T>
-  WrappedPromiseTaskWithResult(const boost::source_location& location,
+  WrappedPromiseTaskWithResult(const std::source_location& location,
                                std::shared_ptr<Executor> executor,
                                T&& task)
       : executor_{std::move(executor)},
@@ -76,28 +100,19 @@ class WrappedPromiseTaskWithResult {
 
   template <class... Args>
   auto operator()(Args&&... args) {
-    promise<promise_result_t<std::invoke_result_t<Task, Args...>>> promise;
-    // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
-    Dispatch(
-        *executor_,
-        [promise, task = std::move(task_),
+    auto closure =
+        [task = std::move(task_),
          args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-          auto task_promise = std::apply(std::move(task), std::move(args));
-          ForwardPromise(task_promise, promise);
-        },
-#ifdef NDEBUG
-        {}
-#else
-        location_
-#endif
-    );
-    return promise;
+          return std::apply(std::move(task), std::move(args));
+        };
+
+    return DispatchPromise(*executor_, std::move(closure), location_);
   }
 
  private:
   const std::shared_ptr<Executor> executor_;
 #ifndef NDEBUG
-  const boost::source_location location_;
+  const std::source_location location_;
 #endif
   Task task_;
 };
@@ -108,7 +123,7 @@ template <class T>
 inline auto BindPromiseExecutor(
     std::shared_ptr<Executor> executor,
     T&& task,
-    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+    const std::source_location& location = std::source_location::current()) {
   return internal::WrappedPromiseTask<T>(location, std::move(executor),
                                          std::forward<T>(task));
 }
@@ -118,7 +133,7 @@ inline auto BindPromiseExecutor(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<C> cancelation,
     T&& task,
-    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+    const std::source_location& location = std::source_location::current()) {
   return BindPromiseExecutor(
       std::move(executor),
       BindCancelation(std::move(cancelation), std::forward<T>(task)), location);
@@ -128,7 +143,7 @@ template <class T>
 inline auto BindPromiseExecutorWithResult(
     std::shared_ptr<Executor> executor,
     T&& task,
-    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+    const std::source_location& location = std::source_location::current()) {
   return internal::WrappedPromiseTaskWithResult<T>(
       location, std::move(executor), std::forward<T>(task));
 }
@@ -147,24 +162,12 @@ struct CancelationPromiseFunc {
 
 }  // namespace internal
 
-template <class F>
-inline auto DispatchPromise(Executor& executor, F&& func) {
-  using P = std::invoke_result_t<F>;
-  P p;
-
-  Dispatch(executor, [func = std::forward<F>(func), p]() mutable {
-    ForwardPromise(func(), p);
-  });
-
-  return p;
-}
-
 template <class T, class C>
 inline auto BindPromiseExecutorWithResult(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<C> cancelation,
     T&& task,
-    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+    const std::source_location& location = std::source_location::current()) {
   return BindPromiseExecutorWithResult(
       std::move(executor),
       BindCancelationFunc(std::move(cancelation), std::forward<T>(task),
@@ -177,7 +180,7 @@ inline auto BindPromiseExecutorWithResult(
     std::shared_ptr<Executor> executor,
     const Cancelation& cancelation,
     T&& task,
-    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+    const std::source_location& location = std::source_location::current()) {
   return BindPromiseExecutorWithResult(
       std::move(executor),
       BindCancelationFunc(cancelation.weak_ptr(), std::forward<T>(task),
@@ -188,7 +191,7 @@ inline auto BindPromiseExecutorWithResult(
 inline promise<void> Delay(
     Executor& executor,
     Duration delay,
-    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+    const std::source_location& location = std::source_location::current()) {
   promise<void> p;
   executor.PostDelayedTask(delay, std::bind_front(&promise<void>::resolve, p),
                            location);

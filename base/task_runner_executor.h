@@ -11,8 +11,8 @@ class TaskRunnerExecutor : public Executor {
 
   virtual void PostDelayedTask(Duration delay,
                                Task task,
-                               const boost::source_location& location =
-                                   BOOST_CURRENT_LOCATION) override {
+                               const std::source_location& location =
+                                   std::source_location::current()) override {
     task_runner_->PostDelayedTask(
         base::ToLocation(location), BindLambda([task] { task(); }),
         base::TimeDelta::FromMicroseconds(

@@ -21,10 +21,10 @@ class ThreadExecutor : public Executor {
   void Shutdown();
 
   // Executor
-  virtual void PostDelayedTask(
-      Duration delay,
-      Task task,
-      const boost::source_location& location = BOOST_CURRENT_LOCATION) override;
+  virtual void PostDelayedTask(Duration delay,
+                               Task task,
+                               const std::source_location& location =
+                                   std::source_location::current()) override;
   virtual size_t GetTaskCount() const override;
 
  private:

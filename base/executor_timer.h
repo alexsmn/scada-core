@@ -2,7 +2,6 @@
 
 #include "base/executor.h"
 
-#include <boost/assert/source_location.hpp>
 #include <memory>
 
 class ExecutorTimer {
@@ -13,7 +12,7 @@ class ExecutorTimer {
   void StartOne(
       Duration period,
       std::function<void()> callback,
-      const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+      const std::source_location& location = std::source_location::current()) {
     core_ = std::make_shared<Core>(executor_, period, std::move(callback),
                                    location);
     core_->Start<false>();
@@ -22,7 +21,7 @@ class ExecutorTimer {
   void StartRepeating(
       Duration period,
       std::function<void()> callback,
-      const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+      const std::source_location& location = std::source_location::current()) {
     core_ = std::make_shared<Core>(executor_, period, std::move(callback),
                                    location);
     core_->Start<true>();
@@ -36,7 +35,7 @@ class ExecutorTimer {
     Core(std::shared_ptr<Executor> executor,
          Duration period,
          std::function<void()> callback,
-         const boost::source_location& location)
+         const std::source_location& location)
         : executor_{std::move(executor)},
 #ifndef NDEBUG
           location_{location},
@@ -70,7 +69,7 @@ class ExecutorTimer {
     const Duration period_;
     const std::function<void()> callback_;
 #ifndef NDEBUG
-    const boost::source_location location_;
+    const std::source_location location_;
 #endif
   };
 
@@ -84,7 +83,7 @@ inline void StartRepeatableTimer(
     Duration period,
     const std::weak_ptr<bool>& cancelation,
     Executor::Task task,
-    const boost::source_location& location = BOOST_CURRENT_LOCATION) {
+    const std::source_location& location = std::source_location::current()) {
   // |BindCancelation| is not effective, as |cancelation| has to be captured by
   // the lambda anyway.
   executor->PostDelayedTask(
