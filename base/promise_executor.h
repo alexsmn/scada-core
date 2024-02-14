@@ -61,32 +61,14 @@ class WrappedPromiseTask {
   const DebugHolder<std::source_location> location_;
 };
 
-template <class F>
-class WrappedPromiseTaskWithResult {
- public:
-  template <class U>
-  WrappedPromiseTaskWithResult(const std::source_location& location,
-                               std::shared_ptr<Executor> executor,
-                               U&& func)
-      : executor_{std::move(executor)},
-        func_{std::forward<U>(func)},
-        location_{location} {}
-
+template <class T>
+struct CancelationPromiseFunc {
   template <class... Args>
-  auto operator()(Args&&... args) {
-    auto closure =
-        [func = std::move(func_),
-         args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-          return std::apply(std::move(func), std::move(args));
-        };
-
-    return DispatchAsPromise(*executor_, std::move(closure), location_.get());
+  auto operator()(Args&&...) const {
+    using FuncResultType = std::invoke_result_t<T, Args...>;
+    return make_rejected_promise<remove_promise_t<FuncResultType>>(
+        std::exception{});
   }
-
- private:
-  const std::shared_ptr<Executor> executor_;
-  F func_;
-  const DebugHolder<std::source_location> location_;
 };
 
 }  // namespace internal
@@ -117,23 +99,9 @@ inline auto BindPromiseExecutorWithResult(
     std::shared_ptr<Executor> executor,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
-  return internal::WrappedPromiseTaskWithResult<T>(
-      location, std::move(executor), std::forward<T>(task));
+  return internal::WrappedPromiseTask<T>(location, std::move(executor),
+                                         std::forward<T>(task));
 }
-
-namespace internal {
-
-template <class T>
-struct CancelationPromiseFunc {
-  template <class... Args>
-  auto operator()(Args&&...) const {
-    using FuncResultType = std::invoke_result_t<T, Args...>;
-    return make_rejected_promise<remove_promise_t<FuncResultType>>(
-        std::exception{});
-  }
-};
-
-}  // namespace internal
 
 template <class T, class C>
 inline auto BindPromiseExecutorWithResult(
