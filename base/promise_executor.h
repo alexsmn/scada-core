@@ -63,18 +63,23 @@ class WrappedPromiseTask {
 
 template <class T>
 struct CancelationPromiseFunc {
+  // TODO: Use a specific exception type.
   template <class... Args>
   auto operator()(Args&&...) const {
-    using FuncResultType = std::invoke_result_t<T, Args...>;
-    return make_rejected_promise<remove_promise_t<FuncResultType>>(
-        std::exception{});
+    using R = std::invoke_result_t<T, Args...>;
+    if constexpr (is_promise_v<R>) {
+      return make_rejected_promise<remove_promise_t<R>>(std::exception{});
+    } else {
+      throw std::exception{};
+      return R{};
+    }
   }
 };
 
 }  // namespace internal
 
 template <class T>
-inline auto BindPromiseExecutor(
+inline auto BindPromiseExecutorWithResult(
     std::shared_ptr<Executor> executor,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
@@ -83,33 +88,12 @@ inline auto BindPromiseExecutor(
 }
 
 template <class T, class C>
-inline auto BindPromiseExecutor(
+inline auto BindPromiseExecutorWithResult(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<C> cancelation,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
   return BindPromiseExecutor(
-      std::move(executor),
-      BindCancelation(std::move(cancelation), std::forward<T>(task), location),
-      location);
-}
-
-template <class T>
-inline auto BindPromiseExecutorWithResult(
-    std::shared_ptr<Executor> executor,
-    T&& task,
-    const std::source_location& location = std::source_location::current()) {
-  return internal::WrappedPromiseTask<T>(location, std::move(executor),
-                                         std::forward<T>(task));
-}
-
-template <class T, class C>
-inline auto BindPromiseExecutorWithResult(
-    std::shared_ptr<Executor> executor,
-    std::weak_ptr<C> cancelation,
-    T&& task,
-    const std::source_location& location = std::source_location::current()) {
-  return BindPromiseExecutorWithResult(
       std::move(executor),
       BindCancelationFunc(std::move(cancelation), std::forward<T>(task),
                           internal::CancelationPromiseFunc<T>{}),
@@ -122,11 +106,31 @@ inline auto BindPromiseExecutorWithResult(
     const Cancelation& cancelation,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
-  return BindPromiseExecutorWithResult(
+  return BindPromiseExecutor(
       std::move(executor),
       BindCancelationFunc(cancelation.weak_ptr(), std::forward<T>(task),
                           internal::CancelationPromiseFunc<T>{}, location),
       location);
+}
+
+template <class T>
+inline auto BindPromiseExecutor(
+    std::shared_ptr<Executor> executor,
+    T&& task,
+    const std::source_location& location = std::source_location::current()) {
+  return BindPromiseExecutorWithResult(std::move(executor),
+                                       std::forward<T>(task), location);
+}
+
+template <class T, class C>
+inline auto BindPromiseExecutor(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<C> cancelation,
+    T&& task,
+    const std::source_location& location = std::source_location::current()) {
+  return BindPromiseExecutorWithResult(std::move(executor),
+                                       std::move(cancelation),
+                                       std::forward<T>(task), location);
 }
 
 inline promise<void> Delay(

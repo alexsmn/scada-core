@@ -55,19 +55,27 @@ TEST(BindPromiseExecutor, FuncReturnsValue) {
   EXPECT_EQ(binding().get(), 42);
 }
 
-#if 0
-TEST(BindPromiseExecutorWithResult, FuncReturnsValue) {
+TEST(BindPromiseExecutor, FuncReturnsVoidPromise) {
   auto executor = std::make_shared<TestExecutor>();
 
-  std::function<promise<void>()> binding =
-      BindPromiseExecutorWithResult(executor, [&] {
-        EXPECT_TRUE(executor->is_current_executor());
-        return 42;
-      });
+  std::function<promise<void>()> binding = BindPromiseExecutor(executor, [&] {
+    EXPECT_TRUE(executor->is_current_executor());
+    return make_resolved_promise();
+  });
 
   binding().get();
 }
-#endif
+
+TEST(BindPromiseExecutor, FuncReturnsValuePromise) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  std::function<promise<int>()> binding = BindPromiseExecutor(executor, [&] {
+    EXPECT_TRUE(executor->is_current_executor());
+    return make_resolved_promise(42);
+  });
+
+  EXPECT_EQ(binding().get(), 42);
+}
 
 TEST(BindPromiseExecutor, WithCancelation_FuncReturnsVoid) {
   auto executor = std::make_shared<TestExecutor>();
@@ -78,6 +86,42 @@ TEST(BindPromiseExecutor, WithCancelation_FuncReturnsVoid) {
       [&] { EXPECT_TRUE(executor->is_current_executor()); });
 
   binding().get();
+}
+
+TEST(BindPromiseExecutor, WithCancelation_FuncReturnsValue_Canceled) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto cancelation = std::make_shared<int>();
+
+  std::function<promise<int>()> binding =
+      BindPromiseExecutor(executor, std::weak_ptr{cancelation}, [&] {
+        EXPECT_TRUE(executor->is_current_executor());
+        return 42;
+      });
+
+  cancelation.reset();
+
+  EXPECT_THROW(binding().get(), std::exception);
+}
+
+TEST(BindPromiseExecutorWithResult, FuncReturnsVoid) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  std::function<promise<void>()> binding = BindPromiseExecutorWithResult(
+      executor, [&] { EXPECT_TRUE(executor->is_current_executor()); });
+
+  binding().get();
+}
+
+TEST(BindPromiseExecutorWithResult, FuncReturnsValue) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  std::function<promise<int>()> binding =
+      BindPromiseExecutorWithResult(executor, [&] {
+        EXPECT_TRUE(executor->is_current_executor());
+        return 42;
+      });
+
+  EXPECT_EQ(binding().get(), 42);
 }
 
 TEST(BindPromiseExecutorWithResult, FuncReturnsVoidPromise) {
@@ -104,6 +148,17 @@ TEST(BindPromiseExecutorWithResult, FuncReturnsValuePromise) {
   EXPECT_EQ(binding().get(), 42);
 }
 
+TEST(BindPromiseExecutorWithResult, WithCancelation_FuncReturnsVoid) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto cancelation = std::make_shared<int>();
+
+  std::function<promise<void>()> binding = BindPromiseExecutorWithResult(
+      executor, std::weak_ptr{cancelation},
+      [&] { EXPECT_TRUE(executor->is_current_executor()); });
+
+  binding().get();
+}
+
 TEST(BindPromiseExecutorWithResult, WithCancelation_FuncReturnsVoidPromise) {
   auto executor = std::make_shared<TestExecutor>();
   auto cancelation = std::make_shared<int>();
@@ -128,4 +183,35 @@ TEST(BindPromiseExecutorWithResult, WithCancelation_FuncReturnsValuePromise) {
       });
 
   EXPECT_EQ(binding().get(), 42);
+}
+
+TEST(BindPromiseExecutorWithResult, WithCancelation_FuncReturnsValue_Canceled) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto cancelation = std::make_shared<int>();
+
+  std::function<promise<int>()> binding =
+      BindPromiseExecutorWithResult(executor, std::weak_ptr{cancelation}, [&] {
+        EXPECT_TRUE(executor->is_current_executor());
+        return 42;
+      });
+
+  cancelation.reset();
+
+  EXPECT_THROW(binding().get(), std::exception);
+}
+
+TEST(BindPromiseExecutorWithResult,
+     WithCancelation_FuncReturnsValuePromise_Canceled) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto cancelation = std::make_shared<int>();
+
+  std::function<promise<int>()> binding =
+      BindPromiseExecutorWithResult(executor, std::weak_ptr{cancelation}, [&] {
+        EXPECT_TRUE(executor->is_current_executor());
+        return make_resolved_promise(42);
+      });
+
+  cancelation.reset();
+
+  EXPECT_THROW(binding().get(), std::exception);
 }
