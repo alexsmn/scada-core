@@ -55,14 +55,19 @@ TEST(BindPromiseExecutor, FuncReturnsValue) {
   EXPECT_EQ(binding().get(), 42);
 }
 
-/*TEST(BindPromiseExecutorWithResult, FuncReturnsValue) {
+#if 0
+TEST(BindPromiseExecutorWithResult, FuncReturnsValue) {
   auto executor = std::make_shared<TestExecutor>();
 
   std::function<promise<void>()> binding =
-      BindPromiseExecutorWithResult(executor, [] { return 42; });
+      BindPromiseExecutorWithResult(executor, [&] {
+        EXPECT_TRUE(executor->is_current_executor());
+        return 42;
+      });
 
   binding().get();
-}*/
+}
+#endif
 
 TEST(BindPromiseExecutorWithResult, FuncReturnsVoidPromise) {
   auto executor = std::make_shared<TestExecutor>();

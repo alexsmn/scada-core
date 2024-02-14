@@ -44,79 +44,64 @@ inline void ResolvePromise(promise<>& promise, T&& task, Args&& args) {
   promise.resolve();
 }
 
-template <class Task>
+template <class F>
 class WrappedPromiseTask {
  public:
-  template <class T>
+  template <class U>
   WrappedPromiseTask(const std::source_location& location,
                      std::shared_ptr<Executor> executor,
-                     T&& task)
+                     U&& func)
       : executor_{std::move(executor)},
-#ifndef NDEBUG
-        location_{location},
-#endif
-        task_{std::forward<T>(task)} {
-  }
+        func_{std::forward<U>(func)},
+        location_{location} {}
 
   template <class... Args>
   auto operator()(Args&&... args) {
-    using TaskResult = std::invoke_result_t<Task, Args...>;
+    using TaskResult = std::invoke_result_t<F, Args...>;
     auto promise = make_promise<TaskResult>();
     // https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
     Dispatch(
         *executor_,
-        [promise, task = std::move(task_),
+        [promise, func = std::move(func_),
          args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-          ResolvePromise(promise, std::move(task), std::move(args));
+          ResolvePromise(promise, std::move(func), std::move(args));
         },
-#ifdef NDEBUG
-        {}
-#else
-        location_
-#endif
-    );
+        location_.get());
     return promise;
   }
 
  private:
   const std::shared_ptr<Executor> executor_;
-#ifndef NDEBUG
-  const std::source_location location_;
-#endif
-  Task task_;
+  F func_;
+  const DebugHolder<std::source_location> location_;
 };
 
-template <class Task>
+template <class F>
 class WrappedPromiseTaskWithResult {
  public:
-  template <class T>
+  template <class U>
   WrappedPromiseTaskWithResult(const std::source_location& location,
                                std::shared_ptr<Executor> executor,
-                               T&& task)
+                               U&& func)
       : executor_{std::move(executor)},
-#ifndef NDEBUG
-        location_{location},
-#endif
-        task_{std::forward<T>(task)} {
-  }
+        func_{std::forward<U>(func)},
+        location_{location} {}
 
   template <class... Args>
   auto operator()(Args&&... args) {
     auto closure =
-        [task = std::move(task_),
+        [func = std::move(func_),
          args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-          return std::apply(std::move(task), std::move(args));
+          return std::apply(std::move(func), std::move(args));
         };
 
-    return DispatchAsPromise(*executor_, std::move(closure), location_);
+    return DispatchAsPromise(*executor_, std::move(closure), location_.get());
   }
 
  private:
   const std::shared_ptr<Executor> executor_;
-#ifndef NDEBUG
-  const std::source_location location_;
-#endif
-  Task task_;
+  F func_;
+  const DebugHolder<std::source_location> location_;
 };
 
 }  // namespace internal

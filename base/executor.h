@@ -2,6 +2,7 @@
 
 #include "base/cancelation.h"
 #include "base/common_types.h"
+#include "base/debug_holder.h"
 
 #include <functional>
 #include <memory>
@@ -45,13 +46,8 @@ struct ExecutorBoundFunc {
                     U&& func,
                     const std::source_location& location)
       : executor_{std::move(executor)},
-        func_{std::forward<U>(func)}
-#ifndef NDEBUG
-        ,
-        location_{location}
-#endif
-  {
-  }
+        func_{std::forward<U>(func)},
+        location_{location} {}
 
   template <class... Args>
   void operator()(Args&&... args) const {
@@ -61,13 +57,7 @@ struct ExecutorBoundFunc {
       std::apply(std::move(func), args);
     };
 
-    Dispatch(*executor_, std::move(closure),
-#ifndef NDEBUG
-             location_
-#else
-             {}
-#endif
-    );
+    Dispatch(*executor_, std::move(closure), location_.get());
   }
 
   const std::shared_ptr<Executor> executor_;
@@ -76,9 +66,7 @@ struct ExecutorBoundFunc {
   // not be moved.
   const F func_;
 
-#ifndef NDEBUG
-  const std::source_location location_;
-#endif
+  const DebugHolder<std::source_location> location_;
 };
 
 }  // namespace internal
