@@ -52,9 +52,10 @@ class SessionProxy : private SessionProxyContext,
   scada::services services();
 
   // scada::SessionService
-  virtual promise<> Connect(const scada::SessionConnectParams& params) override;
-  virtual promise<> Reconnect() override;
-  virtual promise<> Disconnect() override;
+  virtual scada::status_promise<void> Connect(
+      const scada::SessionConnectParams& params) override;
+  virtual scada::status_promise<void> Reconnect() override;
+  virtual scada::status_promise<void> Disconnect() override;
   virtual bool IsConnected(base::TimeDelta* ping_delay) const override;
   virtual bool HasPrivilege(scada::Privilege privilege) const override;
   virtual bool IsScada() const override { return false; }
@@ -94,7 +95,7 @@ class SessionProxy : private SessionProxyContext,
  private:
   friend class EventServiceProxy;
 
-  promise<> Connect();
+  scada::status_promise<void> Connect();
 
   void OnSessionError(const scada::Status& status);
 
@@ -144,7 +145,7 @@ class SessionProxy : private SessionProxyContext,
   boost::signals2::signal<void(bool connected, const scada::Status& status)>
       session_state_changed_signal_;
 
-  promise<> connect_promise_;
+  scada::status_promise<void> connect_promise_;
 
   int next_request_id_ = 1;
 

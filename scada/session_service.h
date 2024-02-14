@@ -33,11 +33,11 @@ class SessionService {
  public:
   virtual ~SessionService() = default;
 
-  virtual promise<> Connect(const SessionConnectParams& params) = 0;
+  virtual status_promise<void> Connect(const SessionConnectParams& params) = 0;
 
-  virtual promise<> Reconnect() = 0;
+  virtual status_promise<void> Reconnect() = 0;
 
-  virtual promise<> Disconnect() = 0;
+  virtual status_promise<void> Disconnect() = 0;
 
   virtual bool IsConnected(base::TimeDelta* ping_delay = nullptr) const = 0;
 

@@ -19,9 +19,9 @@ class client {
                   std::make_shared<ServiceContext>(std::move(context))};
   }
 
-  promise<> connect(const SessionConnectParams& params) const;
+  status_promise<void> connect(const SessionConnectParams& params) const;
 
-  promise<> disconnect() const;
+  status_promise<void> disconnect() const;
 
   scada::node node(const NodeId& node_id) const {
     assert(!node_id.is_null());
@@ -30,13 +30,13 @@ class client {
 
   scada::node server_node() const { return node(id::Server); }
 
-  promise<scada::node> add_node(const AddNodesItem& item);
+  status_promise<scada::node> add_node(const AddNodesItem& item);
 
-  promise<> acknowledge_events(std::vector<EventId> event_ids,
-                               DateTime acknowledge_time) const;
+  status_promise<void> acknowledge_events(std::vector<EventId> event_ids,
+                                          DateTime acknowledge_time) const;
 
-  promise<> acknowledge_event(EventId event_id,
-                              DateTime acknowledge_time) const {
+  status_promise<void> acknowledge_event(EventId event_id,
+                                         DateTime acknowledge_time) const {
     return acknowledge_events({event_id}, acknowledge_time);
   }
 

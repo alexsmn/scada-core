@@ -17,14 +17,14 @@ inline status_promise<HistoryReadRawResult> HistoryReadRawChunk(
   return promise;
 }
 
-inline promise<std::vector<scada::DataValue>> HistoryReadRaw(
+inline status_promise<std::vector<scada::DataValue>> HistoryReadRaw(
     HistoryService& history_service,
     const HistoryReadRawDetails& details) {
   struct State : public std::enable_shared_from_this<State> {
     State(HistoryService& service, HistoryReadRawDetails details)
         : service_{service}, details_{std::move(details)} {}
 
-    promise<std::vector<scada::DataValue>> Start() {
+    status_promise<std::vector<scada::DataValue>> Start() {
       ReadNext();
       return promise_;
     }
@@ -50,7 +50,7 @@ inline promise<std::vector<scada::DataValue>> HistoryReadRaw(
 
     HistoryService& service_;
     HistoryReadRawDetails details_;
-    promise<std::vector<scada::DataValue>> promise_;
+    status_promise<std::vector<scada::DataValue>> promise_;
 
     std::vector<scada::DataValue> values_;
   };
