@@ -13,7 +13,7 @@ class MetricService {
   virtual ~MetricService() = default;
 
   // Returning a rejected promise stops polling. It's handled automatically by
-  // `BindPromiseExecutorWithResult()`.
+  // `BindPromiseExecutor()`.
   // TODO: Rename to a "source", similar to Boost.Log source/sink.
   using Provider = std::function<promise<Metrics>()>;
 

@@ -79,7 +79,7 @@ struct CancelationPromiseFunc {
 }  // namespace internal
 
 template <class T>
-inline auto BindPromiseExecutorWithResult(
+inline auto BindPromiseExecutor(
     std::shared_ptr<Executor> executor,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
@@ -88,7 +88,7 @@ inline auto BindPromiseExecutorWithResult(
 }
 
 template <class T, class C>
-inline auto BindPromiseExecutorWithResult(
+inline auto BindPromiseExecutor(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<C> cancelation,
     T&& task,
@@ -101,7 +101,7 @@ inline auto BindPromiseExecutorWithResult(
 }
 
 template <class T, class C>
-inline auto BindPromiseExecutorWithResult(
+inline auto BindPromiseExecutor(
     std::shared_ptr<Executor> executor,
     const Cancelation& cancelation,
     T&& task,
@@ -111,26 +111,6 @@ inline auto BindPromiseExecutorWithResult(
       BindCancelationFunc(cancelation.weak_ptr(), std::forward<T>(task),
                           internal::CancelationPromiseFunc<T>{}, location),
       location);
-}
-
-template <class T>
-inline auto BindPromiseExecutor(
-    std::shared_ptr<Executor> executor,
-    T&& task,
-    const std::source_location& location = std::source_location::current()) {
-  return BindPromiseExecutorWithResult(std::move(executor),
-                                       std::forward<T>(task), location);
-}
-
-template <class T, class C>
-inline auto BindPromiseExecutor(
-    std::shared_ptr<Executor> executor,
-    std::weak_ptr<C> cancelation,
-    T&& task,
-    const std::source_location& location = std::source_location::current()) {
-  return BindPromiseExecutorWithResult(std::move(executor),
-                                       std::move(cancelation),
-                                       std::forward<T>(task), location);
 }
 
 inline promise<void> Delay(

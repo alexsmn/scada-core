@@ -105,7 +105,7 @@ promise<CreateSessionResult> RemoteSessionManager::CreateSession(
   }
 
   return authenticator_(user_name, password)
-      .then(BindPromiseExecutorWithResult(
+      .then(BindPromiseExecutor(
           executor_,
           [this, user_name,
            delete_existing](const scada::AuthenticationResult& auth_result) {
