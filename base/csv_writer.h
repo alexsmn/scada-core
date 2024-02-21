@@ -8,8 +8,11 @@ class CsvWriter {
   explicit CsvWriter(std::ostream& stream);
 
   void StartRow();
+
   void WriteCell(std::string_view utf8);
   void WriteCell(std::u16string_view utf16);
+
+  void SkipCell() { WriteCell(std::u16string_view{}); }
 
   bool unicode = false;
   char delimiter = ',';
