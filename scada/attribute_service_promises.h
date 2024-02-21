@@ -16,6 +16,23 @@ inline status_promise<DataValue> Read(
   return p;
 }
 
+inline status_promise<std::vector<StatusCode>> Write(
+    AttributeService& attribute_service,
+    const std::shared_ptr<const ServiceContext>& context,
+    std::vector<WriteValue> inputs) {
+  status_promise<std::vector<StatusCode>> p;
+  attribute_service.Write(
+      context, std::make_shared<std::vector<WriteValue>>(std::move(inputs)),
+      [p](Status status, std::vector<StatusCode> results) mutable {
+        if (status) {
+          p.resolve(std::move(results));
+        } else {
+          RejectStatusPromise(p, std::move(status));
+        }
+      });
+  return p;
+}
+
 inline status_promise<void> Write(
     AttributeService& attribute_service,
     const std::shared_ptr<const ServiceContext>& context,
