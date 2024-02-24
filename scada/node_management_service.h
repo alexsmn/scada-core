@@ -20,7 +20,7 @@ struct AddNodesItem {
 };
 
 struct AddNodesResult {
-  StatusCode status_code = StatusCode::Bad;
+  StatusCode status_code = StatusCode::Good;
   NodeId added_node_id;
 };
 
@@ -47,9 +47,9 @@ struct DeleteReferencesItem {
 };
 
 using AddNodesCallback =
-    std::function<void(Status&& status, std::vector<AddNodesResult>&& results)>;
+    std::function<void(Status status, std::vector<AddNodesResult> results)>;
 using DeleteNodesCallback =
-    std::function<void(Status&& status, std::vector<StatusCode>&& results)>;
+    std::function<void(Status status, std::vector<StatusCode> results)>;
 
 using AddReferencesCallback = MultiStatusCallback;
 using DeleteReferencesCallback = MultiStatusCallback;

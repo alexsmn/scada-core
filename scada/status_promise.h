@@ -52,7 +52,16 @@ inline [[nodiscard]] status_promise<void> ToStatusPromise(
   });
 }
 
-inline [[nodiscard]] promise<StatusCode> ToExplicitStatusCodePromise(
+template <class T>
+inline [[nodiscard]] promise<scada::StatusCode> ToExplicitStatusCodePromise(
+    status_promise<T> promise) {
+  return promise.then(
+      [](const T&) { return StatusCode::Good; },
+      [](const std::exception_ptr& e) { return GetExceptionStatus(e).code(); });
+}
+
+template <>
+inline [[nodiscard]] promise<scada::StatusCode> ToExplicitStatusCodePromise(
     status_promise<void> promise) {
   return promise.then(
       [] { return StatusCode::Good; },
