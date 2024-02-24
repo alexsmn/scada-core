@@ -2,6 +2,7 @@
 
 #include "base/promise.h"
 #include "scada/status_exception.h"
+#include "scada/status_or.h"
 
 #include <promise.hpp/promise.hpp>
 
@@ -34,6 +35,34 @@ inline [[nodiscard]] status_promise<void> MakeCompletedStatusPromise(
     Status status) {
   return status ? make_resolved_promise()
                 : make_rejected_promise<>(status_exception{std::move(status)});
+}
+
+template <class T>
+inline [[nodiscard]] status_promise<T> MakeCompletedStatusPromise(
+    const StatusOr<T>& value) {
+  return value.ok()
+             ? make_resolved_promise<T>(*value)
+             : make_rejected_promise<T>(status_exception{value.status()});
+}
+
+template <class T>
+inline [[nodiscard]] status_promise<T> MakeCompletedStatusPromise(
+    StatusOr<T>&& value) {
+  return value.ok() ? make_resolved_promise<T>(std::move(*value))
+                    : make_rejected_promise<T>(
+                          status_exception{std::move(value).status()});
+}
+
+template <class T>
+inline [[nodiscard]] status_promise<T> MakeCompletedStatusPromise(
+    const StatusCodeOr<T>& value) {
+  return MakeCompletedStatusPromise(StatusOr{value});
+}
+
+template <class T>
+inline [[nodiscard]] status_promise<T> MakeCompletedStatusPromise(
+    StatusCodeOr<T>&& value) {
+  return MakeCompletedStatusPromise(StatusOr{value});
 }
 
 inline [[nodiscard]] status_promise<void> ToStatusPromise(
