@@ -109,12 +109,45 @@ inline void RejectStatusPromise(status_promise<void>& promise,
   promise.reject(scada::status_exception{std::move(bad_status)});
 }
 
-inline void ResolveStatusPromise(status_promise<void>& promise, Status status) {
+inline void CompleteStatusPromise(status_promise<void>& promise,
+                                  Status status) {
   if (status) {
     promise.resolve();
   } else {
     RejectStatusPromise(promise, std::move(status));
   }
+}
+
+template <class T>
+inline void CompleteStatusPromise(status_promise<T>& promise,
+                                  StatusOr<T>&& value) {
+  if (value.ok()) {
+    promise.resolve(std::move(*value));
+  } else {
+    RejectStatusPromise(promise, std::move(value).status());
+  }
+}
+
+template <class T>
+inline void CompleteStatusPromise(status_promise<T>& promise,
+                                  const StatusOr<T>& value) {
+  if (value.ok()) {
+    promise.resolve(*value);
+  } else {
+    RejectStatusPromise(promise, value.status());
+  }
+}
+
+template <class T>
+inline void CompleteStatusPromise(status_promise<T>& promise,
+                                  StatusCodeOr<T>&& value) {
+  CompleteStatusPromise(promise, StatusOr{std::move(value)});
+}
+
+template <class T>
+inline void CompleteStatusPromise(status_promise<T>& promise,
+                                  const StatusCodeOr<T>& value) {
+  CompleteStatusPromise(promise, StatusOr{value});
 }
 
 // Properly assigns status callback to a status promise. The callback is invoked

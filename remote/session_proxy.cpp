@@ -76,7 +76,7 @@ scada::status_promise<void> SessionProxy::Disconnect() {
     if (status)
       OnSessionDeleted();
 
-    ResolveStatusPromise(promise, std::move(status));
+    CompleteStatusPromise(promise, std::move(status));
   });
   return promise;
 }
@@ -347,7 +347,7 @@ scada::status_promise<void> SessionProxy::Connect() {
 }
 
 void SessionProxy::ForwardConnectResult(scada::Status&& status) {
-  ResolveStatusPromise(connect_promise_, std::move(status));
+  CompleteStatusPromise(connect_promise_, std::move(status));
 }
 
 void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {

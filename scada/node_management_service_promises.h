@@ -59,7 +59,7 @@ inline status_promise<void> DeleteNode(NodeManagementService& service,
         assert(results.size() == 1);
 
         auto status_code = results[0];
-        ResolveStatusPromise(p, status_code);
+        CompleteStatusPromise(p, status_code);
       });
 
   return p;
