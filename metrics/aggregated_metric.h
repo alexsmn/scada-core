@@ -24,7 +24,7 @@ class AggregatedMetric {
     return sum_ / count_;
   }
 
-  T total() const {
+  T sum() const {
     assert(!empty());
     return sum_;
   }
@@ -53,4 +53,20 @@ class AggregatedMetric {
   T max_;
   T min_;
   T sum_;
+};
+
+template <class T>
+struct AggregatedCounter {
+  size_t counter = 0;
+  AggregatedMetric<T> metric;
+
+  void operator++() {
+    ++counter;
+    metric(counter);
+  }
+
+  void operator--() {
+    --counter;
+    metric(counter);
+  }
 };

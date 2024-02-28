@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/time_utils.h"
 #include "metrics/aggregated_metric.h"
 #include "metrics/metric_value.h"
 
@@ -12,20 +13,18 @@ class Metrics {
   bool empty() const { return values_.empty(); }
 
   void Set(const std::string& name, const MetricValue& value) {
-    values_.insert_or_assign(name, value);
+    values_.insert_or_assign(name, ToMetricValue(value));
   }
 
-  // Special support for duration.
+  // Special support for duration converting it to milliseconds and adding
+  // suffix.
   void Set(const std::string& name, std::chrono::nanoseconds duration) {
-    values_.insert_or_assign(
-        name, std::chrono::duration_cast<std::chrono::microseconds>(duration)
-                  .count());
+    values_.insert_or_assign(name + "_ms", InMilliseconds(duration));
   }
 
   // Metric names are in `snake_case`.
   template <class T>
-  void Collect(const std::string& name,
-               AggregatedMetric<T>& aggregated_metric) {
+  void Set(const std::string& name, AggregatedMetric<T>& aggregated_metric) {
     if (aggregated_metric.empty()) {
       return;
     }
@@ -34,7 +33,7 @@ class Metrics {
     Set(name + ".min", aggregated_metric.min());
     Set(name + ".max", aggregated_metric.max());
     Set(name + ".mean", aggregated_metric.mean());
-    Set(name + ".total", aggregated_metric.total());
+    Set(name + ".sum", aggregated_metric.sum());
 
     aggregated_metric.reset();
   }

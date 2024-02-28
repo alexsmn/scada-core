@@ -6,11 +6,22 @@
 class BoostLogMetricReporter {
  public:
   void Report(const Metrics& metrics) {
-    metrics.Visit(
-        [&logger = logger_](const std::string& name, const MetricValue& value) {
-          LOG_INFO(logger) << "Metric" << LOG_TAG("Name", name)
-                           << LOG_TAG("Value", value);
-        });
+    using E = std::pair<std::string /*name*/, MetricValue>;
+    std::vector<E> report;
+    std::ranges::sort(report, {}, &E::first);
+
+    metrics.Visit([&report](const std::string& name, const MetricValue& value) {
+      report.emplace_back(name, value);
+    });
+
+    for (const auto& [name, value] : report) {
+      std::visit(
+          [&](const auto& raw_value) {
+            LOG_INFO(logger_) << "Metric" << LOG_TAG("Name", name)
+                              << LOG_TAG("Value", raw_value);
+          },
+          value);
+    }
   }
 
  private:
