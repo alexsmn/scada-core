@@ -63,20 +63,31 @@ class WrappedPromiseTask {
 
 template <class T>
 struct CancelationPromiseFunc {
-  // TODO: Use a specific exception type.
   template <class... Args>
   auto operator()(Args&&...) const {
     using R = std::invoke_result_t<T, Args...>;
     if constexpr (is_promise_v<R>) {
+      // TODO: Use a specific exception type.
       return make_rejected_promise<remove_promise_t<R>>(std::exception{});
     } else {
+      // TODO: Use a specific exception type.
       throw std::exception{};
+      // To provide this branch's return result for the compiler.
       return R{};
     }
   }
 };
 
 }  // namespace internal
+
+template <class T, class C>
+inline auto BindPromiseCancelation(
+    std::weak_ptr<C> cancelation,
+    T&& task,
+    const std::source_location& location = std::source_location::current()) {
+  return BindCancelationFunc(std::move(cancelation), std::forward<T>(task),
+                             internal::CancelationPromiseFunc<T>{}, location);
+}
 
 template <class T>
 inline auto BindPromiseExecutor(
@@ -95,22 +106,19 @@ inline auto BindPromiseExecutor(
     const std::source_location& location = std::source_location::current()) {
   return BindPromiseExecutor(
       std::move(executor),
-      BindCancelationFunc(std::move(cancelation), std::forward<T>(task),
-                          internal::CancelationPromiseFunc<T>{}),
+      BindPromiseCancelation(std::move(cancelation), std::forward<T>(task),
+                             location),
       location);
 }
 
-template <class T, class C>
+template <class T>
 inline auto BindPromiseExecutor(
     std::shared_ptr<Executor> executor,
     const Cancelation& cancelation,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
-  return BindPromiseExecutor(
-      std::move(executor),
-      BindCancelationFunc(cancelation.weak_ptr(), std::forward<T>(task),
-                          internal::CancelationPromiseFunc<T>{}, location),
-      location);
+  return BindPromiseExecutor(std::move(executor), cancelation.weak_ptr(),
+                             location);
 }
 
 inline promise<void> Delay(
