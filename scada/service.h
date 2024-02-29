@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/struct_writer.h"
+#include "metrics/tracing.h"
 #include "scada/node_id.h"
 
 #include <memory>
@@ -33,10 +34,11 @@ struct ServiceContext {
   static const ServiceContextPtr& default_instance() { return default_ptr; }
 
   static ServiceContextPtr ForUser(scada::NodeId user_id) {
-    return std::make_shared<ServiceContext>(std::move(user_id),
-                                            std::vector<std::string>{});
+    return std::make_shared<ServiceContext>(
+        GenerateTraceId(), std::move(user_id), std::vector<std::string>{});
   }
 
+  TraceId trace_id = 0;
   NodeId user_id;
   std::vector<std::string> locale_ids;
 
@@ -47,6 +49,7 @@ struct ServiceContext {
 inline std::ostream& operator<<(std::ostream& stream,
                                 const ServiceContext& context) {
   StructWriter{stream}
+      .AddField("trace_id", ToString(context.trace_id))
       .AddField("user_id", ToString(context.user_id))
       .AddField("locale_ids", context.locale_ids);
   return stream;
