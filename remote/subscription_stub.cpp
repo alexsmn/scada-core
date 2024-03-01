@@ -127,17 +127,23 @@ void SubscriptionStub::OnDeleteMonitoredItem(int request_id,
 void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
                                     const scada::DataValue& data_value) {
   auto i = monitored_items_.find(monitored_item_id);
-  if (i == monitored_items_.end())
+  if (i == monitored_items_.end()) {
     return;
+  }
 
   assert(!data_value.qualifier.failed() ||
          scada::IsBad(data_value.status_code));
 
   if (scada::IsBad(data_value.status_code)) {
-    LOG_WARNING(logger_) << "Monitored item failed"
-                         << LOG_TAG("MonitoredItemId", monitored_item_id)
-                         << LOG_TAG("StatusCode",
-                                    ToString(data_value.status_code));
+    const ItemInfo& item_info = i->second;
+
+    LOG_WARNING(logger_)
+        << "Monitored item failed"
+        << LOG_TAG("MonitoredItemId", monitored_item_id)
+        << LOG_TAG("NodeId", item_info.read_value_id.node_id.ToString())
+        << LOG_TAG("AttributeId",
+                   ToString(item_info.read_value_id.attribute_id))
+        << LOG_TAG("StatusCode", ToString(data_value.status_code));
 
     monitored_items_.erase(i);
   }
@@ -163,8 +169,15 @@ void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
   }
 
   if (scada::IsBad(status_code)) {
+    const ItemInfo& item_info = i->second;
+
     LOG_WARNING(logger_) << "Monitored item failed"
                          << LOG_TAG("MonitoredItemId", monitored_item_id)
+                         << LOG_TAG("NodeId",
+                                    item_info.read_value_id.node_id.ToString())
+                         << LOG_TAG(
+                                "AttributeId",
+                                ToString(item_info.read_value_id.attribute_id))
                          << LOG_TAG("StatusCode", ToString(status_code));
 
     monitored_items_.erase(i);
