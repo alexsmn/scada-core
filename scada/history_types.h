@@ -1,13 +1,12 @@
 #pragma once
 
-#include "base/struct_writer.h"
 #include "scada/aggregate_filter.h"
 #include "scada/data_value.h"
 #include "scada/event.h"
+#include "scada/event_filter.h"
 
 #include <functional>
 #include <memory>
-#include <optional>
 #include <vector>
 
 namespace scada {

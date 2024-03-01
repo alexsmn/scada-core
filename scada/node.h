@@ -1,28 +1,28 @@
 #pragma once
 
+#include "scada/attribute_ids.h"
 #include "scada/history_service.h"
 #include "scada/monitored_item_service.h"
+#include "scada/services.h"
 #include "scada/status_promise.h"
 #include "scada/view_service.h"
+#include "scada/write_flags.h"
 
 namespace scada {
 
 class client;
 class monitored_item;
 class node;
+struct ServiceContext;
 
 class node {
  public:
-  const ServiceContext& context() const { return *context_; }
+  node();
 
-  node() = default;
-
-  node with_context(ServiceContext context) const {
-    return node{services_, node_id_,
-                std::make_shared<ServiceContext>(std::move(context))};
-  }
+  node with_context(const ServiceContext& context) const;
 
   const scada::NodeId& id() const { return node_id_; }
+  const ServiceContext& context() const { return *context_; }
 
   status_promise<DataValue> read(AttributeId attribute_id) const;
 
@@ -102,16 +102,16 @@ class node {
       const event_history_details& details = {}) const;
 
  private:
-  node(services services, NodeId node_id, ServiceContextPtr context)
-      : services_{std::move(services)},
-        node_id_{std::move(node_id)},
-        context_{std::move(context)} {
+  node(const services& services,
+       const NodeId& node_id,
+       const std::shared_ptr<const ServiceContext>& context)
+      : services_{services}, node_id_{node_id}, context_{context} {
     assert(context_);
   }
 
   const services services_;
   const NodeId node_id_;
-  const ServiceContextPtr context_ = ServiceContext::default_instance();
+  const std::shared_ptr<const ServiceContext> context_;
 
   friend class client;
   friend class monitored_item;

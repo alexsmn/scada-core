@@ -10,6 +10,7 @@
 #include "scada/client_monitored_item.h"
 #include "scada/data_services_factory.h"
 #include "scada/monitored_item_service_mock.h"
+#include "scada/monitoring_parameters.h"
 
 #include <gmock/gmock.h>
 
@@ -103,7 +104,7 @@ TEST_F(RemoteServicesTest, Test) {
       }));
 
   scada::monitored_item monitored_item;
-  monitored_item.subscribe_value(client_.node(node_id), /*params*/ {},
+  monitored_item.subscribe_value(client_.node(node_id), /*params=*/{},
                                  data_change_handler.AsStdFunction());
 
   asio_env_.Wait(promise);

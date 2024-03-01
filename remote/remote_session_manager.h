@@ -5,7 +5,7 @@
 #include "base/observer_list.h"
 #include "base/promise.h"
 #include "scada/authentication.h"
-#include "scada/service.h"
+#include "scada/services.h"
 #include "scada/view_service.h"
 
 #include <functional>

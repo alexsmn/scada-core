@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scada/attribute_service.h"
 #include "scada/monitored_item.h"
 #include "scada/node.h"
 

@@ -1,12 +1,13 @@
 #include "remote/subscription_stub.h"
 
 #include "base/executor.h"
-#include "scada/monitored_item.h"
-#include "scada/monitored_item_service.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "remote/subscription.h"
+#include "scada/event.h"
+#include "scada/monitored_item.h"
+#include "scada/monitored_item_service.h"
 
 #include "base/debug_util-inl.h"
 
@@ -35,9 +36,9 @@ void SubscriptionStub::OnCreateMonitoredItem(
                     << LOG_TAG("AttributeId",
                                ToString(read_value_id.attribute_id));
 
-  auto channel =
+  auto monitored_item =
       monitored_item_service_.CreateMonitoredItem(read_value_id, params);
-  if (!channel) {
+  if (!monitored_item) {
     LOG_WARNING(logger_) << "Can't create monitored item"
                          << LOG_TAG("RequestId", request_id)
                          << LOG_TAG("NodeId", ToString(read_value_id.node_id))
@@ -58,7 +59,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
   }
 
   auto monitored_item_id = next_monitored_item_id_++;
-  assert(channels_.find(monitored_item_id) == channels_.end());
+  assert(!monitored_items_.contains(monitored_item_id));
 
   LOG_INFO(logger_) << "Create monitored item complete"
                     << LOG_TAG("RequestId", request_id)
@@ -67,8 +68,8 @@ void SubscriptionStub::OnCreateMonitoredItem(
                                ToString(read_value_id.attribute_id))
                     << LOG_TAG("MonitoredItemId", monitored_item_id);
 
-  auto channel_ptr = channel.get();
-  channels_[monitored_item_id] = std::move(channel);
+  monitored_items_.try_emplace(monitored_item_id, read_value_id,
+                               monitored_item);
 
   {
     protocol::Message message;
@@ -80,8 +81,9 @@ void SubscriptionStub::OnCreateMonitoredItem(
     Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
     create_monitored_item_result.set_monitored_item_id(monitored_item_id);
 
-    if (auto locked_sender = sender_.lock())
+    if (auto locked_sender = sender_.lock()) {
       locked_sender->Send(message);
+    }
   }
 
   scada::MonitoredItemHandler handler;
@@ -101,7 +103,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
                      })};
   }
 
-  channel_ptr->Subscribe(std::move(handler));
+  monitored_item->Subscribe(std::move(handler));
 }
 
 void SubscriptionStub::OnDeleteMonitoredItem(int request_id,
@@ -110,21 +112,22 @@ void SubscriptionStub::OnDeleteMonitoredItem(int request_id,
                     << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("MonitoredItemId", monitored_item_id);
 
-  channels_.erase(monitored_item_id);
+  monitored_items_.erase(monitored_item_id);
 
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
   Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
 
-  if (auto locked_sender = sender_.lock())
+  if (auto locked_sender = sender_.lock()) {
     locked_sender->Send(message);
+  }
 }
 
 void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
                                     const scada::DataValue& data_value) {
-  auto i = channels_.find(monitored_item_id);
-  if (i == channels_.end())
+  auto i = monitored_items_.find(monitored_item_id);
+  if (i == monitored_items_.end())
     return;
 
   assert(!data_value.qualifier.failed() ||
@@ -136,7 +139,7 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
                          << LOG_TAG("StatusCode",
                                     ToString(data_value.status_code));
 
-    channels_.erase(i);
+    monitored_items_.erase(i);
   }
 
   protocol::Message message;
@@ -154,16 +157,17 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
 void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
                                scada::StatusCode status_code,
                                const std::any& event) {
-  auto i = channels_.find(monitored_item_id);
-  if (i == channels_.end())
+  auto i = monitored_items_.find(monitored_item_id);
+  if (i == monitored_items_.end()) {
     return;
+  }
 
   if (scada::IsBad(status_code)) {
     LOG_WARNING(logger_) << "Monitored item failed"
                          << LOG_TAG("MonitoredItemId", monitored_item_id)
                          << LOG_TAG("StatusCode", ToString(status_code));
 
-    channels_.erase(i);
+    monitored_items_.erase(i);
   }
 
   protocol::Message message;
@@ -185,6 +189,7 @@ void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
             *notification.add_semantics_changed_node_id());
   }
 
-  if (auto locked_sender = sender_.lock())
+  if (auto locked_sender = sender_.lock()) {
     locked_sender->Send(message);
+  }
 }

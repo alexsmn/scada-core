@@ -1,8 +1,10 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "scada/monitored_item_service.h"
 #include "remote/subscription.h"
+#include "scada/monitored_item.h"
+#include "scada/monitoring_parameters.h"
+#include "scada/read_value_id.h"
 
 class MessageSender;
 class MonitoredItemRouter;
@@ -11,8 +13,8 @@ class MonitoredItemProxy
     : public scada::MonitoredItem,
       public std::enable_shared_from_this<MonitoredItemProxy> {
  public:
-  MonitoredItemProxy(scada::ReadValueId value_id,
-                     scada::MonitoringParameters params);
+  MonitoredItemProxy(const scada::ReadValueId& value_id,
+                     const scada::MonitoringParameters& params);
   ~MonitoredItemProxy();
 
   void OnChannelOpened(MonitoredItemRouter& router,

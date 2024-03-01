@@ -1,8 +1,19 @@
 #include "scada/client.h"
 
 #include "scada/node_management_service.h"
+#include "scada/service_context.h"
 
 namespace scada {
+
+client::client() : context_{ServiceContext::default_instance()} {}
+
+client::client(const services& services)
+    : services_{services}, context_{ServiceContext::default_instance()} {}
+
+client client::with_context(const ServiceContext& context) const {
+  return client{services_,
+                std::make_shared<ServiceContext>(std::move(context))};
+}
 
 status_promise<void> client::connect(const SessionConnectParams& params) const {
   if (!services_.session_service) {

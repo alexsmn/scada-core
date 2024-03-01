@@ -3,6 +3,7 @@
 #include "base/debug_util.h"
 
 #include <boost/locale/encoding_utf.hpp>
+#include <sstream>
 
 namespace internal {
 

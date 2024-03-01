@@ -2,14 +2,15 @@
 
 #include "base/boost_log.h"
 #include "remote/subscription.h"
+#include "scada/read_value_id.h"
 
-#include <map>
 #include <memory>
+#include <unordered_map>
 
 namespace scada {
-class Event;
 class MonitoredItem;
 class MonitoredItemService;
+struct Event;
 struct MonitoringParameters;
 struct ReadValueId;
 }  // namespace scada
@@ -46,5 +47,11 @@ class SubscriptionStub : public std::enable_shared_from_this<SubscriptionStub> {
   BoostLogger logger_{LOG_NAME("SubscriptionStub")};
 
   MonitoredItemId next_monitored_item_id_ = 1;
-  std::map<MonitoredItemId, std::shared_ptr<scada::MonitoredItem>> channels_;
+
+  struct ItemInfo {
+    scada::ReadValueId read_value_id;
+    std::shared_ptr<scada::MonitoredItem> monitored_item;
+  };
+
+  std::unordered_map<MonitoredItemId, ItemInfo> monitored_items_;
 };

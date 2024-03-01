@@ -1,17 +1,17 @@
 #pragma once
 
-#include "scada/attribute_ids.h"
-#include "scada/status.h"
 #include "remote/monitored_item_router.h"
 #include "remote/subscription.h"
+#include "scada/attribute_ids.h"
+#include "scada/status.h"
 
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
 namespace scada {
-class Event;
 class MonitoredItem;
+struct Event;
 struct MonitoringParameters;
 struct ReadValueId;
 }  // namespace scada

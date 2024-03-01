@@ -1,17 +1,23 @@
 #pragma once
 
-#include "scada/aggregate_filter.h"
+#include "remote/protocol.h"
 #include "scada/data_value.h"
-#include "scada/event.h"
 #include "scada/monitored_item_service.h"
 #include "scada/node_attributes.h"
 #include "scada/node_management_service.h"
 #include "scada/status.h"
 #include "scada/view_service.h"
-#include "remote/protocol.h"
 
 #include <set>
 #include <vector>
+
+namespace scada {
+struct AggregateFilter;
+struct Event;
+struct EventFilter;
+struct ModelChangeEvent;
+struct WriteValue;
+}  // namespace scada
 
 template <class Source, class Target>
 void Convert(const Source& source, Target& target);

@@ -1,6 +1,12 @@
 #include "remote/protocol_utils.h"
 
 #include "base/strings/utf_string_conversions.h"
+#include "scada/aggregate_filter.h"
+#include "scada/attribute_service.h"
+#include "scada/event.h"
+#include "scada/event_filter.h"
+#include "scada/monitoring_parameters.h"
+#include "scada/read_value_id.h"
 #include "scada/standard_node_ids.h"
 
 namespace {

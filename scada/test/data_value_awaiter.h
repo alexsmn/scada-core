@@ -1,13 +1,14 @@
 #pragma once
 
 #include "scada/client_monitored_item.h"
+#include "scada/monitoring_parameters.h"
 
 namespace scada {
 
 struct data_value_awaiter {
   explicit data_value_awaiter(const scada::node& node) {
     monitored_item_.subscribe_value(
-        node, /*params*/ {},
+        node, /*params=*/{},
         std::bind_front(&state::handle_data_change, state_));
     // TODO: Handle subscription failure, when `!monitored_item_.subscribed()`.
   }

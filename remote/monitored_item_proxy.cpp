@@ -10,9 +10,10 @@
 
 // MonitoredItemProxy
 
-MonitoredItemProxy::MonitoredItemProxy(scada::ReadValueId value_id,
-                                       scada::MonitoringParameters params)
-    : value_id_{std::move(value_id)}, params_{std::move(params)} {
+MonitoredItemProxy::MonitoredItemProxy(
+    const scada::ReadValueId& value_id,
+    const scada::MonitoringParameters& params)
+    : value_id_{value_id}, params_{params} {
   LOG_BIND_TAG(logger_, "NodeId", ToString(value_id_.node_id));
   LOG_BIND_TAG(logger_, "AttributeId", ToString(value_id_.attribute_id));
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scada/service.h"
+#include "scada/services.h"
 
 #include <memory>
 

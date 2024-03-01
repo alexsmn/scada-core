@@ -3,10 +3,11 @@
 #include "base/executor.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "scada/node_management_service.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/node_management_service.h"
+#include "scada/service_context.h"
 
 #include "base/debug_util-inl.h"
 

@@ -9,7 +9,7 @@
 
 // TraceSinkImpl::Core
 
-class TraceSinkImpl::Core : std::enable_shared_from_this<Core> {
+class TraceSinkImpl::Core : public std::enable_shared_from_this<Core> {
  public:
   Core(std::shared_ptr<Executor> executor, std::chrono::milliseconds timeout)
       : executor_{std::move(executor)}, timeout_{timeout} {}
@@ -18,7 +18,7 @@ class TraceSinkImpl::Core : std::enable_shared_from_this<Core> {
   void Finish(const TraceId& trace_id);
 
  private:
-  bool enabled() const { return timeout_ == std::chrono::milliseconds::zero(); }
+  bool enabled() const { return timeout_ != std::chrono::milliseconds::zero(); }
 
   void OnTimeout(const TraceId& trace_id);
 

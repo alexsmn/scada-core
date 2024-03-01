@@ -2,9 +2,6 @@
 
 #include "base/executor.h"
 #include "base/range_util.h"
-#include "scada/attribute_service.h"
-#include "scada/method_service.h"
-#include "scada/write_flags.h"
 #include "model/node_id_util.h"
 #include "remote/connection.h"
 #include "remote/history_stub.h"
@@ -13,6 +10,11 @@
 #include "remote/protocol_utils.h"
 #include "remote/subscription_stub.h"
 #include "remote/view_service_stub.h"
+#include "scada/attribute_service.h"
+#include "scada/method_service.h"
+#include "scada/monitoring_parameters.h"
+#include "scada/service_context.h"
+#include "scada/write_flags.h"
 
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -102,17 +104,20 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
 
   if (request.has_create_monitored_item()) {
     auto& create_monitored_item = request.create_monitored_item();
-    scada::ReadValueId read_value_id{
+
+    auto read_value_id = scada::ReadValueId{
         ConvertTo<scada::NodeId>(create_monitored_item.node_id()),
-        static_cast<scada::AttributeId>(create_monitored_item.attribute_id()),
-    };
-    OnCreateMonitoredItem(
-        request.request_id(), create_monitored_item.subscription_id(),
-        std::move(read_value_id),
+        static_cast<scada::AttributeId>(create_monitored_item.attribute_id())};
+
+    auto monitoring_params =
         create_monitored_item.has_monitoring_parameters()
             ? ConvertTo<scada::MonitoringParameters>(
                   create_monitored_item.monitoring_parameters())
-            : scada::MonitoringParameters{});
+            : scada::MonitoringParameters{};
+
+    OnCreateMonitoredItem(
+        request.request_id(), create_monitored_item.subscription_id(),
+        std::move(read_value_id), std::move(monitoring_params));
   }
 
   if (request.has_delete_monitored_item()) {

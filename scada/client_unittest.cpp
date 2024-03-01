@@ -2,6 +2,7 @@
 
 #include "scada/client_monitored_item.h"
 #include "scada/monitored_item_service_mock.h"
+#include "scada/monitoring_parameters.h"
 
 #include <gmock/gmock.h>
 
@@ -28,7 +29,7 @@ TEST_F(ClientTest, MonitoredItemSubscriptionFail) {
                                               StatusCode::Bad_WrongNodeId)));
 
   scada::monitored_item monitored_item;
-  monitored_item.subscribe_value(client_.node(node_id), /*params*/ {},
+  monitored_item.subscribe_value(client_.node(node_id), /*params=*/{},
                                  data_change_handler.AsStdFunction());
 }
 
@@ -45,7 +46,7 @@ TEST_F(ClientTest, MonitoredItemSubscriptionClose) {
 
   scada::monitored_item monitored_item;
   monitored_item.subscribe_value(client_.node(node_id),
-                                 /*params*/ {},
+                                 /*params=*/{},
                                  data_change_handler.AsStdFunction());
 
   std::get<DataChangeHandler>(std::move(server_item_handler))(

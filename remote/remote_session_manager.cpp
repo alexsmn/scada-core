@@ -15,6 +15,7 @@
 #include "remote/remote_connection.h"
 #include "remote/remote_listener.h"
 #include "remote/session_stub.h"
+#include "scada/service_context.h"
 #include "scada/status_promise.h"
 
 #include <net/transport_factory.h>

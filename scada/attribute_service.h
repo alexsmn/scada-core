@@ -1,10 +1,9 @@
 #pragma once
 
-#include "scada/attribute_ids.h"
 #include "scada/data_value.h"
 #include "scada/node_class.h"
-#include "scada/node_id.h"
-#include "scada/service.h"
+#include "scada/read_value_id.h"
+#include "scada/services.h"
 #include "scada/status_callback.h"
 #include "scada/write_flags.h"
 
@@ -13,10 +12,7 @@
 
 namespace scada {
 
-struct ReadValueId {
-  NodeId node_id;
-  AttributeId attribute_id = scada::AttributeId::Value;
-};
+struct ServiceContext;
 
 using ReadCallback =
     std::function<void(Status, std::vector<DataValue> results)>;
@@ -28,6 +24,8 @@ struct WriteValue {
   AttributeId attribute_id = scada::AttributeId::Value;
   Variant value;
   WriteFlags flags;
+
+  bool operator==(const WriteValue&) const = default;
 };
 
 class AttributeService {
@@ -90,20 +88,6 @@ inline void Write(AttributeService& attribute_service,
         assert(!status || results.size() == 1);
         callback(status ? Status{results[0]} : std::move(status));
       });
-}
-
-inline bool operator==(const ReadValueId& a, const ReadValueId& b) {
-  return std::tie(a.node_id, a.attribute_id) ==
-         std::tie(b.node_id, b.attribute_id);
-}
-
-inline bool operator==(const WriteValue& a, const WriteValue& b) {
-  return std::tie(a.node_id, a.attribute_id, a.value, a.flags) ==
-         std::tie(b.node_id, b.attribute_id, b.value, b.flags);
-}
-
-inline std::ostream& operator<<(std::ostream& stream, const ReadValueId& v) {
-  return stream << "{" << v.node_id << ", " << v.attribute_id << "}";
 }
 
 inline std::ostream& operator<<(std::ostream& stream,

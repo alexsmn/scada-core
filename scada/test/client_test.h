@@ -2,6 +2,7 @@
 
 #include "scada/client_monitored_item.h"
 #include "scada/monitored_item_service_mock.h"
+#include "scada/monitoring_parameters.h"
 
 #include <gmock/gmock.h>
 
@@ -41,7 +42,7 @@ inline std::unique_ptr<ClientTestMonitoredItem> ClientTest::SubscribeValue(
               Call(Field(&DataValue::status_code, StatusCode::Good)));
 
   monitored_value->monitored_item.subscribe_value(
-      node, /*params*/ {},
+      node, /*params=*/{},
       [&monitored_value =
            *monitored_value](const scada::DataValue& data_value) {
         monitored_value.status_code = data_value.status_code;

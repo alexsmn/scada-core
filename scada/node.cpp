@@ -3,11 +3,19 @@
 #include "scada/attribute_service_promises.h"
 #include "scada/history_service_promises.h"
 #include "scada/method_service_promises.h"
+#include "scada/service_context.h"
 #include "scada/view_service_promises.h"
 
 namespace scada {
 
 // node
+
+node::node() : context_{ServiceContext::default_instance()} {}
+
+node node::with_context(const ServiceContext& context) const {
+  return node{services_, node_id_,
+              std::make_shared<ServiceContext>(std::move(context))};
+}
 
 status_promise<DataValue> node::read(AttributeId attribute_id) const {
   if (!services_.attribute_service) {
