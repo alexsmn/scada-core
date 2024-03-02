@@ -378,7 +378,7 @@ void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
 }
 
 void SessionProxy::Read(
-    const std::shared_ptr<const scada::ServiceContext>& context,
+    const scada::ServiceContext& context,
     const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
     const scada::ReadCallback& callback) {
   if (!session_created_) {
@@ -400,7 +400,7 @@ void SessionProxy::Read(
 }
 
 void SessionProxy::Write(
-    const std::shared_ptr<const scada::ServiceContext>& context,
+    const scada::ServiceContext& context,
     const std::shared_ptr<const std::vector<scada::WriteValue>>& inputs,
     const scada::WriteCallback& callback) {
   if (!session_created_) {

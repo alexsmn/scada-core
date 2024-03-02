@@ -11,7 +11,7 @@
 
 namespace scada {
 
-struct ServiceContext;
+class ServiceContext;
 
 enum class BrowseDirection { Forward = 0, Inverse = 1, Both = 2 };
 
@@ -79,7 +79,7 @@ class ViewService {
  public:
   virtual ~ViewService() {}
 
-  virtual void Browse(const std::shared_ptr<const ServiceContext>& context,
+  virtual void Browse(const ServiceContext& context,
                       const std::vector<BrowseDescription>& inputs,
                       const BrowseCallback& callback) = 0;
 
@@ -91,7 +91,7 @@ class ViewService {
 // Callback = void(const BrowseResult);
 template <class Callback>
 inline void Browse(ViewService& view_service,
-                   const std::shared_ptr<const scada::ServiceContext>& context,
+                   const scada::ServiceContext& context,
                    const BrowseDescription& input,
                    Callback&& callback) {
   view_service.Browse(

@@ -20,64 +20,68 @@ ViewServiceStub::~ViewServiceStub() {}
 
 void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
   if (request.has_browse()) {
-    auto& proto_nodes = request.browse().nodes();
-    std::vector<scada::BrowseDescription> nodes;
-    nodes.reserve(proto_nodes.size());
-    for (auto& proto_node : proto_nodes) {
-      nodes.push_back({
-          ConvertTo<scada::NodeId>(proto_node.node_id()),
-          ConvertTo<scada::BrowseDirection>(proto_node.direction()),
-          proto_node.has_reference_type_id()
-              ? ConvertTo<scada::NodeId>(proto_node.reference_type_id())
-              : scada::NodeId{},
-          proto_node.include_subtypes(),
-      });
-    }
-    OnBrowse(request.request_id(), std::move(nodes));
+    OnBrowse(request.request_id(), request.browse());
   }
 
-  if (request.browse_path_size() != 0)
-    OnBrowsePaths(request);
+  if (request.browse_path_size() != 0) {
+    OnBrowsePaths(request.request_id(), request.browse_path());
+  }
 }
 
-void ViewServiceStub::OnBrowse(
-    unsigned request_id,
-    const std::vector<scada::BrowseDescription>& inputs) {
+void ViewServiceStub::OnBrowse(unsigned request_id,
+                               const protocol::Browse& browse_request) {
+  std::vector<scada::BrowseDescription> inputs;
+  inputs.reserve(browse_request.nodes_size());
+  for (const protocol::BrowseDescription& proto_node : browse_request.nodes()) {
+    inputs.emplace_back(
+        ConvertTo<scada::NodeId>(proto_node.node_id()),
+        ConvertTo<scada::BrowseDirection>(proto_node.direction()),
+        proto_node.has_reference_type_id()
+            ? ConvertTo<scada::NodeId>(proto_node.reference_type_id())
+            : scada::NodeId{},
+        proto_node.include_subtypes());
+  }
+
   service_.Browse(
       service_context_, inputs,
-      BindExecutor(executor_, [request_id, sender = sender_](
-                                  const scada::Status& status,
-                                  std::vector<scada::BrowseResult> results) {
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(status, *response.mutable_status());
-        auto& browse = *response.mutable_browse_result();
-        if (status)
-          Convert(results, *browse.mutable_results());
+      BindExecutor(executor_,
+                   [request_id, sender = sender_](
+                       const scada::Status& status,
+                       const std::vector<scada::BrowseResult>& results) {
+                     protocol::Message message;
+                     auto& response = *message.add_responses();
+                     response.set_request_id(request_id);
+                     Convert(status, *response.mutable_status());
+                     auto& browse = *response.mutable_browse_result();
+                     if (status)
+                       Convert(results, *browse.mutable_results());
 
-        if (auto locked_sender = sender.lock())
-          locked_sender->Send(message);
-      }));
+                     if (auto locked_sender = sender.lock()) {
+                       locked_sender->Send(message);
+                     }
+                   }));
 }
 
-void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
-  auto inputs =
-      ConvertTo<std::vector<scada::BrowsePath>>(request.browse_path());
+void ViewServiceStub::OnBrowsePaths(
+    unsigned request_id,
+    const ::google::protobuf::RepeatedPtrField<protocol::BrowsePath>&
+        browse_path_requests) {
+  auto inputs = ConvertTo<std::vector<scada::BrowsePath>>(browse_path_requests);
 
   service_.TranslateBrowsePaths(
       inputs,
       BindExecutor(executor_,
-                   [request_id = request.request_id(), sender = sender_](
+                   [request_id, sender = sender_](
                        const scada::Status& status,
-                       std::vector<scada::BrowsePathResult> results) {
+                       const std::vector<scada::BrowsePathResult>& results) {
                      protocol::Message message;
                      auto& response = *message.add_responses();
                      response.set_request_id(request_id);
                      Convert(status, *response.mutable_status());
                      Convert(results, *response.mutable_browse_path_result());
 
-                     if (auto locked_sender = sender.lock())
+                     if (auto locked_sender = sender.lock()) {
                        locked_sender->Send(message);
+                     }
                    }));
 }

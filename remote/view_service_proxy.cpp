@@ -18,7 +18,7 @@ void ViewServiceProxy::OnChannelClosed() {
 }
 
 void ViewServiceProxy::Browse(
-    const std::shared_ptr<const scada::ServiceContext>& context,
+    const scada::ServiceContext& context,
     const std::vector<scada::BrowseDescription>& nodes,
     const scada::BrowseCallback& callback) {
   if (!sender_)

@@ -8,26 +8,28 @@
 
 namespace scada {
 
-struct ServiceContext;
+class [[nodiscard]] ServiceContext {
+ public:
+  ServiceContext() = default;
 
-using ServiceContextPtr = std::shared_ptr<const ServiceContext>;
+  ServiceContext(const ServiceContext&) = default;
+  ServiceContext& operator=(const ServiceContext&) = default;
 
-struct ServiceContext {
-  static const ServiceContextPtr& default_instance() { return default_ptr; }
+  const scada::NodeId& user_id() const;
 
-  static ServiceContextPtr ForUser(const scada::NodeId& user_id) {
-    return std::make_shared<ServiceContext>(GenerateTraceId(), user_id,
-                                            std::vector<std::string>{});
-  }
+  ServiceContext with_user_id(const scada::NodeId& user_id) const;
 
-  TraceId trace_id = 0;
-  NodeId user_id;
-  std::vector<std::string> locale_ids;
+  friend std::ostream& operator<<(std::ostream& stream,
+                                  const ServiceContext& context);
 
-  inline static const ServiceContextPtr default_ptr =
-      std::make_shared<ServiceContext>();
+ private:
+  struct Rep;
+
+  explicit ServiceContext(const std::shared_ptr<const Rep>& rep);
+
+  std::shared_ptr<const Rep> rep_ = kDefaultRep;
+
+  static const std::shared_ptr<const Rep> kDefaultRep;
 };
-
-std::ostream& operator<<(std::ostream& stream, const ServiceContext& context);
 
 }  // namespace scada

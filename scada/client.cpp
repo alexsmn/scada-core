@@ -5,14 +5,12 @@
 
 namespace scada {
 
-client::client() : context_{ServiceContext::default_instance()} {}
+client::client() = default;
 
-client::client(const services& services)
-    : services_{services}, context_{ServiceContext::default_instance()} {}
+client::client(const services& services) : services_{services} {}
 
 client client::with_context(const ServiceContext& context) const {
-  return client{services_,
-                std::make_shared<ServiceContext>(std::move(context))};
+  return client{services_, context};
 }
 
 status_promise<void> client::connect(const SessionConnectParams& params) const {

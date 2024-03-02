@@ -10,11 +10,10 @@ namespace scada {
 
 // node
 
-node::node() : context_{ServiceContext::default_instance()} {}
+node::node() = default;
 
 node node::with_context(const ServiceContext& context) const {
-  return node{services_, node_id_,
-              std::make_shared<ServiceContext>(std::move(context))};
+  return node{services_, node_id_, context};
 }
 
 status_promise<DataValue> node::read(AttributeId attribute_id) const {
@@ -124,7 +123,7 @@ status_promise<void> node::call_packed(
 
   // Take `user_id` from `client`.
   return ToStatusPromise(Call(*services_.method_service, node_id_, method_id,
-                              arguments, context_->user_id));
+                              arguments, context_.user_id()));
 }
 
 status_promise<std::vector<scada::DataValue>> node::read_value_history(

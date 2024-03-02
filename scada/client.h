@@ -5,15 +5,15 @@
 
 namespace scada {
 
+class ServiceContext;
 struct AddNodesItem;
-struct ServiceContext;
 
 class client {
  public:
   client();
   explicit client(const services& services);
 
-  const ServiceContext& context() const { return *context_; }
+  const ServiceContext& context() const { return context_; }
   client with_context(const ServiceContext& context) const;
 
   status_promise<void> connect(const SessionConnectParams& params) const;
@@ -37,14 +37,11 @@ class client {
   }
 
  private:
-  client(const services& services,
-         const std::shared_ptr<const ServiceContext>& context)
-      : services_{services}, context_{context} {
-    assert(context_);
-  }
+  client(const services& services, const ServiceContext& context)
+      : services_{services}, context_{context} {}
 
   services services_;
-  std::shared_ptr<const scada::ServiceContext> context_;
+  scada::ServiceContext context_;
 };
 
 }  // namespace scada

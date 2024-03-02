@@ -8,7 +8,7 @@ namespace scada {
 // Prefer `scada::client{...}.node(input.node_id).read(input.attribute_id)`.
 inline status_promise<DataValue> Read(
     AttributeService& attribute_service,
-    const std::shared_ptr<const ServiceContext>& context,
+    const ServiceContext& context,
     ReadValueId&& input) {
   status_promise<DataValue> p;
   Read(attribute_service, context, std::move(input),
@@ -18,7 +18,7 @@ inline status_promise<DataValue> Read(
 
 inline status_promise<std::vector<StatusCode>> Write(
     AttributeService& attribute_service,
-    const std::shared_ptr<const ServiceContext>& context,
+    const ServiceContext& context,
     std::vector<WriteValue> inputs) {
   status_promise<std::vector<StatusCode>> p;
   attribute_service.Write(
@@ -35,7 +35,7 @@ inline status_promise<std::vector<StatusCode>> Write(
 
 inline status_promise<void> Write(
     AttributeService& attribute_service,
-    const std::shared_ptr<const ServiceContext>& context,
+    const ServiceContext& context,
     WriteValue&& input) {
   status_promise<void> p;
   Write(attribute_service, context, std::move(input),

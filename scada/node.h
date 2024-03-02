@@ -3,6 +3,7 @@
 #include "scada/attribute_ids.h"
 #include "scada/history_service.h"
 #include "scada/monitored_item_service.h"
+#include "scada/service_context.h"
 #include "scada/services.h"
 #include "scada/status_promise.h"
 #include "scada/view_service.h"
@@ -10,10 +11,10 @@
 
 namespace scada {
 
+class ServiceContext;
 class client;
 class monitored_item;
 class node;
-struct ServiceContext;
 
 class node {
  public:
@@ -22,7 +23,7 @@ class node {
   node with_context(const ServiceContext& context) const;
 
   const scada::NodeId& id() const { return node_id_; }
-  const ServiceContext& context() const { return *context_; }
+  const ServiceContext& context() const { return context_; }
 
   status_promise<DataValue> read(AttributeId attribute_id) const;
 
@@ -104,14 +105,12 @@ class node {
  private:
   node(const services& services,
        const NodeId& node_id,
-       const std::shared_ptr<const ServiceContext>& context)
-      : services_{services}, node_id_{node_id}, context_{context} {
-    assert(context_);
-  }
+       const ServiceContext& context)
+      : services_{services}, node_id_{node_id}, context_{context} {}
 
   const services services_;
   const NodeId node_id_;
-  const std::shared_ptr<const ServiceContext> context_;
+  const ServiceContext context_;
 
   friend class client;
   friend class monitored_item;

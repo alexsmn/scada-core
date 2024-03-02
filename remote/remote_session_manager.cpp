@@ -157,15 +157,16 @@ bool RemoteSessionManager::CheckExistingSession(
     const scada::LocalizedText& user_name,
     bool delete_existing) {
   // Disconnect existing session of the same user_node.
-  if (auto* existing_session = FindUserSession(user_id)) {
+  if (SessionStub* existing_session = FindUserSession(user_id)) {
     if (!delete_existing)
       return false;
 
-    LOG_WARNING(*logger_)
-        << "Forced log off existing session"
-        << LOG_TAG("UserId", NodeIdToScadaString(user_id))
-        << LOG_TAG("UserName", user_name)
-        << LOG_TAG("Context", ToString(*existing_session->service_context()));
+    LOG_WARNING(*logger_) << "Forced log off existing session"
+                          << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                          << LOG_TAG("UserName", user_name)
+                          << LOG_TAG(
+                                 "Context",
+                                 ToString(existing_session->service_context()));
     existing_session->OnSessionDeleted();
     DeleteSession(user_id);
   }
@@ -180,20 +181,18 @@ SessionStub& RemoteSessionManager::CreateNewSession(
                      << LOG_TAG("UserId", NodeIdToScadaString(user_id))
                      << LOG_TAG("UserName", ToString(user_name));
 
-  auto service_context = std::make_shared<const scada::ServiceContext>(
-      scada::ServiceContext{.user_id = user_id});
-
-  auto session =
-      SessionStub::Create(SessionContext{.executor_ = executor_,
-                                         .services_ = services_,
-                                         .service_context_ = service_context});
+  auto session = SessionStub::Create(SessionContext{
+      .executor_ = executor_,
+      .services_ = services_,
+      .service_context_ = scada::ServiceContext{}.with_user_id(user_id)});
 
   auto& session_ref = *session;
-  session_map_[user_id] = std::move(session);
+  session_map_.insert_or_assign(user_id, std::move(session));
 
   // Notify all observers.
-  for (auto& o : observers_)
+  for (auto& o : observers_) {
     o.OnSessionOpened(session_ref);
+  }
 
   return session_ref;
 }
@@ -207,7 +206,7 @@ void RemoteSessionManager::DeleteSession(const scada::NodeId& user_id) {
 
   LOG_INFO(*logger_) << "Session deleted"
                      << LOG_TAG("Context",
-                                ToString(*session->service_context()));
+                                ToString(session->service_context()));
 
   // Notify all observers.
   for (auto& o : observers_)
@@ -219,7 +218,7 @@ void RemoteSessionManager::CloseUserSessions(const scada::NodeId& user_id) {
     if (SessionStub* session = FindUserSession(user_id)) {
       LOG_WARNING(*logger_)
           << "Close session because of user deletion"
-          << LOG_TAG("Context", ToString(*session->service_context()));
+          << LOG_TAG("Context", ToString(session->service_context()));
       session->OnSessionDeleted();
       DeleteSession(user_id);
     }
@@ -249,7 +248,7 @@ void RemoteSessionManager::OnSessionAccepted(
         CreateSession(request.create_session()).then(callback);
       };
   connection_context.delete_session_handler_ = [this](SessionStub& session) {
-    DeleteSession(session.service_context()->user_id);
+    DeleteSession(session.service_context().user_id());
   };
 
   new ServerConnection(std::move(connection_context));

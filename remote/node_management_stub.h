@@ -4,6 +4,7 @@
 #include "scada/node_attributes.h"
 #include "scada/node_id.h"
 #include "scada/node_management_service.h"
+#include "scada/service_context.h"
 
 #include <memory>
 #include <vector>
@@ -14,7 +15,7 @@ class Request;
 }  // namespace protocol
 
 namespace scada {
-struct ServiceContext;
+class ServiceContext;
 }
 
 class Executor;
@@ -22,11 +23,10 @@ class MessageSender;
 
 class NodeManagementStub {
  public:
-  NodeManagementStub(
-      std::shared_ptr<Executor> executor,
-      std::weak_ptr<MessageSender> sender,
-      scada::NodeManagementService& service,
-      std::shared_ptr<const scada::ServiceContext> service_context);
+  NodeManagementStub(std::shared_ptr<Executor> executor,
+                     std::weak_ptr<MessageSender> sender,
+                     scada::NodeManagementService& service,
+                     const scada::ServiceContext& service_context);
 
   void OnRequestReceived(const protocol::Request& request);
 
@@ -54,5 +54,5 @@ class NodeManagementStub {
       std::make_shared<BoostLogger>(LOG_NAME("NodeManagementStub"));
 
   // Identifier of logged user for access control.
-  const std::shared_ptr<const scada::ServiceContext> service_context_;
+  const scada::ServiceContext service_context_;
 };

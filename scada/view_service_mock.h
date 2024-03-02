@@ -10,7 +10,7 @@ class MockViewService : public ViewService {
  public:
   MOCK_METHOD(void,
               Browse,
-              (const std::shared_ptr<const scada::ServiceContext>& context,
+              (const scada::ServiceContext& context,
                const std::vector<BrowseDescription>& inputs,
                const BrowseCallback& callback),
               (override));

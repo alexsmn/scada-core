@@ -13,7 +13,7 @@ class ViewServiceProxy : public scada::ViewService {
 
   // scada::ViewService
   virtual void Browse(
-      const std::shared_ptr<const scada::ServiceContext>& context,
+      const scada::ServiceContext& context,
       const std::vector<scada::BrowseDescription>& nodes,
       const scada::BrowseCallback& callback) override;
   virtual void TranslateBrowsePaths(

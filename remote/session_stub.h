@@ -2,6 +2,7 @@
 
 #include "base/boost_log.h"
 #include "remote/message_sender.h"
+#include "scada/service_context.h"
 #include "scada/services.h"
 
 #include <memory>
@@ -14,11 +15,11 @@ class Response;
 }  // namespace protocol
 
 namespace scada {
+class ServiceContext;
 class NodeId;
 class Variant;
 struct MonitoringParameters;
 struct ReadValueId;
-struct ServiceContext;
 }  // namespace scada
 
 class Connection;
@@ -34,7 +35,7 @@ struct SessionContext {
   const std::shared_ptr<Executor> executor_;
   // TODO: Use `scada::client`.
   scada::services services_;
-  const std::shared_ptr<const scada::ServiceContext> service_context_;
+  const scada::ServiceContext service_context_;
 };
 
 class SessionStub : public MessageSender,
@@ -48,7 +49,7 @@ class SessionStub : public MessageSender,
   Connection* connection() { return connection_; }
   void SetConnection(Connection* connection);
 
-  const std::shared_ptr<const scada::ServiceContext>& service_context() const {
+  const scada::ServiceContext& service_context() const {
     return service_context_;
   }
 

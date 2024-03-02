@@ -11,7 +11,7 @@
 
 namespace scada {
 
-struct ServiceContext;
+class ServiceContext;
 
 using ReadCallback =
     std::function<void(Status, std::vector<DataValue> results)>;
@@ -32,12 +32,12 @@ class AttributeService {
   virtual ~AttributeService() = default;
 
   virtual void Read(
-      const std::shared_ptr<const ServiceContext>& context,
+      const ServiceContext& context,
       const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
       const ReadCallback& callback) = 0;
 
   virtual void Write(
-      const std::shared_ptr<const ServiceContext>& context,
+      const ServiceContext& context,
       const std::shared_ptr<const std::vector<WriteValue>>& inputs,
       const WriteCallback& callback) = 0;
 };
@@ -61,7 +61,7 @@ inline DataValue MakeReadError(StatusCode status_code) {
 // callback: void(DataValue&&)
 template <class Callback>
 inline void Read(AttributeService& attribute_service,
-                 const std::shared_ptr<const scada::ServiceContext>& context,
+                 const scada::ServiceContext& context,
                  ReadValueId&& input,
                  Callback&& callback) {
   auto inputs = std::make_shared<std::vector<ReadValueId>>(1, std::move(input));
@@ -76,7 +76,7 @@ inline void Read(AttributeService& attribute_service,
 
 template <class Callback>
 inline void Write(AttributeService& attribute_service,
-                  const std::shared_ptr<const scada::ServiceContext>& context,
+                  const scada::ServiceContext& context,
                   WriteValue&& input,
                   Callback&& callback) {
   auto inputs = std::make_shared<std::vector<WriteValue>>(1, std::move(input));

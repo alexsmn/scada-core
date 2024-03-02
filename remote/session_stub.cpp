@@ -21,7 +21,7 @@
 SessionStub::SessionStub(SessionContext&& context)
     : SessionContext(std::move(context)) {
   LOG_BIND_TAG(logger_, "UserId",
-               NodeIdToScadaString(service_context_->user_id));
+               NodeIdToScadaString(service_context_.user_id()));
   LOG_INFO(logger_) << "Created";
 }
 
@@ -217,7 +217,7 @@ void SessionStub::OnCall(unsigned request_id,
                          const scada::NodeId& method_id,
                          const std::vector<scada::Variant>& arguments) {
   services_.method_service->Call(
-      node_id, method_id, arguments, service_context_->user_id,
+      node_id, method_id, arguments, service_context_.user_id(),
       BindExecutor(executor_, weak_from_this(),
                    [this, request_id](const scada::Status& status) {
                      protocol::Message message;
