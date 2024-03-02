@@ -2,47 +2,39 @@
 
 #include "metrics/trace_id.h"
 
-class Tracer;
+class TraceSink;
 
-class TraceSink {
+class TraceSpan {
  public:
-  virtual ~TraceSink() = default;
+  TraceSpan()
+      : TraceSpan{nullptr, GenerateTraceId(), /*parent_trace_id=*/kNoTraceId} {}
 
-  virtual void Start(const TraceId& trace_id) = 0;
-  virtual void Finish(const TraceId& trace_id) = 0;
-};
+  explicit TraceSpan(TraceSink& sink)
+      : TraceSpan{&sink, GenerateTraceId(), /*parent_trace_id=*/kNoTraceId} {}
 
-class NoTraceSink final : public TraceSink {
- public:
-  void Start(const TraceId& trace_id) override {}
-  void Finish(const TraceId& trace_id) override {}
-};
+  ~TraceSpan();
 
-class TraceScope {
- public:
-  ~TraceScope() { sink_.Finish(trace_id_); }
+  TraceSpan(TraceSpan&& other) noexcept
+      : sink_{other.sink_}, trace_id_{other.trace_id_} {
+    other.sink_ = nullptr;
+  }
 
- private:
-  TraceScope(TraceSink& sink, const TraceId& trace_id)
-      : sink_{sink}, trace_id_{trace_id} {}
+  TraceSpan& operator=(TraceSpan&& other) noexcept {
+    if (this != &other) {
+      sink_ = other.sink_;
+      trace_id_ = other.trace_id_;
+      other.sink_ = nullptr;
+    }
+    return *this;
+  }
 
-  TraceSink& sink_;
-  const TraceId trace_id_;
-
-  friend class Tracer;
-};
-
-class Tracer {
- public:
-  explicit Tracer(TraceSink& sink) : sink_{sink} {}
-
-  TraceScope Start() { return Start(GenerateTraceId()); }
-
-  TraceScope Start(const TraceId& trace_id) {
-    sink_.Start(trace_id);
-    return TraceScope{sink_, trace_id};
+  TraceSpan StartSpan() const {
+    return TraceSpan{sink_, GenerateTraceId(), /*parent_trace_id=*/trace_id_};
   }
 
  private:
-  TraceSink& sink_;
+  TraceSpan(TraceSink* sink, TraceId trace_id, TraceId parent_trace_id);
+
+  TraceSink* sink_ = nullptr;
+  TraceId trace_id_ = 0;
 };

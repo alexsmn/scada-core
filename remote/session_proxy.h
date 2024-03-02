@@ -8,6 +8,7 @@
 #include "scada/method_service.h"
 #include "scada/monitored_item_service.h"
 #include "scada/privileges.h"
+#include "scada/services.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
 

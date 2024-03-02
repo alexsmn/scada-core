@@ -1,6 +1,6 @@
 #pragma once
 
-#include "metrics/tracing.h"
+#include "metrics/trace_sink.h"
 
 #include <chrono>
 #include <memory>
@@ -13,8 +13,8 @@ class TraceSinkImpl final : public TraceSink {
                 std::chrono::milliseconds timeout);
 
   // TraceSink
-  void Start(const TraceId& trace_id) override;
-  void Finish(const TraceId& trace_id) override;
+  void StartSpan(TraceId trace_id, TraceId parent_trace_id) override;
+  void EndSpan(TraceId trace_id) override;
 
  private:
   class Core;

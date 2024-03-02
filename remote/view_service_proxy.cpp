@@ -1,11 +1,11 @@
 #include "remote/view_service_proxy.h"
 
-#include "scada/standard_node_ids.h"
-#include "scada/status.h"
 #include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/standard_node_ids.h"
+#include "scada/status.h"
 
 // ViewServiceProxy
 
@@ -18,6 +18,7 @@ void ViewServiceProxy::OnChannelClosed() {
 }
 
 void ViewServiceProxy::Browse(
+    const std::shared_ptr<const scada::ServiceContext>& context,
     const std::vector<scada::BrowseDescription>& nodes,
     const scada::BrowseCallback& callback) {
   if (!sender_)

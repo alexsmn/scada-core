@@ -35,8 +35,8 @@ SessionStub::~SessionStub() {
 void SessionStub::Init() {
   const std::weak_ptr<MessageSender> sender = weak_from_this();
 
-  view_service_stub_ = std::make_shared<ViewServiceStub>(
-      ViewServiceStubContext{executor_, sender, *services_.view_service});
+  view_service_stub_ = std::make_shared<ViewServiceStub>(ViewServiceStubContext{
+      executor_, sender, service_context_, *services_.view_service});
 
   node_management_stub_ = std::make_shared<NodeManagementStub>(
       executor_, sender, *services_.node_management_service, service_context_);

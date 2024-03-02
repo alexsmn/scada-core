@@ -14,13 +14,13 @@ class TraceSinkImpl::Core : public std::enable_shared_from_this<Core> {
   Core(std::shared_ptr<Executor> executor, std::chrono::milliseconds timeout)
       : executor_{std::move(executor)}, timeout_{timeout} {}
 
-  void Start(const TraceId& trace_id);
-  void Finish(const TraceId& trace_id);
+  void StartSpan(TraceId trace_id, TraceId parent_trace_id);
+  void EndSpan(TraceId trace_id);
 
  private:
   bool enabled() const { return timeout_ != std::chrono::milliseconds::zero(); }
 
-  void OnTimeout(const TraceId& trace_id);
+  void OnTimeout(TraceId trace_id);
 
   BoostLogger logger_{LOG_NAME("Trace")};
 
@@ -31,7 +31,7 @@ class TraceSinkImpl::Core : public std::enable_shared_from_this<Core> {
   std::unordered_set<TraceId> active_trace_ids_;
 };
 
-void TraceSinkImpl::Core::Start(const TraceId& trace_id) {
+void TraceSinkImpl::Core::StartSpan(TraceId trace_id, TraceId parent_trace_id) {
   if (!enabled()) {
     return;
   }
@@ -54,7 +54,7 @@ void TraceSinkImpl::Core::Start(const TraceId& trace_id) {
                              });
 }
 
-void TraceSinkImpl::Core::Finish(const TraceId& trace_id) {
+void TraceSinkImpl::Core::EndSpan(TraceId trace_id) {
   if (!enabled()) {
     return;
   }
@@ -63,7 +63,7 @@ void TraceSinkImpl::Core::Finish(const TraceId& trace_id) {
   active_trace_ids_.erase(trace_id);
 }
 
-void TraceSinkImpl::Core::OnTimeout(const TraceId& trace_id) {
+void TraceSinkImpl::Core::OnTimeout(TraceId trace_id) {
   LOG_INFO(logger_) << "Scope took too long" << LOG_TAG("TraceId", trace_id);
 }
 
@@ -73,10 +73,10 @@ TraceSinkImpl::TraceSinkImpl(std::shared_ptr<Executor> executor,
                              std::chrono::milliseconds timeout)
     : core_{std::make_shared<Core>(std::move(executor), timeout)} {}
 
-void TraceSinkImpl::Start(const TraceId& trace_id) {
-  core_->Start(trace_id);
+void TraceSinkImpl::StartSpan(TraceId trace_id, TraceId parent_trace_id) {
+  core_->StartSpan(trace_id, parent_trace_id);
 }
 
-void TraceSinkImpl::Finish(const TraceId& trace_id) {
-  core_->Finish(trace_id);
+void TraceSinkImpl::EndSpan(TraceId trace_id) {
+  core_->EndSpan(trace_id);
 }

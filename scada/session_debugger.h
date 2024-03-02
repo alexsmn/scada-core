@@ -14,7 +14,7 @@ class SessionDebugger {
   enum class RequestPhase { Running, Succeeded, Failed };
 
   struct RequestEvent {
-    RequestId id = 0;
+    RequestId request_id = 0;
     RequestPhase phase = RequestPhase::Running;
     std::string_view title;
     std::string_view body;

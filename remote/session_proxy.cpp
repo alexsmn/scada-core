@@ -159,13 +159,16 @@ void SessionProxy::OnSessionDeleted() {
     Convert(scada::Status{scada::StatusCode::Bad_Disconnected},
             *response.mutable_status());
     auto requests = std::move(requests_);
-    for (auto& p : requests) {
-      response.set_request_id(p.first);
-      if (p.second) {
-        p.second(response);
+    for (const auto& [request_id, response_handler] : requests) {
+      response.set_request_id(request_id);
+
+      if (response_handler) {
+        response_handler(response);
       }
+
       debugger_->NotifyRequestEvent(
-          {.id = static_cast<scada::SessionDebugger::RequestId>(p.first),
+          {.request_id =
+               static_cast<scada::SessionDebugger::RequestId>(request_id),
            .phase = scada::SessionDebugger::RequestPhase::Failed});
     }
   }
@@ -218,12 +221,14 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
     if (i != requests_.end()) {
       auto handler = std::move(i->second);
       requests_.erase(i);
+
       debugger_->NotifyRequestEvent(
-          {.id = static_cast<scada::SessionDebugger::RequestId>(
+          {.request_id = static_cast<scada::SessionDebugger::RequestId>(
                response.request_id()),
            .phase = scada::SessionDebugger::RequestPhase::Succeeded,
            .title = response.GetTypeName(),
            .response_body = response.DebugString()});
+
       handler(response);
     }
   }
@@ -281,7 +286,7 @@ void SessionProxy::Request(protocol::Request& request,
     requests_[request_id] = std::move(response_handler);
 
   debugger_->NotifyRequestEvent(
-      {.id = request_id,
+      {.request_id = request_id,
        .phase = scada::SessionDebugger::RequestPhase::Running,
        .title = request.GetTypeName(),
        .body = request.DebugString()});
@@ -319,9 +324,11 @@ scada::status_promise<void> SessionProxy::Connect() {
                      << LOG_TAG("ConnectionString", connection_string_);
 
   auto transport_logger = std::make_shared<NetBoostLoggerAdapter>(logger_);
+
   auto transport = transport_factory_.CreateTransport(
       net::TransportString{connection_string_}, NetExecutorAdapter{executor_},
       std::move(transport_logger));
+
   if (!transport) {
     LOG_WARNING(*logger_) << "Cannot create raw transport";
     OnTransportClosed(net::ERR_FAILED);

@@ -54,7 +54,7 @@ status_promise<std::vector<ReferenceDescription>> node::browse(
 
   status_promise<BrowseResult> status_promise;
 
-  Browse(*services_.view_service,
+  Browse(*services_.view_service, context_,
          {.node_id = node_id_,
           .direction = details.direction,
           .reference_type_id = details.reference_type_id},

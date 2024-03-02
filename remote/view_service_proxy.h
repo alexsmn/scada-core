@@ -12,8 +12,10 @@ class ViewServiceProxy : public scada::ViewService {
   void OnChannelClosed();
 
   // scada::ViewService
-  virtual void Browse(const std::vector<scada::BrowseDescription>& nodes,
-                      const scada::BrowseCallback& callback) override;
+  virtual void Browse(
+      const std::shared_ptr<const scada::ServiceContext>& context,
+      const std::vector<scada::BrowseDescription>& nodes,
+      const scada::BrowseCallback& callback) override;
   virtual void TranslateBrowsePaths(
       const std::vector<scada::BrowsePath>& browse_paths,
       const scada::TranslateBrowsePathsCallback& callback) override;

@@ -1,11 +1,10 @@
 #pragma once
 
-#include "base/debug_util.h"
-
 #include <ostream>
 
 namespace scada {
 
+// TODO: Remove this class. Use call service instead.
 class WriteFlags {
  public:
   enum Flag { SELECT = 0x0001, PARAM = 0x0002 };
@@ -31,12 +30,6 @@ class WriteFlags {
   unsigned flags_ = 0;
 };
 
-inline std::ostream& operator<<(std::ostream& stream, WriteFlags flags) {
-  constexpr std::string_view kBitStrings[] = {
-      "Select",
-      "Parameter",
-  };
-  return stream << BitMaskToString(flags.raw(), kBitStrings);
-}
+std::ostream& operator<<(std::ostream& stream, WriteFlags flags);
 
 }  // namespace scada

@@ -1,13 +1,13 @@
 #include "remote/view_service_stub.h"
 
 #include "base/executor.h"
-#include "scada/status.h"
-#include "scada/view_service.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/status.h"
+#include "scada/view_service.h"
 
 using namespace std::chrono_literals;
 
@@ -42,9 +42,9 @@ void ViewServiceStub::OnRequestReceived(const protocol::Request& request) {
 
 void ViewServiceStub::OnBrowse(
     unsigned request_id,
-    const std::vector<scada::BrowseDescription>& nodes) {
+    const std::vector<scada::BrowseDescription>& inputs) {
   service_.Browse(
-      nodes,
+      service_context_, inputs,
       BindExecutor(executor_, [request_id, sender = sender_](
                                   const scada::Status& status,
                                   std::vector<scada::BrowseResult> results) {

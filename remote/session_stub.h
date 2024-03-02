@@ -1,10 +1,8 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "scada/attribute_service.h"
-#include "scada/event.h"
 #include "remote/message_sender.h"
-#include "remote/subscription.h"
+#include "scada/services.h"
 
 #include <memory>
 #include <unordered_map>
@@ -16,8 +14,12 @@ class Response;
 }  // namespace protocol
 
 namespace scada {
+class NodeId;
+class Variant;
 struct MonitoringParameters;
-}
+struct ReadValueId;
+struct ServiceContext;
+}  // namespace scada
 
 class Connection;
 class Executor;
@@ -94,6 +96,7 @@ class SessionStub : public MessageSender,
   std::shared_ptr<HistoryStub> history_stub_;
 
   int next_subscription_id_ = 1;
+
   std::unordered_map<int /*subscription_id*/, std::shared_ptr<SubscriptionStub>>
       subscriptions_;
 

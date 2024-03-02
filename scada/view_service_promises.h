@@ -7,20 +7,24 @@
 namespace scada {
 
 // TODO: Use status promise.
-inline promise<BrowseResult> Browse(ViewService& service,
-                                    const BrowseDescription& input) {
+inline promise<BrowseResult> Browse(
+    ViewService& service,
+    const std::shared_ptr<const scada::ServiceContext>& context,
+    const BrowseDescription& input) {
   promise<BrowseResult> promise;
-  Browse(service, input, [promise](scada::BrowseResult&& result) mutable {
-    promise.resolve(std::move(result));
-  });
+  Browse(service, context, input,
+         [promise](scada::BrowseResult&& result) mutable {
+           promise.resolve(std::move(result));
+         });
   return promise;
 }
 
 // TODO: Use status promise.
 inline promise<StatusCodeOr<NodeId>> BrowseParentId(
     ViewService& service,
+    const std::shared_ptr<const scada::ServiceContext>& context,
     const scada::NodeId& node_id) {
-  return Browse(service,
+  return Browse(service, context,
                 scada::BrowseDescription{node_id, BrowseDirection::Inverse,
                                          id::HierarchicalReferences, true})
       .then(
