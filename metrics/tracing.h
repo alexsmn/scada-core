@@ -4,37 +4,43 @@
 
 class TraceSink;
 
-class TraceSpan {
+class [[nodiscard]] TraceSpan {
  public:
   TraceSpan()
-      : TraceSpan{nullptr, GenerateTraceId(), /*parent_trace_id=*/kNoTraceId} {}
+      : TraceSpan{nullptr, GenerateTraceSpanId(), /*parent_span_id=*/{}} {}
 
   explicit TraceSpan(TraceSink& sink)
-      : TraceSpan{&sink, GenerateTraceId(), /*parent_trace_id=*/kNoTraceId} {}
+      : TraceSpan{&sink, GenerateTraceSpanId(), /*parent_span_id=*/{}} {}
 
   ~TraceSpan();
 
   TraceSpan(TraceSpan&& other) noexcept
-      : sink_{other.sink_}, trace_id_{other.trace_id_} {
+      : sink_{other.sink_}, span_id_{other.span_id_} {
     other.sink_ = nullptr;
   }
 
   TraceSpan& operator=(TraceSpan&& other) noexcept {
     if (this != &other) {
       sink_ = other.sink_;
-      trace_id_ = other.trace_id_;
+      span_id_ = other.span_id_;
       other.sink_ = nullptr;
     }
     return *this;
   }
 
-  TraceSpan StartSpan() const {
-    return TraceSpan{sink_, GenerateTraceId(), /*parent_trace_id=*/trace_id_};
+  const TraceSpanId& span_id() const { return span_id_; }
+
+  TraceSpan StartSpan() const { return StartSpan(GenerateTraceSpanId()); }
+
+  TraceSpan StartSpan(const TraceSpanId& span_id) const {
+    return TraceSpan{sink_, span_id, /*parent_span_id=*/span_id_};
   }
 
  private:
-  TraceSpan(TraceSink* sink, TraceId trace_id, TraceId parent_trace_id);
+  TraceSpan(TraceSink* sink,
+            const TraceSpanId& span_id,
+            const TraceSpanId& parent_span_id);
 
   TraceSink* sink_ = nullptr;
-  TraceId trace_id_ = 0;
+  TraceSpanId span_id_;
 };

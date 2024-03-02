@@ -14,13 +14,13 @@ class TraceSinkImpl::Core : public std::enable_shared_from_this<Core> {
   Core(std::shared_ptr<Executor> executor, std::chrono::milliseconds timeout)
       : executor_{std::move(executor)}, timeout_{timeout} {}
 
-  void StartSpan(TraceId trace_id, TraceId parent_trace_id);
-  void EndSpan(TraceId trace_id);
+  void StartSpan(const TraceSpanId& span_id, const TraceSpanId& parent_span_id);
+  void EndSpan(const TraceSpanId& span_id);
 
  private:
   bool enabled() const { return timeout_ != std::chrono::milliseconds::zero(); }
 
-  void OnTimeout(TraceId trace_id);
+  void OnTimeout(const TraceSpanId& span_id);
 
   BoostLogger logger_{LOG_NAME("Trace")};
 
@@ -28,43 +28,44 @@ class TraceSinkImpl::Core : public std::enable_shared_from_this<Core> {
   std::chrono::milliseconds timeout_;
 
   std::mutex mutex_;
-  std::unordered_set<TraceId> active_trace_ids_;
+  std::unordered_set<TraceSpanId> active_span_ids_;
 };
 
-void TraceSinkImpl::Core::StartSpan(TraceId trace_id, TraceId parent_trace_id) {
+void TraceSinkImpl::Core::StartSpan(const TraceSpanId& span_id,
+                                    const TraceSpanId& parent_span_id) {
   if (!enabled()) {
     return;
   }
 
   {
     std::lock_guard lock{mutex_};
-    active_trace_ids_.emplace(trace_id);
+    active_span_ids_.emplace(span_id);
   }
 
   executor_->PostDelayedTask(timeout_,
-                             [this, ref = shared_from_this(), trace_id] {
+                             [this, ref = shared_from_this(), span_id] {
                                {
                                  std::lock_guard lock{mutex_};
-                                 if (!active_trace_ids_.erase(trace_id)) {
+                                 if (!active_span_ids_.erase(span_id)) {
                                    return;
                                  }
                                }
 
-                               OnTimeout(trace_id);
+                               OnTimeout(span_id);
                              });
 }
 
-void TraceSinkImpl::Core::EndSpan(TraceId trace_id) {
+void TraceSinkImpl::Core::EndSpan(const TraceSpanId& span_id) {
   if (!enabled()) {
     return;
   }
 
   std::lock_guard lock{mutex_};
-  active_trace_ids_.erase(trace_id);
+  active_span_ids_.erase(span_id);
 }
 
-void TraceSinkImpl::Core::OnTimeout(TraceId trace_id) {
-  LOG_INFO(logger_) << "Scope took too long" << LOG_TAG("TraceId", trace_id);
+void TraceSinkImpl::Core::OnTimeout(const TraceSpanId& span_id) {
+  LOG_INFO(logger_) << "Span took too long" << LOG_TAG("SpanId", span_id);
 }
 
 // TraceSinkImpl
@@ -73,10 +74,11 @@ TraceSinkImpl::TraceSinkImpl(std::shared_ptr<Executor> executor,
                              std::chrono::milliseconds timeout)
     : core_{std::make_shared<Core>(std::move(executor), timeout)} {}
 
-void TraceSinkImpl::StartSpan(TraceId trace_id, TraceId parent_trace_id) {
-  core_->StartSpan(trace_id, parent_trace_id);
+void TraceSinkImpl::StartSpan(const TraceSpanId& span_id,
+                              const TraceSpanId& parent_span_id) {
+  core_->StartSpan(span_id, parent_span_id);
 }
 
-void TraceSinkImpl::EndSpan(TraceId trace_id) {
-  core_->EndSpan(trace_id);
+void TraceSinkImpl::EndSpan(const TraceSpanId& span_id) {
+  core_->EndSpan(span_id);
 }

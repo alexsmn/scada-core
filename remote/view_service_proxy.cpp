@@ -1,11 +1,9 @@
 #include "remote/view_service_proxy.h"
 
-#include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
-#include "scada/standard_node_ids.h"
-#include "scada/status.h"
+#include "scada/service_context.h"
 
 // ViewServiceProxy
 
@@ -25,6 +23,7 @@ void ViewServiceProxy::Browse(
     return callback(scada::StatusCode::Bad_Disconnected, {});
 
   protocol::Request request;
+  request.set_trace_id(context.trace_id());
   auto& browse = *request.mutable_browse();
   for (auto& node : nodes) {
     auto& browse_node = *browse.add_nodes();

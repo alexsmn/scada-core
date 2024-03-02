@@ -1,15 +1,16 @@
 #include "scada/service_context.h"
 
 #include "base/struct_writer.h"
+#include "metrics/tracing.h"
 
 #include "base/debug_util-inl.h"
 
 namespace scada {
 
 struct ServiceContext::Rep {
-  TraceId trace_id = 0;
   NodeId user_id;
   std::vector<std::string> locale_ids;
+  TraceId trace_id;
 };
 
 // static
@@ -30,11 +31,21 @@ ServiceContext ServiceContext::with_user_id(
   return ServiceContext{std::make_shared<Rep>(std::move(rep))};
 }
 
+const TraceId& ServiceContext::trace_id() const {
+  return rep_->trace_id;
+}
+
+ServiceContext ServiceContext::with_trace_id(const TraceId& trace_id) const {
+  Rep rep = *rep_;
+  rep.trace_id = trace_id;
+  return ServiceContext{std::make_shared<Rep>(std::move(rep))};
+}
+
 std::ostream& operator<<(std::ostream& stream, const ServiceContext& context) {
   StructWriter{stream}
-      .AddField("trace_id", ToString(context.rep_->trace_id))
       .AddField("user_id", ToString(context.rep_->user_id))
-      .AddField("locale_ids", context.rep_->locale_ids);
+      .AddField("locale_ids", context.rep_->locale_ids)
+      .AddField("trace_id", ToString(context.rep_->trace_id));
   return stream;
 }
 

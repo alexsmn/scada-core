@@ -16,8 +16,10 @@ class [[nodiscard]] ServiceContext {
   ServiceContext& operator=(const ServiceContext&) = default;
 
   const scada::NodeId& user_id() const;
+  const TraceId& trace_id() const;
 
   ServiceContext with_user_id(const scada::NodeId& user_id) const;
+  ServiceContext with_trace_id(const TraceId& trace_id) const;
 
   friend std::ostream& operator<<(std::ostream& stream,
                                   const ServiceContext& context);

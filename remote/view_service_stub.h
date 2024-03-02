@@ -11,13 +11,10 @@ class RepeatedPtrField;
 }
 
 namespace protocol {
-class Browse;
-class BrowsePath;
 class Request;
 }  // namespace protocol
 
 class Executor;
-
 class MessageSender;
 
 struct ViewServiceStubContext {
@@ -35,10 +32,6 @@ class ViewServiceStub final : private ViewServiceStubContext {
   void OnRequestReceived(const protocol::Request& request);
 
  private:
-  void OnBrowse(unsigned request_id, const protocol::Browse& browse_request);
-
-  void OnBrowsePaths(
-      unsigned request_id,
-      const ::google::protobuf::RepeatedPtrField<protocol::BrowsePath>&
-          browse_path_requests);
+  void OnBrowse(const protocol::Request& request);
+  void OnBrowsePaths(const protocol::Request& request);
 };

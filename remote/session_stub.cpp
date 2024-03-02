@@ -232,23 +232,24 @@ void SessionStub::OnRead(const protocol::Request& request) {
   if (!request.has_read())
     return;
 
-  const auto request_id = request.request_id();
   const auto inputs = std::make_shared<const std::vector<scada::ReadValueId>>(
       ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id()));
 
   services_.attribute_service->Read(
-      service_context_, inputs,
-      BindExecutor(executor_, weak_from_this(),
-                   [this, request_id](scada::Status status,
-                                      std::vector<scada::DataValue> results) {
-                     protocol::Message message;
-                     auto& response = *message.add_responses();
-                     response.set_request_id(request_id);
-                     Convert(std::move(status), *response.mutable_status());
-                     Convert(std::move(results),
-                             *response.mutable_read_result()->mutable_value());
-                     Send(message);
-                   }));
+      service_context_.with_trace_id(request.trace_id()), inputs,
+      BindExecutor(
+          executor_, weak_from_this(),
+          [this, request_id = request.request_id()](
+              scada::Status status, std::vector<scada::DataValue> results) {
+            protocol::Message message;
+            auto& response = *message.add_responses();
+            response.set_request_id(request_id);
+            Convert(std::move(status), *response.mutable_status());
+            Convert(std::move(results),
+                    *response.mutable_read_result()->mutable_value());
+
+            Send(message);
+          }));
 }
 
 void SessionStub::OnWrite(const protocol::Request& request) {

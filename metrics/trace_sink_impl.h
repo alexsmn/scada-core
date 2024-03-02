@@ -13,8 +13,9 @@ class TraceSinkImpl final : public TraceSink {
                 std::chrono::milliseconds timeout);
 
   // TraceSink
-  void StartSpan(TraceId trace_id, TraceId parent_trace_id) override;
-  void EndSpan(TraceId trace_id) override;
+  void StartSpan(const TraceSpanId& span_id,
+                 const TraceSpanId& parent_span_id) override;
+  void EndSpan(const TraceSpanId& span_id) override;
 
  private:
   class Core;

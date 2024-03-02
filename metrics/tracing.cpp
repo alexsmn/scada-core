@@ -4,15 +4,17 @@
 
 // TraceSpan
 
-TraceSpan::TraceSpan(TraceSink* sink, TraceId trace_id, TraceId parent_trace_id)
-    : sink_{sink}, trace_id_{trace_id} {
+TraceSpan::TraceSpan(TraceSink* sink,
+                     const TraceSpanId& span_id,
+                     const TraceSpanId& parent_span_id)
+    : sink_{sink}, span_id_{span_id} {
   if (sink_) {
-    sink_->StartSpan(trace_id_, parent_trace_id);
+    sink_->StartSpan(span_id_, parent_span_id);
   }
 }
 
-TraceSpan ::~TraceSpan() {
+TraceSpan::~TraceSpan() {
   if (sink_) {
-    sink_->EndSpan(trace_id_);
+    sink_->EndSpan(span_id_);
   }
 }

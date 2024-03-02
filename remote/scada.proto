@@ -232,6 +232,7 @@ message Ping {
 
 message Request {
   uint32 request_id = 1;
+  string trace_id = 2;
 
   CreateSession create_session = 10;
   DeleteSession delete_session = 11;
