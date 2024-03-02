@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/struct_writer.h"
 #include "scada/date_time.h"
 #include "scada/node_id.h"
 
@@ -21,13 +20,6 @@ struct AggregateFilter {
 
 static_assert(std::totally_ordered<AggregateFilter>);
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                const AggregateFilter& filter) {
-  StructWriter{stream}
-      .AddField("start_time", filter.start_time)
-      .AddField("interval", filter.interval)
-      .AddField("aggregate_type", ToString(filter.aggregate_type));
-  return stream;
-}
+std::ostream& operator<<(std::ostream& stream, const AggregateFilter& filter);
 
 }  // namespace scada
