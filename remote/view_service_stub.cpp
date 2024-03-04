@@ -43,8 +43,12 @@ void ViewServiceStub::OnBrowse(const protocol::Request& request) {
         proto_node.include_subtypes());
   }
 
+  scada::ServiceContext context =
+      service_context_.with_request_id(request.request_id())
+          .with_trace_id(request.trace_id());
+
   service_.Browse(
-      service_context_.with_trace_id(request.trace_id()), inputs,
+      context, inputs,
       BindExecutor(executor_,
                    [request_id = request.request_id(), sender = sender_](
                        const scada::Status& status,

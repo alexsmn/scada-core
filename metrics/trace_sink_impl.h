@@ -14,6 +14,7 @@ class TraceSinkImpl final : public TraceSink {
 
   // TraceSink
   void StartSpan(const TraceSpanId& span_id,
+                 std::string_view name,
                  const TraceSpanId& parent_span_id) override;
   void EndSpan(const TraceSpanId& span_id) override;
 

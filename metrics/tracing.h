@@ -6,12 +6,7 @@ class TraceSink;
 
 class [[nodiscard]] TraceSpan {
  public:
-  TraceSpan()
-      : TraceSpan{nullptr, GenerateTraceSpanId(), /*parent_span_id=*/{}} {}
-
-  explicit TraceSpan(TraceSink& sink)
-      : TraceSpan{&sink, GenerateTraceSpanId(), /*parent_span_id=*/{}} {}
-
+  TraceSpan(TraceSink& sink, std::string_view name);
   ~TraceSpan();
 
   TraceSpan(TraceSpan&& other) noexcept
@@ -30,17 +25,16 @@ class [[nodiscard]] TraceSpan {
 
   const TraceSpanId& span_id() const { return span_id_; }
 
-  TraceSpan StartSpan() const { return StartSpan(GenerateTraceSpanId()); }
-
-  TraceSpan StartSpan(const TraceSpanId& span_id) const {
-    return TraceSpan{sink_, span_id, /*parent_span_id=*/span_id_};
-  }
+  TraceSpan StartSpan(std::string_view name) const;
 
  private:
-  TraceSpan(TraceSink* sink,
+  TraceSpan(TraceSink& sink,
             const TraceSpanId& span_id,
+            std::string_view name,
             const TraceSpanId& parent_span_id);
 
+  // Null when span is moved out.
   TraceSink* sink_ = nullptr;
+
   TraceSpanId span_id_;
 };
