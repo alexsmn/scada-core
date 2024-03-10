@@ -19,7 +19,7 @@ struct BrowseDescription {
   bool operator==(const BrowseDescription&) const = default;
 
   NodeId node_id;
-  BrowseDirection direction;
+  BrowseDirection direction = BrowseDirection::Both;
   NodeId reference_type_id;
   bool include_subtypes = true;
 };

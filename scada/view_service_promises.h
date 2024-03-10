@@ -4,7 +4,42 @@
 #include "scada/status_promise.h"
 #include "scada/view_service.h"
 
+#include <algorithm>
+
 namespace scada {
+
+inline status_promise<
+    std::vector<scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>
+Browse(ViewService& service,
+       const scada::ServiceContext& context,
+       const std::vector<BrowseDescription>& inputs) {
+  status_promise<std::vector<
+      scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>
+      promise;
+  service.Browse(
+      context, inputs,
+      [promise](scada::Status status,
+                std::vector<scada::BrowseResult> results) mutable {
+        if (status) {
+          std::vector<
+              scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>
+              status_or_results;
+          std::ranges::transform(
+              results, std::back_inserter(status_or_results),
+              [](scada::BrowseResult& result) {
+                return scada::IsGood(result.status_code)
+                           ? scada::StatusCodeOr{std::move(result.references)}
+                           : scada::StatusCodeOr<
+                                 std::vector<scada::ReferenceDescription>>{
+                                 result.status_code};
+              });
+          promise.resolve(std::move(status_or_results));
+        } else {
+          scada::RejectStatusPromise(promise, std::move(status));
+        }
+      });
+  return promise;
+}
 
 // TODO: Use status promise.
 inline promise<BrowseResult> Browse(ViewService& service,

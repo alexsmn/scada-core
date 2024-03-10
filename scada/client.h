@@ -26,7 +26,11 @@ class client {
 
   scada::node server_node() const { return node(id::Server); }
 
-  status_promise<scada::node> add_node(const AddNodesItem& item);
+  status_promise<std::vector<
+      scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>
+  browse(const std::vector<scada::BrowseDescription>& inputs) const;
+
+  status_promise<scada::node> add_node(const AddNodesItem& item) const;
 
   status_promise<void> acknowledge_events(std::vector<EventId> event_ids,
                                           DateTime acknowledge_time) const;

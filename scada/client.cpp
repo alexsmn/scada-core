@@ -2,6 +2,7 @@
 
 #include "scada/node_management_service.h"
 #include "scada/service_context.h"
+#include "scada/view_service_promises.h"
 
 namespace scada {
 
@@ -31,7 +32,19 @@ status_promise<void> client::disconnect() const {
   return services_.session_service->Disconnect();
 }
 
-status_promise<scada::node> client::add_node(const AddNodesItem& item) {
+status_promise<
+    std::vector<scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>
+client::browse(const std::vector<scada::BrowseDescription>& inputs) const {
+  if (!services_.view_service) {
+    return scada::MakeRejectedStatusPromise<std::vector<
+        scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>(
+        scada::StatusCode::Bad_Disconnected);
+  }
+
+  return scada::Browse(*services_.view_service, context_, inputs);
+}
+
+status_promise<scada::node> client::add_node(const AddNodesItem& item) const {
   if (!services_.node_management_service) {
     return MakeRejectedStatusPromise<scada::node>(StatusCode::Bad_Disconnected);
   }

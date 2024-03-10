@@ -2,10 +2,11 @@
 
 #include "base/struct_writer.h"
 
+#include "base/debug_util-inl.h"
+
 namespace scada {
 
-std::ostream& operator<<(std::ostream& stream,
-                                const AggregateFilter& filter) {
+std::ostream& operator<<(std::ostream& stream, const AggregateFilter& filter) {
   StructWriter{stream}
       .AddField("start_time", filter.start_time)
       .AddField("interval", filter.interval)
@@ -13,4 +14,4 @@ std::ostream& operator<<(std::ostream& stream,
   return stream;
 }
 
-}
+}  // namespace scada
