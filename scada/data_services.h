@@ -23,19 +23,14 @@ struct DataServices {
   std::shared_ptr<scada::AttributeService> attribute_service_;
   std::shared_ptr<scada::MethodService> method_service_;
   std::shared_ptr<scada::MonitoredItemService> monitored_item_service_;
+
+  scada::services as_services() const {
+    return {.attribute_service = attribute_service_.get(),
+            .monitored_item_service = monitored_item_service_.get(),
+            .method_service = method_service_.get(),
+            .history_service = history_service_.get(),
+            .view_service = view_service_.get(),
+            .node_management_service = node_management_service_.get(),
+            .session_service = session_service_.get()};
+  }
 };
-
-namespace scada {
-
-inline services GetServices(DataServices& data_services) {
-  return {
-      .attribute_service = data_services.attribute_service_.get(),
-      .monitored_item_service = data_services.monitored_item_service_.get(),
-      .method_service = data_services.method_service_.get(),
-      .history_service = data_services.history_service_.get(),
-      .view_service = data_services.view_service_.get(),
-      .node_management_service = data_services.node_management_service_.get(),
-      .session_service = data_services.session_service_.get()};
-}
-
-}  // namespace scada
