@@ -22,7 +22,7 @@ std::u16string StringToCsv(std::u16string_view raw_value,
     const char16_t two_quotes[] = {quote, quote, u'\0'};
     base::ReplaceSubstringsAfterOffset(
         &result, result.size() - raw_value.size(),
-        base::StringPiece16{&quote, 1}, two_quotes);
+        std::u16string_view{&quote, 1}, two_quotes);
     result.push_back(quote);
   } else {
     result.append(raw_value.begin(), raw_value.end());
