@@ -1,7 +1,5 @@
 #pragma once
 
-#include "base/string_piece_util.h"
-
 #include <base/values.h>
 
 template <class T>
@@ -29,12 +27,13 @@ class JsonReader {
 
   template <class F>
   JsonReader& field(std::string_view key, F T::*field) {
-    auto* json_value = json_.FindKey(AsStringPiece(key));
+    auto* json_value = json_.FindKey(key);
     if (!json_value)
       return *this;
 
-    if (!ReadJson(*json_value, value_.*field))
+    if (!ReadJson(*json_value, value_.*field)) {
       throw std::runtime_error{"Wrong JSON value"};
+    }
 
     return *this;
   }

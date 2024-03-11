@@ -2,7 +2,6 @@
 
 #include "base/net_boost_logger_adapter.h"
 #include "base/net_executor_adapter.h"
-#include "base/string_piece_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -29,9 +28,8 @@ namespace {
 const auto kPingDelay = 1s;
 
 std::string MakeConnectionString(std::string_view host_name) {
-  auto parts =
-      base::SplitString(AsStringPiece(host_name), ":", base::TRIM_WHITESPACE,
-                        base::SplitResult::SPLIT_WANT_ALL);
+  auto parts = base::SplitString(host_name, ":", base::TRIM_WHITESPACE,
+                                 base::SplitResult::SPLIT_WANT_ALL);
   parts.resize(2);
   if (parts[1].empty())
     parts[1] = "2000";

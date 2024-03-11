@@ -1,6 +1,5 @@
 #include "data_services_factory.h"
 
-#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 
 namespace {
@@ -21,8 +20,7 @@ void RegisterDataServices(DataServicesInfo info) {
 }
 
 bool EqualDataServicesName(std::string_view name1, std::string_view name2) {
-  return base::EqualsCaseInsensitiveASCII(AsStringPiece(name1),
-                                          AsStringPiece(name2));
+  return base::EqualsCaseInsensitiveASCII(name1, name2);
 }
 
 bool CreateDataServices(std::string_view name,

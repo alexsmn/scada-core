@@ -1,7 +1,5 @@
 #include "base/format.h"
 
-#include "base/string_piece_util.h"
-
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/string_util.h>
 #include <base/third_party/dmg_fp/dmg_fp.h>
@@ -121,22 +119,22 @@ std::u16string WideFormat(std::u16string_view value) {
 
 template <>
 bool Parse(const std::string_view& str, int32_t& value) {
-  return base::StringToInt(AsStringPiece(str), &value);
+  return base::StringToInt(str, &value);
 }
 
 template <>
 bool Parse(const std::u16string_view& str, int32_t& value) {
-  return base::StringToInt(AsStringPiece(str), &value);
+  return base::StringToInt(str, &value);
 }
 
 template <>
 bool Parse(const std::string_view& str, uint32_t& value) {
-  return base::StringToUint(AsStringPiece(str), &value);
+  return base::StringToUint(str, &value);
 }
 
 template <>
 bool Parse(const std::u16string_view& str, uint32_t& value) {
-  return base::StringToUint(AsStringPiece(str), &value);
+  return base::StringToUint(str, &value);
 }
 
 template <>
@@ -178,7 +176,7 @@ bool Parse(const std::u16string_view& str, uint8_t& value) {
 template <>
 bool Parse(const std::string_view& str, int16_t& value) {
   int tmp;
-  if (!base::StringToInt(AsStringPiece(str), &tmp))
+  if (!base::StringToInt(str, &tmp))
     return false;
   value = static_cast<int16_t>(tmp);
   return value == tmp;
@@ -187,7 +185,7 @@ bool Parse(const std::string_view& str, int16_t& value) {
 template <>
 bool Parse(const std::u16string_view& str, int16_t& value) {
   int tmp;
-  if (!base::StringToInt(AsStringPiece(str), &tmp))
+  if (!base::StringToInt(str, &tmp))
     return false;
   value = static_cast<int16_t>(tmp);
   return value == tmp;
@@ -196,7 +194,7 @@ bool Parse(const std::u16string_view& str, int16_t& value) {
 template <>
 bool Parse(const std::string_view& str, uint16_t& value) {
   unsigned tmp;
-  if (!base::StringToUint(AsStringPiece(str), &tmp))
+  if (!base::StringToUint(str, &tmp))
     return false;
   value = static_cast<uint16_t>(tmp);
   return value == tmp;
@@ -205,7 +203,7 @@ bool Parse(const std::string_view& str, uint16_t& value) {
 template <>
 bool Parse(const std::u16string_view& str, uint16_t& value) {
   unsigned tmp;
-  if (!base::StringToUint(AsStringPiece(str), &tmp))
+  if (!base::StringToUint(str, &tmp))
     return false;
   value = static_cast<unsigned short>(tmp);
   return value == tmp;
@@ -213,31 +211,31 @@ bool Parse(const std::u16string_view& str, uint16_t& value) {
 
 template <>
 bool Parse(const std::string_view& str, int64_t& value) {
-  return base::StringToInt64(AsStringPiece(str), &value);
+  return base::StringToInt64(str, &value);
 }
 
 template <>
 bool Parse(const std::u16string_view& str, int64_t& value) {
-  return base::StringToInt64(AsStringPiece(str), &value);
+  return base::StringToInt64(str, &value);
 }
 
 template <>
 bool Parse(const std::string_view& str, uint64_t& value) {
-  return base::StringToUint64(AsStringPiece(str), &value);
+  return base::StringToUint64(str, &value);
 }
 
 template <>
 bool Parse(const std::u16string_view& str, uint64_t& value) {
-  return base::StringToUint64(AsStringPiece(str), &value);
+  return base::StringToUint64(str, &value);
 }
 
 template <>
 bool Parse(const std::string_view& str, double& value) {
-  return base::StringToDouble(AsStringPiece(str), &value);
+  return base::StringToDouble(str, &value);
 }
 template <>
 bool Parse(const std::u16string_view& str, double& value) {
-  return base::StringToDouble(AsStringPiece(str), &value);
+  return base::StringToDouble(str, &value);
 }
 
 template <>

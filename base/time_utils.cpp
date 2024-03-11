@@ -1,6 +1,5 @@
 #include "base/time_utils.h"
 
-#include <base/string_piece_util.h>
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/string_split.h>
 
@@ -26,8 +25,8 @@ std::string SerializeToString(base::TimeDelta delta) {
 }
 
 bool Deserialize(std::string_view str, base::TimeDelta& delta) {
-  auto parts = base::SplitStringPiece(
-      AsStringPiece(str), ":", base::KEEP_WHITESPACE, base::SPLIT_WANT_ALL);
+  auto parts = base::SplitStringPiece(str, ":", base::KEEP_WHITESPACE,
+                                      base::SPLIT_WANT_ALL);
   if (parts.size() != 3)
     return false;
 

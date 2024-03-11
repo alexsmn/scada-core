@@ -1,7 +1,5 @@
 #include "base/csv_writer.h"
 
-#include "base/string_piece_util.h"
-
 #include <base/strings/string_util.h>
 #include <boost/locale/encoding_utf.hpp>
 

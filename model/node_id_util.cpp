@@ -1,6 +1,5 @@
 #include "node_id_util.h"
 
-#include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -59,8 +58,7 @@ bool IsNestedNodeId(const scada::NodeId& node_id,
   // always strings, since they have to contain the `!` separator.
   if (is_topmost_parent) {
     scada::NumericId parent_numeric_id = 0;
-    if (base::StringToUint(AsStringPiece(parent_string_id),
-                           &parent_numeric_id)) {
+    if (base::StringToUint(parent_string_id, &parent_numeric_id)) {
       parent_id = scada::NodeId{parent_numeric_id, parent_namespace_index};
     } else {
       parent_id =
@@ -115,8 +113,8 @@ scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
   auto parent_identifier = parent_id.type() == scada::NodeIdType::Numeric
                                ? base::NumberToString(parent_id.numeric_id())
                                : parent_id.string_id();
-  auto identifier = base::StrCat(
-      {parent_namespace, parent_identifier, "!", AsStringPiece(nested_name)});
+  auto identifier =
+      base::StrCat({parent_namespace, parent_identifier, "!", nested_name});
 
   return scada::NodeId{std::move(identifier), namespace_index};
 }
@@ -180,12 +178,11 @@ scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
   const auto namespace_name = scada_string.substr(0, p);
   int namespace_index = FindNamespaceIndexByName(namespace_name);
   if (namespace_index == -1) {
-    if (!base::StartsWith(AsStringPiece(namespace_name), "NS",
+    if (!base::StartsWith(namespace_name, "NS",
                           base::CompareCase::INSENSITIVE_ASCII)) {
       return scada::NodeId{};
     }
-    if (!base::StringToInt(AsStringPiece(namespace_name.substr(2)),
-                           &namespace_index)) {
+    if (!base::StringToInt(namespace_name.substr(2), &namespace_index)) {
       return scada::NodeId{};
     }
   }
@@ -198,7 +195,7 @@ scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
   }
 
   scada::NumericId numeric_id = 0;
-  if (!base::StringToUint(AsStringPiece(identifier), &numeric_id)) {
+  if (!base::StringToUint(identifier, &numeric_id)) {
     return scada::NodeId{std::string{identifier},
                          static_cast<scada::NamespaceIndex>(namespace_index)};
   }
