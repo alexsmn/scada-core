@@ -61,21 +61,29 @@ class WrappedPromiseTask {
   const DebugHolder<std::source_location> location_;
 };
 
-template <class T>
+template <class F, class C>
 struct CancelationPromiseFunc {
+  // Always returns a `promise<R>`.
   template <class... Args>
-  auto operator()(Args&&...) const {
-    using R = std::invoke_result_t<T, Args...>;
-    if constexpr (is_promise_v<R>) {
-      // TODO: Use a specific exception type.
-      return make_rejected_promise<remove_promise_t<R>>(std::exception{});
+  auto operator()(Args&&... args) const {
+    using R = std::invoke_result_t<F, Args...>;
+    if (auto cancelation = cancelation_.lock()) {
+      if constexpr (is_promise_v<R>) {
+        return func_(std::forward<Args>(args)...);
+      } else if constexpr (std::is_void_v<R>) {
+        return make_resolved_promise();
+      } else {
+        return make_resolved_promise(func_(std::forward<Args>(args)...));
+      }
     } else {
       // TODO: Use a specific exception type.
-      throw std::exception{};
-      // To provide this branch's return result for the compiler.
-      return R{};
+      return make_rejected_promise<remove_promise_t<R>>(std::exception{});
     }
   }
+
+  std::weak_ptr<C> cancelation_;
+  F func_;
+  DebugHolder<std::source_location> location_;
 };
 
 }  // namespace internal
@@ -85,8 +93,8 @@ inline auto BindPromiseCancelation(
     std::weak_ptr<C> cancelation,
     T&& task,
     const std::source_location& location = std::source_location::current()) {
-  return BindCancelationFunc(std::move(cancelation), std::forward<T>(task),
-                             internal::CancelationPromiseFunc<T>{}, location);
+  return internal::CancelationPromiseFunc<T, C>{
+      std::move(cancelation), std::forward<T>(task), DebugHolder{location}};
 }
 
 template <class T>

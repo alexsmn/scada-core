@@ -6,11 +6,11 @@
 
 using namespace testing;
 
-class MetricServiceImplTest : public Test {
+class MetricServiceTest : public Test {
  public:
-  MetricServiceImplTest() {
-    metric_service_impl_.RegisterProvider(metric_provider_.AsStdFunction());
-    metric_service_impl_.RegisterSink(metric_sink_.AsStdFunction());
+  MetricServiceTest() {
+    metric_service_.RegisterProvider(metric_provider_.AsStdFunction());
+    metric_service_.RegisterSink(metric_sink_.AsStdFunction());
   }
 
  protected:
@@ -26,26 +26,28 @@ class MetricServiceImplTest : public Test {
   StrictMock<MockFunction<promise<Metrics>()>> metric_provider_;
   StrictMock<MockFunction<void(const Metrics&)>> metric_sink_;
 
-  MetricServiceImpl metric_service_impl_{executor_, kReportPeriod};
+  MetricServiceImpl metric_service_{executor_, kReportPeriod};
 
   inline static const std::chrono::milliseconds kReportPeriod{1000};
   inline static const char kMetricName[] = "Metric";
   inline static const int kMetricValue = 42;
 };
 
-TEST_F(MetricServiceImplTest, DoesntTriggerMetricReporterByDefault) {}
+TEST_F(MetricServiceTest, DoesntTriggerMetricReporterByDefault) {}
 
-TEST_F(MetricServiceImplTest, WhenNoMetricsWereCollected_ReportsEmptyMetrics) {
+TEST_F(MetricServiceTest, WhenNoMetricsWereCollected_ReportsEmptyMetrics) {
   EXPECT_CALL(metric_provider_, Call())
       .WillOnce(Return(make_resolved_promise(Metrics{})));
+
   EXPECT_CALL(metric_sink_, Call(Property(&Metrics::empty, IsTrue())));
 
   executor_->Advance(kReportPeriod);
 }
 
-TEST_F(MetricServiceImplTest, WhenMetricWasCollected_ReportsIt) {
+TEST_F(MetricServiceTest, WhenMetricWasCollected_ReportsIt) {
   EXPECT_CALL(metric_provider_, Call())
       .WillOnce(Return(make_resolved_promise(MakeMetrics())));
+
   EXPECT_CALL(
       metric_sink_,
       Call(Property(&Metrics::ToUnorderedMap,
@@ -54,7 +56,7 @@ TEST_F(MetricServiceImplTest, WhenMetricWasCollected_ReportsIt) {
   executor_->Advance(kReportPeriod);
 }
 
-TEST_F(MetricServiceImplTest, WhenProviderIsCanceled_DoesntInvokeIt) {
+TEST_F(MetricServiceTest, UnregistersProvidersReturningRejectedPromise) {
   EXPECT_CALL(metric_provider_, Call())
       .WillOnce(Return(make_rejected_promise<Metrics>(std::exception{})));
 

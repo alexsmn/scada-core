@@ -35,6 +35,21 @@ TEST(DispatchAsPromise, ClosureReturnsPromise) {
   EXPECT_EQ(dispatched_promise.get(), 42);
 }
 
+TEST(BindPromiseCancelation, RejectsCanceledPromiseWithValueHandler) {
+  promise<int> canceled_promise = make_resolved_promise().then(
+      BindPromiseCancelation(std::weak_ptr<int>{}, [] { return 123; }));
+
+  EXPECT_THROW(canceled_promise.get(), std::exception);
+}
+
+TEST(BindPromiseCancelation, RejectsCanceledPromiseWithPromiseHandler) {
+  promise<int> canceled_promise =
+      make_resolved_promise().then(BindPromiseCancelation(
+          std::weak_ptr<int>{}, [] { return make_resolved_promise(123); }));
+
+  EXPECT_THROW(canceled_promise.get(), std::exception);
+}
+
 TEST(BindPromiseExecutor, FuncReturnsVoid) {
   auto executor = std::make_shared<TestExecutor>();
 
