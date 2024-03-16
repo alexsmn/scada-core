@@ -4,6 +4,8 @@
 
 #include <gmock/gmock.h>
 
+using namespace testing;
+
 TEST(DispatchAsPromise, ClosureReturnsVoid) {
   auto executor = std::make_shared<TestExecutor>();
 
@@ -53,8 +55,14 @@ TEST(BindPromiseCancelation, RejectsCanceledPromiseWithPromiseHandler) {
 TEST(BindPromiseExecutor, FuncReturnsVoid) {
   auto executor = std::make_shared<TestExecutor>();
 
-  std::function<promise<void>()> binding = BindPromiseExecutor(
-      executor, [&] { EXPECT_TRUE(executor->is_current_executor()); });
+  MockFunction<void()> func;
+
+  std::function<promise<void>()> binding =
+      BindPromiseExecutor(executor, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).WillOnce(Invoke([&] {
+    EXPECT_TRUE(executor->is_current_executor());
+  }));
 
   binding().get();
 }
@@ -62,10 +70,15 @@ TEST(BindPromiseExecutor, FuncReturnsVoid) {
 TEST(BindPromiseExecutor, FuncReturnsValue) {
   auto executor = std::make_shared<TestExecutor>();
 
-  std::function<promise<int>()> binding = BindPromiseExecutor(executor, [&] {
+  MockFunction<int()> func;
+
+  std::function<promise<int>()> binding =
+      BindPromiseExecutor(executor, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).WillOnce(Invoke([&] {
     EXPECT_TRUE(executor->is_current_executor());
     return 42;
-  });
+  }));
 
   EXPECT_EQ(binding().get(), 42);
 }
@@ -73,10 +86,15 @@ TEST(BindPromiseExecutor, FuncReturnsValue) {
 TEST(BindPromiseExecutor, FuncReturnsVoidPromise) {
   auto executor = std::make_shared<TestExecutor>();
 
-  std::function<promise<void>()> binding = BindPromiseExecutor(executor, [&] {
+  MockFunction<promise<void>()> func;
+
+  std::function<promise<void>()> binding =
+      BindPromiseExecutor(executor, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).WillOnce(Invoke([&] {
     EXPECT_TRUE(executor->is_current_executor());
     return make_resolved_promise();
-  });
+  }));
 
   binding().get();
 }
@@ -84,10 +102,15 @@ TEST(BindPromiseExecutor, FuncReturnsVoidPromise) {
 TEST(BindPromiseExecutor, FuncReturnsValuePromise) {
   auto executor = std::make_shared<TestExecutor>();
 
-  std::function<promise<int>()> binding = BindPromiseExecutor(executor, [&] {
+  MockFunction<promise<int>()> func;
+
+  std::function<promise<int>()> binding =
+      BindPromiseExecutor(executor, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).WillOnce(Invoke([&] {
     EXPECT_TRUE(executor->is_current_executor());
     return make_resolved_promise(42);
-  });
+  }));
 
   EXPECT_EQ(binding().get(), 42);
 }
@@ -96,22 +119,45 @@ TEST(BindPromiseExecutor, WithCancelation_FuncReturnsVoid) {
   auto executor = std::make_shared<TestExecutor>();
   auto cancelation = std::make_shared<int>();
 
-  std::function<promise<void>()> binding = BindPromiseExecutor(
-      executor, std::weak_ptr{cancelation},
-      [&] { EXPECT_TRUE(executor->is_current_executor()); });
+  MockFunction<void()> func;
 
-  binding().get();
+  std::function<promise<void>()> binding = BindPromiseExecutor(
+      executor, std::weak_ptr{cancelation}, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).WillOnce(Invoke([&] {
+    EXPECT_TRUE(executor->is_current_executor());
+    return make_resolved_promise(42);
+  }));
+
+  binding();
+}
+
+TEST(BindPromiseExecutor, WithCancelation_FuncReturnsVoid_Canceled) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto cancelation = std::make_shared<int>();
+
+  MockFunction<void()> func;
+
+  std::function<promise<void>()> binding = BindPromiseExecutor(
+      executor, std::weak_ptr{cancelation}, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).Times(0);
+
+  cancelation.reset();
+
+  EXPECT_THROW(binding().get(), std::exception);
 }
 
 TEST(BindPromiseExecutor, WithCancelation_FuncReturnsValue_Canceled) {
   auto executor = std::make_shared<TestExecutor>();
   auto cancelation = std::make_shared<int>();
 
-  std::function<promise<int>()> binding =
-      BindPromiseExecutor(executor, std::weak_ptr{cancelation}, [&] {
-        EXPECT_TRUE(executor->is_current_executor());
-        return 42;
-      });
+  MockFunction<int()> func;
+
+  std::function<promise<int>()> binding = BindPromiseExecutor(
+      executor, std::weak_ptr{cancelation}, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).Times(0);
 
   cancelation.reset();
 
@@ -122,11 +168,15 @@ TEST(BindPromiseExecutor, WithCancelation_FuncReturnsVoidPromise) {
   auto executor = std::make_shared<TestExecutor>();
   auto cancelation = std::make_shared<int>();
 
-  std::function<promise<void>()> binding =
-      BindPromiseExecutor(executor, std::weak_ptr{cancelation}, [&] {
-        EXPECT_TRUE(executor->is_current_executor());
-        return make_resolved_promise();
-      });
+  MockFunction<promise<void>()> func;
+
+  std::function<promise<void>()> binding = BindPromiseExecutor(
+      executor, std::weak_ptr{cancelation}, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).WillOnce(Invoke([&] {
+    EXPECT_TRUE(executor->is_current_executor());
+    return make_resolved_promise();
+  }));
 
   binding().get();
 }
@@ -135,13 +185,17 @@ TEST(BindPromiseExecutor, WithCancelation_FuncReturnsValuePromise) {
   auto executor = std::make_shared<TestExecutor>();
   auto cancelation = std::make_shared<int>();
 
-  std::function<promise<int>()> binding =
-      BindPromiseExecutor(executor, std::weak_ptr{cancelation}, [&] {
-        EXPECT_TRUE(executor->is_current_executor());
-        return make_resolved_promise(42);
-      });
+  MockFunction<promise<int>()> func;
 
-  EXPECT_EQ(binding().get(), 42);
+  std::function<promise<int>()> binding = BindPromiseExecutor(
+      executor, std::weak_ptr{cancelation}, func.AsStdFunction());
+
+  EXPECT_CALL(func, Call()).WillOnce(Invoke([&] {
+    EXPECT_TRUE(executor->is_current_executor());
+    return make_resolved_promise(42);
+  }));
+
+  binding().get();
 }
 
 TEST(BindPromiseExecutor, WithCancelation_FuncReturnsValuePromise_Canceled) {

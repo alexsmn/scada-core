@@ -20,15 +20,32 @@ inline [[nodiscard]] auto DispatchAsPromise(
       executor,
       [closure = std::forward<F>(closure), p]() mutable {
         if constexpr (std::is_void_v<R>) {
-          closure();
+          std::invoke(closure);
           p.resolve();
         } else {
-          ForwardPromise(closure(), p);
+          ForwardPromise(std::invoke(closure), p);
         }
       },
       location);
 
   return p;
+}
+
+// Always returns a `promise<R>`.
+template <class F>
+inline [[nodiscard]] auto InvokeAsPromise(F&& closure) {
+  using R = std::invoke_result_t<F>;
+  if constexpr (is_promise_v<R>) {
+    promise<typename R::value_type> result_promise =
+        std::invoke(std::forward<F>(closure));
+    return result_promise;
+  } else if constexpr (std::is_void_v<R>) {
+    std::invoke(std::forward<F>(closure));
+    return make_resolved_promise();
+  } else {
+    R result = std::invoke(std::forward<F>(closure));
+    return make_resolved_promise(std::move(result));
+  }
 }
 
 namespace internal {
@@ -65,17 +82,16 @@ template <class F, class C>
 struct CancelationPromiseFunc {
   // Always returns a `promise<R>`.
   template <class... Args>
-  auto operator()(Args&&... args) const {
-    using R = std::invoke_result_t<F, Args...>;
+  auto operator()(Args&&... args) {
     if (auto cancelation = cancelation_.lock()) {
-      if constexpr (is_promise_v<R>) {
-        return func_(std::forward<Args>(args)...);
-      } else if constexpr (std::is_void_v<R>) {
-        return make_resolved_promise();
-      } else {
-        return make_resolved_promise(func_(std::forward<Args>(args)...));
-      }
+      auto closure =
+          [func = std::move(func_),
+           args = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+            return std::apply(std::move(func), std::move(args));
+          };
+      return InvokeAsPromise(std::move(closure));
     } else {
+      using R = std::invoke_result_t<F, Args...>;
       // TODO: Use a specific exception type.
       return make_rejected_promise<remove_promise_t<R>>(std::exception{});
     }
