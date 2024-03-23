@@ -11,16 +11,23 @@ namespace internal {
 template <class C, class T>
 struct CancelationWrapper {
   template <class... Args>
-  void operator()(Args&&... args) const {
+  void operator()(Args&&... args) const& {
     if (auto ref = cancelation_.lock()) {
-      task_(std::forward<Args>(args)...);
+      std::invoke(task_, std::forward<Args>(args)...);
     }
   }
 
   template <class... Args>
-  void operator()(Args&&... args) {
+  void operator()(Args&&... args) & {
     if (auto ref = cancelation_.lock()) {
-      task_(std::forward<Args>(args)...);
+      std::invoke(task_, std::forward<Args>(args)...);
+    }
+  }
+
+  template <class... Args>
+  void operator()(Args&&... args) && {
+    if (auto ref = cancelation_.lock()) {
+      std::invoke(std::move(task_), std::forward<Args>(args)...);
     }
   }
 
