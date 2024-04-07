@@ -33,11 +33,11 @@ status_promise<void> client::disconnect() const {
 }
 
 status_promise<
-    std::vector<scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>
+    std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>
 client::browse(const std::vector<scada::BrowseDescription>& inputs) const {
   if (!services_.view_service) {
     return scada::MakeRejectedStatusPromise<std::vector<
-        scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>(
+        scada::StatusOr<std::vector<scada::ReferenceDescription>>>>(
         scada::StatusCode::Bad_Disconnected);
   }
 

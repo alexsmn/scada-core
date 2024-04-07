@@ -41,7 +41,7 @@ template <class T>
 inline [[nodiscard]] status_promise<T> MakeCompletedStatusPromise(
     const StatusOr<T>& value) {
   return value.ok()
-             ? make_resolved_promise<T>(*value)
+             ? make_resolved_promise(value.value())
              : make_rejected_promise<T>(status_exception{value.status()});
 }
 
@@ -51,18 +51,6 @@ inline [[nodiscard]] status_promise<T> MakeCompletedStatusPromise(
   return value.ok() ? make_resolved_promise<T>(std::move(*value))
                     : make_rejected_promise<T>(
                           status_exception{std::move(value).status()});
-}
-
-template <class T>
-inline [[nodiscard]] status_promise<T> MakeCompletedStatusPromise(
-    const StatusCodeOr<T>& value) {
-  return MakeCompletedStatusPromise(StatusOr{value});
-}
-
-template <class T>
-inline [[nodiscard]] status_promise<T> MakeCompletedStatusPromise(
-    StatusCodeOr<T>&& value) {
-  return MakeCompletedStatusPromise(StatusOr{value});
 }
 
 inline [[nodiscard]] status_promise<void> ToStatusPromise(
@@ -136,18 +124,6 @@ inline void CompleteStatusPromise(status_promise<T>& promise,
   } else {
     RejectStatusPromise(promise, value.status());
   }
-}
-
-template <class T>
-inline void CompleteStatusPromise(status_promise<T>& promise,
-                                  StatusCodeOr<T>&& value) {
-  CompleteStatusPromise(promise, StatusOr{std::move(value)});
-}
-
-template <class T>
-inline void CompleteStatusPromise(status_promise<T>& promise,
-                                  const StatusCodeOr<T>& value) {
-  CompleteStatusPromise(promise, StatusOr{value});
 }
 
 // Properly assigns status callback to a status promise. The callback is invoked

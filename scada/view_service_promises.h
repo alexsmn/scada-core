@@ -9,27 +9,26 @@
 namespace scada {
 
 inline status_promise<
-    std::vector<scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>
+    std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>
 Browse(ViewService& service,
        const scada::ServiceContext& context,
        const std::vector<BrowseDescription>& inputs) {
-  status_promise<std::vector<
-      scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>>
+  status_promise<
+      std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>
       promise;
   service.Browse(
       context, inputs,
       [promise](scada::Status status,
                 std::vector<scada::BrowseResult> results) mutable {
         if (status) {
-          std::vector<
-              scada::StatusCodeOr<std::vector<scada::ReferenceDescription>>>
+          std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>
               status_or_results;
           std::ranges::transform(
               results, std::back_inserter(status_or_results),
               [](scada::BrowseResult& result) {
                 return scada::IsGood(result.status_code)
-                           ? scada::StatusCodeOr{std::move(result.references)}
-                           : scada::StatusCodeOr<
+                           ? scada::StatusOr{std::move(result.references)}
+                           : scada::StatusOr<
                                  std::vector<scada::ReferenceDescription>>{
                                  result.status_code};
               });
@@ -54,24 +53,23 @@ inline promise<BrowseResult> Browse(ViewService& service,
 }
 
 // TODO: Use status promise.
-inline promise<StatusCodeOr<NodeId>> BrowseParentId(
+inline promise<StatusOr<NodeId>> BrowseParentId(
     ViewService& service,
     const scada::ServiceContext& context,
     const scada::NodeId& node_id) {
   return Browse(service, context,
                 scada::BrowseDescription{node_id, BrowseDirection::Inverse,
                                          id::HierarchicalReferences, true})
-      .then(
-          [](const scada::BrowseResult& result) -> StatusCodeOr<scada::NodeId> {
-            if (IsBad(result.status_code)) {
-              return result.status_code;
-            } else if (result.references.empty()) {
-              return scada::NodeId{};
-            } else {
-              assert(result.references.size() == 1);
-              return result.references[0].node_id;
-            }
-          });
+      .then([](const scada::BrowseResult& result) -> StatusOr<scada::NodeId> {
+        if (IsBad(result.status_code)) {
+          return result.status_code;
+        } else if (result.references.empty()) {
+          return scada::NodeId{};
+        } else {
+          assert(result.references.size() == 1);
+          return result.references[0].node_id;
+        }
+      });
 }
 
 inline status_promise<std::vector<BrowsePathResult>> TranslateBrowsePaths(

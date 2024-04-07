@@ -63,7 +63,7 @@ struct BrowsePathTarget {
   size_t remaining_path_index = 0;
 };
 
-// TODO: Replace with `StatusCodeOr`.
+// TODO: Replace with `StatusOr`.
 struct BrowsePathResult {
   StatusCode status_code = StatusCode::Good;
   std::vector<BrowsePathTarget> targets;
