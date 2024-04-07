@@ -9,6 +9,8 @@ struct MockServices {
   MockServices() {
     using namespace testing;
 
+    ON_CALL(session_service, HasPrivilege(_)).WillByDefault(Return(true));
+
     ON_CALL(session_service, Disconnect())
         .WillByDefault(Return(make_resolved_promise()));
   }
