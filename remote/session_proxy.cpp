@@ -60,7 +60,7 @@ scada::services SessionProxy::services() {
       .session_service = this};
 }
 
-scada::status_promise<void> SessionProxy::Disconnect() {
+promise<void> SessionProxy::Disconnect() {
   if (!session_created_)
     return MakeRejectedStatusPromise(scada::StatusCode::Bad_Disconnected);
 
@@ -68,7 +68,7 @@ scada::status_promise<void> SessionProxy::Disconnect() {
   auto& delete_session = *request.mutable_delete_session();
   delete_session;
 
-  scada::status_promise<void> promise;
+  promise<void> promise;
   Request(request, [this, promise](const protocol::Response& response) mutable {
     auto status = ConvertTo<scada::Status>(response.status());
     if (status)
@@ -297,7 +297,7 @@ void SessionProxy::Request(protocol::Request& request,
   Send(message);
 }
 
-scada::status_promise<void> SessionProxy::Connect(
+promise<void> SessionProxy::Connect(
     const scada::SessionConnectParams& params) {
   assert(!transport_);
 
@@ -315,8 +315,8 @@ scada::status_promise<void> SessionProxy::Connect(
   return Reconnect();
 }
 
-scada::status_promise<void> SessionProxy::Connect() {
-  connect_promise_ = scada::status_promise<void>{};
+promise<void> SessionProxy::Connect() {
+  connect_promise_ = promise<void>{};
 
   LOG_INFO(*logger_) << "Connect" << LOG_TAG("UserName", user_name_)
                      << LOG_TAG("ConnectionString", connection_string_);
@@ -447,7 +447,7 @@ std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
   return subscription_->CreateMonitoredItem(read_value_id, params);
 }
 
-scada::status_promise<void> SessionProxy::Reconnect() {
+promise<void> SessionProxy::Reconnect() {
   if (!session_created_) {
     return Connect();
   }

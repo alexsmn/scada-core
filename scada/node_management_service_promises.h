@@ -1,14 +1,14 @@
 #pragma once
 
 #include "scada/node_management_service.h"
-#include "scada/status_promise.h"
+#include "base/promise.h"
 
 namespace scada {
 
-inline status_promise<std::vector<AddNodesResult>> AddNode(
+inline promise<std::vector<AddNodesResult>> AddNode(
     NodeManagementService& service,
     const std::vector<AddNodesItem>& inputs) {
-  status_promise<std::vector<AddNodesResult>> p;
+  promise<std::vector<AddNodesResult>> p;
   service.AddNodes(
       inputs, [p](Status status, std::vector<AddNodesResult> results) mutable {
         if (status) {
@@ -20,9 +20,9 @@ inline status_promise<std::vector<AddNodesResult>> AddNode(
   return p;
 }
 
-inline status_promise<NodeId> AddNode(NodeManagementService& service,
+inline promise<NodeId> AddNode(NodeManagementService& service,
                                       const AddNodesItem& input) {
-  status_promise<NodeId> p;
+  promise<NodeId> p;
 
   service.AddNodes(
       {input}, [p](Status status, std::vector<AddNodesResult> results) mutable {
@@ -45,9 +45,9 @@ inline status_promise<NodeId> AddNode(NodeManagementService& service,
   return p;
 }
 
-inline status_promise<void> DeleteNode(NodeManagementService& service,
+inline promise<void> DeleteNode(NodeManagementService& service,
                                        const DeleteNodesItem& input) {
-  status_promise<void> p;
+  promise<void> p;
 
   service.DeleteNodes(
       {input}, [p](Status status, std::vector<StatusCode> results) mutable {

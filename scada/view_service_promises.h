@@ -8,12 +8,12 @@
 
 namespace scada {
 
-inline status_promise<
+inline promise<
     std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>
 Browse(ViewService& service,
        const scada::ServiceContext& context,
        const std::vector<BrowseDescription>& inputs) {
-  status_promise<
+  promise<
       std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>
       promise;
   service.Browse(
@@ -72,10 +72,10 @@ inline promise<StatusOr<NodeId>> BrowseParentId(
       });
 }
 
-inline status_promise<std::vector<BrowsePathResult>> TranslateBrowsePaths(
+inline promise<std::vector<BrowsePathResult>> TranslateBrowsePaths(
     ViewService& service,
     const std::vector<BrowsePath>& browse_paths) {
-  status_promise<std::vector<BrowsePathResult>> promise;
+  promise<std::vector<BrowsePathResult>> promise;
   service.TranslateBrowsePaths(
       browse_paths, [promise](scada::Status&& status,
                               std::vector<BrowsePathResult>&& results) mutable {
@@ -91,7 +91,7 @@ inline status_promise<std::vector<BrowsePathResult>> TranslateBrowsePaths(
 // Prefer:
 // client_.node(filesystem::id::FileSystem)
 //    .translate_browse_path(relative_path);
-inline status_promise<std::vector<BrowsePathTarget>> TranslateBrowsePath(
+inline promise<std::vector<BrowsePathTarget>> TranslateBrowsePath(
     ViewService& service,
     const BrowsePath& browse_path) {
   return TranslateBrowsePaths(service, {browse_path})
@@ -111,7 +111,7 @@ inline status_promise<std::vector<BrowsePathTarget>> TranslateBrowsePath(
 // client_.node(filesystem::id::FileSystem)
 //    .translate_browse_path(relative_path)
 //    .then(&GetOnlyTargetId);
-inline status_promise<scada::NodeId> TranslateBrowsePathToOneTarget(
+inline promise<scada::NodeId> TranslateBrowsePathToOneTarget(
     ViewService& service,
     const BrowsePath& browse_path) {
   return TranslateBrowsePath(service, browse_path)

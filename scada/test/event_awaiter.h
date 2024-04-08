@@ -13,24 +13,24 @@ struct event_awaiter {
   }
 
   template <class T>
-  status_promise<scada::Event> when(T&& matcher) {
+  promise<scada::Event> when(T&& matcher) {
     return state_->when(std::forward<T>(matcher));
   }
 
-  status_promise<scada::Event> when_node(const scada::NodeId& node_id) {
+  promise<scada::Event> when_node(const scada::NodeId& node_id) {
     return state_->when([node_id](const scada::Event& event) {
       return event.node_id == node_id;
     });
   }
 
-  status_promise<scada::Event> when_any() {
+  promise<scada::Event> when_any() {
     return state_->when([](const scada::Event& event) { return true; });
   }
 
  private:
   struct state {
     template <class T>
-    status_promise<scada::Event> when(T&& matcher) {
+    promise<scada::Event> when(T&& matcher) {
       return matchers_
           .emplace_back(std::forward<T>(matcher), promise<scada::Event>{})
           .second;
@@ -58,7 +58,7 @@ struct event_awaiter {
     }
 
     using matcher = std::function<bool(const scada::Event& event)>;
-    std::vector<std::pair<matcher, status_promise<scada::Event>>> matchers_;
+    std::vector<std::pair<matcher, promise<scada::Event>>> matchers_;
   };
 
   const std::shared_ptr<state> state_ = std::make_shared<state>();

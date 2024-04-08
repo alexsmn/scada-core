@@ -16,7 +16,7 @@ node node::with_context(const ServiceContext& context) const {
   return node{services_, node_id_, context};
 }
 
-status_promise<DataValue> node::read(AttributeId attribute_id) const {
+promise<DataValue> node::read(AttributeId attribute_id) const {
   if (!services_.attribute_service) {
     return MakeRejectedStatusPromise<DataValue>(StatusCode::Bad_Disconnected);
   }
@@ -26,11 +26,11 @@ status_promise<DataValue> node::read(AttributeId attribute_id) const {
       .then([](const scada::DataValue& result) {
         return scada::IsBad(result.status_code)
                    ? MakeRejectedStatusPromise<DataValue>(result.status_code)
-                   : MakeResolvedStatusPromise(result);
+                   : make_resolved_promise(result);
       });
 }
 
-status_promise<void> node::write(AttributeId attribute_id,
+promise<void> node::write(AttributeId attribute_id,
                                  const Variant& value,
                                  scada::WriteFlags flags) const {
   if (!services_.attribute_service) {
@@ -44,69 +44,69 @@ status_promise<void> node::write(AttributeId attribute_id,
                 .flags = flags});
 }
 
-status_promise<std::vector<ReferenceDescription>> node::browse(
+promise<std::vector<ReferenceDescription>> node::browse(
     const browse_details& details) const {
   if (!services_.view_service) {
     return MakeRejectedStatusPromise<std::vector<ReferenceDescription>>(
         StatusCode::Bad_Disconnected);
   }
 
-  status_promise<BrowseResult> status_promise;
+  promise<BrowseResult> promise;
 
   Browse(*services_.view_service, context_,
          {.node_id = node_id_,
           .direction = details.direction,
           .reference_type_id = details.reference_type_id},
-         MakeStatusCodePromiseCallback(status_promise));
+         MakeStatusCodePromiseCallback(promise));
 
-  return status_promise.then([](const BrowseResult& result) {
+  return promise.then([](const BrowseResult& result) {
     assert(IsGood(result.status_code));
     return result.references;
   });
 }
 
-status_promise<scada::node> node::browse_node(
+promise<scada::node> node::browse_node(
     const browse_details& details) const {
   return browse(details).then(
       [*this](const std::vector<ReferenceDescription>& results) {
         return results.size() == 1
-                   ? MakeResolvedStatusPromise(
+                   ? make_resolved_promise(
                          scada::node{services_, results[0].node_id, context_})
                    : MakeRejectedStatusPromise<scada::node>(StatusCode::Bad);
       });
 }
 
-status_promise<std::vector<BrowsePathTarget>> node::translate_browse_path(
+promise<std::vector<BrowsePathTarget>> node::translate_browse_path(
     const RelativePath& relative_path) const {
   if (!services_.view_service) {
     return MakeRejectedStatusPromise<std::vector<BrowsePathTarget>>(
         StatusCode::Bad_Disconnected);
   }
 
-  status_promise<BrowsePathResult> status_promise;
+  promise<BrowsePathResult> promise;
 
   TranslateBrowsePath(*services_.view_service,
                       {.node_id = node_id_, .relative_path = relative_path},
-                      MakeStatusCodePromiseCallback(status_promise));
+                      MakeStatusCodePromiseCallback(promise));
 
-  return status_promise.then([](const BrowsePathResult& result) {
+  return promise.then([](const BrowsePathResult& result) {
     assert(IsGood(result.status_code));
     return result.targets;
   });
 }
 
-status_promise<NodeId> node::child_id(scada::QualifiedName browse_name) const {
+promise<NodeId> node::child_id(scada::QualifiedName browse_name) const {
   return translate_browse_path({{.reference_type_id = id::HasChild,
                                  .target_name = std::move(browse_name)}})
       .then([](std::vector<BrowsePathTarget> targets) {
         return targets.size() == 1
-                   ? MakeResolvedStatusPromise(targets[0].target_id.node_id())
+                   ? make_resolved_promise(targets[0].target_id.node_id())
                    : MakeRejectedStatusPromise<NodeId>(
                          StatusCode::Bad_BrowseNameInvalid);
       });
 }
 
-status_promise<node> node::child_node(scada::QualifiedName browse_name) const {
+promise<node> node::child_node(scada::QualifiedName browse_name) const {
   return child_id(std::move(browse_name))
       .then([services = services_,
              context = context_](const NodeId& node_id) mutable {
@@ -114,7 +114,7 @@ status_promise<node> node::child_node(scada::QualifiedName browse_name) const {
       });
 }
 
-status_promise<void> node::call_packed(
+promise<void> node::call_packed(
     const NodeId& method_id,
     const std::vector<Variant>& arguments) const {
   if (!services_.method_service) {
@@ -126,7 +126,7 @@ status_promise<void> node::call_packed(
                               arguments, context_.user_id()));
 }
 
-status_promise<std::vector<scada::DataValue>> node::read_value_history(
+promise<std::vector<scada::DataValue>> node::read_value_history(
     const HistoryReadRawDetails& details) const {
   assert(details.node_id.is_null());
   assert(details.continuation_point.empty());
@@ -142,7 +142,7 @@ status_promise<std::vector<scada::DataValue>> node::read_value_history(
   return HistoryReadRaw(*services_.history_service, sanitized_details);
 }
 
-status_promise<HistoryReadRawResult> node::read_value_history_chunk(
+promise<HistoryReadRawResult> node::read_value_history_chunk(
     const HistoryReadRawDetails& details) const {
   assert(details.node_id.is_null());
 
@@ -157,7 +157,7 @@ status_promise<HistoryReadRawResult> node::read_value_history_chunk(
   return HistoryReadRawChunk(*services_.history_service, sanitized_details);
 }
 
-status_promise<std::vector<Event>> node::read_event_history(
+promise<std::vector<Event>> node::read_event_history(
     const event_history_details& details) const {
   if (!services_.history_service) {
     return MakeRejectedStatusPromise<std::vector<Event>>(

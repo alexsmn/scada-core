@@ -2,6 +2,7 @@
 
 #include "scada/node.h"
 #include "scada/session_service.h"
+#include "scada/status_or.h"
 
 namespace scada {
 
@@ -16,8 +17,8 @@ class client {
   const ServiceContext& context() const { return context_; }
   client with_context(const ServiceContext& context) const;
 
-  status_promise<void> connect(const SessionConnectParams& params) const;
-  status_promise<void> disconnect() const;
+  promise<void> connect(const SessionConnectParams& params) const;
+  promise<void> disconnect() const;
 
   scada::node node(const NodeId& node_id) const {
     assert(!node_id.is_null());
@@ -26,17 +27,16 @@ class client {
 
   scada::node server_node() const { return node(id::Server); }
 
-  status_promise<std::vector<
-      scada::StatusOr<std::vector<scada::ReferenceDescription>>>>
-  browse(const std::vector<scada::BrowseDescription>& inputs) const;
+  promise<std::vector<StatusOr<std::vector<ReferenceDescription>>>> browse(
+      const std::vector<BrowseDescription>& inputs) const;
 
-  status_promise<scada::node> add_node(const AddNodesItem& item) const;
+  promise<scada::node> add_node(const AddNodesItem& item) const;
 
-  status_promise<void> acknowledge_events(std::vector<EventId> event_ids,
-                                          DateTime acknowledge_time) const;
+  promise<void> acknowledge_events(std::vector<EventId> event_ids,
+                                   DateTime acknowledge_time) const;
 
-  status_promise<void> acknowledge_event(EventId event_id,
-                                         DateTime acknowledge_time) const {
+  promise<void> acknowledge_event(EventId event_id,
+                                  DateTime acknowledge_time) const {
     return acknowledge_events({event_id}, acknowledge_time);
   }
 

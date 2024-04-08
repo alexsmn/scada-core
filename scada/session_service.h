@@ -1,9 +1,9 @@
 #pragma once
 
+#include "base/promise.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
 #include "scada/privileges.h"
-#include "scada/status_promise.h"
 
 #include <boost/signals2/connection.hpp>
 #include <functional>
@@ -16,6 +16,7 @@ class TimeDelta;
 namespace scada {
 
 class SessionDebugger;
+class Status;
 
 struct SessionConnectParams {
   // The host name can be followed by a colon and a port number. If empty, then
@@ -33,11 +34,11 @@ class SessionService {
  public:
   virtual ~SessionService() = default;
 
-  virtual status_promise<void> Connect(const SessionConnectParams& params) = 0;
+  virtual promise<void> Connect(const SessionConnectParams& params) = 0;
 
-  virtual status_promise<void> Reconnect() = 0;
+  virtual promise<void> Reconnect() = 0;
 
-  virtual status_promise<void> Disconnect() = 0;
+  virtual promise<void> Disconnect() = 0;
 
   virtual bool IsConnected(base::TimeDelta* ping_delay = nullptr) const = 0;
 
@@ -51,6 +52,7 @@ class SessionService {
 
   using SessionStateChangedCallback =
       std::function<void(bool connected, const Status& status)>;
+
   virtual boost::signals2::scoped_connection SubscribeSessionStateChanged(
       const SessionStateChangedCallback& callback) = 0;
 

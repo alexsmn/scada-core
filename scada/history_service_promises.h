@@ -7,24 +7,24 @@ namespace scada {
 
 // Returns either good `HistoryReadRawResult.status_code` or rejected status
 // promise.
-inline status_promise<HistoryReadRawResult> HistoryReadRawChunk(
+inline promise<HistoryReadRawResult> HistoryReadRawChunk(
     HistoryService& history_service,
     const HistoryReadRawDetails& details) {
-  status_promise<HistoryReadRawResult> promise;
+  promise<HistoryReadRawResult> promise;
   // Cannot use `MakeStatusPromiseCallback` because it requires
   // `HistoryReadRawResult` to have `status` field.
   history_service.HistoryReadRaw(details, MakeStatusPromiseCallback(promise));
   return promise;
 }
 
-inline status_promise<std::vector<scada::DataValue>> HistoryReadRaw(
+inline promise<std::vector<scada::DataValue>> HistoryReadRaw(
     HistoryService& history_service,
     const HistoryReadRawDetails& details) {
   struct State : public std::enable_shared_from_this<State> {
     State(HistoryService& service, HistoryReadRawDetails details)
         : service_{service}, details_{std::move(details)} {}
 
-    status_promise<std::vector<scada::DataValue>> Start() {
+    promise<std::vector<scada::DataValue>> Start() {
       ReadNext();
       return promise_;
     }
@@ -50,7 +50,7 @@ inline status_promise<std::vector<scada::DataValue>> HistoryReadRaw(
 
     HistoryService& service_;
     HistoryReadRawDetails details_;
-    status_promise<std::vector<scada::DataValue>> promise_;
+    promise<std::vector<scada::DataValue>> promise_;
 
     std::vector<scada::DataValue> values_;
   };
@@ -58,13 +58,13 @@ inline status_promise<std::vector<scada::DataValue>> HistoryReadRaw(
   return std::make_shared<State>(history_service, details)->Start();
 }
 
-inline status_promise<scada::HistoryReadEventsResult> HistoryReadEvents(
+inline promise<scada::HistoryReadEventsResult> HistoryReadEvents(
     HistoryService& history_service,
     const NodeId& node_id,
     DateTime from,
     DateTime to,
     const EventFilter& event_filter = {}) {
-  status_promise<scada::HistoryReadEventsResult> promise;
+  promise<scada::HistoryReadEventsResult> promise;
   history_service.HistoryReadEvents(node_id, from, to, event_filter,
                                     MakeStatusPromiseCallback(promise));
   return promise;
