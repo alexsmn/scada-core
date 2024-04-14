@@ -3,7 +3,7 @@
 #if defined(NDEBUG)
 
 template <class T>
-class DebugHolder {
+[[msvc::no_unique_address]] class DebugHolder {
  public:
   explicit DebugHolder(const T&) {}
 
