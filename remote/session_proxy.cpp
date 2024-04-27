@@ -15,7 +15,7 @@
 #include "remote/subscription_proxy.h"
 #include "remote/view_service_proxy.h"
 #include "scada/monitored_item.h"
-#include "scada/status.h"
+#include "scada/status_promise.h"
 
 #include <net/transport_factory.h>
 #include <net/transport_string.h>
@@ -31,8 +31,11 @@ std::string MakeConnectionString(std::string_view host_name) {
   auto parts = base::SplitString(host_name, ":", base::TRIM_WHITESPACE,
                                  base::SplitResult::SPLIT_WANT_ALL);
   parts.resize(2);
-  if (parts[1].empty())
+
+  if (parts[1].empty()) {
     parts[1] = "2000";
+  }
+
   return std::format("Host={};Port={}", parts[0], parts[1]);
 }
 
@@ -74,7 +77,7 @@ promise<void> SessionProxy::Disconnect() {
     if (status)
       OnSessionDeleted();
 
-    CompleteStatusPromise(promise, std::move(status));
+    scada::CompleteStatusPromise(promise, std::move(status));
   });
   return promise;
 }
@@ -297,8 +300,7 @@ void SessionProxy::Request(protocol::Request& request,
   Send(message);
 }
 
-promise<void> SessionProxy::Connect(
-    const scada::SessionConnectParams& params) {
+promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
   assert(!transport_);
 
   if (session_created_)
