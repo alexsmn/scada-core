@@ -212,7 +212,9 @@ void SessionProxy::Send(protocol::Message& message) {
   // TODO: Handle write result.
   boost::asio::co_spawn(
       transport_.get_executor(),
-      transport_.write(std::vector<char>{string.begin(), string.end()}),
+      [this, string = std::move(string)] {
+        return transport_.write(string);
+      },
       boost::asio::detached);
 }
 
@@ -510,32 +512,38 @@ void SessionProxy::Ping() {
 bool SessionProxy::IsMessageLogged(const protocol::Message& message) const {
   for (const auto& request : message.requests()) {
     if (service_log_params_.log_read) {
-      if (request.has_read())
+      if (request.has_read()) {
         return true;
+      }
     }
     if (service_log_params_.log_browse) {
-      if (request.has_browse())
+      if (request.has_browse()) {
         return true;
+      }
     }
     if (service_log_params_.log_history) {
-      if (request.has_history_read_raw() || request.has_history_read_events())
+      if (request.has_history_read_raw() || request.has_history_read_events()) {
         return true;
+      }
     }
   }
 
   for (const auto& response : message.responses()) {
     if (service_log_params_.log_read) {
-      if (response.has_read_result())
+      if (response.has_read_result()) {
         return true;
+      }
     }
     if (service_log_params_.log_browse) {
-      if (response.has_browse_result())
+      if (response.has_browse_result()) {
         return true;
+      }
     }
     if (service_log_params_.log_history) {
       if (response.has_history_read_raw_result() ||
-          response.has_history_read_events_result())
+          response.has_history_read_events_result()) {
         return true;
+      }
     }
   }
 
@@ -544,16 +552,19 @@ bool SessionProxy::IsMessageLogged(const protocol::Message& message) const {
       service_log_params_.log_node_semantics_change_event) {
     for (const auto& notification : message.notifications()) {
       if (service_log_params_.log_event) {
-        if (!notification.events().empty())
+        if (!notification.events().empty()) {
           return true;
+        }
       }
       if (service_log_params_.log_model_change_event) {
-        if (!notification.model_change().empty())
+        if (!notification.model_change().empty()) {
           return true;
+        }
       }
       if (service_log_params_.log_node_semantics_change_event) {
-        if (!notification.semantics_changed_node_id().empty())
+        if (!notification.semantics_changed_node_id().empty()) {
           return true;
+        }
       }
     }
   }

@@ -71,7 +71,7 @@ void ServerConnection::Send(protocol::Message& message) {
   // TODO: Handle write result.
   boost::asio::co_spawn(
       transport_->GetExecutor(),
-      transport_->Write(std::vector<char>{string.begin(), string.end()}),
+      [this, string = std::move(string)] { return transport_->Write(string); },
       boost::asio::detached);
 }
 
