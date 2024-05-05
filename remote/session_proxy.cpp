@@ -308,15 +308,18 @@ void SessionProxy::Request(protocol::Request& request,
 promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
   assert(!transport_);
 
-  if (session_created_)
+  if (session_created_) {
     return MakeRejectedStatusPromise(scada::StatusCode::Bad);
+  }
 
   user_name_ = params.user_name;
   password_ = params.password;
   host_ = params.host;
+
   // TODO: Add a UT for this condition.
   connection_string_ = params.host.empty() ? params.connection_string
                                            : MakeConnectionString(params.host);
+
   allow_remote_logoff_ = params.allow_remote_logoff;
 
   return Reconnect();
@@ -325,13 +328,15 @@ promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
 promise<void> SessionProxy::Connect() {
   connect_promise_ = promise<void>{};
 
+  net::Executor net_executor = NetExecutorAdapter{executor_};
+
   LOG_INFO(*logger_) << "Connect" << LOG_TAG("UserName", user_name_)
                      << LOG_TAG("ConnectionString", connection_string_);
 
   auto transport_logger = std::make_shared<NetBoostLoggerAdapter>(logger_);
 
   auto transport = transport_factory_.CreateTransport(
-      net::TransportString{connection_string_}, NetExecutorAdapter{executor_},
+      net::TransportString{connection_string_}, net_executor,
       std::move(transport_logger));
 
   if (!transport) {
@@ -347,13 +352,16 @@ promise<void> SessionProxy::Connect() {
 
   transport_ = net::any_transport{std::move(protocol_transport)};
 
-  protocol_transport_ptr->Open(
-      {.on_open = [this] { OnTransportOpened(); },
-       .on_close = [this](net::Error error) { OnTransportClosed(error); },
-       .on_message =
-           [this](std::span<const char> data) {
-             OnTransportMessageReceived(data);
-           }});
+  boost::asio::co_spawn(
+      net_executor,
+      protocol_transport_ptr->Open(
+          {.on_open = [this] { OnTransportOpened(); },
+           .on_close = [this](net::Error error) { OnTransportClosed(error); },
+           .on_message =
+               [this](std::span<const char> data) {
+                 OnTransportMessageReceived(data);
+               }}),
+      boost::asio::detached);
 
   return connect_promise_;
 }
