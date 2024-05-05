@@ -209,11 +209,11 @@ void SessionProxy::Send(protocol::Message& message) {
     throw std::runtime_error("Can't serialize message");
   }
 
-  // TODO: Handle write result.
   boost::asio::co_spawn(
       transport_.get_executor(),
-      [this, string = std::move(string)] {
-        return transport_.write(string);
+      [this, string = std::move(string)]() -> net::awaitable<void> {
+        // TODO: Handle write result.
+        auto _ = co_await transport_.write(string);
       },
       boost::asio::detached);
 }
