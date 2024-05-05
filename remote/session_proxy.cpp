@@ -17,6 +17,8 @@
 #include "scada/monitored_item.h"
 #include "scada/status_promise.h"
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <net/transport_factory.h>
 #include <net/transport_string.h>
 #include <stdexcept>
@@ -208,7 +210,10 @@ void SessionProxy::Send(protocol::Message& message) {
   }
 
   // TODO: Handle write result.
-  transport_.write(string);
+  boost::asio::co_spawn(
+      transport_.get_executor(),
+      transport_.write(std::vector<char>{string.begin(), string.end()}),
+      boost::asio::detached);
 }
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {

@@ -4,16 +4,21 @@
 #include "remote/protocol_utils.h"
 #include "remote/session_stub.h"
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <stdexcept>
 
 ServerConnection::ServerConnection(ServerConnectionContext&& context)
     : ServerConnectionContext{std::move(context)} {
-  transport_->Open(
-      {.on_close = [this](net::Error error) { OnTransportClosed(error); },
-       .on_message =
-           [this](std::span<const char> data) {
-             OnTransportMessageReceived(data);
-           }});
+  boost::asio::co_spawn(
+      transport_->GetExecutor(),
+      transport_->Open(
+          {.on_close = [this](net::Error error) { OnTransportClosed(error); },
+           .on_message =
+               [this](std::span<const char> data) {
+                 OnTransportMessageReceived(data);
+               }}),
+      boost::asio::detached);
 }
 
 ServerConnection::~ServerConnection() {
@@ -59,11 +64,15 @@ void ServerConnection::OnTransportClosed(net::Error error) {
 
 void ServerConnection::Send(protocol::Message& message) {
   std::string string;
-  if (!message.AppendToString(&string))
+  if (!message.AppendToString(&string)) {
     throw std::runtime_error("Can't serialize the message");
+  }
 
   // TODO: Handle write result.
-  transport_->Write(string);
+  boost::asio::co_spawn(
+      transport_->GetExecutor(),
+      transport_->Write(std::vector<char>{string.begin(), string.end()}),
+      boost::asio::detached);
 }
 
 void ServerConnection::OnCreateSession(const protocol::Request& request) {

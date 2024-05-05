@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <net/acceptor.h>
 
 class RemoteListener {
@@ -20,13 +22,16 @@ class RemoteListener {
   promise<> Init() {
     LOG_INFO(*logger_) << "Listening..." << LOG_TAG("Listener", listener_name_);
 
-    acceptor_.open(
-        {.on_open = [this] { OnTransportOpened(); },
-         .on_close = [this](net::Error error) { OnTransportClosed(error); },
-         .on_accept =
-             [this](std::unique_ptr<net::Transport> transport) {
-               return OnTransportAccepted(std::move(transport));
-             }});
+    boost::asio::co_spawn(
+        acceptor_.get_executor(),
+        acceptor_.open(
+            {.on_open = [this] { OnTransportOpened(); },
+             .on_close = [this](net::Error error) { OnTransportClosed(error); },
+             .on_accept =
+                 [this](std::unique_ptr<net::Transport> transport) {
+                   return OnTransportAccepted(std::move(transport));
+                 }}),
+        boost::asio::detached);
 
     return open_promise_;
   }
