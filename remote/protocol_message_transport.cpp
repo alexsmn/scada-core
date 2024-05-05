@@ -33,12 +33,12 @@ int ProtocolMessageTransport::Read(std::span<char> data) {
 }
 
 net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Write(
-    std::vector<char> data) {
+    std::span<const char> data) {
   std::string message;
   protocol::PrependMessageSize(message);
   message.insert(message.end(), data.begin(), data.end());
   protocol::UpdateMessageSize(message);
-  return transport_->Write(std::vector<char>{message.begin(), message.end()});
+  co_return co_await transport_->Write(message);
 }
 
 std::string ProtocolMessageTransport::GetName() const {
