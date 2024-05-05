@@ -3,7 +3,6 @@
 #include "remote/protocol_buffer.h"
 
 #include <net/transport_string.h>
-#include <net/transport_util.h>
 
 ProtocolMessageTransport::ProtocolMessageTransport(
     std::unique_ptr<net::Transport> transport)
@@ -13,16 +12,13 @@ ProtocolMessageTransport::ProtocolMessageTransport(
 
 ProtocolMessageTransport::~ProtocolMessageTransport() = default;
 
-net::promise<void> ProtocolMessageTransport::Open(const Handlers& handlers) {
-  auto [p, promise_handlers] = net::MakePromiseHandlers(handlers);
-  handlers_ = std::move(promise_handlers);
+net::awaitable<void> ProtocolMessageTransport::Open(Handlers handlers) {
+  handlers_ = std::move(handlers);
 
-  transport_->Open(
+  return transport_->Open(
       {.on_open = [this] { OnTransportOpened(); },
        .on_close = [this](net::Error error) { OnTransportClosed(error); },
        .on_data = [this] { OnTransportDataReceived(); }});
-
-  return p;
 }
 
 void ProtocolMessageTransport::Close() {
@@ -36,13 +32,12 @@ int ProtocolMessageTransport::Read(std::span<char> data) {
   return net::ERR_ABORTED;
 }
 
-net::promise<size_t> ProtocolMessageTransport::Write(
-    std::span<const char> data) {
+net::awaitable<size_t> ProtocolMessageTransport::Write(std::vector<char> data) {
   std::string message;
   protocol::PrependMessageSize(message);
   message.insert(message.end(), data.begin(), data.end());
   protocol::UpdateMessageSize(message);
-  return transport_->Write(message);
+  return transport_->Write(std::vector<char>{message.begin(), message.end()});
 }
 
 std::string ProtocolMessageTransport::GetName() const {
@@ -50,13 +45,15 @@ std::string ProtocolMessageTransport::GetName() const {
 }
 
 void ProtocolMessageTransport::OnTransportOpened() {
-  if (handlers_.on_open)
+  if (handlers_.on_open) {
     handlers_.on_open();
+  }
 }
 
 void ProtocolMessageTransport::OnTransportClosed(net::Error error) {
-  if (handlers_.on_close)
+  if (handlers_.on_close) {
     handlers_.on_close(error);
+  }
 }
 
 void ProtocolMessageTransport::OnTransportDataReceived() {
@@ -67,17 +64,21 @@ void ProtocolMessageTransport::OnTransportDataReceived() {
       auto original_size = incoming_message_.size();
       auto size = protocol::GetIncomingMessageSize(incoming_message_);
       incoming_message_.resize(size);
+
       auto read_count = transport_->Read(
           {&incoming_message_[original_size], size - original_size});
+
       if (read_count < 0) {
         if (handlers_.on_close) {
           handlers_.on_close(static_cast<net::Error>(read_count));
         }
         return;
       }
+
       incoming_message_.resize(original_size + read_count);
-      if (incoming_message_.size() < size)
+      if (incoming_message_.size() < size) {
         return;
+      }
     }
 
     auto incoming_message = std::move(incoming_message_);
