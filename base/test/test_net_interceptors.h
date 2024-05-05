@@ -4,9 +4,10 @@
 
 class TestNetInterceptor : public net::TransportInterceptor {
  public:
-  virtual std::optional<size_t> InterceptWrite(
+  virtual std::optional<net::ErrorOr<size_t>> InterceptWrite(
       std::span<const char> data) const override {
-    return swallow_writes ? std::optional{data.size()} : std::nullopt;
+    return swallow_writes ? std::optional<net::ErrorOr<size_t>>{data.size()}
+                          : std::nullopt;
   }
 
   bool swallow_writes = false;

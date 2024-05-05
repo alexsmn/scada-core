@@ -20,6 +20,7 @@
 
 #include <net/transport_factory.h>
 #include <net/transport_string.h>
+#include <ranges>
 
 #include "base/debug_util-inl.h"
 
@@ -44,8 +45,9 @@ RemoteSessionManager::~RemoteSessionManager() {
   if (!session_map_.empty()) {
     LOG_INFO(*logger_) << "Closing opened sessions"
                        << LOG_TAG("SessionCount", session_map_.size());
-    for (auto& p : session_map_)
-      p.second->OnSessionDeleted();
+    for (const auto& session_stub : session_map_ | std::views::values) {
+      session_stub->OnSessionDeleted();
+    }
     session_map_.clear();
   }
 
@@ -63,9 +65,10 @@ promise<> RemoteSessionManager::Init() {
       };
 
   std::vector<promise<>> promises;
-  for (auto& endpoint : endpoints_) {
+  for (const net::TransportString& endpoint : endpoints_) {
     auto transport = transport_factory_.CreateTransport(
         endpoint, NetExecutorAdapter{executor_}, transport_logger);
+
     if (!transport) {
       LOG_ERROR(*logger_) << "Cannot create listener transport";
       return make_rejected_promise(std::exception{});

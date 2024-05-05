@@ -1,13 +1,24 @@
 #pragma once
 
 #include "base/promise.h"
+#include "net/base/net_errors.h"
 
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/executor.hpp>
-#include <net/net_exception.h>
 #include <net/transport.h>
+#include <stdexcept>
 
 namespace internal {
+
+class PromiseHandlersException : public std::exception {
+ public:
+  explicit PromiseHandlersException(net::Error error) : error_(error) {}
+
+  net::Error error() const { return error_; }
+
+ private:
+  const net::Error error_;
+};
 
 struct PromiseHandlers : std::enable_shared_from_this<PromiseHandlers> {
   PromiseHandlers(net::Connector::OpenHandler on_open,
@@ -40,7 +51,7 @@ struct PromiseHandlers : std::enable_shared_from_this<PromiseHandlers> {
 
     if (!promise_set) {
       promise_set = true;
-      promise.reject(net::net_exception{error});
+      promise.reject(PromiseHandlersException{error});
     }
   }
 

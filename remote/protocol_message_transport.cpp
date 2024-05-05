@@ -12,10 +12,10 @@ ProtocolMessageTransport::ProtocolMessageTransport(
 
 ProtocolMessageTransport::~ProtocolMessageTransport() = default;
 
-net::awaitable<void> ProtocolMessageTransport::Open(Handlers handlers) {
+net::awaitable<net::Error> ProtocolMessageTransport::Open(Handlers handlers) {
   handlers_ = std::move(handlers);
 
-  return transport_->Open(
+  co_return co_await transport_->Open(
       {.on_open = [this] { OnTransportOpened(); },
        .on_close = [this](net::Error error) { OnTransportClosed(error); },
        .on_data = [this] { OnTransportDataReceived(); }});
@@ -32,7 +32,8 @@ int ProtocolMessageTransport::Read(std::span<char> data) {
   return net::ERR_ABORTED;
 }
 
-net::awaitable<size_t> ProtocolMessageTransport::Write(std::vector<char> data) {
+net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Write(
+    std::vector<char> data) {
   std::string message;
   protocol::PrependMessageSize(message);
   message.insert(message.end(), data.begin(), data.end());
