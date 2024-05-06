@@ -1,7 +1,10 @@
 #include "remote/protocol_message_transport.h"
 
+#include "base/auto_reset.h"
 #include "remote/protocol_buffer.h"
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <net/transport_string.h>
 
 ProtocolMessageTransport::ProtocolMessageTransport(
@@ -28,8 +31,9 @@ void ProtocolMessageTransport::Close() {
     transport_->Close();
 }
 
-int ProtocolMessageTransport::Read(std::span<char> data) {
-  return net::ERR_ABORTED;
+net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Read(
+    std::span<char> data) {
+  co_return net::ERR_NOT_IMPLEMENTED;
 }
 
 net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Write(
@@ -58,6 +62,17 @@ void ProtocolMessageTransport::OnTransportClosed(net::Error error) {
 }
 
 void ProtocolMessageTransport::OnTransportDataReceived() {
+  boost::asio::co_spawn(transport_->GetExecutor(), StartReading(),
+                        boost::asio::detached);
+}
+
+net::awaitable<void> ProtocolMessageTransport::StartReading() {
+  if (reading_) {
+    co_return;
+  }
+
+  base::AutoReset reading{&reading_, true};
+
   std::weak_ptr<bool> cancelation = cancelation_;
   while (!cancelation.expired()) {
     while (incoming_message_.size() <
@@ -66,19 +81,19 @@ void ProtocolMessageTransport::OnTransportDataReceived() {
       auto size = protocol::GetIncomingMessageSize(incoming_message_);
       incoming_message_.resize(size);
 
-      auto read_count = transport_->Read(
+      auto read_count = co_await transport_->Read(
           {&incoming_message_[original_size], size - original_size});
 
-      if (read_count < 0) {
+      if (!read_count.ok()) {
         if (handlers_.on_close) {
-          handlers_.on_close(static_cast<net::Error>(read_count));
+          handlers_.on_close(read_count.error());
         }
-        return;
+        co_return;
       }
 
-      incoming_message_.resize(original_size + read_count);
+      incoming_message_.resize(original_size + *read_count);
       if (incoming_message_.size() < size) {
-        return;
+        co_return;
       }
     }
 

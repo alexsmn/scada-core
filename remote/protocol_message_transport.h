@@ -15,7 +15,9 @@ class ProtocolMessageTransport final : public net::Transport {
       Handlers handlers) override;
 
   virtual void Close() override;
-  [[nodiscard]] virtual int Read(std::span<char> data) override;
+
+  [[nodiscard]] virtual net::awaitable<net::ErrorOr<size_t>> Read(
+      std::span<char> data) override;
 
   [[nodiscard]] virtual net::awaitable<net::ErrorOr<size_t>> Write(
       std::span<const char> data) override;
@@ -40,11 +42,15 @@ class ProtocolMessageTransport final : public net::Transport {
   void OnTransportClosed(net::Error error);
   void OnTransportDataReceived();
 
+  [[nodiscard]] net::awaitable<void> StartReading();
+
   std::unique_ptr<net::Transport> transport_;
 
   Handlers handlers_;
 
   std::string incoming_message_;
+
+  bool reading_ = false;
 
   std::shared_ptr<bool> cancelation_ = std::make_shared<bool>(false);
 };

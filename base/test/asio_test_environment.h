@@ -17,7 +17,7 @@ struct AsioTestEnvironment {
   template <class T>
   T Wait(promise<T> promise) {
     using namespace std::chrono_literals;
-    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+    while (promise.wait_for(100ms) == promise_wait_status::timeout) {
       io_context.run_for(100ms);
     }
     return promise.get();
