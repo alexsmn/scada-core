@@ -6,6 +6,8 @@
 
 #include "net/transport.h"
 
+// Operates with unframed messages. Automatically adds frames on send and
+// removes on reception.
 class ProtocolMessageTransport final : public net::Transport {
  public:
   explicit ProtocolMessageTransport(std::unique_ptr<net::Transport> transport);
@@ -40,9 +42,8 @@ class ProtocolMessageTransport final : public net::Transport {
  private:
   void OnTransportOpened();
   void OnTransportClosed(net::Error error);
-  void OnTransportDataReceived();
 
-  [[nodiscard]] net::awaitable<void> StartReading();
+  // [[nodiscard]] net::awaitable<void> StartReading();
 
   std::unique_ptr<net::Transport> transport_;
 

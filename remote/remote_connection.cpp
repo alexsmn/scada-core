@@ -10,20 +10,45 @@
 
 ServerConnection::ServerConnection(ServerConnectionContext&& context)
     : ServerConnectionContext{std::move(context)} {
-  boost::asio::co_spawn(
-      transport_->GetExecutor(),
-      transport_->Open(
-          {.on_close = [this](net::Error error) { OnTransportClosed(error); },
-           .on_message =
-               [this](std::span<const char> data) {
-                 OnTransportMessageReceived(data);
-               }}),
-      boost::asio::detached);
+  boost::asio::co_spawn(transport_->GetExecutor(), Run(),
+                        boost::asio::detached);
 }
 
 ServerConnection::~ServerConnection() {
   if (session_)
     session_->SetConnection(nullptr);
+}
+
+net::awaitable<void> ServerConnection::Run() {
+  auto open_result = co_await transport_->Open(
+      {.on_close = [this](net::Error error) { OnTransportClosed(error); }});
+
+  if (open_result != net::OK) {
+    Close();
+    co_return;
+  }
+
+  auto cancelation = std::weak_ptr{cancelation_};
+  std::vector<char> message;
+
+  while (!cancelation.expired()) {
+    // TODO: Revise buffer.
+    message.resize(1024 * 1024);
+    auto bytes_read = co_await transport_->Read(message);
+
+    if (cancelation.expired()) {
+      co_return;
+    }
+
+    if (!bytes_read.ok() || *bytes_read == 0) {
+      Close();
+      co_return;
+    }
+
+    message.resize(*bytes_read);
+
+    OnTransportMessageReceived(message);
+  }
 }
 
 void ServerConnection::OnSessionDeleted() {
@@ -68,12 +93,14 @@ void ServerConnection::Send(protocol::Message& message) {
     throw std::runtime_error("Can't serialize the message");
   }
 
-  // TODO: Handle write result.
   boost::asio::co_spawn(
       transport_->GetExecutor(),
       [this, string = std::move(string)]() -> net::awaitable<void> {
-        // TODO: Handle write result.
-        auto _ = co_await transport_->Write(string);
+        auto bytes_written = co_await write_queue_.Write(string);
+        if (!bytes_written.ok() || *bytes_written != string.size()) {
+          Close();
+          co_return;
+        }
       },
       boost::asio::detached);
 }

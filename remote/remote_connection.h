@@ -4,9 +4,10 @@
 #include "scada/node_id.h"
 #include "scada/status.h"
 
-#include <net/transport.h>
 #include <functional>
 #include <memory>
+#include <net/transport.h>
+#include <net/write_queue.h>
 
 namespace protocol {
 class Request;
@@ -39,6 +40,8 @@ class ServerConnection : public Connection, private ServerConnectionContext {
   explicit ServerConnection(ServerConnectionContext&& context);
   virtual ~ServerConnection();
 
+  [[nodiscard]] net::awaitable<void> Run();
+
   virtual void Send(protocol::Message& message) override;
   virtual void OnSessionDeleted() override;
 
@@ -52,6 +55,8 @@ class ServerConnection : public Connection, private ServerConnectionContext {
   void OnTransportMessageReceived(std::span<const char> data);
 
   SessionStub* session_ = nullptr;
+
+  net::WriteQueue write_queue_{*transport_};
 
   std::shared_ptr<bool> cancelation_ = std::make_shared<bool>(false);
 };

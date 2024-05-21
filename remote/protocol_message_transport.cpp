@@ -3,9 +3,27 @@
 #include "base/auto_reset.h"
 #include "remote/protocol_buffer.h"
 
+#include <array>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <net/transport_string.h>
+#include <net/transport_util.h>
+
+namespace {
+
+net::awaitable<net::ErrorOr<size_t>> ReadPayloadSize(
+    net::Transport& transport) {
+  std::array<char, protocol::kHeaderSize> header;
+  auto bytes_read = co_await net::Read(transport, header);
+
+  if (!bytes_read.ok() || *bytes_read == 0) {
+    co_return bytes_read;
+  }
+
+  co_return protocol::GetIncomingMessageSize(header) - protocol::kHeaderSize;
+}
+
+}  // namespace
 
 ProtocolMessageTransport::ProtocolMessageTransport(
     std::unique_ptr<net::Transport> transport)
@@ -20,20 +38,34 @@ net::awaitable<net::Error> ProtocolMessageTransport::Open(Handlers handlers) {
 
   co_return co_await transport_->Open(
       {.on_open = [this] { OnTransportOpened(); },
-       .on_close = [this](net::Error error) { OnTransportClosed(error); },
-       .on_data = [this] { OnTransportDataReceived(); }});
+       .on_close = [this](net::Error error) { OnTransportClosed(error); }});
 }
 
 void ProtocolMessageTransport::Close() {
   handlers_ = {};
 
-  if (transport_)
+  if (transport_) {
     transport_->Close();
+  }
 }
 
 net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Read(
     std::span<char> data) {
-  co_return net::ERR_NOT_IMPLEMENTED;
+  assert(transport_);
+  assert(!transport_->IsMessageOriented());
+
+  if (reading_) {
+    co_return net::ERR_IO_PENDING;
+  }
+
+  base::AutoReset reading{&reading_, true};
+
+  auto payload_size = co_await ReadPayloadSize(*transport_);
+  if (!payload_size.ok() || *payload_size == 0) {
+    co_return payload_size;
+  }
+
+  co_return co_await net::Read(*transport_, data.subspan(0, *payload_size));
 }
 
 net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Write(
@@ -42,7 +74,19 @@ net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Write(
   protocol::PrependMessageSize(message);
   message.insert(message.end(), data.begin(), data.end());
   protocol::UpdateMessageSize(message);
-  co_return co_await transport_->Write(message);
+
+  auto bytes_written = co_await transport_->Write(message);
+
+  if (!bytes_written.ok()) {
+    co_return bytes_written.error();
+  }
+
+  // Per transport (and ASIO) specs, bytes written is always equal to the size
+  // of the message.
+  assert(*bytes_written == message.size());
+
+  // Return the size of the payload.
+  co_return data.size();
 }
 
 std::string ProtocolMessageTransport::GetName() const {
@@ -58,52 +102,5 @@ void ProtocolMessageTransport::OnTransportOpened() {
 void ProtocolMessageTransport::OnTransportClosed(net::Error error) {
   if (handlers_.on_close) {
     handlers_.on_close(error);
-  }
-}
-
-void ProtocolMessageTransport::OnTransportDataReceived() {
-  boost::asio::co_spawn(transport_->GetExecutor(), StartReading(),
-                        boost::asio::detached);
-}
-
-net::awaitable<void> ProtocolMessageTransport::StartReading() {
-  if (reading_) {
-    co_return;
-  }
-
-  base::AutoReset reading{&reading_, true};
-
-  std::weak_ptr<bool> cancelation = cancelation_;
-  while (!cancelation.expired()) {
-    while (incoming_message_.size() <
-           protocol::GetIncomingMessageSize(incoming_message_)) {
-      auto original_size = incoming_message_.size();
-      auto size = protocol::GetIncomingMessageSize(incoming_message_);
-      incoming_message_.resize(size);
-
-      auto read_count = co_await transport_->Read(
-          {&incoming_message_[original_size], size - original_size});
-
-      if (!read_count.ok()) {
-        if (handlers_.on_close) {
-          handlers_.on_close(read_count.error());
-        }
-        co_return;
-      }
-
-      incoming_message_.resize(original_size + *read_count);
-      if (incoming_message_.size() < size) {
-        co_return;
-      }
-    }
-
-    auto incoming_message = std::move(incoming_message_);
-    incoming_message_.clear();
-
-    if (handlers_.on_message) {
-      handlers_.on_message({static_cast<const char*>(
-                                protocol::GetMessagePayload(incoming_message)),
-                            protocol::GetMessagePayloadSize(incoming_message)});
-    }
   }
 }
