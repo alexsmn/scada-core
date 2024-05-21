@@ -52,7 +52,7 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       history_proxy_{std::make_unique<HistoryProxy>()},
       ping_timer_{executor_} {}
 
-SessionProxy::~SessionProxy() = default;
+SessionProxy::~SessionProxy() {}
 
 scada::services SessionProxy::services() {
   return scada::services{
@@ -130,7 +130,9 @@ void SessionProxy::OnTransportClosed(net::Error error) {
 }
 
 void SessionProxy::OnSessionError(const scada::Status& status) {
+  cancelation_.Cancel();
   transport_.close();
+  write_queue_.reset();
 
   OnSessionDeleted();
 
@@ -142,8 +144,9 @@ void SessionProxy::OnSessionError(const scada::Status& status) {
 
 void SessionProxy::OnTransportMessageReceived(std::span<const char> data) {
   protocol::Message message;
-  if (!message.ParseFromArray(data.data(), data.size()))
+  if (!message.ParseFromArray(data.data(), data.size())) {
     throw std::runtime_error("Can't parse message");
+  }
 
   OnMessageReceived(message);
 }
@@ -209,13 +212,16 @@ void SessionProxy::Send(protocol::Message& message) {
     throw std::runtime_error("Can't serialize message");
   }
 
-  boost::asio::co_spawn(
+  // TODO: Handle write result.
+  write_queue_->BlindWrite(string);
+
+  /*boost::asio::co_spawn(
       transport_.get_executor(),
       [this, string = std::move(string)]() -> net::awaitable<void> {
         // TODO: Handle write result.
         auto _ = co_await transport_.write(string);
       },
-      boost::asio::detached);
+      boost::asio::detached);*/
 }
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {
@@ -327,45 +333,71 @@ promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
   return Reconnect();
 }
 
-promise<void> SessionProxy::Connect() {
+net::awaitable<void> SessionProxy::Connect() {
   connect_promise_ = promise<void>{};
 
-  net::Executor net_executor = NetExecutorAdapter{executor_};
+  auto cancelation = cancelation_.ref();
+  auto executor = co_await boost::asio::this_coro::executor;
 
   LOG_INFO(*logger_) << "Connect" << LOG_TAG("UserName", user_name_)
                      << LOG_TAG("ConnectionString", connection_string_);
 
-  auto transport_logger = std::make_shared<NetBoostLoggerAdapter>(logger_);
-
   auto transport = transport_factory_.CreateTransport(
-      net::TransportString{connection_string_}, net_executor,
-      std::move(transport_logger));
+      net::TransportString{connection_string_}, executor,
+      std::make_shared<NetBoostLoggerAdapter>(logger_));
 
   if (!transport) {
     LOG_WARNING(*logger_) << "Cannot create raw transport";
     OnTransportClosed(net::ERR_FAILED);
-    return connect_promise_;
+    co_return;
   }
 
-  auto protocol_transport =
-      std::make_unique<ProtocolMessageTransport>(std::move(transport));
+  transport_ = net::any_transport{
+      std::make_unique<ProtocolMessageTransport>(std::move(transport))};
 
-  auto* protocol_transport_ptr = protocol_transport.get();
+  auto open_result = co_await transport_.open();
 
-  transport_ = net::any_transport{std::move(protocol_transport)};
+  if (cancelation.canceled()) {
+    co_return;
+  }
 
-  boost::asio::co_spawn(
-      net_executor,
-      protocol_transport_ptr->Open(
-          {.on_open = [this] { OnTransportOpened(); },
-           .on_close = [this](net::Error error) { OnTransportClosed(error); },
-           .on_message =
-               [this](std::span<const char> data) {
-                 OnTransportMessageReceived(data);
-               }}),
-      boost::asio::detached);
+  if (open_result != net::OK) {
+    OnTransportClosed(open_result);
+    co_return;
+  }
 
-  return connect_promise_;
+  write_queue_.emplace(*transport_.get_impl());
+
+  OnTransportOpened();
+
+  std::vector<char> buffer;
+
+  for (;;) {
+    // TODO: Set up message size.
+    buffer.resize(1024 * 1024);
+    auto bytes_read = co_await transport_.read(buffer);
+
+    if (cancelation.canceled()) {
+      co_return;
+    }
+
+    if (!bytes_read.ok()) {
+      OnTransportClosed(bytes_read.error());
+      co_return;
+    }
+
+    // Graceful close.
+    if (*bytes_read == 0) {
+      OnTransportClosed(net::OK);
+      co_return;
+    }
+
+    buffer.resize(*bytes_read);
+
+    OnTransportMessageReceived(buffer);
+  }
+
+  co_return;
 }
 
 void SessionProxy::ForwardConnectResult(scada::Status&& status) {
@@ -465,11 +497,15 @@ std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
 }
 
 promise<void> SessionProxy::Reconnect() {
-  if (!session_created_) {
-    return Connect();
-  }
+  promise<void> disconnect_if_needed =
+      session_created_ ? Disconnect() : make_resolved_promise();
 
-  return Disconnect().then([this] { return Connect(); });
+  return disconnect_if_needed.then([this] {
+    boost::asio::co_spawn(NetExecutorAdapter{executor_}, Connect(),
+                          boost::asio::detached);
+
+    return connect_promise_;
+  });
 }
 
 bool SessionProxy::IsConnected(base::TimeDelta* ping_delay) const {

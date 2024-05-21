@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
+#include "base/cancelation.h"
 #include "base/executor_timer.h"
 #include "remote/message_sender.h"
 #include "scada/attribute_service.h"
@@ -14,6 +15,7 @@
 
 #include <boost/signals2/signal.hpp>
 #include <net/any_transport.h>
+#include <net/write_queue.h>
 #include <unordered_map>
 
 namespace net {
@@ -50,7 +52,7 @@ class SessionProxy : private SessionProxyContext,
   explicit SessionProxy(SessionProxyContext&& context);
   virtual ~SessionProxy();
 
-  scada::services services();
+  [[nodiscard]] scada::services services();
 
   // scada::SessionService
   virtual promise<void> Connect(
@@ -94,9 +96,7 @@ class SessionProxy : private SessionProxyContext,
                     const scada::StatusCallback& callback) override;
 
  private:
-  friend class EventServiceProxy;
-
-  promise<void> Connect();
+  [[nodiscard]] net::awaitable<void> Connect();
 
   void OnSessionError(const scada::Status& status);
 
@@ -154,4 +154,10 @@ class SessionProxy : private SessionProxyContext,
   ExecutorTimer ping_timer_;
   base::TimeTicks ping_time_;
   base::TimeDelta last_ping_delay_;
+
+  std::optional<net::WriteQueue> write_queue_;
+
+  Cancelation cancelation_;
+
+  friend class EventServiceProxy;
 };

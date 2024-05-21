@@ -8,19 +8,22 @@ namespace protocol {
 
 typedef uint32_t MessageSizeType;
 
-inline size_t GetMessagePayloadSize(const std::string& message) {
+constexpr size_t kHeaderSize = sizeof(MessageSizeType);
+
+inline size_t GetMessagePayloadSize(std::span<const char> message) {
   assert(message.size() >= sizeof(MessageSizeType));
   return reinterpret_cast<const MessageSizeType&>(message[0]);
 }
 
-inline const void* GetMessagePayload(const std::string& message) {
+inline const void* GetMessagePayload(std::span<const char> message) {
   assert(message.size() >= sizeof(MessageSizeType));
   return &message[sizeof(MessageSizeType)];
 }
 
-inline size_t GetIncomingMessageSize(const std::string& message) {
-  if (message.size() < sizeof(MessageSizeType))
+inline size_t GetIncomingMessageSize(std::span<const char> message) {
+  if (message.size() < sizeof(MessageSizeType)) {
     return sizeof(MessageSizeType);
+  }
   return sizeof(MessageSizeType) + GetMessagePayloadSize(message);
 }
 
@@ -39,4 +42,4 @@ inline void UpdateMessageSize(std::string& message) {
       message.size() - sizeof(MessageSizeType);
 }
 
-} // namespace protocol
+}  // namespace protocol
