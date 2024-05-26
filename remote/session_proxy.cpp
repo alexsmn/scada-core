@@ -1,10 +1,10 @@
 #include "remote/session_proxy.h"
 
-#include "base/net_boost_logger_adapter.h"
-#include "base/net_executor_adapter.h"
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "net/net_boost_logger_adapter.h"
+#include "net/net_executor_adapter.h"
 #include "remote/history_proxy.h"
 #include "remote/node_management_proxy.h"
 #include "remote/protocol.h"

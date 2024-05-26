@@ -3,7 +3,7 @@
 #include "base/asio_executor.h"
 #include "base/executor_factory.h"
 #include "base/promise.h"
-#include "base/test/test_net_interceptors.h"
+#include "net/test/test_net_interceptors.h"
 
 #include <boost/asio/io_context.hpp>
 #include <net/intercepting_transport_factory.h>

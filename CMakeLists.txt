@@ -4,6 +4,7 @@ include(install_dll.cmake)
 
 add_subdirectory(base)
 add_subdirectory(metrics)
+add_subdirectory(net)
 add_subdirectory(scada)
 add_subdirectory(model)
 add_subdirectory(remote)
