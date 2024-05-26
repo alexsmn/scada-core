@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/net_executor_adapter.h"
+#include "net/net_executor_adapter.h"
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
