@@ -20,11 +20,10 @@ ServerConnection::~ServerConnection() {
 }
 
 net::awaitable<void> ServerConnection::Run() {
-  auto open_result = co_await transport_->Open(
-      {.on_close = [this](net::Error error) { OnTransportClosed(error); }});
-
+  auto open_result = co_await transport_->Open();
   if (open_result != net::OK) {
     Close();
+    OnTransportClosed(open_result);
     co_return;
   }
 

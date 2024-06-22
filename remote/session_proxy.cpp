@@ -119,7 +119,7 @@ void SessionProxy::OnSessionCreated() {
 
 void SessionProxy::OnTransportClosed(net::Error error) {
   LOG_WARNING(*logger_) << "Transport closed"
-                        << LOG_TAG("Status", ErrorToString(error));
+                        << LOG_TAG("Status", net::ErrorToString(error));
 
   scada::Status status_code(error == net::OK
                                 ? scada::StatusCode::Bad_SessionForcedLogoff

@@ -13,10 +13,13 @@ class ProtocolMessageTransport final : public net::Transport {
   explicit ProtocolMessageTransport(std::unique_ptr<net::Transport> transport);
   ~ProtocolMessageTransport();
 
-  [[nodiscard]] virtual net::awaitable<net::Error> Open(
-      Handlers handlers) override;
+  [[nodiscard]] virtual net::awaitable<net::Error> Open() override;
 
   virtual void Close() override;
+
+  [[nodiscard]] virtual net::awaitable<
+      net::ErrorOr<std::unique_ptr<net::Transport>>>
+  Accept() override;
 
   [[nodiscard]] virtual net::awaitable<net::ErrorOr<size_t>> Read(
       std::span<char> data) override;
@@ -41,8 +44,6 @@ class ProtocolMessageTransport final : public net::Transport {
 
  private:
   std::unique_ptr<net::Transport> transport_;
-
-  Handlers handlers_;
 
   std::string incoming_message_;
 

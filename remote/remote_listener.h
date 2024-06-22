@@ -2,53 +2,51 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <net/acceptor.h>
+#include <net/any_transport.h>
 
 class RemoteListener {
  public:
-  using SessionAcceptedHandler =
-      std::function<void(std::unique_ptr<net::Transport> transport)>;
+  using AcceptHandler = std::function<void(net::any_transport transport)>;
 
   // `listener_name` is used for logging purposes.
   RemoteListener(std::shared_ptr<BoostLogger> logger,
-                 net::acceptor acceptor,
+                 net::any_transport transport,
                  std::string listener_name,
-                 SessionAcceptedHandler session_accepted_handler)
+                 AcceptHandler accept_handler)
       : logger_{std::move(logger)},
-        acceptor_{std::move(acceptor)},
+        acceptor_{std::move(transport)},
         listener_name_{std::move(listener_name)},
-        session_accepted_handler_{std::move(session_accepted_handler)} {}
+        accept_handler_{std::move(accept_handler)} {}
 
   promise<> Init() {
     LOG_INFO(*logger_) << "Listening..." << LOG_TAG("Listener", listener_name_);
 
-    boost::asio::co_spawn(acceptor_.get_executor(), Run(),
-                          boost::asio::detached);
+    boost::asio::co_spawn(
+        acceptor_.get_executor(),
+        [this]() -> net::awaitable<void> { OnTransportClosed(co_await Run()); },
+        boost::asio::detached);
 
     return open_promise_;
   }
 
  private:
-  net::awaitable<void> Run() {
-    auto open_result = co_await acceptor_.open(
-        {.on_close = [this](net::Error error) { OnTransportClosed(error); },
-         .on_accept =
-             [this](std::unique_ptr<net::Transport> transport) {
-               return OnTransportAccepted(std::move(transport));
-             }});
+  [[nodiscard]] net::awaitable<net::Error> Run() {
+    NET_CO_RETURN_IF_ERROR(co_await acceptor_.open());
 
-    if (open_result != net::OK) {
-      co_return;
-    }
-
-    OnTransportOpened();
-  }
-
-  void OnTransportOpened() {
     LOG_INFO(*logger_) << "Listener opened"
                        << LOG_TAG("Listener", listener_name_);
 
     open_promise_.resolve();
+
+    for (;;) {
+      NET_ASSIGN_OR_CO_RETURN(auto transport, co_await acceptor_.accept());
+
+      LOG_INFO(*logger_) << "Client connection accepted"
+                         << LOG_TAG("Listener", listener_name_)
+                         << LOG_TAG("Transport", transport.name());
+
+      accept_handler_(std::move(transport));
+    }
   }
 
   void OnTransportClosed(net::Error error) {
@@ -59,19 +57,10 @@ class RemoteListener {
     open_promise_.reject(std::runtime_error{net::ErrorToString(error)});
   }
 
-  net::Error OnTransportAccepted(std::unique_ptr<net::Transport> transport) {
-    LOG_INFO(*logger_) << "Client connection accepted"
-                       << LOG_TAG("Listener", listener_name_)
-                       << LOG_TAG("Transport", transport->GetName());
-
-    session_accepted_handler_(std::move(transport));
-    return net::OK;
-  }
-
   const std::shared_ptr<BoostLogger> logger_;
-  net::acceptor acceptor_;
+  net::any_transport acceptor_;
   const std::string listener_name_;
-  const SessionAcceptedHandler session_accepted_handler_;
+  const AcceptHandler accept_handler_;
 
   promise<> open_promise_;
 };

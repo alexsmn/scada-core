@@ -59,26 +59,26 @@ promise<> RemoteSessionManager::Init() {
   auto transport_logger = std::make_shared<NetBoostLoggerAdapter>(logger_);
 
   // TODO: Captures |this|.
-  RemoteListener::SessionAcceptedHandler session_accept_handler =
-      [this](std::unique_ptr<net::Transport> transport) {
+  RemoteListener::AcceptHandler accept_handler =
+      [this](net::any_transport transport) {
         OnSessionAccepted(std::move(transport));
       };
 
   std::vector<promise<>> promises;
   for (const net::TransportString& endpoint : endpoints_) {
-    auto transport = transport_factory_.CreateTransport(
-        endpoint, NetExecutorAdapter{executor_}, transport_logger);
+    auto acceptor = net::any_transport{transport_factory_.CreateTransport(
+        endpoint, NetExecutorAdapter{executor_}, transport_logger)};
 
-    if (!transport) {
+    if (!acceptor) {
       LOG_ERROR(*logger_) << "Cannot create listener transport";
       return make_rejected_promise(std::exception{});
     }
 
-    auto listener_name = transport->GetName();
+    auto listener_name = acceptor.name();
 
     auto& listener = listeners_.emplace_back(std::make_unique<RemoteListener>(
-        logger_, net::acceptor{std::move(transport)}, std::move(listener_name),
-        session_accept_handler));
+        logger_, std::move(acceptor), std::move(listener_name),
+        accept_handler));
 
     promises.emplace_back(listener->Init());
   }
@@ -234,9 +234,8 @@ SessionStub* RemoteSessionManager::FindUserSession(
   return i != session_map_.end() ? i->second.get() : nullptr;
 }
 
-void RemoteSessionManager::OnSessionAccepted(
-    std::unique_ptr<net::Transport> transport) {
-  auto message_transport = std::move(transport);
+void RemoteSessionManager::OnSessionAccepted(net::any_transport transport) {
+  auto message_transport = transport.release_impl();
   if (!message_transport->IsMessageOriented()) {
     auto protocol_transport = std::make_unique<ProtocolMessageTransport>(
         std::move(message_transport));

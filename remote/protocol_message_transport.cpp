@@ -33,18 +33,19 @@ ProtocolMessageTransport::ProtocolMessageTransport(
 
 ProtocolMessageTransport::~ProtocolMessageTransport() = default;
 
-net::awaitable<net::Error> ProtocolMessageTransport::Open(Handlers handlers) {
-  handlers_ = std::move(handlers);
-
+net::awaitable<net::Error> ProtocolMessageTransport::Open() {
   co_return co_await transport_->Open();
 }
 
 void ProtocolMessageTransport::Close() {
-  handlers_ = {};
-
   if (transport_) {
     transport_->Close();
   }
+}
+
+net::awaitable<net::ErrorOr<std::unique_ptr<net::Transport>>>
+ProtocolMessageTransport::Accept() {
+  co_return net::ERR_NOT_IMPLEMENTED;
 }
 
 net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Read(
