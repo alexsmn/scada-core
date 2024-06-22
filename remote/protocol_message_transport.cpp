@@ -36,9 +36,7 @@ ProtocolMessageTransport::~ProtocolMessageTransport() = default;
 net::awaitable<net::Error> ProtocolMessageTransport::Open(Handlers handlers) {
   handlers_ = std::move(handlers);
 
-  co_return co_await transport_->Open(
-      {.on_open = [this] { OnTransportOpened(); },
-       .on_close = [this](net::Error error) { OnTransportClosed(error); }});
+  co_return co_await transport_->Open();
 }
 
 void ProtocolMessageTransport::Close() {
@@ -91,16 +89,4 @@ net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Write(
 
 std::string ProtocolMessageTransport::GetName() const {
   return transport_->GetName();
-}
-
-void ProtocolMessageTransport::OnTransportOpened() {
-  if (handlers_.on_open) {
-    handlers_.on_open();
-  }
-}
-
-void ProtocolMessageTransport::OnTransportClosed(net::Error error) {
-  if (handlers_.on_close) {
-    handlers_.on_close(error);
-  }
 }
