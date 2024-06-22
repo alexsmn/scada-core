@@ -11,7 +11,7 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <net/transport.h>
+#include <net/any_transport.h>
 #include <net/transport_string.h>
 #include <optional>
 
@@ -64,6 +64,7 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
  private:
   promise<CreateSessionResult> CreateSession(
       const protocol::CreateSession& create_session);
+
   void DeleteSession(const scada::NodeId& user_node_id);
 
   bool CheckExistingSession(const scada::NodeId& user_id,
@@ -74,7 +75,7 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
   SessionStub* FindUserSession(const scada::NodeId& user_id) const;
 
-  void OnSessionAccepted(std::unique_ptr<net::Transport> transport);
+  void OnSessionAccepted(net::any_transport transport);
 
   void OnTransportClosed(net::Error error);
 
