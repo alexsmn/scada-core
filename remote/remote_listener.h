@@ -22,21 +22,28 @@ class RemoteListener {
   promise<> Init() {
     LOG_INFO(*logger_) << "Listening..." << LOG_TAG("Listener", listener_name_);
 
-    boost::asio::co_spawn(
-        acceptor_.get_executor(),
-        acceptor_.open(
-            {.on_open = [this] { OnTransportOpened(); },
-             .on_close = [this](net::Error error) { OnTransportClosed(error); },
-             .on_accept =
-                 [this](std::unique_ptr<net::Transport> transport) {
-                   return OnTransportAccepted(std::move(transport));
-                 }}),
-        boost::asio::detached);
+    boost::asio::co_spawn(acceptor_.get_executor(), Run(),
+                          boost::asio::detached);
 
     return open_promise_;
   }
 
  private:
+  net::awaitable<void> Run() {
+    auto open_result = co_await acceptor_.open(
+        {.on_close = [this](net::Error error) { OnTransportClosed(error); },
+         .on_accept =
+             [this](std::unique_ptr<net::Transport> transport) {
+               return OnTransportAccepted(std::move(transport));
+             }});
+
+    if (open_result != net::OK) {
+      co_return;
+    }
+
+    OnTransportOpened();
+  }
+
   void OnTransportOpened() {
     LOG_INFO(*logger_) << "Listener opened"
                        << LOG_TAG("Listener", listener_name_);

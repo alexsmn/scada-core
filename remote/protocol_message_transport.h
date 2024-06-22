@@ -40,11 +40,6 @@ class ProtocolMessageTransport final : public net::Transport {
   }
 
  private:
-  void OnTransportOpened();
-  void OnTransportClosed(net::Error error);
-
-  // [[nodiscard]] net::awaitable<void> StartReading();
-
   std::unique_ptr<net::Transport> transport_;
 
   Handlers handlers_;
