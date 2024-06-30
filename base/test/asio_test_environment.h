@@ -6,6 +6,7 @@
 #include "net/test/test_net_interceptors.h"
 
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/strand.hpp>
 #include <net/intercepting_transport_factory.h>
 #include <net/transport_factory_impl.h>
 
@@ -45,8 +46,8 @@ struct AsioTestEnvironment {
   TestNetInterceptor transport_interceptor;
   net::InterceptingTransportFactory transport_factory{transport_factory_impl};
 
-  const std::shared_ptr<Executor> executor =
-      std::make_shared<AsioExecutor>(io_context);
+  const std::shared_ptr<Executor> executor = std::make_shared<AsioExecutor>(
+      boost::asio::make_strand(io_context.get_executor()));
 
   const ExecutorFactory executor_factory = MakeSingleExecutorFactory(executor);
 };

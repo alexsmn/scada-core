@@ -4,6 +4,6 @@
 #include "base/executor_factory.h"
 
 inline ExecutorFactory MakeAsioExecutorFactory(
-    boost::asio::io_context& io_context) {
-  return [&io_context] { return std::make_shared<AsioExecutor>(io_context); };
+    const boost::asio::any_io_executor& executor) {
+  return [executor] { return std::make_shared<AsioExecutor>(executor); };
 }
