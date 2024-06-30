@@ -1,13 +1,13 @@
 #pragma once
 
-#include "base/io_context_util.h"
+#include "base/executor_util.h"
 
 #include <base/sequenced_task_runner.h>
 
 class AsioTaskRunner : public base::SequencedTaskRunner {
  public:
-  explicit AsioTaskRunner(boost::asio::io_context& io_context)
-      : io_context_{io_context} {}
+  explicit AsioTaskRunner(const boost::asio::any_io_executor& executor)
+      : executor_{executor} {}
 
   // base::SequencedTaskRunner
   virtual bool PostDelayedTask(const base::Location& from_here,
@@ -19,17 +19,15 @@ class AsioTaskRunner : public base::SequencedTaskRunner {
                                           base::TimeDelta delay) override;
 
  private:
-  boost::asio::io_context& io_context_;
+  boost::asio::any_io_executor executor_;
 };
 
 bool AsioTaskRunner::PostDelayedTask(const base::Location& from_here,
                                      base::OnceClosure task,
                                      base::TimeDelta delay) {
-  ::PostDelayedTask(
-      io_context_, std::chrono::nanoseconds{delay.InNanoseconds()},
-      [task_ptr = std::make_shared<base::OnceClosure>(std::move(task))] {
-        std::move(*task_ptr).Run();
-      });
+  ::PostDelayedTask(executor_, std::chrono::nanoseconds{delay.InNanoseconds()},
+                    [task_ptr = std::make_shared<base::OnceClosure>(
+                         std::move(task))] { std::move(*task_ptr).Run(); });
   return true;
 }
 
