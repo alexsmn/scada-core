@@ -346,14 +346,14 @@ net::awaitable<void> SessionProxy::Connect() {
       net::TransportString{connection_string_}, executor,
       std::make_shared<NetBoostLoggerAdapter>(logger_));
 
-  if (!transport) {
+  if (!transport.ok()) {
     LOG_WARNING(*logger_) << "Cannot create raw transport";
-    OnTransportClosed(net::ERR_FAILED);
+    OnTransportClosed(transport.error());
     co_return;
   }
 
   transport_ = net::any_transport{
-      std::make_unique<ProtocolMessageTransport>(std::move(transport))};
+      std::make_unique<ProtocolMessageTransport>(transport->release_impl())};
 
   auto open_result = co_await transport_.open();
 
