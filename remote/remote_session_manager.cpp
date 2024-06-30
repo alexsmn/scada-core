@@ -66,18 +66,21 @@ promise<> RemoteSessionManager::Init() {
 
   std::vector<promise<>> promises;
   for (const net::TransportString& endpoint : endpoints_) {
-    auto acceptor = net::any_transport{transport_factory_.CreateTransport(
-        endpoint, NetExecutorAdapter{executor_}, transport_logger)};
+    auto acceptor = transport_factory_.CreateTransport(
+        endpoint, NetExecutorAdapter{executor_}, transport_logger);
 
-    if (!acceptor) {
-      LOG_ERROR(*logger_) << "Cannot create listener transport";
-      return make_rejected_promise(std::exception{});
+    if (!acceptor.ok()) {
+      LOG_ERROR(*logger_) << "Cannot create listener transport"
+                          << LOG_TAG("Error",
+                                     net::ErrorToShortString(acceptor.error()));
+      return make_rejected_promise(
+          std::runtime_error{net::ErrorToShortString(acceptor.error())});
     }
 
-    auto listener_name = acceptor.name();
+    auto listener_name = acceptor->name();
 
     auto& listener = listeners_.emplace_back(std::make_unique<RemoteListener>(
-        logger_, std::move(acceptor), std::move(listener_name),
+        logger_, std::move(*acceptor), std::move(listener_name),
         accept_handler));
 
     promises.emplace_back(listener->Init());
@@ -102,6 +105,7 @@ promise<CreateSessionResult> RemoteSessionManager::CreateSession(
                                      create_session.protocol_version_major())
                           << LOG_TAG("VersionMinor",
                                      create_session.protocol_version_minor());
+
     return make_resolved_promise<CreateSessionResult>(
         {.status = scada::StatusCode::Bad_UnsupportedProtocolVersion,
          .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
