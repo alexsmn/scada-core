@@ -1,8 +1,9 @@
 #pragma once
 
+#include <span>
+#include <string>
 #include <string_view>
 #include <vector>
-#include <span>
 
 // |boost::split| is not useful for delimiter string.
 // |base::SplitString| works only with base::StringView.

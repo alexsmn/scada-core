@@ -10,9 +10,8 @@ if(WIN32)
     set(BOOST_ARCH "x32")
   endif()
   
-
-  set(BOOST_DEBUG_SUFFIX "vc143-mt-gd-${BOOST_ARCH}-${Boost_LIB_VERSION}")
-  set(BOOST_RELEASE_SUFFIX "vc143-mt-${BOOST_ARCH}-${Boost_LIB_VERSION}")
+  set(BOOST_DEBUG_SUFFIX "vc143-mt-gd-${BOOST_ARCH}-${Boost_MAJOR_VERSION}_${Boost_MINOR_VERSION}")
+  set(BOOST_RELEASE_SUFFIX "vc143-mt-${BOOST_ARCH}-${Boost_MAJOR_VERSION}_${Boost_MINOR_VERSION}")
 
   foreach(BOOST_COMPONENT ${BOOST_COMPONENTS})
     if(NOT ${BOOST_COMPONENT} MATCHES "atomic|date_time")
