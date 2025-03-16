@@ -18,6 +18,8 @@ if(WIN32)
   endif()
 
   install(FILES
+      "$<$<CONFIG:Debug>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Debug/abseil_dll.dll>"
+      "$<$<CONFIG:RelWithDebInfo>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/RelWithDebInfo/abseil_dll.dll>"
       "$<$<CONFIG:Debug>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Debug/libprotobufd.dll>"
       "$<$<CONFIG:RelWithDebInfo>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/RelWithDebInfo/libprotobuf.dll>"
       "$<$<CONFIG:Debug>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Debug/OPCUA.dll>"
