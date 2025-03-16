@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/asio/post.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/assert/source_location.hpp>
 
@@ -10,12 +11,12 @@ inline void PostDelayedTask(
     Task&& task,
     const boost::source_location& location = BOOST_CURRENT_LOCATION) {
   if (delay == std::chrono::nanoseconds::zero()) {
-    io_context.post(std::forward<Task>(task));
+    boost::asio::post(io_context, std::forward<Task>(task));
     return;
   }
 
   auto timer = std::make_shared<boost::asio::steady_timer>(io_context);
-  timer->expires_from_now(delay);
+  timer->expires_after(delay);
   timer->async_wait([timer, task = std::forward<Task>(task)
 #ifndef NDEBUG
                                 ,

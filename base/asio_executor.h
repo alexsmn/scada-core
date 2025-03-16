@@ -6,6 +6,7 @@
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/io_context_strand.hpp>
+#include <boost/asio/post.hpp>
 
 class AsioExecutor : public Executor {
  public:
@@ -17,7 +18,7 @@ class AsioExecutor : public Executor {
                                const std::source_location& location =
                                    std::source_location::current()) override {
     if (delay <= Duration::zero()) {
-      strand_.post(std::move(task));
+      boost::asio::post(strand_, std::move(task));
     } else {
       ::PostDelayedTask(io_context_, delay,
                         boost::asio::bind_executor(strand_, std::move(task)),
