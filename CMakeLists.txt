@@ -1,3 +1,7 @@
+cmake_minimum_required(VERSION 3.31)
+
+project(ScadaCore)
+
 include(boost.cmake)
 include(scada_module.cmake)
 include(install_dll.cmake)
