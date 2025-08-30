@@ -8,7 +8,6 @@
         "boost-filesystem",
         "boost-json",
         "boost-log",
-        "boost-log-setup",
         "boost-program-options",
         "boost-thread"
     ]
