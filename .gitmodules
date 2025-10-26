@@ -1,3 +1,6 @@
 [submodule "third_party/promise_hpp"]
 	path = third_party/promise_hpp
 	url = https://github.com/BlackMATov/promise.hpp.git
+[submodule "third_party/chromebase"]
+	path = third_party/chromebase
+	url = https://github.com/alexsmn/chromebase.git
