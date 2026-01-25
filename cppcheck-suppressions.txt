@@ -11,9 +11,3 @@
 *:*third_party/net*
 preprocessorErrorDirective
 unknownMacro
-
-// GTest macros cause syntax errors
-syntaxError:*_unittest.cpp
-
-// Intentional unused statements for debug inspection
-constStatement

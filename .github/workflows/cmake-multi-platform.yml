@@ -81,8 +81,8 @@ jobs:
       if: runner.os == 'Windows'
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgGitCommitId: 'a34c873a9717a888f58dc05571dde15571f56e66'
-        vcpkgJsonGlob: 'vcpkg.json'
+        vcpkgGitCommitId: '67c71656772012c5ab05f4010ee5838cd99c718d'
+        runVcpkgInstall: false
 
     # Cache CMake build
     - name: Cache CMake build
