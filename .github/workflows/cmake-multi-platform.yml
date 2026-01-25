@@ -1,0 +1,172 @@
+# CI workflow for scada-core
+# Builds and tests on Windows (MSVC) and Linux (GCC, Clang)
+#
+# Note: Full builds require external dependencies (ChromiumBase, promise-hpp, Net)
+# that must be provided via CMAKE_PREFIX_PATH or installed system-wide.
+# Build jobs are marked as allowed to fail until dependencies are configured.
+
+name: CI
+
+on:
+  push:
+    branches: [ "main", "release/**" ]
+  pull_request:
+    branches: [ "main", "release/**" ]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} - ${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    # Allow build to fail until external dependencies are configured
+    continue-on-error: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+            preset: linux-gcc
+          - os: ubuntu-latest
+            compiler: clang
+            preset: linux-clang
+          - os: windows-latest
+            compiler: msvc
+            preset: windows-msvc-vcpkg
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    # Linux dependencies - only install required Boost components
+    # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libboost-atomic-dev \
+          libboost-context-dev \
+          libboost-date-time-dev \
+          libboost-filesystem-dev \
+          libboost-json-dev \
+          libboost-log-dev \
+          libboost-program-options-dev \
+          libboost-regex-dev \
+          libboost-system-dev \
+          libboost-thread-dev \
+          libprotobuf-dev \
+          protobuf-compiler \
+          ninja-build
+
+    # Windows dependencies via vcpkg - only install required Boost components
+    # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
+    - name: Setup vcpkg (Windows)
+      if: runner.os == 'Windows'
+      continue-on-error: true
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: 'a34c873a9717a888f58dc05571dde15571f56e66'
+
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      continue-on-error: true
+      run: |
+        if (Get-Command vcpkg -ErrorAction SilentlyContinue) {
+          vcpkg install boost-system boost-date-time boost-json boost-log boost-program-options boost-filesystem boost-thread boost-atomic boost-context boost-regex protobuf --triplet x64-windows
+        } else {
+          Write-Host "::warning::vcpkg not available, skipping dependency installation"
+        }
+      shell: pwsh
+
+    # Cache CMake build
+    - name: Cache CMake build
+      uses: actions/cache@v4
+      with:
+        path: build
+        key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', 'CMakePresets.json') }}
+        restore-keys: |
+          ${{ matrix.os }}-${{ matrix.compiler }}-
+
+    - name: Configure CMake
+      id: cmake-configure
+      run: cmake --preset ${{ matrix.preset }}
+      env:
+        VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      continue-on-error: true
+
+    - name: Build (Debug)
+      if: steps.cmake-configure.outcome == 'success'
+      run: cmake --build build --config Debug --parallel
+
+    - name: Build (Release)
+      if: steps.cmake-configure.outcome == 'success'
+      run: cmake --build build --config Release --parallel
+
+    - name: Test (Release)
+      if: steps.cmake-configure.outcome == 'success'
+      run: ctest --test-dir build --build-config Release --output-on-failure --parallel
+
+    - name: Report missing dependencies
+      if: steps.cmake-configure.outcome == 'failure'
+      run: |
+        echo "::warning::CMake configuration failed. This is expected if external dependencies (ChromiumBase, promise-hpp, Net) are not available."
+        echo "See CLAUDE.md for information about required dependencies."
+
+    - name: Upload test results
+      if: failure() && steps.cmake-configure.outcome == 'success'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.compiler }}
+        path: |
+          build/Testing/
+          build/**/*test*.log
+        retention-days: 7
+
+  # Static analysis job (Linux only) - primary CI check
+  analyze:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cppcheck
+
+    - name: Run cppcheck
+      run: |
+        cppcheck --enable=warning,performance \
+          --suppress=missingIncludeSystem \
+          --suppress=missingInclude \
+          --suppress=unmatchedSuppression \
+          --suppress=unusedFunction \
+          --suppress=useStlAlgorithm \
+          --inline-suppr \
+          --std=c++20 \
+          -I base -I scada -I metrics -I model -I remote \
+          --output-file=cppcheck-report.txt \
+          base/ scada/ metrics/ model/ remote/ \
+          2>&1 || true
+
+        # Show report
+        cat cppcheck-report.txt
+
+        # Fail only on errors (not style/performance warnings)
+        if grep -q "error:" cppcheck-report.txt; then
+          echo "::error::cppcheck found errors"
+          exit 1
+        fi
+
+    - name: Upload cppcheck report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cppcheck-report
+        path: cppcheck-report.txt
+        retention-days: 7

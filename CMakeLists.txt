@@ -1,3 +1,9 @@
+cmake_minimum_required(VERSION 3.21)
+project(scada-core VERSION 2.5.5 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include(boost.cmake)
 include(scada_module.cmake)
 include(install_dll.cmake)
@@ -19,6 +25,8 @@ if(WIN32)
   endif()
 
   install(FILES
+      "$<$<CONFIG:Debug>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Debug/abseil_dll.dll>"
+      "$<$<CONFIG:RelWithDebInfo>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/RelWithDebInfo/abseil_dll.dll>"
       "$<$<CONFIG:Debug>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Debug/libprotobufd.dll>"
       "$<$<CONFIG:RelWithDebInfo>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/RelWithDebInfo/libprotobuf.dll>"
       "$<$<CONFIG:Debug>:${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/Debug/OPCUA.dll>"

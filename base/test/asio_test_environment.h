@@ -40,7 +40,8 @@ struct AsioTestEnvironment {
   boost::asio::io_context io_context;
   // Work guard to prevent io_context from stopping when there are no more
   // tasks.
-  boost::asio::io_context::work io_work{io_context};
+  boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
+      work = boost::asio::make_work_guard(io_context);
 
   net::TransportFactoryImpl transport_factory_impl{io_context};
   TestNetInterceptor transport_interceptor;
