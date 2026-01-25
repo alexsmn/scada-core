@@ -76,13 +76,12 @@ jobs:
           protobuf-compiler \
           ninja-build
 
-    # Setup vcpkg with manifest mode (uses vcpkg.json)
+    # Use pre-installed vcpkg on GitHub runners
     - name: Setup vcpkg
       if: runner.os == 'Windows'
-      uses: lukka/run-vcpkg@v11
-      with:
-        vcpkgGitCommitId: '67c71656772012c5ab05f4010ee5838cd99c718d'
-        runVcpkgInstall: false
+      run: |
+        echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+      shell: pwsh
 
     # Cache CMake build
     - name: Cache CMake build
