@@ -18,7 +18,7 @@ inline void PostDelayedTask(
   }
 
   auto timer = std::make_shared<boost::asio::steady_timer>(executor);
-  timer->expires_from_now(delay);
+  timer->expires_after(delay);
   timer->async_wait([timer, captured_task = std::forward<Task>(task),
                      captured_location = DebugHolder{location}](
                         boost::system::error_code ec) mutable {
