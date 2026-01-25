@@ -15,8 +15,15 @@
         "CMAKE_MAKE_PROGRAM": "c:/tools/ninja/ninja.exe",
         "CMAKE_CXX_STANDARD": "20",
         "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_CXX_CPPCHECK": "cppcheck;--enable=warning,performance,portability;--inline-suppr;--suppressions-list=${sourceDir}/cppcheck-suppressions.txt;--error-exitcode=1"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "static-analysis",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_CXX_CPPCHECK": "C:/Program Files/Cppcheck/cppcheck.exe;--enable=warning,performance,portability;--inline-suppr;--suppressions-list=${sourceDir}/cppcheck-suppressions.txt;--error-exitcode=1",
+        "CMAKE_CXX_CLANG_TIDY": "clang-tidy;-checks=-*,bugprone-*,performance-*,-bugprone-easily-swappable-parameters;-header-filter=.*"
       }
     },
     {
@@ -29,6 +36,13 @@
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
+    },
+    {
+      "name": "ninja-analysis",
+      "displayName": "Ninja with Static Analysis",
+      "description": "Build with Ninja, cppcheck, and clang-tidy",
+      "inherits": ["ninja", "static-analysis"],
+      "binaryDir": "${sourceDir}/build-analysis"
     }
   ],
   "buildPresets": [
@@ -49,6 +63,18 @@
       "displayName": "RelWithDebInfo",
       "configurePreset": "ninja",
       "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "analysis-debug",
+      "displayName": "Debug with Static Analysis",
+      "configurePreset": "ninja-analysis",
+      "configuration": "Debug"
+    },
+    {
+      "name": "analysis-release",
+      "displayName": "Release with Static Analysis",
+      "configurePreset": "ninja-analysis",
+      "configuration": "Release"
     }
   ],
   "testPresets": [

@@ -25,20 +25,21 @@ A C++ library providing a distributed SCADA (Supervisory Control and Data Acquis
 
 ### Dependencies
 
-**Required:**
-- Boost (atomic, context, date_time, filesystem, json, log, program_options, thread)
+**vcpkg packages:**
+- Boost (atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread)
 - Protobuf 3
-- ChromiumBase
-- promise-hpp
-- Net (networking abstraction)
+- gRPC
+- GTest/GMock
 
-**Optional:**
-- gRPC (for gRPC service generation)
-- GTest/GMock (for testing)
+**External CMake modules:**
 
-**Windows-specific:**
-- OpenSSL (libssl, libcrypto)
-- OPC UA libraries
+| Dependency | Repository | Branch |
+|------------|------------|--------|
+| ChromiumBase | https://github.com/alexsmn/chromebase | main |
+| promise.hpp | https://github.com/alexsmn/promise.hpp | main |
+| Transport (Net) | https://github.com/alexsmn/transport | release/2.5 |
+
+These must be cloned and added to `CMAKE_PREFIX_PATH` and `CMAKE_MODULE_PATH`.
 
 ## Building
 
@@ -145,10 +146,35 @@ ctest --test-dir build --output-on-failure
 
 ## Static Analysis
 
-The build system integrates cppcheck for static analysis. It runs automatically during compilation with:
-- Warning, performance, and portability checks enabled
-- Inline suppressions supported
-- Suppressions file: `cppcheck-suppressions.txt`
+Static analysis is available via a separate CMake preset that runs both cppcheck and clang-tidy during compilation.
+
+```bash
+# Configure with static analysis
+cmake --preset ninja-analysis
+
+# Build with analysis (warnings shown during compilation)
+cmake --build build-analysis --config Debug
+```
+
+### Analysis Presets
+
+| Configure Preset | Description |
+|------------------|-------------|
+| `ninja` | Standard build (no static analysis) |
+| `ninja-analysis` | Build with cppcheck and clang-tidy |
+
+| Build Preset | Description |
+|--------------|-------------|
+| `analysis-debug` | Debug build with static analysis |
+| `analysis-release` | Release build with static analysis |
+
+### Tools
+
+- **cppcheck:** Warning, performance, and portability checks
+  - Inline suppressions supported (`// cppcheck-suppress`)
+  - Suppressions file: `cppcheck-suppressions.txt`
+- **clang-tidy:** Bugprone and performance checks
+  - Configuration via `-checks` flag in CMakePresets.json
 
 ## Protocol Buffers
 

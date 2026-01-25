@@ -48,6 +48,13 @@ jobs:
         repository: alexsmn/promise.hpp
         path: deps/promise.hpp
 
+    - name: Checkout transport (Net)
+      uses: actions/checkout@v4
+      with:
+        repository: alexsmn/transport
+        ref: release/2.5
+        path: deps/transport
+
     # Linux dependencies - only install required Boost components
     # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
     - name: Install dependencies (Linux)
@@ -88,7 +95,7 @@ jobs:
 
     - name: Configure CMake
       id: cmake-configure
-      run: cmake --preset ninja -DCMAKE_PREFIX_PATH="${{ github.workspace }}/deps/chromebase;${{ github.workspace }}/deps/promise.hpp"
+      run: cmake --preset ninja -DCMAKE_PREFIX_PATH="${{ github.workspace }}/deps/chromebase;${{ github.workspace }}/deps/promise.hpp;${{ github.workspace }}/deps/transport" -DCMAKE_MODULE_PATH="${{ github.workspace }}/deps/chromebase;${{ github.workspace }}/deps/promise.hpp;${{ github.workspace }}/deps/transport"
       env:
         VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
       continue-on-error: true
