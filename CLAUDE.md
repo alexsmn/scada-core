@@ -315,3 +315,5 @@ GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`):
 - Prefer `StatusOr<T>` over exceptions for expected failures
 - Keep backward compatibility with Protocol Buffers (don't reuse field numbers)
 - Run tests after changes: `ctest --test-dir build`
+- **Consult README.md** when making changes to build system, dependencies, or CI
+- **Keep README.md consistent** - update it when changing CMakePresets, dependencies, or workflows
