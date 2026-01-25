@@ -75,7 +75,6 @@ void SubscriptionStub::OnCreateMonitoredItem(
     response.set_request_id(request_id);
     auto& create_monitored_item_result =
         *response.mutable_create_monitored_item_result();
-    create_monitored_item_result;
     Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
     create_monitored_item_result.set_monitored_item_id(monitored_item_id);
 
