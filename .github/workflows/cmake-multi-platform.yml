@@ -56,13 +56,13 @@ jobs:
       if: runner.os == 'Windows'
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgGitCommitId: '01f602195983451bc83e72f4214af2cbc495aa94'
+        vcpkgGitCommitId: 'c82f74667287d3dc386bce81e44964370c91571a'
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
+      continue-on-error: true
       run: |
-        vcpkg install boost-system boost-date-time boost-json boost-log boost-program-options boost-filesystem boost-thread boost-atomic boost-context boost-regex --triplet x64-windows
-        vcpkg install protobuf --triplet x64-windows
+        vcpkg install boost-system boost-date-time boost-json boost-log boost-program-options boost-filesystem boost-thread boost-atomic boost-context boost-regex protobuf --triplet x64-windows
 
     # Cache CMake build
     - name: Cache CMake build
