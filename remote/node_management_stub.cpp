@@ -63,8 +63,7 @@ void NodeManagementStub::OnDeleteNodes(
     protocol::Message message;
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
-    auto& delete_node_result = *response.mutable_delete_node_result();
-    delete_node_result;
+    *response.mutable_delete_node_result();
     Convert(scada::Status{scada::StatusCode::Bad_CantDeleteOwnUser},
             *response.mutable_status());
     if (auto locked_sender = sender_.lock())
