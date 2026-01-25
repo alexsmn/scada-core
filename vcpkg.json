@@ -1,0 +1,20 @@
+{
+  "name": "scada-core",
+  "version": "2.5.5",
+  "description": "Telecontrol SCADA Core library",
+  "dependencies": [
+    "boost-atomic",
+    "boost-context",
+    "boost-date-time",
+    "boost-filesystem",
+    "boost-json",
+    "boost-log",
+    "boost-program-options",
+    "boost-regex",
+    "boost-system",
+    "boost-thread",
+    "protobuf",
+    "grpc",
+    "gtest"
+  ]
+}

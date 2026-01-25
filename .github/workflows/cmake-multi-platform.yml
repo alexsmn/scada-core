@@ -1,9 +1,8 @@
 # CI workflow for scada-core
 # Builds and tests on Windows (MSVC) and Linux (GCC, Clang)
 #
-# Note: Full builds require external dependencies (ChromiumBase, promise-hpp, Net)
-# that must be provided via CMAKE_PREFIX_PATH or installed system-wide.
-# Build jobs are marked as allowed to fail until dependencies are configured.
+# External dependencies (ChromiumBase, promise-hpp) are checked out from GitHub.
+# Net dependency is still required for full builds.
 
 name: CI
 
@@ -26,19 +25,28 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gcc
-            preset: linux-gcc
           - os: ubuntu-latest
             compiler: clang
-            preset: linux-clang
           - os: windows-latest
             compiler: msvc
-            preset: windows-msvc-vcpkg
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    - name: Checkout ChromiumBase
+      uses: actions/checkout@v4
+      with:
+        repository: alexsmn/chromebase
+        path: deps/chromebase
+
+    - name: Checkout promise.hpp
+      uses: actions/checkout@v4
+      with:
+        repository: alexsmn/promise.hpp
+        path: deps/promise.hpp
 
     # Linux dependencies - only install required Boost components
     # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
@@ -61,25 +69,13 @@ jobs:
           protobuf-compiler \
           ninja-build
 
-    # Windows dependencies via vcpkg - only install required Boost components
-    # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
-    - name: Setup vcpkg (Windows)
+    # Setup vcpkg with manifest mode (uses vcpkg.json)
+    - name: Setup vcpkg
       if: runner.os == 'Windows'
-      continue-on-error: true
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgGitCommitId: 'a34c873a9717a888f58dc05571dde15571f56e66'
-
-    - name: Install dependencies (Windows)
-      if: runner.os == 'Windows'
-      continue-on-error: true
-      run: |
-        if (Get-Command vcpkg -ErrorAction SilentlyContinue) {
-          vcpkg install boost-system boost-date-time boost-json boost-log boost-program-options boost-filesystem boost-thread boost-atomic boost-context boost-regex protobuf --triplet x64-windows
-        } else {
-          Write-Host "::warning::vcpkg not available, skipping dependency installation"
-        }
-      shell: pwsh
+        vcpkgJsonGlob: 'vcpkg.json'
 
     # Cache CMake build
     - name: Cache CMake build
@@ -92,9 +88,9 @@ jobs:
 
     - name: Configure CMake
       id: cmake-configure
-      run: cmake --preset ${{ matrix.preset }}
+      run: cmake --preset ninja -DCMAKE_PREFIX_PATH="${{ github.workspace }}/deps/chromebase;${{ github.workspace }}/deps/promise.hpp"
       env:
-        VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
       continue-on-error: true
 
     - name: Build (Debug)

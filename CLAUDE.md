@@ -14,7 +14,23 @@ This document provides comprehensive guidance for AI assistants working with the
 
 ## Quick Reference Commands
 
-### Building
+### Building with CMake Presets (Preferred)
+
+```bash
+# Configure
+cmake --preset ninja
+
+# Build (all targets)
+cmake --build --preset relwithdebinfo
+
+# Build only core library
+cmake --build build --config RelWithDebInfo --target core
+
+# Run tests
+ctest --preset release
+```
+
+### Building (Manual)
 
 ```bash
 # Configure (Linux)
