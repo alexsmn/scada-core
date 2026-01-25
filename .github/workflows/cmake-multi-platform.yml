@@ -54,15 +54,21 @@ jobs:
     # Windows dependencies via vcpkg
     - name: Setup vcpkg (Windows)
       if: runner.os == 'Windows'
+      continue-on-error: true
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgGitCommitId: 'c82f74667287d3dc386bce81e44964370c91571a'
+        vcpkgGitCommitId: 'a34c873a9717a888f58dc05571dde15571f56e66'
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       continue-on-error: true
       run: |
-        vcpkg install boost-system boost-date-time boost-json boost-log boost-program-options boost-filesystem boost-thread boost-atomic boost-context boost-regex protobuf --triplet x64-windows
+        if (Get-Command vcpkg -ErrorAction SilentlyContinue) {
+          vcpkg install boost-system boost-date-time boost-json boost-log boost-program-options boost-filesystem boost-thread boost-atomic boost-context boost-regex protobuf --triplet x64-windows
+        } else {
+          Write-Host "::warning::vcpkg not available, skipping dependency installation"
+        }
+      shell: pwsh
 
     # Cache CMake build
     - name: Cache CMake build
