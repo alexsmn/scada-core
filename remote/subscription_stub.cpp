@@ -48,9 +48,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
     protocol::Message message;
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
-    auto& create_monitored_item_result =
-        *response.mutable_create_monitored_item_result();
-    create_monitored_item_result;
+    response.mutable_create_monitored_item_result();
     Convert(scada::Status{scada::StatusCode::Bad}, *response.mutable_status());
 
     if (auto locked_sender = sender_.lock())

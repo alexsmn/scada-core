@@ -91,8 +91,7 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
   }
 
   if (request.has_create_subscription()) {
-    auto& create_subscription = request.create_subscription();
-    create_subscription;
+    request.create_subscription();
     OnCreateSubscription(request.request_id());
   }
 

@@ -83,8 +83,7 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
   state_ = State::CREATING;
 
   protocol::Request request;
-  auto& create_subscription = *request.mutable_create_subscription();
-  create_subscription;
+  request.mutable_create_subscription();
 
   sender_->Request(
       request,

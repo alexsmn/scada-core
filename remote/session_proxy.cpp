@@ -70,8 +70,7 @@ promise<void> SessionProxy::Disconnect() {
     return MakeRejectedStatusPromise(scada::StatusCode::Bad_Disconnected);
 
   protocol::Request request;
-  auto& delete_session = *request.mutable_delete_session();
-  delete_session;
+  request.mutable_delete_session();
 
   promise<void> promise;
   Request(request, [this, promise](const protocol::Response& response) mutable {
@@ -535,8 +534,7 @@ void SessionProxy::Ping() {
   ping_time_ = base::TimeTicks::Now();
 
   protocol::Request request;
-  auto& ping = *request.mutable_ping();
-  ping;
+  request.mutable_ping();
 
   Request(request, [this](const protocol::Response& response) {
     last_ping_delay_ = base::TimeTicks::Now() - ping_time_;

@@ -1,3 +1,6 @@
 build/
+build-analysis/
+.cache/
 CMakeUserPresets.json
 .claude/
+nul
