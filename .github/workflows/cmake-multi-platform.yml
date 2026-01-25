@@ -13,9 +13,6 @@ on:
   pull_request:
     branches: [ "main", "release/**" ]
 
-env:
-  BUILD_TYPE: Release
-
 jobs:
   build:
     name: ${{ matrix.os }} - ${{ matrix.compiler }}
@@ -29,28 +26,19 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gcc
-            c_compiler: gcc
-            cpp_compiler: g++
+            preset: linux-gcc
           - os: ubuntu-latest
             compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
+            preset: linux-clang
           - os: windows-latest
             compiler: msvc
-            c_compiler: cl
-            cpp_compiler: cl
+            preset: windows-msvc-vcpkg
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: recursive
-
-    - name: Set build directory
-      id: strings
-      shell: bash
-      run: |
-        echo "build-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     # Linux dependencies
     - name: Install dependencies (Linux)
@@ -80,35 +68,24 @@ jobs:
     - name: Cache CMake build
       uses: actions/cache@v4
       with:
-        path: ${{ steps.strings.outputs.build-dir }}
-        key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ env.BUILD_TYPE }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+        path: build
+        key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', 'CMakePresets.json') }}
         restore-keys: |
-          ${{ matrix.os }}-${{ matrix.compiler }}-${{ env.BUILD_TYPE }}-
+          ${{ matrix.os }}-${{ matrix.compiler }}-
 
-    - name: Configure CMake (Linux)
-      if: runner.os == 'Linux'
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
-        -G Ninja
-        -S ${{ github.workspace }}
+    - name: Configure CMake
+      run: cmake --preset ${{ matrix.preset }}
+      env:
+        VCPKG_ROOT: ${{ github.workspace }}/vcpkg
 
-    - name: Configure CMake (Windows)
-      if: runner.os == 'Windows'
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-dir }}
-        -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-        -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
-        -S ${{ github.workspace }}
+    - name: Build (Debug)
+      run: cmake --build build --config Debug --parallel
 
-    - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-dir }} --config ${{ env.BUILD_TYPE }} --parallel
+    - name: Build (Release)
+      run: cmake --build build --config Release --parallel
 
-    - name: Test
-      working-directory: ${{ steps.strings.outputs.build-dir }}
-      run: ctest --build-config ${{ env.BUILD_TYPE }} --output-on-failure --parallel
+    - name: Test (Release)
+      run: ctest --test-dir build --build-config Release --output-on-failure --parallel
 
     - name: Upload test results
       if: failure()
@@ -116,8 +93,8 @@ jobs:
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.compiler }}
         path: |
-          ${{ steps.strings.outputs.build-dir }}/Testing/
-          ${{ steps.strings.outputs.build-dir }}/**/*test*.log
+          build/Testing/
+          build/**/*test*.log
         retention-days: 7
 
   # Static analysis job (Linux only) - primary CI check
