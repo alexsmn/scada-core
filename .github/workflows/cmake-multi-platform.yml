@@ -40,18 +40,29 @@ jobs:
       with:
         submodules: recursive
 
-    # Linux dependencies
+    # Linux dependencies - only install required Boost components
+    # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          libboost-all-dev \
+          libboost-atomic-dev \
+          libboost-context-dev \
+          libboost-date-time-dev \
+          libboost-filesystem-dev \
+          libboost-json-dev \
+          libboost-log-dev \
+          libboost-program-options-dev \
+          libboost-regex-dev \
+          libboost-system-dev \
+          libboost-thread-dev \
           libprotobuf-dev \
           protobuf-compiler \
           ninja-build
 
-    # Windows dependencies via vcpkg
+    # Windows dependencies via vcpkg - only install required Boost components
+    # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
     - name: Setup vcpkg (Windows)
       if: runner.os == 'Windows'
       continue-on-error: true
