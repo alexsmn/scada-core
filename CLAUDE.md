@@ -9,28 +9,42 @@ This document provides comprehensive guidance for AI assistants working with the
 - **Language:** C++20
 - **Build System:** CMake
 - **License:** GPLv3
-- **Version:** 2.5.6
+- **Version:** 2.5.5
 - **Platforms:** Windows (MSVC), Linux (GCC/Clang)
 
 ## Quick Reference Commands
 
-### Building (standalone)
+### Building with CMake Presets (Preferred)
 
 ```bash
-# Using CMake presets
-cmake --preset ninja
-cmake --build build/ninja --config RelWithDebInfo
-ctest --test-dir build/ninja --build-config RelWithDebInfo
+# Configure
+cmake --preset ninja-multi
 
-# Manual configure (Linux)
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
-ctest --test-dir build --build-config Release
+# Build (all targets)
+cmake --build --preset relwithdebinfo
+
+# Build only core library
+cmake --build build --config RelWithDebInfo --target core
+
+# Run tests
+ctest --preset release
 ```
 
-### Integration via find_package
+### Building (Manual)
 
-Parent projects include core via `find_package(ScadaCore REQUIRED)`. The Find module (`FindScadaCore.cmake`) wraps `add_subdirectory()` with a target guard. The parent must add the core source directory to `CMAKE_MODULE_PATH`.
+```bash
+# Configure (Linux)
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+# Configure (Windows)
+cmake -B build
+
+# Build
+cmake --build build --config Release
+
+# Run tests
+ctest --test-dir build --build-config Release
+```
 
 ### Common Development Tasks
 
@@ -176,7 +190,7 @@ scada_module_unittests(module_name source_files)
 - Net (networking abstraction)
 
 **Optional:**
-
+- gRPC (for gRPC service generation)
 - GTest/GMock (for testing)
 
 **Windows-specific:**

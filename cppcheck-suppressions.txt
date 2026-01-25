@@ -1,0 +1,4 @@
+// Cppcheck suppressions file
+// Add suppressions in the format: [error id]:[filename]:[line]
+// Or just [error id] to suppress globally
+// See: https://cppcheck.sourceforge.io/manual.html#suppressions

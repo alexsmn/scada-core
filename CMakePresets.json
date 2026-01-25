@@ -7,9 +7,22 @@
   },
   "configurePresets": [
     {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_CXX_CPPCHECK": "cppcheck;--enable=warning,performance,portability;--inline-suppr;--suppressions-list=${sourceDir}/cppcheck-suppressions.txt;--error-exitcode=1"
+      }
+    },
+    {
       "name": "ninja",
       "displayName": "Ninja Multi-Config",
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build",
       "generator": "Ninja Multi-Config",
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
