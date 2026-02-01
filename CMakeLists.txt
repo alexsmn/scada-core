@@ -14,7 +14,6 @@ if(WIN32)
   )
 endif()
 
-include(boost.cmake)
 include(scada_module.cmake)
 
 add_subdirectory(base)
