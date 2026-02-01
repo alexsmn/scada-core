@@ -17,12 +17,10 @@ function(scada_module_unittests MODULE_NAME)
         add_executable(${MODULE_NAME}_unittests)
 
         include(GoogleTest)
-        # Temporary workaround of "no cmake script provided" error. Also,
-        # `gtest_discover_tests` is not correctly handled by CTest. So you cannot test Linux builds.
-        # In opposite, `gtest_add_tests` triggers generation on each UT modification.
-        gtest_discover_tests(${MODULE_NAME}_unittests)
-        # gtest_discover_tests(${MODULE_NAME}_unittests DISCOVERY_MODE PRE_TEST)
-        # gtest_add_tests(TARGET ${MODULE_NAME}_unittests)
+        # PRE_TEST defers test discovery to ctest runtime, so individual tests
+        # are found even when only specific targets are built (without PRE_TEST,
+        # unbuilt executables get _NOT_BUILT placeholders at configure time).
+        gtest_discover_tests(${MODULE_NAME}_unittests DISCOVERY_MODE PRE_TEST)
       endif()
 
       target_link_libraries(${MODULE_NAME}_unittests ${SCOPE} ${MODULE_NAME} base_unittest)
