@@ -6,8 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(WIN32)
   add_definitions(
-    # Required for `DiscardVirtualMemory`.
-    -DWINBLUE_KBSPRING14
     -DWINVER=0x0603
     -D_WIN32_WINNT=0x0603
     -D_MSVC_STL_HARDENING
