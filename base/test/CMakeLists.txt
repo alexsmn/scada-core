@@ -15,4 +15,4 @@ if(WIN32)
 target_compile_options(base_unittest PUBLIC /wd4702)
 endif()
 
-set_property(TARGET base_unittest PROPERTY FOLDER ${scada_folder})
+set_property(TARGET base_unittest PROPERTY FOLDER ${scada_core_folder})
