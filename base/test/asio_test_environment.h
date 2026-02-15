@@ -7,8 +7,8 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
-#include <net/intercepting_transport_factory.h>
-#include <net/transport_factory_impl.h>
+#include <transport/intercepting_transport_factory.h>
+#include <transport/transport_factory_impl.h>
 
 struct AsioTestEnvironment {
   AsioTestEnvironment() {
@@ -43,9 +43,10 @@ struct AsioTestEnvironment {
   boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
       work = boost::asio::make_work_guard(io_context);
 
-  net::TransportFactoryImpl transport_factory_impl{io_context};
+  transport::TransportFactoryImpl transport_factory_impl;
   TestNetInterceptor transport_interceptor;
-  net::InterceptingTransportFactory transport_factory{transport_factory_impl};
+  transport::InterceptingTransportFactory transport_factory{
+      transport_factory_impl};
 
   const std::shared_ptr<Executor> executor = std::make_shared<AsioExecutor>(
       boost::asio::make_strand(io_context.get_executor()));

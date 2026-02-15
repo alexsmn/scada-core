@@ -55,11 +55,11 @@ scada_module(scada_core_remote)
 
 target_link_libraries(scada_core_remote PUBLIC scada_core)
 
-find_package(Net REQUIRED)
+find_package(Transport REQUIRED)
 
 target_link_libraries(scada_core_remote PRIVATE
   scada_remote_protocol
-  Net::net
+  Transport::transport
 )
 
 set_property(TARGET scada_core_remote PROPERTY FOLDER ${scada_core_folder})
@@ -75,7 +75,7 @@ endif()
 target_link_libraries(scada_core_remote_unittests PRIVATE
   scada_model
   scada_remote_protocol
-  Net::net
+  Transport::transport
 )
 
 set_property(TARGET scada_core_remote_unittests PROPERTY FOLDER ${scada_core_folder})

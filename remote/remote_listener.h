@@ -2,15 +2,16 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <net/any_transport.h>
+#include <transport/any_transport.h>
+#include <transport/expected.h>
 
 class RemoteListener {
  public:
-  using AcceptHandler = std::function<void(net::any_transport transport)>;
+  using AcceptHandler = std::function<void(transport::any_transport transport)>;
 
   // `listener_name` is used for logging purposes.
   RemoteListener(std::shared_ptr<BoostLogger> logger,
-                 net::any_transport transport,
+                 transport::any_transport transport,
                  std::string listener_name,
                  AcceptHandler accept_handler)
       : logger_{std::move(logger)},
@@ -23,14 +24,16 @@ class RemoteListener {
 
     boost::asio::co_spawn(
         acceptor_.get_executor(),
-        [this]() -> net::awaitable<void> { OnTransportClosed(co_await Run()); },
+        [this]() -> transport::awaitable<void> {
+          OnTransportClosed(co_await Run());
+        },
         boost::asio::detached);
 
     return open_promise_;
   }
 
  private:
-  [[nodiscard]] net::awaitable<net::Error> Run() {
+  [[nodiscard]] transport::awaitable<transport::error_code> Run() {
     NET_CO_RETURN_IF_ERROR(co_await acceptor_.open());
 
     LOG_INFO(*logger_) << "Listener opened"
@@ -49,16 +52,18 @@ class RemoteListener {
     }
   }
 
-  void OnTransportClosed(net::Error error) {
+  void OnTransportClosed(transport::error_code error) {
     LOG_ERROR(*logger_) << "Listener error"
                         << LOG_TAG("Listener", listener_name_)
-                        << LOG_TAG("ErrorString", net::ErrorToString(error));
+                        << LOG_TAG("ErrorString",
+                                   transport::ErrorToString(error));
 
-    open_promise_.reject(std::runtime_error{net::ErrorToString(error)});
+    open_promise_.reject(
+        std::runtime_error{transport::ErrorToString(error)});
   }
 
   const std::shared_ptr<BoostLogger> logger_;
-  net::any_transport acceptor_;
+  transport::any_transport acceptor_;
   const std::string listener_name_;
   const AcceptHandler accept_handler_;
 

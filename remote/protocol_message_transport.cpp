@@ -6,15 +6,33 @@
 #include <array>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <net/transport_string.h>
-#include <net/transport_util.h>
+#include <transport/transport_string.h>
+#include <transport/transport_util.h>
 
 namespace {
 
-net::awaitable<net::ErrorOr<size_t>> ReadPayloadSize(
-    net::Transport& transport) {
+// Reads exactly `data.size()` bytes from the transport.
+transport::awaitable<transport::expected<size_t>> ReadExact(
+    const transport::any_transport& transport,
+    std::span<char> data) {
+  size_t total_read = 0;
+  while (total_read < data.size()) {
+    auto bytes_read = co_await transport.read(data.subspan(total_read));
+    if (!bytes_read.ok()) {
+      co_return bytes_read.error();
+    }
+    if (*bytes_read == 0) {
+      co_return total_read;
+    }
+    total_read += *bytes_read;
+  }
+  co_return total_read;
+}
+
+transport::awaitable<transport::expected<size_t>> ReadPayloadSize(
+    const transport::any_transport& transport) {
   std::array<char, protocol::kHeaderSize> header;
-  auto bytes_read = co_await net::Read(transport, header);
+  auto bytes_read = co_await ReadExact(transport, header);
 
   if (!bytes_read.ok() || *bytes_read == 0) {
     co_return bytes_read;
@@ -26,55 +44,56 @@ net::awaitable<net::ErrorOr<size_t>> ReadPayloadSize(
 }  // namespace
 
 ProtocolMessageTransport::ProtocolMessageTransport(
-    std::unique_ptr<net::Transport> transport)
+    transport::any_transport transport)
     : transport_{std::move(transport)} {
-  assert(!transport_->IsMessageOriented());
+  assert(!transport_.message_oriented());
 }
 
 ProtocolMessageTransport::~ProtocolMessageTransport() = default;
 
-net::awaitable<net::Error> ProtocolMessageTransport::Open() {
-  co_return co_await transport_->Open();
+transport::awaitable<transport::error_code> ProtocolMessageTransport::open() {
+  co_return co_await transport_.open();
 }
 
-void ProtocolMessageTransport::Close() {
+transport::awaitable<transport::error_code> ProtocolMessageTransport::close() {
   if (transport_) {
-    transport_->Close();
+    co_return co_await transport_.close();
   }
+  co_return transport::OK;
 }
 
-net::awaitable<net::ErrorOr<std::unique_ptr<net::Transport>>>
-ProtocolMessageTransport::Accept() {
-  co_return net::ERR_NOT_IMPLEMENTED;
+transport::awaitable<transport::expected<transport::any_transport>>
+ProtocolMessageTransport::accept() {
+  co_return transport::ERR_NOT_IMPLEMENTED;
 }
 
-net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Read(
-    std::span<char> data) {
+transport::awaitable<transport::expected<size_t>>
+ProtocolMessageTransport::read(std::span<char> data) {
   assert(transport_);
-  assert(!transport_->IsMessageOriented());
+  assert(!transport_.message_oriented());
 
   if (reading_) {
-    co_return net::ERR_IO_PENDING;
+    co_return transport::ERR_IO_PENDING;
   }
 
   base::AutoReset reading{&reading_, true};
 
-  auto payload_size = co_await ReadPayloadSize(*transport_);
+  auto payload_size = co_await ReadPayloadSize(transport_);
   if (!payload_size.ok() || *payload_size == 0) {
     co_return payload_size;
   }
 
-  co_return co_await net::Read(*transport_, data.subspan(0, *payload_size));
+  co_return co_await ReadExact(transport_, data.subspan(0, *payload_size));
 }
 
-net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Write(
-    std::span<const char> data) {
+transport::awaitable<transport::expected<size_t>>
+ProtocolMessageTransport::write(std::span<const char> data) {
   std::string message;
   protocol::PrependMessageSize(message);
   message.insert(message.end(), data.begin(), data.end());
   protocol::UpdateMessageSize(message);
 
-  auto bytes_written = co_await transport_->Write(message);
+  auto bytes_written = co_await transport_.write(message);
 
   if (!bytes_written.ok()) {
     co_return bytes_written.error();
@@ -88,6 +107,6 @@ net::awaitable<net::ErrorOr<size_t>> ProtocolMessageTransport::Write(
   co_return data.size();
 }
 
-std::string ProtocolMessageTransport::GetName() const {
-  return transport_->GetName();
+std::string ProtocolMessageTransport::name() const {
+  return transport_.name();
 }

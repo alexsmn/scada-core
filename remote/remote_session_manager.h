@@ -11,14 +11,13 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <net/any_transport.h>
-#include <net/transport_string.h>
+#include <transport/any_transport.h>
+#include <transport/transport_string.h>
 #include <optional>
 
-namespace net {
-class Logger;
+namespace transport {
 class TransportFactory;
-}  // namespace net
+}  // namespace transport
 
 namespace protocol {
 class CreateSession;
@@ -35,8 +34,8 @@ struct RemoteSessionManagerContext {
   const std::shared_ptr<Executor> executor_;
   scada::services services_;
   const scada::Authenticator authenticator_;
-  net::TransportFactory& transport_factory_;
-  const std::vector<net::TransportString> endpoints_;
+  transport::TransportFactory& transport_factory_;
+  const std::vector<transport::TransportString> endpoints_;
 };
 
 // Accepts remote sessions and managers them.
@@ -75,9 +74,9 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
   SessionStub* FindUserSession(const scada::NodeId& user_id) const;
 
-  void OnSessionAccepted(net::any_transport transport);
+  void OnSessionAccepted(transport::any_transport transport);
 
-  void OnTransportClosed(net::Error error);
+  void OnTransportClosed(transport::error_code error);
 
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("SessionManager"));

@@ -32,6 +32,7 @@ if(WIN32)
     NOMINMAX
     UNICODE
     WIN32_LEAN_AND_MEAN
+    _WIN32_WINNT=0x0602 # Windows 8; required for boost::winapi::WaitOnAddress
   )
 
   target_compile_options(scada_base PUBLIC

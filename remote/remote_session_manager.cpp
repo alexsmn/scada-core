@@ -18,8 +18,8 @@
 #include "scada/service_context.h"
 #include "scada/status_promise.h"
 
-#include <net/transport_factory.h>
-#include <net/transport_string.h>
+#include <transport/transport_factory.h>
+#include <transport/transport_string.h>
 #include <ranges>
 
 #include "base/debug_util-inl.h"
@@ -56,25 +56,27 @@ RemoteSessionManager::~RemoteSessionManager() {
 }
 
 promise<> RemoteSessionManager::Init() {
-  auto transport_logger = std::make_shared<NetBoostLoggerAdapter>(logger_);
+  transport::log_source transport_logger{
+      std::make_shared<NetBoostLoggerAdapter>(logger_)};
 
   // TODO: Captures |this|.
   RemoteListener::AcceptHandler accept_handler =
-      [this](net::any_transport transport) {
+      [this](transport::any_transport transport) {
         OnSessionAccepted(std::move(transport));
       };
 
   std::vector<promise<>> promises;
-  for (const net::TransportString& endpoint : endpoints_) {
+  for (const transport::TransportString& endpoint : endpoints_) {
     auto acceptor = transport_factory_.CreateTransport(
         endpoint, NetExecutorAdapter{executor_}, transport_logger);
 
     if (!acceptor.ok()) {
       LOG_ERROR(*logger_) << "Cannot create listener transport"
                           << LOG_TAG("Error",
-                                     net::ErrorToShortString(acceptor.error()));
+                                     transport::ErrorToShortString(
+                                         acceptor.error()));
       return make_rejected_promise(
-          std::runtime_error{net::ErrorToShortString(acceptor.error())});
+          std::runtime_error{transport::ErrorToShortString(acceptor.error())});
     }
 
     auto listener_name = acceptor->name();
@@ -238,16 +240,15 @@ SessionStub* RemoteSessionManager::FindUserSession(
   return i != session_map_.end() ? i->second.get() : nullptr;
 }
 
-void RemoteSessionManager::OnSessionAccepted(net::any_transport transport) {
-  auto message_transport = transport.release_impl();
-  if (!message_transport->IsMessageOriented()) {
-    auto protocol_transport = std::make_unique<ProtocolMessageTransport>(
-        std::move(message_transport));
-    message_transport = std::move(protocol_transport);
+void RemoteSessionManager::OnSessionAccepted(
+    transport::any_transport transport) {
+  if (!transport.message_oriented()) {
+    transport = transport::any_transport{
+        std::make_unique<ProtocolMessageTransport>(std::move(transport))};
   }
 
   ServerConnectionContext connection_context;
-  connection_context.transport_ = std::move(message_transport);
+  connection_context.transport_ = std::move(transport);
   connection_context.create_session_handler_ =
       [this](const protocol::Request& request,
              const CreateSessionCallback& callback) {
@@ -260,9 +261,10 @@ void RemoteSessionManager::OnSessionAccepted(net::any_transport transport) {
   new ServerConnection(std::move(connection_context));
 }
 
-void RemoteSessionManager::OnTransportClosed(net::Error error) {
+void RemoteSessionManager::OnTransportClosed(transport::error_code error) {
   LOG_WARNING(*logger_) << "Session transport closed"
-                        << LOG_TAG("ErrorString", net::ErrorToString(error));
+                        << LOG_TAG("ErrorString",
+                                   transport::ErrorToString(error));
 
   // Don't close session intentionally.
 }

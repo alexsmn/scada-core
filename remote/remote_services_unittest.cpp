@@ -47,7 +47,7 @@ class TestServer {
        .services_ = {.monitored_item_service = &monitored_item_service_},
        .authenticator_ = authenticator_.AsStdFunction(),
        .transport_factory_ = asio_env_.transport_factory,
-       .endpoints_ = {net::TransportString{network_.server_transport_string}}}};
+       .endpoints_ = {transport::TransportString{network_.server_transport_string}}}};
 };
 
 class RemoteServicesTest : public Test {

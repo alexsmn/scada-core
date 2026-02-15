@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vector>
 
-namespace net {
+namespace transport {
 class TransportFactory;
 }
 
@@ -19,7 +19,7 @@ class Logger;
 struct DataServicesContext {
   const std::shared_ptr<Logger> logger;
   const std::shared_ptr<Executor> executor;
-  net::TransportFactory& transport_factory;
+  transport::TransportFactory& transport_factory;
   scada::ServiceLogParams service_log_params;
 };
 

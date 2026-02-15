@@ -6,8 +6,8 @@
 
 #include <functional>
 #include <memory>
-#include <net/transport.h>
-#include <net/write_queue.h>
+#include <transport/any_transport.h>
+#include <transport/write_queue.h>
 
 namespace protocol {
 class Request;
@@ -29,7 +29,7 @@ using CreateSessionCallback =
     std::function<void(const CreateSessionResult& result)>;
 
 struct ServerConnectionContext {
-  std::unique_ptr<net::Transport> transport_;
+  transport::any_transport transport_;
   std::function<void(const protocol::Request&, CreateSessionCallback)>
       create_session_handler_;
   std::function<void(SessionStub&)> delete_session_handler_;
@@ -40,7 +40,7 @@ class ServerConnection : public Connection, private ServerConnectionContext {
   explicit ServerConnection(ServerConnectionContext&& context);
   virtual ~ServerConnection();
 
-  [[nodiscard]] net::awaitable<void> Run();
+  [[nodiscard]] transport::awaitable<void> Run();
 
   virtual void Send(protocol::Message& message) override;
   virtual void OnSessionDeleted() override;
@@ -51,12 +51,12 @@ class ServerConnection : public Connection, private ServerConnectionContext {
   void OnCreateSession(const protocol::Request& request);
   void OnDeleteSession(const protocol::Request& request);
 
-  void OnTransportClosed(net::Error error);
+  void OnTransportClosed(transport::error_code error);
   void OnTransportMessageReceived(std::span<const char> data);
 
   SessionStub* session_ = nullptr;
 
-  net::WriteQueue write_queue_{*transport_};
+  transport::WriteQueue write_queue_{transport_};
 
   std::shared_ptr<bool> cancelation_ = std::make_shared<bool>(false);
 };

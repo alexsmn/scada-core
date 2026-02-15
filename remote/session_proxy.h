@@ -14,14 +14,13 @@
 #include "scada/status.h"
 
 #include <boost/signals2/signal.hpp>
-#include <net/any_transport.h>
-#include <net/write_queue.h>
+#include <transport/any_transport.h>
+#include <transport/write_queue.h>
 #include <unordered_map>
 
-namespace net {
-class Sender;
+namespace transport {
 class TransportFactory;
-}  // namespace net
+}  // namespace transport
 
 namespace scada {
 class NodeManagementService;
@@ -38,7 +37,7 @@ class SessionProxyDebugger;
 
 struct SessionProxyContext {
   const std::shared_ptr<Executor> executor_;
-  net::TransportFactory& transport_factory_;
+  transport::TransportFactory& transport_factory_;
   const scada::ServiceLogParams service_log_params_;
 };
 
@@ -96,7 +95,7 @@ class SessionProxy : private SessionProxyContext,
                     const scada::StatusCallback& callback) override;
 
  private:
-  [[nodiscard]] net::awaitable<void> Connect();
+  [[nodiscard]] transport::awaitable<void> Connect();
 
   void OnSessionError(const scada::Status& status);
 
@@ -114,13 +113,13 @@ class SessionProxy : private SessionProxyContext,
   bool IsMessageLogged(const protocol::Message& message) const;
 
   void OnTransportOpened();
-  void OnTransportClosed(net::Error error);
+  void OnTransportClosed(transport::error_code error);
   void OnTransportMessageReceived(std::span<const char> data);
 
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("SessionProxy"));
 
-  net::any_transport transport_;
+  transport::any_transport transport_;
 
   const std::unique_ptr<SessionProxyDebugger> debugger_;
 
@@ -155,7 +154,7 @@ class SessionProxy : private SessionProxyContext,
   base::TimeTicks ping_time_;
   base::TimeDelta last_ping_delay_;
 
-  std::optional<net::WriteQueue> write_queue_;
+  std::optional<transport::WriteQueue> write_queue_;
 
   Cancelation cancelation_;
 

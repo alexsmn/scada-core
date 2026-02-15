@@ -6,6 +6,9 @@
 // Boost macros not recognized by cppcheck
 unknownMacro
 
+// GoogleTest macros inside namespaces
+syntaxError
+
 // Protobuf generated code version checks
 preprocessorErrorDirective
 

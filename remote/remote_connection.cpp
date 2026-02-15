@@ -10,7 +10,7 @@
 
 ServerConnection::ServerConnection(ServerConnectionContext&& context)
     : ServerConnectionContext{std::move(context)} {
-  boost::asio::co_spawn(transport_->GetExecutor(), Run(),
+  boost::asio::co_spawn(transport_.get_executor(), Run(),
                         boost::asio::detached);
 }
 
@@ -19,9 +19,9 @@ ServerConnection::~ServerConnection() {
     session_->SetConnection(nullptr);
 }
 
-net::awaitable<void> ServerConnection::Run() {
-  auto open_result = co_await transport_->Open();
-  if (open_result != net::OK) {
+transport::awaitable<void> ServerConnection::Run() {
+  auto open_result = co_await transport_.open();
+  if (open_result != transport::OK) {
     Close();
     OnTransportClosed(open_result);
     co_return;
@@ -33,7 +33,7 @@ net::awaitable<void> ServerConnection::Run() {
   while (!cancelation.expired()) {
     // TODO: Revise buffer.
     message.resize(1024 * 1024);
-    auto bytes_read = co_await transport_->Read(message);
+    auto bytes_read = co_await transport_.read(message);
 
     if (cancelation.expired()) {
       co_return;
@@ -82,7 +82,7 @@ void ServerConnection::Close() {
   delete this;
 }
 
-void ServerConnection::OnTransportClosed(net::Error error) {
+void ServerConnection::OnTransportClosed(transport::error_code error) {
   Close();
 }
 
@@ -93,8 +93,8 @@ void ServerConnection::Send(protocol::Message& message) {
   }
 
   boost::asio::co_spawn(
-      transport_->GetExecutor(),
-      [this, string = std::move(string)]() -> net::awaitable<void> {
+      transport_.get_executor(),
+      [this, string = std::move(string)]() -> transport::awaitable<void> {
         auto bytes_written = co_await write_queue_.Write(string);
         if (!bytes_written.ok() || *bytes_written != string.size()) {
           Close();

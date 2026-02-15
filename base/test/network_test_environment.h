@@ -17,7 +17,7 @@ inline int GenerateTestNetworkPort() {
 
 struct NetworkTestEnvironment {
   const int port = GenerateTestNetworkPort();
-  // TODO: Use `net::TransportString` instead of `std::string`.
+  // TODO: Use `transport::TransportString` instead of `std::string`.
   const std::string server_transport_string =
       std::format("TCP;Passive;Port={}", port);
   const std::string client_transport_string =

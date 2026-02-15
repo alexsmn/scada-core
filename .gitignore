@@ -3,6 +3,5 @@
 /.claude/
 /.cache/
 /Testing/
-build-analysis/
 nul
 CMakeUserPresets.json

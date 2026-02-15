@@ -19,8 +19,8 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <net/transport_factory.h>
-#include <net/transport_string.h>
+#include <transport/transport_factory.h>
+#include <transport/transport_string.h>
 #include <stdexcept>
 
 using namespace std::chrono_literals;
@@ -117,13 +117,13 @@ void SessionProxy::OnSessionCreated() {
   ForwardConnectResult(scada::StatusCode::Good);
 }
 
-void SessionProxy::OnTransportClosed(net::Error error) {
+void SessionProxy::OnTransportClosed(transport::error_code error) {
   LOG_WARNING(*logger_) << "Transport closed"
-                        << LOG_TAG("Status", net::ErrorToString(error));
+                        << LOG_TAG("Status", transport::ErrorToString(error));
 
-  scada::Status status_code(error == net::OK
+  scada::Status status_code(error == transport::OK
                                 ? scada::StatusCode::Bad_SessionForcedLogoff
-                            : error == net::ERR_SSL_BAD_PEER_PUBLIC_KEY
+                            : error == transport::ERR_SSL_BAD_PEER_PUBLIC_KEY
                                 ? scada::StatusCode::Bad_UserIsAlreadyLoggedOn
                                 : scada::StatusCode::Bad_Disconnected);
   OnSessionError(status_code);
@@ -131,7 +131,7 @@ void SessionProxy::OnTransportClosed(net::Error error) {
 
 void SessionProxy::OnSessionError(const scada::Status& status) {
   cancelation_.Cancel();
-  transport_.close();
+  transport_.reset();
   write_queue_.reset();
 
   OnSessionDeleted();
@@ -214,14 +214,6 @@ void SessionProxy::Send(protocol::Message& message) {
 
   // TODO: Handle write result.
   write_queue_->BlindWrite(string);
-
-  /*boost::asio::co_spawn(
-      transport_.get_executor(),
-      [this, string = std::move(string)]() -> net::awaitable<void> {
-        // TODO: Handle write result.
-        auto _ = co_await transport_.write(string);
-      },
-      boost::asio::detached);*/
 }
 
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {
@@ -333,7 +325,7 @@ promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
   return Reconnect();
 }
 
-net::awaitable<void> SessionProxy::Connect() {
+transport::awaitable<void> SessionProxy::Connect() {
   connect_promise_ = promise<void>{};
 
   auto cancelation = cancelation_.ref();
@@ -343,8 +335,8 @@ net::awaitable<void> SessionProxy::Connect() {
                      << LOG_TAG("ConnectionString", connection_string_);
 
   auto transport = transport_factory_.CreateTransport(
-      net::TransportString{connection_string_}, executor,
-      std::make_shared<NetBoostLoggerAdapter>(logger_));
+      transport::TransportString{connection_string_}, executor,
+      transport::log_source{std::make_shared<NetBoostLoggerAdapter>(logger_)});
 
   if (!transport.ok()) {
     LOG_WARNING(*logger_) << "Cannot create raw transport";
@@ -352,8 +344,8 @@ net::awaitable<void> SessionProxy::Connect() {
     co_return;
   }
 
-  transport_ = net::any_transport{
-      std::make_unique<ProtocolMessageTransport>(transport->release_impl())};
+  transport_ = transport::any_transport{
+      std::make_unique<ProtocolMessageTransport>(std::move(*transport))};
 
   auto open_result = co_await transport_.open();
 
@@ -361,12 +353,12 @@ net::awaitable<void> SessionProxy::Connect() {
     co_return;
   }
 
-  if (open_result != net::OK) {
+  if (open_result != transport::OK) {
     OnTransportClosed(open_result);
     co_return;
   }
 
-  write_queue_.emplace(*transport_.get_impl());
+  write_queue_.emplace(transport_);
 
   OnTransportOpened();
 
@@ -388,7 +380,7 @@ net::awaitable<void> SessionProxy::Connect() {
 
     // Graceful close.
     if (*bytes_read == 0) {
-      OnTransportClosed(net::OK);
+      OnTransportClosed(transport::OK);
       co_return;
     }
 

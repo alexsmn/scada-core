@@ -22,7 +22,7 @@ struct SessionConnectParams {
   // The host name can be followed by a colon and a port number. If empty, then
   // the `connection_string` is used.
   std::string host;
-  // The connection string defines a `net::TransportString`. It's used if the
+  // The connection string defines a `transport::TransportString`. It's used if the
   // `host` is empty.
   std::string connection_string;
   LocalizedText user_name;

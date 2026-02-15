@@ -4,26 +4,26 @@
 
 #include <base/strings/stringprintf.h>
 #include <memory>
-#include <net/logger.h>
+#include <transport/log.h>
 
-class NetBoostLoggerAdapter final : public net::Logger {
+class NetBoostLoggerAdapter final : public transport::LogSink {
  public:
   explicit NetBoostLoggerAdapter(std::shared_ptr<BoostLogger> boost_logger)
       : boost_logger_{std::move(boost_logger)} {}
 
-  virtual void Write(net::LogSeverity severity,
+  virtual void Write(transport::LogSeverity severity,
                      const char* message) const override {
     BOOST_LOG_SEV(*boost_logger_, ToBoostLogSeverity(severity)) << message;
   }
 
-  virtual void WriteV(net::LogSeverity severity,
+  virtual void WriteV(transport::LogSeverity severity,
                       const char* format,
                       va_list args) const override PRINTF_FORMAT(3, 0) {
     BOOST_LOG_SEV(*boost_logger_, ToBoostLogSeverity(severity))
         << base::StringPrintV(format, args);
   }
 
-  virtual void WriteF(net::LogSeverity severity,
+  virtual void WriteF(transport::LogSeverity severity,
                       const char* format,
                       ...) const override PRINTF_FORMAT(3, 4) {
     va_list args;
@@ -35,15 +35,15 @@ class NetBoostLoggerAdapter final : public net::Logger {
   }
 
  private:
-  static BoostLogSeverity ToBoostLogSeverity(net::LogSeverity severity) {
+  static BoostLogSeverity ToBoostLogSeverity(transport::LogSeverity severity) {
     switch (severity) {
-      case net::LogSeverity::Normal:
+      case transport::LogSeverity::Normal:
         return BoostLogSeverity::info;
-      case net::LogSeverity::Warning:
+      case transport::LogSeverity::Warning:
         return BoostLogSeverity::warning;
-      case net::LogSeverity::Error:
+      case transport::LogSeverity::Error:
         return BoostLogSeverity::error;
-      case net::LogSeverity::Fatal:
+      case transport::LogSeverity::Fatal:
         return BoostLogSeverity::fatal;
       default:
         assert(false);

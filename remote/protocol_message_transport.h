@@ -1,49 +1,51 @@
 #pragma once
 
-#include <memory>
 #include <queue>
 #include <string>
 
-#include "net/transport.h"
+#include "transport/any_transport.h"
+#include "transport/transport.h"
 
 // Operates with unframed messages. Automatically adds frames on send and
 // removes on reception.
-class ProtocolMessageTransport final : public net::Transport {
+class ProtocolMessageTransport final : public transport::Transport {
  public:
-  explicit ProtocolMessageTransport(std::unique_ptr<net::Transport> transport);
+  explicit ProtocolMessageTransport(transport::any_transport transport);
   ~ProtocolMessageTransport();
 
-  [[nodiscard]] virtual net::awaitable<net::Error> Open() override;
+  [[nodiscard]] virtual transport::awaitable<transport::error_code>
+  open() override;
 
-  virtual void Close() override;
+  [[nodiscard]] virtual transport::awaitable<transport::error_code>
+  close() override;
 
-  [[nodiscard]] virtual net::awaitable<
-      net::ErrorOr<std::unique_ptr<net::Transport>>>
-  Accept() override;
+  [[nodiscard]] virtual transport::awaitable<
+      transport::expected<transport::any_transport>>
+  accept() override;
 
-  [[nodiscard]] virtual net::awaitable<net::ErrorOr<size_t>> Read(
+  [[nodiscard]] virtual transport::awaitable<transport::expected<size_t>> read(
       std::span<char> data) override;
 
-  [[nodiscard]] virtual net::awaitable<net::ErrorOr<size_t>> Write(
+  [[nodiscard]] virtual transport::awaitable<transport::expected<size_t>> write(
       std::span<const char> data) override;
 
-  [[nodiscard]] virtual std::string GetName() const override;
-  [[nodiscard]] virtual bool IsMessageOriented() const override { return true; }
+  [[nodiscard]] virtual std::string name() const override;
+  [[nodiscard]] virtual bool message_oriented() const override { return true; }
 
-  [[nodiscard]] virtual bool IsConnected() const override {
-    return transport_->IsConnected();
+  [[nodiscard]] virtual bool connected() const override {
+    return transport_.connected();
   }
 
-  [[nodiscard]] virtual bool IsActive() const override {
-    return transport_->IsActive();
+  [[nodiscard]] virtual bool active() const override {
+    return transport_.active();
   }
 
-  [[nodiscard]] virtual net::Executor GetExecutor() const override {
-    return transport_->GetExecutor();
+  [[nodiscard]] virtual transport::executor get_executor() override {
+    return transport_.get_executor();
   }
 
  private:
-  std::unique_ptr<net::Transport> transport_;
+  transport::any_transport transport_;
 
   std::string incoming_message_;
 
