@@ -11,9 +11,7 @@ class ForkLogger : public Logger {
   void AddLogger(const Logger& logger, bool own);
  
   // Logger
-  virtual void Write(LogSeverity severity, const char* message) const override;
-  virtual void WriteV(LogSeverity severity, const char* format, va_list args) const override;
-  virtual void WriteF(LogSeverity severity, const char* format, ...) const override;
+  void Write(LogSeverity severity, std::string_view message) const override;
   
  private:
   typedef std::vector<std::pair<const Logger*, bool> > Loggers;

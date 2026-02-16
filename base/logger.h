@@ -1,9 +1,9 @@
 #pragma once
 
-#include <base/compiler_specific.h>
-#include <cstdarg>
+#include <format>
 #include <memory>
 #include <string>
+#include <string_view>
 
 enum class LogSeverity {
   Normal = 0,
@@ -15,27 +15,21 @@ enum class LogSeverity {
 
 class Logger {
  public:
-  virtual ~Logger() {}
+  virtual ~Logger() = default;
 
-  virtual void Write(LogSeverity severity, const char* message) const = 0;
-  virtual void WriteV(LogSeverity severity,
-                      _Printf_format_string_ const char* format,
-                      va_list args) const PRINTF_FORMAT(3, 0) = 0;
-  virtual void WriteF(LogSeverity severity,
-                      _Printf_format_string_ const char* format,
-                      ...) const PRINTF_FORMAT(3, 4) = 0;
+  virtual void Write(LogSeverity severity, std::string_view message) const = 0;
+
+  template <typename... Args>
+  void WriteF(LogSeverity severity,
+              std::format_string<Args...> fmt,
+              Args&&... args) const {
+    Write(severity, std::format(fmt, std::forward<Args>(args)...));
+  }
 };
 
 class NullLogger : public Logger {
  public:
-  virtual void Write(LogSeverity severity, const char* message) const override {
-  }
-  virtual void WriteV(LogSeverity severity,
-                      _Printf_format_string_ const char* format,
-                      va_list args) const override PRINTF_FORMAT(3, 0) {}
-  virtual void WriteF(LogSeverity severity,
-                      _Printf_format_string_ const char* format,
-                      ...) const override PRINTF_FORMAT(3, 4) {}
+  void Write(LogSeverity severity, std::string_view message) const override {}
 
   static std::shared_ptr<NullLogger> GetInstance() {
     static auto logger = std::make_shared<NullLogger>();

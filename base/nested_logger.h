@@ -18,13 +18,7 @@ class NestedLogger : public Logger {
   void set_prefix(const std::string& prefix);
 
   // Logger overrides
-  virtual void Write(LogSeverity severity, const char* message) const override;
-  virtual void WriteV(LogSeverity severity,
-                      const char* format,
-                      va_list args) const override PRINTF_FORMAT(3, 0);
-  virtual void WriteF(LogSeverity severity,
-                      const char* format,
-                      ...) const override PRINTF_FORMAT(3, 4);
+  void Write(LogSeverity severity, std::string_view message) const override;
 
  private:
   std::shared_ptr<const Logger> parent_;

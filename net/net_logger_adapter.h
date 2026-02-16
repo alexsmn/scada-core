@@ -3,8 +3,6 @@
 #include "base/logger.h"
 
 #include <memory>
-#include <string>
-#include <string_view>
 #include <transport/log.h>
 
 class NetLoggerAdapter final : public transport::LogSink {
@@ -14,8 +12,7 @@ class NetLoggerAdapter final : public transport::LogSink {
 
   void Write(transport::LogSeverity severity,
              std::string_view message) const override {
-    logger_->Write(static_cast<::LogSeverity>(severity),
-                   std::string(message).c_str());
+    logger_->Write(static_cast<::LogSeverity>(severity), message);
   }
 
  private:

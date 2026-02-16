@@ -2,7 +2,6 @@
 
 #include "base/logging.h"
 
-#include <base/strings/stringprintf.h>
 #include <iostream>
 
 namespace {
@@ -58,32 +57,12 @@ ConsoleLogger::ConsoleLogger()
 ConsoleLogger::ConsoleLogger() {}
 #endif
 
-void ConsoleLogger::Write(LogSeverity severity, const char* message) const {
+void ConsoleLogger::Write(LogSeverity severity,
+                          std::string_view message) const {
 #ifdef OS_WIN
   ScopedConsoleAttributes scoped_attrs(console_, initial_attributes_, severity);
 #endif
   std::cout << kSeverityNames[static_cast<size_t>(severity)] << " " << message
             << std::endl;
   LOG(INFO) << kSeverityNames[static_cast<size_t>(severity)] << " " << message;
-}
-
-void ConsoleLogger::WriteV(LogSeverity severity,
-                           const char* format,
-                           va_list args) const {
-#ifdef OS_WIN
-  ScopedConsoleAttributes scoped_attrs(console_, initial_attributes_, severity);
-#endif
-  auto message = base::StringPrintV(format, args);
-  std::cout << kSeverityNames[static_cast<size_t>(severity)] << " " << message
-            << std::endl;
-  LOG(INFO) << kSeverityNames[static_cast<size_t>(severity)] << " " << message;
-}
-
-void ConsoleLogger::WriteF(LogSeverity severity,
-                           const char* format,
-                           ...) const {
-  va_list args;
-  va_start(args, format);
-  WriteV(severity, format, args);
-  va_end(args);
 }
