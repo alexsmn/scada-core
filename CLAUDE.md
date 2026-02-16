@@ -270,6 +270,10 @@ GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`):
 - Matrix build: Windows (MSVC), Linux (GCC, Clang)
 - Steps: Configure, Build, Test
 
+## Chromium-Base Dependencies
+
+See [chromium_deps.md](chromium_deps.md) for a detailed analysis of chromium-base usage across core modules, including dependency ranking, most-used headers, and the CMake link chain.
+
 ## Important Files Reference
 
 | Purpose | File |

@@ -2,8 +2,8 @@
 
 #include "base/boost_log.h"
 
-#include <base/strings/stringprintf.h>
 #include <memory>
+#include <string_view>
 #include <transport/log.h>
 
 class NetBoostLoggerAdapter final : public transport::LogSink {
@@ -11,26 +11,8 @@ class NetBoostLoggerAdapter final : public transport::LogSink {
   explicit NetBoostLoggerAdapter(std::shared_ptr<BoostLogger> boost_logger)
       : boost_logger_{std::move(boost_logger)} {}
 
-  virtual void Write(transport::LogSeverity severity,
-                     const char* message) const override {
-    BOOST_LOG_SEV(*boost_logger_, ToBoostLogSeverity(severity)) << message;
-  }
-
-  virtual void WriteV(transport::LogSeverity severity,
-                      const char* format,
-                      va_list args) const override PRINTF_FORMAT(3, 0) {
-    BOOST_LOG_SEV(*boost_logger_, ToBoostLogSeverity(severity))
-        << base::StringPrintV(format, args);
-  }
-
-  virtual void WriteF(transport::LogSeverity severity,
-                      const char* format,
-                      ...) const override PRINTF_FORMAT(3, 4) {
-    va_list args;
-    va_start(args, format);
-    auto message = base::StringPrintV(format, args);
-    va_end(args);
-
+  void Write(transport::LogSeverity severity,
+             std::string_view message) const override {
     BOOST_LOG_SEV(*boost_logger_, ToBoostLogSeverity(severity)) << message;
   }
 
