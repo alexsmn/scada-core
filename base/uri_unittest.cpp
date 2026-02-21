@@ -1,8 +1,7 @@
 #include "base/uri.h"
 
-#include <base/strings/stringprintf.h>
-
 #include <algorithm>
+#include <format>
 #include <gmock/gmock.h>
 #include <string>
 
@@ -46,7 +45,7 @@ TEST(EscapeTest, EscapeTextForFormSubmission) {
       EXPECT_EQ(out, std::string("+"));
     } else if (no_escape.find(in) == std::string::npos) {
       // Check %hex escaping
-      std::string expected = base::StringPrintf("%%%02X", i);
+      std::string expected = std::format("%{:02X}", i);
       EXPECT_EQ(expected, out);
     } else {
       // No change for things in the no_escape list.

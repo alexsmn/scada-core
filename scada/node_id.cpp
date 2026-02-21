@@ -2,7 +2,8 @@
 
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
+
+#include <format>
 
 #include <atomic>
 #include <boost/container_hash/hash.hpp>
@@ -76,16 +77,16 @@ String NodeId::ToString() const {
   std::string result;
 
   if (namespace_index_ != 0) {
-    base::StringAppendF(&result, "ns=%u;",
-                        static_cast<unsigned>(namespace_index_));
+    result += std::format("ns={};",
+                          static_cast<unsigned>(namespace_index_));
   }
 
   switch (type()) {
     case NodeIdType::Numeric:
-      base::StringAppendF(&result, "i=%u", static_cast<unsigned>(numeric_id()));
+      result += std::format("i={}", static_cast<unsigned>(numeric_id()));
       break;
     case NodeIdType::String:
-      base::StringAppendF(&result, "s=%s", string_id().c_str());
+      result += std::format("s={}", string_id());
       break;
     case NodeIdType::Opaque:
       // TODO:

@@ -22,7 +22,7 @@
 | `base/strings/string_util.h`            | 10    | String manipulation |
 | `base/debug_util-inl.h`                 | 10    | Debugging           |
 | `base/logger.h`                         | 9     | Logging interface   |
-| `base/strings/stringprintf.h`           | 8     | Formatted strings   |
+| ~~`base/strings/stringprintf.h`~~       | 0     | Removed             |
 | `base/struct_writer.h`                  | 7     | Serialization       |
 | `base/cancelation.h`                    | 6     | Cancellation tokens |
 
