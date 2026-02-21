@@ -1,7 +1,7 @@
 #include "base/csv_reader.h"
 
 #include "base/string_util.h"
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 #include <cassert>
 
 CsvReader::CsvReader(std::istream& stream, std::u16string_view signature)
@@ -14,7 +14,7 @@ bool CsvReader::NextRow() {
   if (!std::getline(stream_, raw_line_))
     return false;
 
-  line_ = boost::locale::conv::utf_to_utf<char16_t>(raw_line_);
+  line_ = UtfConvert<char16_t>(raw_line_);
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.

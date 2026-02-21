@@ -1,9 +1,9 @@
 #include "base/debug_util.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 
 std::ostream& operator<<(std::ostream& stream, const std::wstring& v) {
-  return stream << boost::locale::conv::utf_to_utf<char>(v);
+  return stream << UtfConvert<char>(v);
 }
 
 std::string BitMaskToString(unsigned bit_mask,

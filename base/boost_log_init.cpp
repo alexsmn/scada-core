@@ -6,7 +6,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/time_formatters.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 #include <boost/log/attributes.hpp>
 #include <boost/log/attributes/clock.hpp>
 #include <boost/log/attributes/value_visitation.hpp>
@@ -38,12 +38,12 @@ std::string EvaluateString(const bool& value) {
 
 template <>
 std::string EvaluateString(const std::wstring& value) {
-  return boost::locale::conv::utf_to_utf<char>(value);
+  return UtfConvert<char>(value);
 }
 
 template <>
 std::string EvaluateString(const std::u16string& value) {
-  return boost::locale::conv::utf_to_utf<char>(value);
+  return UtfConvert<char>(value);
 }
 
 std::string ToString(const boost::log::attribute_value& attr) {

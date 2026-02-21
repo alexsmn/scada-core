@@ -2,7 +2,7 @@
 
 #include "base/debug_util.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 #include <sstream>
 
 namespace internal {
@@ -87,5 +87,5 @@ template <class T>
 inline std::u16string ToString16(const T& v) {
   std::stringstream s;
   s << v;
-  return boost::locale::conv::utf_to_utf<char16_t>(s.str());
+  return UtfConvert<char16_t>(s.str());
 }

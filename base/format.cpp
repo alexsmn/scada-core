@@ -2,7 +2,7 @@
 
 #include <base/strings/string_number_conversions.h>
 #include <base/third_party/dmg_fp/dmg_fp.h>
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 #include <memory>
 
 std::string Format(double value) {
@@ -103,13 +103,11 @@ std::string Format(std::string_view value) {
 }
 
 std::u16string WideFormat(std::string_view value) {
-  return boost::locale::conv::utf_to_utf<char16_t>(value.data(),
-                                                   value.data() + value.size());
+  return UtfConvert<char16_t>(value);
 }
 
 std::string Format(std::u16string_view value) {
-  return boost::locale::conv::utf_to_utf<char>(value.data(),
-                                               value.data() + value.size());
+  return UtfConvert<char>(value);
 }
 
 std::u16string WideFormat(std::u16string_view value) {

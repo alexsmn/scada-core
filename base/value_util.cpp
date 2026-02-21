@@ -1,6 +1,6 @@
 #include "base/value_util.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 
 std::u16string GetString16(const base::Value& value,
                            std::string_view key,
@@ -8,7 +8,7 @@ std::u16string GetString16(const base::Value& value,
   if (!value.is_dict())
     return std::u16string{default_value};
   if (auto* k = value.FindKeyOfType(key, base::Value::Type::STRING)) {
-    return boost::locale::conv::utf_to_utf<char16_t>(k->GetString());
+    return UtfConvert<char16_t>(k->GetString());
   } else {
     return std::u16string{default_value};
   }

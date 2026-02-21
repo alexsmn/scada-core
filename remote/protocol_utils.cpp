@@ -1,6 +1,6 @@
 #include "remote/protocol_utils.h"
 
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "scada/aggregate_filter.h"
 #include "scada/attribute_service.h"
 #include "scada/event.h"
@@ -68,11 +68,11 @@ void Convert(const scada::NodeId& source, protocol::NodeId& target) {
 }
 
 void Convert(const std::string& source, scada::LocalizedText& target) {
-  target = base::UTF8ToUTF16(source);
+  target = UtfConvert<char16_t>(source);
 }
 
 void Convert(const scada::LocalizedText& source, std::string& target) {
-  target = base::UTF16ToUTF8(ToString16(source));
+  target = UtfConvert<char>(ToString16(source));
 }
 
 void Convert(const scada::String& source, std::string& target) {
@@ -397,7 +397,7 @@ void Convert(const protocol::Event& source, scada::Event& target) {
   if (source.has_value())
     Convert(source.value(), target.value);
   target.qualifier = scada::Qualifier(source.qualifier());
-  target.message = base::UTF8ToUTF16(source.message_utf8());
+  target.message = UtfConvert<char16_t>(source.message_utf8());
   target.acked = source.acknowledged();
   if (source.acknowledge_time()) {
     target.acknowledged_time =
@@ -422,7 +422,7 @@ void Convert(const scada::Event& source, protocol::Event& target) {
   if (source.qualifier != scada::Qualifier())
     target.set_qualifier(source.qualifier.raw());
   if (!source.message.empty())
-    target.set_message_utf8(base::UTF16ToUTF8(source.message));
+    target.set_message_utf8(UtfConvert<char>(source.message));
   if (source.acked)
     target.set_acknowledged(true);
   if (!source.acknowledged_time.is_null())
@@ -474,7 +474,7 @@ void Convert(const scada::NodeAttributes& source,
              protocol::Attributes& target) {
   target.set_browse_name_utf8(source.browse_name.name());
   target.set_display_name_utf8(
-      base::UTF16ToUTF8(ToString16(source.display_name)));
+      UtfConvert<char>(ToString16(source.display_name)));
   if (!source.data_type.is_null())
     Convert(source.data_type, *target.mutable_data_type_id());
   if (source.value.has_value())

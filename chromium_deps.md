@@ -15,7 +15,8 @@
 
 | Header                                  | Count | Purpose             |
 |-----------------------------------------|-------|---------------------|
-| `base/strings/utf_string_conversions.h` | 12    | UTF encoding        |
+| ~~`base/strings/utf_string_conversions.h`~~ | 0 | Removed             |
+| ~~`base/strings/string_util_win.h`~~    | 0     | Removed             |
 | ~~`base/strings/string_util.h`~~        | 0     | Removed             |
 | ~~`base/strings/stringprintf.h`~~       | 0     | Removed             |
 

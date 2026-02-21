@@ -47,7 +47,8 @@ function(scada_module_unittests MODULE_NAME)
     # PRE_TEST defers test discovery to ctest runtime, so individual tests
     # are found even when only specific targets are built (without PRE_TEST,
     # unbuilt executables get _NOT_BUILT placeholders at configure time).
-    gtest_discover_tests(${MODULE_NAME}_unittests DISCOVERY_MODE PRE_TEST)
+    gtest_discover_tests(${MODULE_NAME}_unittests DISCOVERY_MODE PRE_TEST
+                         PROPERTIES TIMEOUT 60)
 
     target_link_libraries(${MODULE_NAME}_unittests PRIVATE ${MODULE_NAME} base_unittest)
   endif()

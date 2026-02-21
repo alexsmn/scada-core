@@ -4,7 +4,8 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include "base/strings/sys_string_conversions.h"
-#include "base/strings/utf_string_conversions.h"
+
+#include "base/utf_convert.h"
 #include "net/net_boost_logger_adapter.h"
 #include "net/net_executor_adapter.h"
 #include "remote/history_proxy.h"
@@ -93,8 +94,10 @@ void SessionProxy::OnTransportOpened() {
 
   protocol::Request request;
   auto& create_session = *request.mutable_create_session();
-  create_session.set_user_name_utf8(base::UTF16ToUTF8(user_name_));
-  create_session.set_password_utf8(base::UTF16ToUTF8(password_));
+  create_session.set_user_name_utf8(
+      UtfConvert<char>(user_name_));
+  create_session.set_password_utf8(
+      UtfConvert<char>(password_));
   create_session.set_protocol_version_major(protocol::PROTOCOL_VERSION_MAJOR);
   create_session.set_protocol_version_minor(protocol::PROTOCOL_VERSION_MINOR);
   if (allow_remote_logoff_)

@@ -4,7 +4,8 @@
 #include "base/logging.h"
 
 #include "base/string_util.h"
-#include "base/strings/string_util_win.h"
+
+#include "base/utf_convert.h"
 #include <memory>
 #include <shellapi.h>
 
@@ -111,13 +112,14 @@ std::wstring GetWindowText(HWND window_handle) {
 int GetWindowInt(HWND window_handle) {
   std::wstring str = GetWindowText(window_handle);
   int value;
-  if (!Parse(base::AsString16(str), value))
+  if (!Parse(UtfConvert<char16_t>(str), value))
     throw E_INVALIDARG;
   return value;
 }
 
 void SetWindowTextInt(HWND window_handle, int value) {
-  SetWindowText(window_handle, base::AsWString(WideFormat(value)).c_str());
+  SetWindowText(window_handle,
+                UtfConvert<wchar_t>(WideFormat(value)).c_str());
 }
 
 std::wstring GetListBoxItemText(HWND window_handle, int index) {

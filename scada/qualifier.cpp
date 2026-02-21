@@ -1,6 +1,5 @@
 ﻿#include "scada/qualifier.h"
 
-#include "base/strings/utf_string_conversions.h"
 
 std::string ToString(scada::Qualifier qualifier) {
   std::string text;

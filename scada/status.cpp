@@ -1,6 +1,6 @@
 ﻿#include "scada/status.h"
 
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 
 namespace scada {
 
@@ -120,7 +120,7 @@ std::string ToString(scada::StatusCode status_code) {
 
 std::u16string ToString16(scada::StatusCode status_code) {
   if (auto* entry = FindEntry(status_code))
-    return base::WideToUTF16(entry->localized_error_string);
+    return UtfConvert<char16_t>(entry->localized_error_string);
 
   return IsGood(status_code) ? u"Операция выполнена успешно" : u"Ошибка";
 }

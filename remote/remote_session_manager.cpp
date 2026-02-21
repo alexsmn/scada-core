@@ -3,7 +3,7 @@
 #include "base/boost_log_adapter.h"
 #include "base/debug_util.h"
 #include "base/promise_executor.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "net/net_boost_logger_adapter.h"
@@ -94,9 +94,9 @@ promise<> RemoteSessionManager::Init() {
 promise<CreateSessionResult> RemoteSessionManager::CreateSession(
     const protocol::CreateSession& create_session) {
   auto user_name = scada::ToLocalizedText(
-      base::UTF8ToUTF16(create_session.user_name_utf8()));
-  auto password =
-      scada::ToLocalizedText(base::UTF8ToUTF16(create_session.password_utf8()));
+      UtfConvert<char16_t>(create_session.user_name_utf8()));
+  auto password = scada::ToLocalizedText(
+      UtfConvert<char16_t>(create_session.password_utf8()));
   bool delete_existing = create_session.delete_existing();
 
   if (!IsCompatibleProtocol(create_session.protocol_version_major(),
