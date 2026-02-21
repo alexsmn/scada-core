@@ -1,6 +1,6 @@
 #include "base/uri.h"
 
-#include <base/strings/string_util.h>
+#include <cctype>
 
 const char kHexString[] = "0123456789ABCDEF";
 
@@ -38,7 +38,7 @@ std::string Escape(std::string_view text,
     if (use_plus && ' ' == c) {
       escaped.push_back('+');
     } else if (keep_escaped && '%' == c && i + 2 < text.length() &&
-               base::IsHexDigit(text[i + 1]) && base::IsHexDigit(text[i + 2])) {
+               std::isxdigit(text[i + 1]) && std::isxdigit(text[i + 2])) {
       escaped.push_back('%');
     } else if (charmap.Contains(c)) {
       escaped.push_back('%');

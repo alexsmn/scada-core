@@ -1,7 +1,7 @@
 #include "model/namespaces.h"
 
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <cstring>
 
@@ -66,7 +66,7 @@ int FindNamespaceIndexByName(std::string_view name) {
     return namespace_index;
 
   for (scada::NamespaceIndex i = 0; i != NamespaceIndexes::END; ++i) {
-    if (base::EqualsCaseInsensitiveASCII(GetNamespaceName(i), name)) {
+    if (boost::iequals(GetNamespaceName(i), name)) {
       return i;
     }
   }

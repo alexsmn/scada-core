@@ -3,7 +3,8 @@
 #include "base/format.h"
 #include "base/logging.h"
 
-#include <base/strings/string_util.h>
+#include "base/string_util.h"
+#include "base/strings/string_util_win.h"
 #include <memory>
 #include <shellapi.h>
 
@@ -103,7 +104,7 @@ std::wstring GetWindowText(HWND window_handle) {
   int len = GetWindowTextLength(window_handle) + 1;
   std::wstring str;
   if (len > 1)
-    ::GetWindowText(window_handle, base::WriteInto(&str, len), len);
+    ::GetWindowText(window_handle, WriteInto(&str, len), len);
   return str;
 }
 

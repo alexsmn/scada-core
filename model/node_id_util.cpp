@@ -2,7 +2,8 @@
 
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util.h"
+
+#include <boost/algorithm/string/predicate.hpp>
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 
@@ -178,8 +179,7 @@ scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
   const auto namespace_name = scada_string.substr(0, p);
   int namespace_index = FindNamespaceIndexByName(namespace_name);
   if (namespace_index == -1) {
-    if (!base::StartsWith(namespace_name, "NS",
-                          base::CompareCase::INSENSITIVE_ASCII)) {
+    if (!boost::istarts_with(namespace_name, "NS")) {
       return scada::NodeId{};
     }
     if (!base::StringToInt(namespace_name.substr(2), &namespace_index)) {

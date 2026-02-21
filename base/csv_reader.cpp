@@ -1,6 +1,6 @@
 #include "base/csv_reader.h"
 
-#include <base/strings/string_util.h>
+#include "base/string_util.h"
 #include <boost/locale/encoding_utf.hpp>
 #include <cassert>
 
@@ -18,7 +18,7 @@ bool CsvReader::NextRow() {
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.
-  base::ReplaceSubstringsAfterOffset(&line_, 0, u"\r\n", u"\n");
+  ReplaceSubstringsAfterOffset(&line_, 0, u"\r\n", u"\n");
 
   if (!signature_.empty()) {
     if (line_.size() > signature_.size() && line_.starts_with(signature_)) {

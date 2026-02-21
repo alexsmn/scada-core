@@ -1,7 +1,8 @@
 #include "scada/node_id.h"
 
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util.h"
+
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <format>
 
@@ -106,7 +107,7 @@ NodeId NodeId::FromString(std::string_view string) {
 
   std::string_view str = string;
 
-  if (base::StartsWith(str, "ns=", base::CompareCase::INSENSITIVE_ASCII)) {
+  if (boost::istarts_with(str, "ns=")) {
     auto index = str.find(';');
     if (index == std::string_view::npos)
       return {};
@@ -117,7 +118,7 @@ NodeId NodeId::FromString(std::string_view string) {
     str = str.substr(index + 1);
   }
 
-  if (base::StartsWith(str, "i=", base::CompareCase::INSENSITIVE_ASCII)) {
+  if (boost::istarts_with(str, "i=")) {
     unsigned numeric_id = 0;
     if (!base::StringToUint(str.substr(2), &numeric_id)) {
       return {};
@@ -125,12 +126,12 @@ NodeId NodeId::FromString(std::string_view string) {
     return {numeric_id, namespace_index};
   }
 
-  if (base::StartsWith(str, "s=", base::CompareCase::INSENSITIVE_ASCII)) {
+  if (boost::istarts_with(str, "s=")) {
     auto string_id = str.substr(2);
     return {std::string{string_id}, namespace_index};
   }
 
-  if (base::StartsWith(str, "s=", base::CompareCase::INSENSITIVE_ASCII)) {
+  if (boost::istarts_with(str, "s=")) {
     auto string_id = str.substr(2);
     return {std::string{string_id}, namespace_index};
   }

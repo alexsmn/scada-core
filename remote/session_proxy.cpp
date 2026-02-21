@@ -1,6 +1,8 @@
 #include "remote/session_proxy.h"
 
-#include "base/strings/string_split.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "net/net_boost_logger_adapter.h"
@@ -30,8 +32,10 @@ namespace {
 const auto kPingDelay = 1s;
 
 std::string MakeConnectionString(std::string_view host_name) {
-  auto parts = base::SplitString(host_name, ":", base::TRIM_WHITESPACE,
-                                 base::SplitResult::SPLIT_WANT_ALL);
+  std::vector<std::string> parts;
+  boost::split(parts, host_name, boost::is_any_of(":"));
+  for (auto& s : parts)
+    boost::trim(s);
   parts.resize(2);
 
   if (parts[1].empty()) {

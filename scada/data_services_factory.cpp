@@ -1,6 +1,6 @@
 #include "data_services_factory.h"
 
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace {
 
@@ -20,7 +20,7 @@ void RegisterDataServices(DataServicesInfo info) {
 }
 
 bool EqualDataServicesName(std::string_view name1, std::string_view name2) {
-  return base::EqualsCaseInsensitiveASCII(name1, name2);
+  return boost::iequals(name1, name2);
 }
 
 bool CreateDataServices(std::string_view name,

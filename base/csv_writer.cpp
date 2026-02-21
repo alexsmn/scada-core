@@ -1,6 +1,6 @@
 #include "base/csv_writer.h"
 
-#include <base/strings/string_util.h>
+#include "base/string_util.h"
 #include <boost/locale/encoding_utf.hpp>
 
 namespace {
@@ -20,7 +20,7 @@ std::u16string StringToCsv(std::u16string_view raw_value,
     result.push_back(quote);
     result.append(raw_value.begin(), raw_value.end());
     const char16_t two_quotes[] = {quote, quote, u'\0'};
-    base::ReplaceSubstringsAfterOffset(
+    ReplaceSubstringsAfterOffset(
         &result, result.size() - raw_value.size(),
         std::u16string_view{&quote, 1}, two_quotes);
     result.push_back(quote);

@@ -15,16 +15,9 @@
 
 | Header                                  | Count | Purpose             |
 |-----------------------------------------|-------|---------------------|
-| `base/executor.h`                       | 18    | Async execution     |
-| `base/promise.h`                        | 15    | Promise-based async |
-| `base/boost_log.h`                      | 14    | Logging             |
 | `base/strings/utf_string_conversions.h` | 12    | UTF encoding        |
-| `base/strings/string_util.h`            | 10    | String manipulation |
-| `base/debug_util-inl.h`                 | 10    | Debugging           |
-| `base/logger.h`                         | 9     | Logging interface   |
+| ~~`base/strings/string_util.h`~~        | 0     | Removed             |
 | ~~`base/strings/stringprintf.h`~~       | 0     | Removed             |
-| `base/struct_writer.h`                  | 7     | Serialization       |
-| `base/cancelation.h`                    | 6     | Cancellation tokens |
 
 ## CMake Link Chain
 

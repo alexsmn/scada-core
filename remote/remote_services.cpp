@@ -1,6 +1,5 @@
 #include "scada/data_services_factory.h"
 
-#include "base/strings/string_util.h"
 #include "remote/session_proxy.h"
 #include "remote/view_service_proxy.h"
 
