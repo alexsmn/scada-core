@@ -4,17 +4,14 @@
 
 | Header | Files | Notes |
 |--------|-------|-------|
-| `base/strings/string_number_conversions.h` | 4 | `StringToInt`, `NumberToString`, etc. |
-| `base/time/time.h` | 1 | `base::Time` |
-| **Total** | **5** | **2 unique headers** |
+| `base/time/time.h` | 5 | `base::Time` |
+| **Total** | **5** | **1 unique header** |
 
 ### Files by header
 
-**`base/strings/string_number_conversions.h`** (4):
-`model/namespaces.cpp`, `model/node_id_util.cpp`,
-`scada/attribute_ids.cpp`, `scada/node_id.cpp`
-
-**`base/time/time.h`** (1): `scada/date_time.h`
+**`base/time/time.h`** (5):
+`base/format_time.cpp`, `base/minute_time.h`, `base/time_utils.h`,
+`base/test/test_time.h`, `scada/date_time.h`
 
 ## Removed Headers
 
@@ -27,6 +24,7 @@
 | ~~`base/containers/span.h`~~ | Replaced with `std::span` |
 | ~~`base/strings/strcat.h`~~ | Replaced with `std::format` / `u16format` |
 | ~~`base/strings/sys_string_conversions.h`~~ | Replaced with `UtfConvert<>` / `boost::locale::conv` |
+| ~~`base/strings/string_number_conversions.h`~~ | Replaced with `std::to_string` / `std::from_chars` / `Parse()` / `WideFormat()` |
 
 ## CMake Link Chain
 

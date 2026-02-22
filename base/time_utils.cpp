@@ -1,8 +1,7 @@
 #include "base/time_utils.h"
 
+#include "base/format.h"
 #include "base/string_util.h"
-
-#include <base/strings/string_number_conversions.h>
 
 namespace {
 
@@ -31,8 +30,7 @@ bool Deserialize(std::string_view str, base::TimeDelta& delta) {
     return false;
 
   unsigned h, m, s;
-  if (!base::StringToUint(parts[0], &h) || !base::StringToUint(parts[1], &m) ||
-      !base::StringToUint(parts[2], &s)) {
+  if (!Parse(parts[0], h) || !Parse(parts[1], m) || !Parse(parts[2], s)) {
     return false;
   }
 

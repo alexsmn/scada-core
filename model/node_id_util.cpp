@@ -1,7 +1,8 @@
 #include "node_id_util.h"
 
+#include "base/format.h"
+
 #include <format>
-#include "base/strings/string_number_conversions.h"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include "model/data_items_node_ids.h"
@@ -59,7 +60,7 @@ bool IsNestedNodeId(const scada::NodeId& node_id,
   // always strings, since they have to contain the `!` separator.
   if (is_topmost_parent) {
     scada::NumericId parent_numeric_id = 0;
-    if (base::StringToUint(parent_string_id, &parent_numeric_id)) {
+    if (Parse(parent_string_id, parent_numeric_id)) {
       parent_id = scada::NodeId{parent_numeric_id, parent_namespace_index};
     } else {
       parent_id =
@@ -181,7 +182,7 @@ scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
     if (!boost::istarts_with(namespace_name, "NS")) {
       return scada::NodeId{};
     }
-    if (!base::StringToInt(namespace_name.substr(2), &namespace_index)) {
+    if (!Parse(namespace_name.substr(2), namespace_index)) {
       return scada::NodeId{};
     }
   }
@@ -194,7 +195,7 @@ scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
   }
 
   scada::NumericId numeric_id = 0;
-  if (!base::StringToUint(identifier, &numeric_id)) {
+  if (!Parse(identifier, numeric_id)) {
     return scada::NodeId{std::string{identifier},
                          static_cast<scada::NamespaceIndex>(namespace_index)};
   }

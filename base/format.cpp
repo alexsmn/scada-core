@@ -1,9 +1,11 @@
 #include "base/format.h"
 
-#include <base/strings/string_number_conversions.h>
 #include <base/third_party/dmg_fp/dmg_fp.h>
+#include "base/u16format.h"
 #include "base/utf_convert.h"
-#include <memory>
+
+#include <charconv>
+#include <format>
 
 std::string Format(double value) {
   char buffer[32];
@@ -26,51 +28,51 @@ std::u16string WideFormat(float value) {
 }
 
 std::string Format(int value) {
-  return base::NumberToString(value);
+  return std::to_string(value);
 }
 
 std::u16string WideFormat(int value) {
-  return base::NumberToString16(value);
+  return u16format(L"{}", value);
 }
 
 std::string Format(unsigned int value) {
-  return base::NumberToString(value);
+  return std::to_string(value);
 }
 
 std::u16string WideFormat(unsigned int value) {
-  return base::NumberToString16(value);
+  return u16format(L"{}", value);
 }
 
 std::string Format(long value) {
-  return base::NumberToString(value);
+  return std::to_string(value);
 }
 
 std::u16string WideFormat(long value) {
-  return base::NumberToString16(value);
+  return u16format(L"{}", value);
 }
 
 std::string Format(unsigned long value) {
-  return base::NumberToString(value);
+  return std::to_string(value);
 }
 
 std::u16string WideFormat(unsigned long value) {
-  return base::NumberToString16(value);
+  return u16format(L"{}", value);
 }
 
 std::string Format(long long value) {
-  return base::NumberToString(value);
+  return std::to_string(value);
 }
 
 std::u16string WideFormat(long long value) {
-  return base::NumberToString16(value);
+  return u16format(L"{}", value);
 }
 
 std::string Format(unsigned long long value) {
-  return base::NumberToString(value);
+  return std::to_string(value);
 }
 
 std::u16string WideFormat(unsigned long long value) {
-  return base::NumberToString16(value);
+  return u16format(L"{}", value);
 }
 
 // String can be implicitly casted to bool.
@@ -114,24 +116,40 @@ std::u16string WideFormat(std::u16string_view value) {
   return std::u16string{value};
 }
 
+namespace {
+
+template <typename T>
+bool FromChars(std::string_view str, T& value) {
+  auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+  return ec == std::errc() && ptr == str.data() + str.size();
+}
+
+template <typename T>
+bool FromChars16(std::u16string_view str, T& value) {
+  auto narrow = UtfConvert<char>(str);
+  return FromChars(std::string_view{narrow}, value);
+}
+
+}  // namespace
+
 template <>
 bool Parse(const std::string_view& str, int32_t& value) {
-  return base::StringToInt(str, &value);
+  return FromChars(str, value);
 }
 
 template <>
 bool Parse(const std::u16string_view& str, int32_t& value) {
-  return base::StringToInt(str, &value);
+  return FromChars16(str, value);
 }
 
 template <>
 bool Parse(const std::string_view& str, uint32_t& value) {
-  return base::StringToUint(str, &value);
+  return FromChars(str, value);
 }
 
 template <>
 bool Parse(const std::u16string_view& str, uint32_t& value) {
-  return base::StringToUint(str, &value);
+  return FromChars16(str, value);
 }
 
 template <>
@@ -173,7 +191,7 @@ bool Parse(const std::u16string_view& str, uint8_t& value) {
 template <>
 bool Parse(const std::string_view& str, int16_t& value) {
   int tmp;
-  if (!base::StringToInt(str, &tmp))
+  if (!FromChars(str, tmp))
     return false;
   value = static_cast<int16_t>(tmp);
   return value == tmp;
@@ -182,7 +200,7 @@ bool Parse(const std::string_view& str, int16_t& value) {
 template <>
 bool Parse(const std::u16string_view& str, int16_t& value) {
   int tmp;
-  if (!base::StringToInt(str, &tmp))
+  if (!FromChars16(str, tmp))
     return false;
   value = static_cast<int16_t>(tmp);
   return value == tmp;
@@ -191,7 +209,7 @@ bool Parse(const std::u16string_view& str, int16_t& value) {
 template <>
 bool Parse(const std::string_view& str, uint16_t& value) {
   unsigned tmp;
-  if (!base::StringToUint(str, &tmp))
+  if (!FromChars(str, tmp))
     return false;
   value = static_cast<uint16_t>(tmp);
   return value == tmp;
@@ -200,7 +218,7 @@ bool Parse(const std::string_view& str, uint16_t& value) {
 template <>
 bool Parse(const std::u16string_view& str, uint16_t& value) {
   unsigned tmp;
-  if (!base::StringToUint(str, &tmp))
+  if (!FromChars16(str, tmp))
     return false;
   value = static_cast<unsigned short>(tmp);
   return value == tmp;
@@ -208,31 +226,33 @@ bool Parse(const std::u16string_view& str, uint16_t& value) {
 
 template <>
 bool Parse(const std::string_view& str, int64_t& value) {
-  return base::StringToInt64(str, &value);
+  return FromChars(str, value);
 }
 
 template <>
 bool Parse(const std::u16string_view& str, int64_t& value) {
-  return base::StringToInt64(str, &value);
+  return FromChars16(str, value);
 }
 
 template <>
 bool Parse(const std::string_view& str, uint64_t& value) {
-  return base::StringToUint64(str, &value);
+  return FromChars(str, value);
 }
 
 template <>
 bool Parse(const std::u16string_view& str, uint64_t& value) {
-  return base::StringToUint64(str, &value);
+  return FromChars16(str, value);
 }
 
 template <>
 bool Parse(const std::string_view& str, double& value) {
-  return base::StringToDouble(str, &value);
+  auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+  return ec == std::errc() && ptr == str.data() + str.size();
 }
 template <>
 bool Parse(const std::u16string_view& str, double& value) {
-  return base::StringToDouble(str, &value);
+  auto narrow = UtfConvert<char>(str);
+  return Parse(std::string_view{narrow}, value);
 }
 
 template <>
@@ -269,5 +289,10 @@ std::string FormatHexBuffer(const void* buf, size_t len) {
   if (!len)
     return std::string();
 
-  return base::HexEncode(buf, len);
+  std::string result;
+  result.reserve(len * 2);
+  const auto* bytes = static_cast<const uint8_t*>(buf);
+  for (size_t i = 0; i < len; ++i)
+    result += std::format("{:02X}", bytes[i]);
+  return result;
 }

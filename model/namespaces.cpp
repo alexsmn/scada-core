@@ -1,6 +1,6 @@
 #include "model/namespaces.h"
 
-#include "base/strings/string_number_conversions.h"
+#include "base/format.h"
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <cstring>
@@ -58,11 +58,11 @@ int FindNamespaceIndexByName(std::string_view name) {
     return -1;
 
   int namespace_index = -1;
-  if (name[0] == 'T' && base::StringToInt(name.substr(1), &namespace_index)) {
+  if (name[0] == 'T' && Parse(name.substr(1), namespace_index)) {
     return namespace_index;
   }
 
-  if (base::StringToInt(name, &namespace_index))
+  if (Parse(name, namespace_index))
     return namespace_index;
 
   for (scada::NamespaceIndex i = 0; i != NamespaceIndexes::END; ++i) {

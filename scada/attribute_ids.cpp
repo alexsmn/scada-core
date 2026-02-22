@@ -1,7 +1,5 @@
 #include "scada/attribute_ids.h"
 
-#include "base/strings/string_number_conversions.h"
-
 std::string ToString(scada::AttributeId attribute_id) {
   static const char* kStrings[] = {
       "Unknown",         "NodeId",

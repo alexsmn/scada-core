@@ -1,6 +1,6 @@
 #include "scada/node_id.h"
 
-#include "base/strings/string_number_conversions.h"
+#include "base/format.h"
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -112,7 +112,7 @@ NodeId NodeId::FromString(std::string_view string) {
     if (index == std::string_view::npos)
       return {};
     unsigned id = 0;
-    if (!base::StringToUint(str.substr(3, index - 3), &id))
+    if (!Parse(str.substr(3, index - 3), id))
       return {};
     namespace_index = static_cast<NamespaceIndex>(id);
     str = str.substr(index + 1);
@@ -120,7 +120,7 @@ NodeId NodeId::FromString(std::string_view string) {
 
   if (boost::istarts_with(str, "i=")) {
     unsigned numeric_id = 0;
-    if (!base::StringToUint(str.substr(2), &numeric_id)) {
+    if (!Parse(str.substr(2), numeric_id)) {
       return {};
     }
     return {numeric_id, namespace_index};
