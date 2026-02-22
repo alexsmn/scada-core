@@ -1,24 +1,39 @@
 # Chromium-Base Dependencies in Core
 
-## Dependency Ranking by Module
+## Remaining Chromium Headers
 
-| Rank | Module   | Includes | Files |
-|------|----------|----------|-------|
-| 1    | base/    | 118      | 68    |
-| 2    | remote/  | 45       | 23    |
-| 3    | scada/   | 43       | 29    |
-| 4    | metrics/ | 9        | 7     |
-| 5    | model/   | 5        | 2     |
-| 6    | net/     | 4        | 3     |
+| Header | Files | Notes |
+|--------|-------|-------|
+| `base/strings/sys_string_conversions.h` | 5 | `SysNativeMBToWide`/`SysWideToNativeMB` |
+| `base/strings/string_number_conversions.h` | 4 | `StringToInt`, `NumberToString`, etc. |
+| `base/strings/strcat.h` | 1 | `base::StrCat` |
+| `base/time/time.h` | 1 | `base::Time` |
+| **Total** | **11** | **4 unique headers** |
 
-## Most Used Chromium-Base Headers
+### Files by header
 
-| Header                                  | Count | Purpose             |
-|-----------------------------------------|-------|---------------------|
-| ~~`base/strings/utf_string_conversions.h`~~ | 0 | Removed             |
-| ~~`base/strings/string_util_win.h`~~    | 0     | Removed             |
-| ~~`base/strings/string_util.h`~~        | 0     | Removed             |
-| ~~`base/strings/stringprintf.h`~~       | 0     | Removed             |
+**`base/strings/sys_string_conversions.h`** (5):
+`base/win/format_hresult.cpp`, `remote/node_management_proxy.cpp`,
+`remote/node_management_stub.cpp`, `remote/session_proxy.cpp`,
+`scada/localized_text.cpp`
+
+**`base/strings/string_number_conversions.h`** (4):
+`model/namespaces.cpp`, `model/node_id_util.cpp`,
+`scada/attribute_ids.cpp`, `scada/node_id.cpp`
+
+**`base/strings/strcat.h`** (1): `model/node_id_util.cpp`
+
+**`base/time/time.h`** (1): `scada/date_time.h`
+
+## Removed Headers
+
+| Header | Removed |
+|--------|---------|
+| ~~`base/strings/utf_string_conversions.h`~~ | Replaced with `boost::locale::conv::utf_to_utf` |
+| ~~`base/strings/string_util_win.h`~~ | Replaced with `boost::locale::conv::utf_to_utf` |
+| ~~`base/strings/string_util.h`~~ | Replaced with standard library |
+| ~~`base/strings/stringprintf.h`~~ | Replaced with `std::format` |
+| ~~`base/containers/span.h`~~ | Replaced with `std::span` |
 
 ## CMake Link Chain
 
@@ -33,16 +48,3 @@ ChromiumBase::base (vcpkg)
 ```
 
 All 6 core modules transitively depend on chromium-base through `scada_base`.
-
-## Heaviest Individual Files
-
-| File                         | Includes | Module |
-|------------------------------|----------|--------|
-| remote_session_manager.cpp   | 5        | remote |
-| gtest_main.cpp               | 5        | base   |
-| variant.cpp                  | 4        | scada  |
-| remote_session_manager.h     | 4        | remote |
-| remote_services_unittest.cpp | 4        | remote |
-| node_management_stub.cpp     | 4        | remote |
-| win_util2.cpp                | 4        | base   |
-| format.cpp                   | 4        | base   |

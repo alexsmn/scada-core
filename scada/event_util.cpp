@@ -4,7 +4,7 @@
 
 namespace scada {
 
-scada::Event AssembleSystemEvent(base::span<const scada::Variant> fields) {
+scada::Event AssembleSystemEvent(std::span<const scada::Variant> fields) {
   scada::Event event;
   fields[0].get(event.event_id);
   fields[1].get(event.event_type_id);
@@ -23,7 +23,7 @@ scada::Event AssembleSystemEvent(base::span<const scada::Variant> fields) {
 }
 
 scada::ModelChangeEvent AssembleModelChangeEvent(
-    base::span<const scada::Variant> fields) {
+    std::span<const scada::Variant> fields) {
   scada::ModelChangeEvent event;
   fields[1].get(event.node_id);
   fields[2].get(event.type_definition_id);
@@ -32,13 +32,13 @@ scada::ModelChangeEvent AssembleModelChangeEvent(
 }
 
 scada::SemanticChangeEvent AssembleSemanticChangeEvent(
-    base::span<const scada::Variant> fields) {
+    std::span<const scada::Variant> fields) {
   scada::SemanticChangeEvent event;
   fields[1].get(event.node_id);
   return event;
 }
 
-std::any AssembleEvent(base::span<const scada::Variant> fields) {
+std::any AssembleEvent(std::span<const scada::Variant> fields) {
   assert(!fields.empty());
   if (fields.empty())
     return {};
