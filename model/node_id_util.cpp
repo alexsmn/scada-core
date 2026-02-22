@@ -1,6 +1,6 @@
 #include "node_id_util.h"
 
-#include "base/strings/strcat.h"
+#include <format>
 #include "base/strings/string_number_conversions.h"
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -109,13 +109,13 @@ scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
 
   auto parent_namespace =
       namespace_index != parent_id.namespace_index()
-          ? base::NumberToString(parent_id.namespace_index()) + ':'
+          ? std::format("{}:", parent_id.namespace_index())
           : std::string{};
   auto parent_identifier = parent_id.type() == scada::NodeIdType::Numeric
-                               ? base::NumberToString(parent_id.numeric_id())
-                               : parent_id.string_id();
+                               ? std::format("{}", parent_id.numeric_id())
+                               : std::string{parent_id.string_id()};
   auto identifier =
-      base::StrCat({parent_namespace, parent_identifier, "!", nested_name});
+      std::format("{}{}!{}", parent_namespace, parent_identifier, nested_name);
 
   return scada::NodeId{std::move(identifier), namespace_index};
 }
@@ -144,15 +144,14 @@ std::string NodeIdToScadaString(const scada::NodeId& node_id) {
   std::string namespace_name =
       std::string{GetNamespaceName(node_id.namespace_index())};
   if (namespace_name.empty()) {
-    namespace_name =
-        base::StrCat({"NS", base::NumberToString(node_id.namespace_index())});
+    namespace_name = std::format("NS{}", node_id.namespace_index());
   }
 
   std::string identifier;
 
   switch (node_id.type()) {
     case scada::NodeIdType::Numeric:
-      identifier = base::NumberToString(node_id.numeric_id());
+      identifier = std::format("{}", node_id.numeric_id());
       break;
 
     case scada::NodeIdType::String:
@@ -164,7 +163,7 @@ std::string NodeIdToScadaString(const scada::NodeId& node_id) {
       return {};
   }
 
-  return base::StrCat({namespace_name, ".", identifier});
+  return std::format("{}.{}", namespace_name, identifier);
 }
 
 scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {

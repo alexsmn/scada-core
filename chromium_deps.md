@@ -6,9 +6,8 @@
 |--------|-------|-------|
 | `base/strings/sys_string_conversions.h` | 5 | `SysNativeMBToWide`/`SysWideToNativeMB` |
 | `base/strings/string_number_conversions.h` | 4 | `StringToInt`, `NumberToString`, etc. |
-| `base/strings/strcat.h` | 1 | `base::StrCat` |
 | `base/time/time.h` | 1 | `base::Time` |
-| **Total** | **11** | **4 unique headers** |
+| **Total** | **10** | **3 unique headers** |
 
 ### Files by header
 
@@ -21,8 +20,6 @@
 `model/namespaces.cpp`, `model/node_id_util.cpp`,
 `scada/attribute_ids.cpp`, `scada/node_id.cpp`
 
-**`base/strings/strcat.h`** (1): `model/node_id_util.cpp`
-
 **`base/time/time.h`** (1): `scada/date_time.h`
 
 ## Removed Headers
@@ -34,6 +31,7 @@
 | ~~`base/strings/string_util.h`~~ | Replaced with standard library |
 | ~~`base/strings/stringprintf.h`~~ | Replaced with `std::format` |
 | ~~`base/containers/span.h`~~ | Replaced with `std::span` |
+| ~~`base/strings/strcat.h`~~ | Replaced with `std::format` / `u16format` |
 
 ## CMake Link Chain
 
