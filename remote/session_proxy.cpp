@@ -333,8 +333,6 @@ promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
 }
 
 transport::awaitable<void> SessionProxy::Connect() {
-  connect_promise_ = promise<void>{};
-
   auto cancelation = cancelation_.ref();
   auto executor = co_await boost::asio::this_coro::executor;
 
@@ -500,6 +498,14 @@ promise<void> SessionProxy::Reconnect() {
       session_created_ ? Disconnect() : make_resolved_promise();
 
   return disconnect_if_needed.then([this] {
+    // Cancel the old Connect() coroutine and close the transport so the old
+    // read loop exits cleanly before starting a new one.
+    cancelation_.Cancel();
+    transport_.reset();
+    write_queue_.reset();
+
+    connect_promise_ = promise<void>{};
+
     boost::asio::co_spawn(NetExecutorAdapter{executor_}, Connect(),
                           boost::asio::detached);
 
