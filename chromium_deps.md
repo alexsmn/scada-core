@@ -4,17 +4,11 @@
 
 | Header | Files | Notes |
 |--------|-------|-------|
-| `base/strings/sys_string_conversions.h` | 5 | `SysNativeMBToWide`/`SysWideToNativeMB` |
 | `base/strings/string_number_conversions.h` | 4 | `StringToInt`, `NumberToString`, etc. |
 | `base/time/time.h` | 1 | `base::Time` |
-| **Total** | **10** | **3 unique headers** |
+| **Total** | **5** | **2 unique headers** |
 
 ### Files by header
-
-**`base/strings/sys_string_conversions.h`** (5):
-`base/win/format_hresult.cpp`, `remote/node_management_proxy.cpp`,
-`remote/node_management_stub.cpp`, `remote/session_proxy.cpp`,
-`scada/localized_text.cpp`
 
 **`base/strings/string_number_conversions.h`** (4):
 `model/namespaces.cpp`, `model/node_id_util.cpp`,
@@ -32,6 +26,7 @@
 | ~~`base/strings/stringprintf.h`~~ | Replaced with `std::format` |
 | ~~`base/containers/span.h`~~ | Replaced with `std::span` |
 | ~~`base/strings/strcat.h`~~ | Replaced with `std::format` / `u16format` |
+| ~~`base/strings/sys_string_conversions.h`~~ | Replaced with `UtfConvert<>` / `boost::locale::conv` |
 
 ## CMake Link Chain
 
