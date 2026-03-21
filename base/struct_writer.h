@@ -81,3 +81,6 @@ inline void StructWriter::AddValue(const std::string& value) {
 
 template <>
 void StructWriter::AddValue(const std::wstring& value);
+
+template <>
+void StructWriter::AddValue(const std::u16string& value);

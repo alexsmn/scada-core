@@ -2,6 +2,7 @@
 
 #include "base/debug_util.h"
 
+#include "base/strings/utf_ostream_operators.h"
 #include "base/utf_convert.h"
 #include <sstream>
 

@@ -46,7 +46,7 @@ class Metrics {
     }
   }
 
-  std::unordered_map<std::string, MetricValue> ToUnorderedMap() const {
+  const std::unordered_map<std::string, MetricValue>& ToUnorderedMap() const {
     return values_;
   }
 

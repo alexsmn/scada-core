@@ -1,6 +1,6 @@
 #include "base/console_logger.h"
 
-#include "base/logging.h"
+#include <boost/log/trivial.hpp>
 
 #include <iostream>
 
@@ -64,5 +64,5 @@ void ConsoleLogger::Write(LogSeverity severity,
 #endif
   std::cout << kSeverityNames[static_cast<size_t>(severity)] << " " << message
             << std::endl;
-  LOG(INFO) << kSeverityNames[static_cast<size_t>(severity)] << " " << message;
+  BOOST_LOG_TRIVIAL(info) << kSeverityNames[static_cast<size_t>(severity)] << " " << message;
 }

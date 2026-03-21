@@ -1,7 +1,8 @@
 #include "base/win/win_util2.h"
 
 #include "base/format.h"
-#include "base/logging.h"
+
+#include <cassert>
 
 #include "base/string_util.h"
 
@@ -101,7 +102,7 @@ std::wstring LoadResourceString(HMODULE module, unsigned id) {
 }
 
 std::wstring GetWindowText(HWND window_handle) {
-  DCHECK(IsWindow(window_handle));
+  assert(IsWindow(window_handle));
   int len = GetWindowTextLength(window_handle) + 1;
   std::wstring str;
   if (len > 1)

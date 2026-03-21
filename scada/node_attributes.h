@@ -51,10 +51,10 @@ struct NodeAttributes {
            !value.has_value();
   }
 
-  WARN_UNUSED_RESULT std::optional<scada::Variant> Get(
+  [[nodiscard]] std::optional<scada::Variant> Get(
       AttributeId attribute_id) const;
-  WARN_UNUSED_RESULT scada::StatusCode Set(scada::AttributeId attribute_id,
-                                           scada::Variant value);
+  [[nodiscard]] scada::StatusCode Set(scada::AttributeId attribute_id,
+                                      scada::Variant value);
 
   void Update(scada::NodeAttributes&& updated_attributes);
 
@@ -141,12 +141,16 @@ inline bool operator!=(const NodeAttributes& a, const NodeAttributes& b) {
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const NodeAttributes& attributes) {
-  using ::operator<<;
-  return stream << "{"
-                << "browse_name: " << attributes.browse_name << ", "
-                << "display_name: " << attributes.display_name << ", "
-                << "data_type: " << attributes.data_type << ", "
-                << "value: " << attributes.value << "}";
+  stream << "{"
+         << "browse_name: " << attributes.browse_name << ", "
+         << "display_name: " << ToString(attributes.display_name) << ", "
+         << "data_type: " << attributes.data_type << ", "
+         << "value: ";
+  if (attributes.value.has_value())
+    stream << *attributes.value;
+  else
+    stream << "(none)";
+  return stream << "}";
 }
 
 }  // namespace scada

@@ -2,16 +2,7 @@
 
 ## Remaining Chromium Headers
 
-| Header | Files | Notes |
-|--------|-------|-------|
-| `base/time/time.h` | 5 | `base::Time` |
-| **Total** | **5** | **1 unique header** |
-
-### Files by header
-
-**`base/time/time.h`** (5):
-`base/format_time.cpp`, `base/minute_time.h`, `base/time_utils.h`,
-`base/test/test_time.h`, `scada/date_time.h`
+All Chromium-base headers have been removed from core/.
 
 ## Removed Headers
 
@@ -25,6 +16,7 @@
 | ~~`base/strings/strcat.h`~~ | Replaced with `std::format` / `u16format` |
 | ~~`base/strings/sys_string_conversions.h`~~ | Replaced with `UtfConvert<>` / `boost::locale::conv` |
 | ~~`base/strings/string_number_conversions.h`~~ | Replaced with `std::to_string` / `std::from_chars` / `Parse()` / `WideFormat()` |
+| ~~`base/time/time.h`~~ | Re-implemented in `core/base/time/` with identical API; uses NSPR from vcpkg for string parsing |
 
 ## CMake Link Chain
 

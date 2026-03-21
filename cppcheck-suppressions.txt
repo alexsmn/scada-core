@@ -6,6 +6,17 @@
 // Boost macros not recognized by cppcheck
 unknownMacro
 
+// cppcheck branch analysis limit (informational, not a real error)
+normalCheckLevelMaxBranches
+
+// False positive: browse_name is moved into aggregate init, not accessed after move
+accessMoved:*scada/node.cpp
+accessMoved:*scada\node.cpp
+
+// Lambda parameter: value semantics are intentional for promise chains
+passedByValue:*scada/node.cpp
+passedByValue:*scada\node.cpp
+
 // GoogleTest macros inside namespaces
 syntaxError
 

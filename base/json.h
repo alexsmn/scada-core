@@ -3,6 +3,7 @@
 #include "base/values.h"
 
 #include <boost/json.hpp>
+#include <cassert>
 
 inline base::Value ToBaseValue(boost::json::value value) {
   if (value.is_null()) {
@@ -30,7 +31,7 @@ inline base::Value ToBaseValue(boost::json::value value) {
     }
     return base::Value{std::move(dict)};
   } else {
-    NOTREACHED();
+    assert(false && "unreachable");
     return base::Value{};
   }
 }
