@@ -17,6 +17,11 @@ All Chromium-base headers have been removed from core/.
 | ~~`base/strings/sys_string_conversions.h`~~ | Replaced with `UtfConvert<>` / `boost::locale::conv` |
 | ~~`base/strings/string_number_conversions.h`~~ | Replaced with `std::to_string` / `std::from_chars` / `Parse()` / `WideFormat()` |
 | ~~`base/time/time.h`~~ | Re-implemented in `core/base/time/` with identical API; uses NSPR from vcpkg for string parsing |
+| ~~`base/containers/contains.h`~~ | Replaced with `.contains()` member (C++20) or `std::ranges::find` |
+| ~~`base/containers/cxx20_erase.h`~~ | Replaced with `std::erase` / `std::erase_if` (C++20) |
+| ~~`base/memory/scoped_ptr.h`~~ | Replaced with `std::unique_ptr` |
+| ~~`base/memory/singleton.h`~~ | Removed (unused include) |
+| ~~`base/strings/utf_ostream_operators.h`~~ | Removed direct include; operators still provided by chromebase via ADL |
 
 ## CMake Link Chain
 

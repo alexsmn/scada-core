@@ -2,9 +2,12 @@
 
 #include "base/debug_util.h"
 
-#include "base/strings/utf_ostream_operators.h"
 #include "base/utf_convert.h"
 #include <sstream>
+
+// wstring/u16string ostream operators are provided by chromebase
+// (utf_ostream_operators.h) via ADL. When chromebase is fully removed,
+// add inline operator<< here using UtfConvert<char>().
 
 namespace internal {
 
