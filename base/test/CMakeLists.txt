@@ -5,7 +5,6 @@ add_library(base_unittest ${sources})
 find_package(GTest REQUIRED)
 
 target_link_libraries(base_unittest PUBLIC
-  base_test
   scada_base
   GTest::gmock
 )
