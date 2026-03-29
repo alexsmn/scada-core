@@ -6,8 +6,16 @@
 
 class ExecutorTimer {
  public:
+  ExecutorTimer() = default;
+
   ExecutorTimer(std::shared_ptr<Executor> executor)
       : executor_{std::move(executor)} {}
+
+  ExecutorTimer(ExecutorTimer&&) = default;
+  ExecutorTimer& operator=(ExecutorTimer&&) = default;
+
+  ExecutorTimer(const ExecutorTimer&) = delete;
+  ExecutorTimer& operator=(const ExecutorTimer&) = delete;
 
   void StartOne(
       Duration period,
@@ -73,7 +81,7 @@ class ExecutorTimer {
 #endif
   };
 
-  const std::shared_ptr<Executor> executor_;
+  std::shared_ptr<Executor> executor_;
 
   std::shared_ptr<Core> core_;
 };

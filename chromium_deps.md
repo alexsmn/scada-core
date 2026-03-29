@@ -1,38 +1,13 @@
-# Chromium-Base Dependencies in Core
+# Chromium-Base Dependencies
 
-## Remaining Chromium Headers
+No remaining chromium-base dependencies in core/. The `ChromiumBase::base` link has been
+removed from `core/base/CMakeLists.txt`.
 
-All Chromium-base headers have been removed from core/.
-
-## Removed Headers
-
-| Header | Removed |
-|--------|---------|
-| ~~`base/strings/utf_string_conversions.h`~~ | Replaced with `boost::locale::conv::utf_to_utf` |
-| ~~`base/strings/string_util_win.h`~~ | Replaced with `boost::locale::conv::utf_to_utf` |
-| ~~`base/strings/string_util.h`~~ | Replaced with standard library |
-| ~~`base/strings/stringprintf.h`~~ | Replaced with `std::format` |
-| ~~`base/containers/span.h`~~ | Replaced with `std::span` |
-| ~~`base/strings/strcat.h`~~ | Replaced with `std::format` / `u16format` |
-| ~~`base/strings/sys_string_conversions.h`~~ | Replaced with `UtfConvert<>` / `boost::locale::conv` |
-| ~~`base/strings/string_number_conversions.h`~~ | Replaced with `std::to_string` / `std::from_chars` / `Parse()` / `WideFormat()` |
-| ~~`base/time/time.h`~~ | Re-implemented in `core/base/time/` with identical API; uses NSPR from vcpkg for string parsing |
-| ~~`base/containers/contains.h`~~ | Replaced with `.contains()` member (C++20) or `std::ranges::find` |
-| ~~`base/containers/cxx20_erase.h`~~ | Replaced with `std::erase` / `std::erase_if` (C++20) |
-| ~~`base/memory/scoped_ptr.h`~~ | Replaced with `std::unique_ptr` |
-| ~~`base/memory/singleton.h`~~ | Removed (unused include) |
-| ~~`base/strings/utf_ostream_operators.h`~~ | Removed direct include; operators still provided by chromebase via ADL |
-
-## CMake Link Chain
-
-```
-ChromiumBase::base (vcpkg)
-  └─ scada_base
-      ├─ scada_metrics
-      ├─ scada_net
-      └─ scada_core
-          ├─ scada_model
-          └─ scada_core_remote
-```
-
-All 6 core modules transitively depend on chromium-base through `scada_base`.
+All former dependencies have been replaced with:
+- `std::filesystem` — file paths, file operations
+- `boost::json` — JSON parsing and value storage (replacing `base::Value`)
+- `boost::program_options` — command-line parsing (replacing `base::CommandLine`)
+- `std::to_chars` — double-to-string formatting (replacing `dmg_fp::g_fmt`)
+- Local `base::PathService` — path resolution (replacing ChromiumBase's PathService)
+- Local `base::win::ScopedHandle` — Windows handle RAII (replacing ChromiumBase's)
+- Local `base/time/time.h` — time classes (API-compatible re-implementation)

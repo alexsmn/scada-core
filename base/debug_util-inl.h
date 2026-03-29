@@ -2,12 +2,23 @@
 
 #include "base/debug_util.h"
 
+#include "base/boost_log.h"
 #include "base/utf_convert.h"
 #include <sstream>
 
-// wstring/u16string ostream operators are provided by chromebase
-// (utf_ostream_operators.h) via ADL. When chromebase is fully removed,
-// add inline operator<< here using UtfConvert<char>().
+// wstring ostream operators (u16string operators are in boost_log.h).
+// Templates to avoid LNK2005 across static libraries.
+template <typename StreamT>
+inline auto operator<<(StreamT& stream, const std::wstring& s)
+    -> decltype(stream << std::string_view{}, stream) {
+  return stream << UtfConvert<char>(s);
+}
+
+template <typename StreamT>
+inline auto operator<<(StreamT& stream, std::wstring_view s)
+    -> decltype(stream << std::string_view{}, stream) {
+  return stream << UtfConvert<char>(s);
+}
 
 namespace internal {
 

@@ -1,108 +1,146 @@
 #pragma once
 
-#include <base/values.h>
-#include <optional>
+#include "base/utf_convert.h"
 
-inline bool GetBool(const base::Value& value,
+#include <boost/json.hpp>
+#include <optional>
+#include <string>
+#include <string_view>
+
+inline bool GetBool(const boost::json::value& value,
                     std::string_view key,
                     bool default_value = false) {
-  if (!value.is_dict())
+  if (!value.is_object())
     return default_value;
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::BOOLEAN))
-    return k->GetBool();
-  else
+  auto* k = value.as_object().if_contains(key);
+  if (!k || !k->is_bool())
     return default_value;
+  return k->as_bool();
 }
 
-inline int GetInt(const base::Value& value,
+inline int GetInt(const boost::json::value& value,
                   std::string_view key,
                   int default_value = 0) {
-  if (!value.is_dict())
+  if (!value.is_object())
     return default_value;
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::INTEGER))
-    return k->GetInt();
-  else
+  auto* k = value.as_object().if_contains(key);
+  if (!k || !k->is_int64())
     return default_value;
+  return static_cast<int>(k->as_int64());
 }
 
-inline std::string_view GetString(const base::Value& value,
+inline std::string_view GetString(const boost::json::value& value,
                                   std::string_view key,
                                   std::string_view default_value = {}) {
-  if (!value.is_dict())
+  if (!value.is_object())
     return default_value;
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::STRING))
-    return k->GetString();
-  else
+  auto* k = value.as_object().if_contains(key);
+  if (!k || !k->is_string())
     return default_value;
+  return k->as_string();
 }
 
-std::u16string GetString16(const base::Value& value,
-                           std::string_view key,
-                           std::u16string_view default_value = {});
-
-inline const base::Value* FindDict(const base::Value& value,
-                                   std::string_view key) {
-  if (!value.is_dict())
-    return nullptr;
-  return value.FindKeyOfType(key, base::Value::Type::DICTIONARY);
+inline std::u16string GetString16(const boost::json::value& value,
+                                  std::string_view key,
+                                  std::u16string_view default_value = {}) {
+  if (!value.is_object())
+    return std::u16string{default_value};
+  auto* k = value.as_object().if_contains(key);
+  if (!k || !k->is_string())
+    return std::u16string{default_value};
+  return UtfConvert<char16_t>(std::string_view{k->as_string()});
 }
 
-const base::Value& GetDict(const base::Value& value, std::string_view key);
+inline const boost::json::value* FindDict(const boost::json::value& value,
+                                          std::string_view key) {
+  if (!value.is_object())
+    return nullptr;
+  auto* k = value.as_object().if_contains(key);
+  if (!k || !k->is_object())
+    return nullptr;
+  return k;
+}
 
-inline const base::Value::ListStorage* GetList(const base::Value& value,
-                                               std::string_view key) {
-  if (!value.is_dict())
+inline const boost::json::value& GetDict(const boost::json::value& value,
+                                         std::string_view key) {
+  static const boost::json::value kEmptyObject =
+      boost::json::value(boost::json::object{});
+  const auto* dict = FindDict(value, key);
+  return dict ? *dict : kEmptyObject;
+}
+
+inline const boost::json::array* GetList(const boost::json::value& value,
+                                         std::string_view key) {
+  if (!value.is_object())
     return nullptr;
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::LIST))
-    return &k->GetList();
-  else
+  auto* k = value.as_object().if_contains(key);
+  if (!k || !k->is_array())
     return nullptr;
+  return &k->as_array();
 }
 
 template <class T>
-inline std::optional<T> GetKey(const base::Value& dict, std::string_view key);
+inline std::optional<T> GetKey(const boost::json::value& dict,
+                               std::string_view key);
 
 template <>
-inline std::optional<int> GetKey(const base::Value& dict,
+inline std::optional<int> GetKey(const boost::json::value& dict,
                                  std::string_view key) {
-  const auto* k = dict.FindKeyOfType(key, base::Value::Type::INTEGER);
-  return k ? std::make_optional(k->GetInt()) : std::nullopt;
+  if (!dict.is_object())
+    return std::nullopt;
+  auto* k = dict.as_object().if_contains(key);
+  if (!k || !k->is_int64())
+    return std::nullopt;
+  return static_cast<int>(k->as_int64());
 }
 
-const base::Value& GetKey(const base::Value& dict, std::string_view key);
-
-inline void SetKey(base::Value& dict, std::string_view key, bool value) {
-  dict.SetKey(key, base::Value{value});
+inline const boost::json::value& GetKey(const boost::json::value& dict,
+                                        std::string_view key) {
+  static const boost::json::value kNull;
+  if (!dict.is_object())
+    return kNull;
+  auto* k = dict.as_object().if_contains(key);
+  return k ? *k : kNull;
 }
 
-inline void SetKey(base::Value& dict, std::string_view key, int value) {
-  dict.SetKey(key, base::Value{value});
+inline void SetKey(boost::json::value& dict,
+                   std::string_view key,
+                   bool value) {
+  dict.as_object()[key] = value;
 }
 
-inline void SetKey(base::Value& dict, std::string_view key, const char* value) {
-  dict.SetKey(key, base::Value{value});
+inline void SetKey(boost::json::value& dict,
+                   std::string_view key,
+                   int value) {
+  dict.as_object()[key] = value;
 }
 
-inline void SetKey(base::Value& dict,
+inline void SetKey(boost::json::value& dict,
+                   std::string_view key,
+                   const char* value) {
+  dict.as_object()[key] = value;
+}
+
+inline void SetKey(boost::json::value& dict,
                    std::string_view key,
                    const char16_t* value) {
-  dict.SetKey(key, base::Value{value});
+  dict.as_object()[key] = UtfConvert<char>(std::u16string_view{value});
 }
 
-inline void SetKey(base::Value& dict,
+inline void SetKey(boost::json::value& dict,
                    std::string_view key,
                    std::string_view value) {
-  dict.SetKey(key, base::Value{value});
+  dict.as_object()[key] = std::string{value};
 }
 
-inline void SetKey(base::Value& dict,
+inline void SetKey(boost::json::value& dict,
                    std::string_view key,
                    std::u16string_view value) {
-  dict.SetKey(key, base::Value{value});
+  dict.as_object()[key] = UtfConvert<char>(value);
 }
 
-inline void SetKey(base::Value& dict,
+inline void SetKey(boost::json::value& dict,
                    std::string_view key,
-                   base::Value::ListStorage&& value) {
-  dict.SetKey(key, base::Value{std::move(value)});
+                   boost::json::array&& value) {
+  dict.as_object()[key] = std::move(value);
 }

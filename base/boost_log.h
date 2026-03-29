@@ -1,10 +1,37 @@
 #pragma once
 
+#include "base/utf_convert.h"
+
 #include <boost/log/common.hpp>
 #include <boost/log/sources/logger.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/log/utility/formatting_ostream.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
 #include <optional>
+
+// Allow streaming std::u16string to std::ostream.
+inline std::ostream& operator<<(std::ostream& os, std::u16string_view sv) {
+  os << UtfConvert<char>(sv);
+  return os;
+}
+inline std::ostream& operator<<(std::ostream& os, const std::u16string& str) {
+  os << UtfConvert<char>(std::u16string_view{str});
+  return os;
+}
+
+// Overloads in Boost.Log namespace so ADL finds them for formatting_ostream.
+namespace boost::log {
+inline formatting_ostream& operator<<(formatting_ostream& os,
+                                      std::u16string_view sv) {
+  os << UtfConvert<char>(sv);
+  return os;
+}
+inline formatting_ostream& operator<<(formatting_ostream& os,
+                                      const std::u16string& str) {
+  os << UtfConvert<char>(std::u16string_view{str});
+  return os;
+}
+}  // namespace boost::log
 
 using BoostLogSeverity = boost::log::trivial::severity_level;
 

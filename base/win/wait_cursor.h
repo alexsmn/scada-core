@@ -7,13 +7,14 @@ class WaitCursor {
   WaitCursor()
       : old_cursor_(SetCursor(LoadCursor(NULL, IDC_WAIT))) {
   }
-  
+
   ~WaitCursor() {
     SetCursor(old_cursor_);
   }
 
+  WaitCursor(const WaitCursor&) = delete;
+  WaitCursor& operator=(const WaitCursor&) = delete;
+
  private:
   HCURSOR old_cursor_;
-
-  DISALLOW_COPY_AND_ASSIGN(WaitCursor);
 };

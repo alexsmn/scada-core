@@ -69,3 +69,48 @@ std::string EscapeQueryParamValue(std::string_view text, bool use_plus) {
 std::string EscapePath(std::string_view path) {
   return Escape(path, kPathCharmap, false);
 }
+
+namespace {
+
+int HexToInt(char c) {
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'A' && c <= 'F')
+    return c - 'A' + 10;
+  if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+  return -1;
+}
+
+}  // namespace
+
+namespace base {
+
+std::string UnescapeURLComponent(std::string_view escaped_text,
+                                 unsigned rules) {
+  std::string result;
+  result.reserve(escaped_text.size());
+  for (size_t i = 0; i < escaped_text.size(); ++i) {
+    if (escaped_text[i] == '%' && i + 2 < escaped_text.size()) {
+      int high = HexToInt(escaped_text[i + 1]);
+      int low = HexToInt(escaped_text[i + 2]);
+      if (high >= 0 && low >= 0) {
+        char c = static_cast<char>((high << 4) | low);
+        bool should_unescape = true;
+        if (c == ' ' && !(rules & UnescapeRule::SPACES))
+          should_unescape = false;
+        if ((c == '/' || c == '\\') && !(rules & UnescapeRule::PATH_SEPARATORS))
+          should_unescape = false;
+        if (should_unescape) {
+          result.push_back(c);
+          i += 2;
+          continue;
+        }
+      }
+    }
+    result.push_back(escaped_text[i]);
+  }
+  return result;
+}
+
+}  // namespace base

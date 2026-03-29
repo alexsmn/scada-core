@@ -1,30 +1,35 @@
 #include "base/boost_log_init.h"
-#include "base/command_line.h"
-#include "base/file_path_util.h"
+#include "base/path_service.h"
 
-#include <base/files/file_path.h>
-#include <base/path_service.h>
+#include <boost/program_options.hpp>
 #include <gmock/gmock.h>
 
 int main(int argc, char** argv) {
-  if (!base::CommandLine::Init(argc, argv)) {
-    return 1;
-  }
+  namespace po = boost::program_options;
+  po::options_description desc;
+  desc.add_options()("log-severity", po::value<std::string>(),
+                     "Log severity");
+  po::variables_map vm;
+  po::store(
+      po::command_line_parser(argc, argv).options(desc).allow_unregistered().run(),
+      vm);
+  po::notify(vm);
 
   {
-    base::FilePath path;
+    std::filesystem::path path;
     if (!base::PathService::Get(base::DIR_EXE, &path))
       return 2;
 
-    path = path.AppendASCII("logs");
+    path /= "logs";
+
+    auto log_severity_str = vm.count("log-severity")
+                                ? vm["log-severity"].as<std::string>()
+                                : std::string{};
 
     auto log_severity =
-        ParseLogSeverity(
-            base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-                "log-severity"))
-            .value_or(BoostLogSeverity::info);
+        ParseLogSeverity(log_severity_str).value_or(BoostLogSeverity::info);
 
-    InitBoostLogging({.path = AsFilesystemPath(path),
+    InitBoostLogging({.path = path,
                       .console = true,
                       .console_log_severity = log_severity});
   }

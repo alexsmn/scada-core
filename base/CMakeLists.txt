@@ -1,10 +1,11 @@
-find_package(Boost REQUIRED COMPONENTS system date_time json log log_setup regex)
+find_package(Boost REQUIRED COMPONENTS system date_time json log log_setup program_options regex)
 find_package(PromiseHpp REQUIRED COMPONENTS system date_time json log log_setup regex)
 
 add_subdirectory(test)
 
 scada_module(scada_base)
 scada_module_sources(scada_base PRIVATE "metrics")
+scada_module_sources(scada_base PRIVATE "time")
 
 if(NOT WIN32)
   target_link_libraries(scada_base PUBLIC stdc++fs pthread)
@@ -12,14 +13,12 @@ endif()
 
 target_include_directories(scada_base PUBLIC "..")
 
-find_package(ChromiumBase REQUIRED)
-
 target_link_libraries(scada_base PUBLIC
-  ChromiumBase::base
   Boost::boost
   Boost::json
   Boost::log
   Boost::log_setup
+  Boost::program_options
   Boost::system
   promise.hpp
 )
@@ -28,6 +27,8 @@ target_link_libraries(scada_base PUBLIC
 target_compile_features(scada_base PRIVATE cxx_std_20)
 
 if(WIN32)
+  target_link_libraries(scada_base PUBLIC shell32)
+
   target_compile_definitions(scada_base PUBLIC
     NOMINMAX
     UNICODE

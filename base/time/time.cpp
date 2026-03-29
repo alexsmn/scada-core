@@ -6,8 +6,6 @@
 #include <limits>
 #include <ostream>
 
-#include <prtime.h>
-
 namespace base {
 
 // TimeDelta ------------------------------------------------------------------
@@ -132,6 +130,20 @@ TimeDelta Time::ToDeltaSinceWindowsEpoch() const {
   return TimeDelta::FromMicroseconds(us_);
 }
 
+Time Time::FromDoubleT(double dt) {
+  if (dt == 0 || std::isnan(dt))
+    return Time();
+  return Time(static_cast<int64_t>(dt * kMicrosecondsPerSecond) +
+              kTimeTToMicrosecondsOffset);
+}
+
+double Time::ToDoubleT() const {
+  if (is_null())
+    return 0;
+  return static_cast<double>(us_ - kTimeTToMicrosecondsOffset) /
+         kMicrosecondsPerSecond;
+}
+
 Time Time::UnixEpoch() {
   Time time;
   time.us_ = kTimeTToMicrosecondsOffset;
@@ -155,22 +167,9 @@ Time Time::LocalMidnight() const {
 bool Time::FromStringInternal(const char* time_string,
                               bool is_local,
                               Time* parsed_time) {
-  assert(time_string != nullptr);
-  assert(parsed_time != nullptr);
-
-  if (time_string[0] == '\0')
-    return false;
-
-  PRTime result_time = 0;
-  PRStatus result =
-      PR_ParseTimeString(time_string, is_local ? PR_FALSE : PR_TRUE,
-                         &result_time);
-  if (PR_SUCCESS != result)
-    return false;
-
-  result_time += kTimeTToMicrosecondsOffset;
-  *parsed_time = Time(result_time);
-  return true;
+  // TODO: Implement without NSPR (PR_ParseTimeString).
+  assert(false && "Time::FromString not implemented");
+  return false;
 }
 
 bool Time::ExplodedMostlyEquals(const Exploded& lhs, const Exploded& rhs) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef OS_WIN
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -19,7 +19,7 @@ class ConsoleLogger : public Logger {
   }
 
  private:
-#ifdef OS_WIN
+#ifdef _WIN32
   HANDLE console_;
   WORD initial_attributes_;
 #endif

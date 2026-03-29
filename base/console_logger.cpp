@@ -11,7 +11,7 @@ static_assert(std::size(kSeverityNames) ==
                   static_cast<size_t>(LogSeverity::Count) + 1,
               "Not all severities are described");
 
-#ifdef OS_WIN
+#ifdef _WIN32
 class ScopedConsoleAttributes {
  public:
   ScopedConsoleAttributes(HANDLE console,
@@ -46,7 +46,7 @@ class ScopedConsoleAttributes {
 
 }  // namespace
 
-#ifdef OS_WIN
+#ifdef _WIN32
 ConsoleLogger::ConsoleLogger()
     : console_(GetStdHandle(STD_OUTPUT_HANDLE)), initial_attributes_(0) {
   CONSOLE_SCREEN_BUFFER_INFO info;
@@ -59,7 +59,7 @@ ConsoleLogger::ConsoleLogger() {}
 
 void ConsoleLogger::Write(LogSeverity severity,
                           std::string_view message) const {
-#ifdef OS_WIN
+#ifdef _WIN32
   ScopedConsoleAttributes scoped_attrs(console_, initial_attributes_, severity);
 #endif
   std::cout << kSeverityNames[static_cast<size_t>(severity)] << " " << message

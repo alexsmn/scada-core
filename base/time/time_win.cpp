@@ -37,6 +37,16 @@ namespace base {
 
 // Time -----------------------------------------------------------------------
 
+Time Time::FromFileTime(FILETIME ft) {
+  return Time(FileTimeToMicroseconds(ft));
+}
+
+FILETIME Time::ToFileTime() const {
+  FILETIME ft;
+  MicrosecondsToFileTime(us_, &ft);
+  return ft;
+}
+
 Time Time::Now() {
   FILETIME ft;
   ::GetSystemTimePreciseAsFileTime(&ft);

@@ -1,12 +1,16 @@
 #pragma once
 
-#include <base/win/scoped_handle.h>
+#include "base/win/scoped_handle.h"
+
 #include <cassert>
 #include <windows.h>
 
 class SharedEvent {
  public:
-  SharedEvent() {}
+  SharedEvent() = default;
+
+  SharedEvent(const SharedEvent&) = delete;
+  SharedEvent& operator=(const SharedEvent&) = delete;
 
   bool Create(const wchar_t* name) {
     handle_.Set(CreateEventW(NULL, FALSE, FALSE, name));
@@ -26,6 +30,4 @@ class SharedEvent {
 
  private:
   base::win::ScopedHandle handle_;
-
-  DISALLOW_COPY_AND_ASSIGN(SharedEvent);
 };

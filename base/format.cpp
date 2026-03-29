@@ -1,6 +1,5 @@
 #include "base/format.h"
 
-#include <base/third_party/dmg_fp/dmg_fp.h>
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 
@@ -9,14 +8,18 @@
 
 std::string Format(double value) {
   char buffer[32];
-  dmg_fp::g_fmt(buffer, value);
-  return std::string(buffer);
+  auto [ptr, ec] =
+      std::to_chars(buffer, buffer + sizeof(buffer), value,
+                    std::chars_format::general);
+  return std::string(buffer, ptr);
 }
 
 std::u16string WideFormat(double value) {
   char buffer[32];
-  dmg_fp::g_fmt(buffer, value);
-  return std::u16string(buffer, buffer + strlen(buffer));
+  auto [ptr, ec] =
+      std::to_chars(buffer, buffer + sizeof(buffer), value,
+                    std::chars_format::general);
+  return std::u16string(buffer, ptr);
 }
 
 std::string Format(float value) {
