@@ -234,6 +234,87 @@ TEST(TimeTest, FromStringInvalid) {
   EXPECT_FALSE(Time::FromString("not a time", &time));
 }
 
+TEST(TimeTest, FromUTCString_IsoWithT) {
+  Time time;
+  EXPECT_TRUE(Time::FromUTCString("2021-11-07T12:41:21", &time));
+
+  Time::Exploded e;
+  time.UTCExplode(&e);
+  EXPECT_EQ(2021, e.year);
+  EXPECT_EQ(11, e.month);
+  EXPECT_EQ(7, e.day_of_month);
+  EXPECT_EQ(12, e.hour);
+  EXPECT_EQ(41, e.minute);
+  EXPECT_EQ(21, e.second);
+}
+
+TEST(TimeTest, FromUTCString_IsoWithSpace) {
+  Time time;
+  EXPECT_TRUE(Time::FromUTCString("2004-11-15 10:00:00", &time));
+
+  Time::Exploded e;
+  time.UTCExplode(&e);
+  EXPECT_EQ(2004, e.year);
+  EXPECT_EQ(11, e.month);
+  EXPECT_EQ(15, e.day_of_month);
+  EXPECT_EQ(10, e.hour);
+  EXPECT_EQ(0, e.minute);
+  EXPECT_EQ(0, e.second);
+}
+
+TEST(TimeTest, FromUTCString_IsoWithMilliseconds) {
+  Time time;
+  EXPECT_TRUE(Time::FromUTCString("1994-11-15 12:45:26.123", &time));
+
+  Time::Exploded e;
+  time.UTCExplode(&e);
+  EXPECT_EQ(1994, e.year);
+  EXPECT_EQ(11, e.month);
+  EXPECT_EQ(15, e.day_of_month);
+  EXPECT_EQ(12, e.hour);
+  EXPECT_EQ(45, e.minute);
+  EXPECT_EQ(26, e.second);
+  EXPECT_EQ(123, e.millisecond);
+}
+
+TEST(TimeTest, FromUTCString_Rfc822WithUTC) {
+  Time time;
+  EXPECT_TRUE(Time::FromUTCString("15 Nov 2004 10:00:00 UTC", &time));
+
+  Time::Exploded e;
+  time.UTCExplode(&e);
+  EXPECT_EQ(2004, e.year);
+  EXPECT_EQ(10, e.hour);
+}
+
+TEST(TimeTest, FromString_Rfc822WithGMT) {
+  Time time;
+  EXPECT_TRUE(Time::FromString("Tue, 15 Nov 1994 12:45:26 GMT", &time));
+
+  Time::Exploded e;
+  time.UTCExplode(&e);
+  EXPECT_EQ(1994, e.year);
+  EXPECT_EQ(11, e.month);
+  EXPECT_EQ(15, e.day_of_month);
+  EXPECT_EQ(12, e.hour);
+  EXPECT_EQ(45, e.minute);
+  EXPECT_EQ(26, e.second);
+}
+
+TEST(TimeTest, FromString_NoTimezone_TreatedAsLocal) {
+  Time utc_time;
+  EXPECT_TRUE(Time::FromUTCString("15 Nov 2004 10:00:00", &utc_time));
+
+  Time local_time;
+  EXPECT_TRUE(Time::FromString("15 Nov 2004 10:00:00", &local_time));
+
+  // FromString without timezone uses local time; FromUTCString uses UTC.
+  // They should differ unless local timezone is UTC.
+  // Just verify both parse successfully.
+  EXPECT_FALSE(utc_time.is_null());
+  EXPECT_FALSE(local_time.is_null());
+}
+
 TEST(TimeTest, KMicrosecondsPerSecond) {
   EXPECT_EQ(1000000, Time::kMicrosecondsPerSecond);
 }

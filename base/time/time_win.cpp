@@ -2,6 +2,8 @@
 
 #include "base/time/time.h"
 
+#include "base/test/scoped_mock_clock_override.h"
+
 #include <windows.h>
 
 #include <cassert>
@@ -48,6 +50,8 @@ FILETIME Time::ToFileTime() const {
 }
 
 Time Time::Now() {
+  if (auto* mock = ScopedMockClockOverride::current())
+    return mock->Now();
   FILETIME ft;
   ::GetSystemTimePreciseAsFileTime(&ft);
   return Time(FileTimeToMicroseconds(ft));

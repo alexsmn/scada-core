@@ -2,6 +2,8 @@
 
 #include "base/time/time.h"
 
+#include "base/test/scoped_mock_clock_override.h"
+
 #include <cassert>
 #include <cstring>
 #include <mutex>
@@ -42,6 +44,8 @@ namespace base {
 // Time -----------------------------------------------------------------------
 
 Time Time::Now() {
+  if (auto* mock = ScopedMockClockOverride::current())
+    return mock->Now();
   struct timeval tv;
   struct timezone tz = {0, 0};
   gettimeofday(&tv, &tz);
