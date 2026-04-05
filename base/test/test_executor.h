@@ -96,3 +96,16 @@ class TestExecutor : public Executor {
 inline ExecutorFactory MakeTestExecutorFactory() {
   return MakeSingleExecutorFactory(std::make_shared<TestExecutor>());
 }
+
+#include "base/any_executor.h"
+#include "base/executor_adapter.h"
+
+inline AnyExecutor MakeTestAnyExecutor(
+    std::shared_ptr<TestExecutor> executor) {
+  return AnyExecutor{ExecutorAdapter{std::move(executor)}};
+}
+
+inline AnyExecutorFactory MakeTestAnyExecutorFactory() {
+  auto executor = std::make_shared<TestExecutor>();
+  return [executor] { return MakeTestAnyExecutor(executor); };
+}

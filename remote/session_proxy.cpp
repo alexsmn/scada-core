@@ -56,7 +56,11 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       history_proxy_{std::make_unique<HistoryProxy>()},
       ping_timer_{executor_} {}
 
-SessionProxy::~SessionProxy() {}
+SessionProxy::~SessionProxy() {
+  cancelation_.Cancel();
+  transport_.reset();
+  write_queue_.reset();
+}
 
 scada::services SessionProxy::services() {
   return scada::services{
@@ -369,6 +373,10 @@ transport::awaitable<void> SessionProxy::Connect() {
   std::vector<char> buffer;
 
   for (;;) {
+    if (cancelation.canceled()) {
+      co_return;
+    }
+
     // TODO: Set up message size.
     buffer.resize(1024 * 1024);
     auto bytes_read = co_await transport_.read(buffer);

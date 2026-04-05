@@ -1,10 +1,12 @@
 #pragma once
 
 #include "base/asio_executor.h"
+#include "base/executor_adapter.h"
 #include "base/executor_factory.h"
 #include "base/promise.h"
 #include "net/test/test_net_interceptors.h"
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 #include <transport/intercepting_transport_factory.h>
@@ -52,4 +54,8 @@ struct AsioTestEnvironment {
       boost::asio::make_strand(io_context.get_executor()));
 
   const ExecutorFactory executor_factory = MakeSingleExecutorFactory(executor);
+
+  const AnyExecutorFactory any_executor_factory = [this]() -> AnyExecutor {
+    return AnyExecutor{ExecutorAdapter{executor}};
+  };
 };

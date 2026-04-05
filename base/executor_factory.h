@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include <functional>
 #include <memory>
 
@@ -11,3 +13,5 @@ inline ExecutorFactory MakeSingleExecutorFactory(
     std::shared_ptr<Executor> executor) {
   return [executor = std::move(executor)] { return executor; };
 }
+
+using AnyExecutorFactory = std::function<AnyExecutor()>;

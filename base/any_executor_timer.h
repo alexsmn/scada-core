@@ -1,21 +1,25 @@
 #pragma once
 
-#include "base/executor.h"
+#include "base/any_executor.h"
+#include "base/common_types.h"
+#include "base/debug_holder.h"
+#include "base/executor_util.h"
 
+#include <functional>
 #include <memory>
+#include <source_location>
 
-class ExecutorTimer {
+class AnyExecutorTimer {
  public:
-  ExecutorTimer() = default;
+  AnyExecutorTimer() = default;
 
-  ExecutorTimer(std::shared_ptr<Executor> executor)
-      : executor_{std::move(executor)} {}
+  AnyExecutorTimer(AnyExecutor executor) : executor_{std::move(executor)} {}
 
-  ExecutorTimer(ExecutorTimer&&) = default;
-  ExecutorTimer& operator=(ExecutorTimer&&) = default;
+  AnyExecutorTimer(AnyExecutorTimer&&) = default;
+  AnyExecutorTimer& operator=(AnyExecutorTimer&&) = default;
 
-  ExecutorTimer(const ExecutorTimer&) = delete;
-  ExecutorTimer& operator=(const ExecutorTimer&) = delete;
+  AnyExecutorTimer(const AnyExecutorTimer&) = delete;
+  AnyExecutorTimer& operator=(const AnyExecutorTimer&) = delete;
 
   void StartOne(
       Duration period,
@@ -40,7 +44,7 @@ class ExecutorTimer {
  private:
   class Core : public std::enable_shared_from_this<Core> {
    public:
-    Core(std::shared_ptr<Executor> executor,
+    Core(AnyExecutor executor,
          Duration period,
          std::function<void()> callback,
          const std::source_location& location)
@@ -54,8 +58,8 @@ class ExecutorTimer {
 
     template <bool kRepeating>
     void Start() {
-      executor_->PostDelayedTask(
-          period_,
+      PostDelayedTask(
+          executor_, period_,
           [weak_core = weak_from_this()] {
             if (auto core = weak_core.lock())
               core->callback_();
@@ -73,7 +77,7 @@ class ExecutorTimer {
     }
 
    private:
-    const std::shared_ptr<Executor> executor_;
+    const AnyExecutor executor_;
     const Duration period_;
     const std::function<void()> callback_;
 #ifndef NDEBUG
@@ -81,21 +85,19 @@ class ExecutorTimer {
 #endif
   };
 
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
 
   std::shared_ptr<Core> core_;
 };
 
 inline void StartRepeatableTimer(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     Duration period,
     const std::weak_ptr<bool>& cancelation,
-    Executor::Task task,
+    std::function<void()> task,
     const std::source_location& location = std::source_location::current()) {
-  // |BindCancelation| is not effective, as |cancelation| has to be captured by
-  // the lambda anyway.
-  executor->PostDelayedTask(
-      period,
+  PostDelayedTask(
+      executor, period,
       [executor, period, cancelation, task = std::move(task),
        location]() mutable {
         if (cancelation.expired()) {
