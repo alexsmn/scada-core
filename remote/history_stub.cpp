@@ -7,7 +7,7 @@
 #include "remote/protocol_utils.h"
 #include "scada/history_service.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 #include <boost/asio/io_context.hpp>
 

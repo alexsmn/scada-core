@@ -23,6 +23,25 @@ target_link_libraries(scada_base PUBLIC
   promise.hpp
 )
 
+target_precompile_headers(scada_base PRIVATE
+  <algorithm>
+  <cassert>
+  <chrono>
+  <cstdint>
+  <functional>
+  <map>
+  <memory>
+  <optional>
+  <ostream>
+  <span>
+  <sstream>
+  <string>
+  <string_view>
+  <unordered_map>
+  <variant>
+  <vector>
+)
+
 # std::format
 target_compile_features(scada_base PRIVATE cxx_std_20)
 

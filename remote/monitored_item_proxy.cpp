@@ -6,7 +6,7 @@
 #include "remote/protocol_utils.h"
 #include "remote/subscription_proxy.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 // MonitoredItemProxy
 

@@ -6,7 +6,7 @@
 #include "remote/protocol_utils.h"
 #include "scada/node_management_service.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 namespace {
 

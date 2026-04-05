@@ -53,6 +53,8 @@ endif()
 
 scada_module(scada_core_remote)
 
+target_precompile_headers(scada_core_remote REUSE_FROM scada_base)
+
 target_link_libraries(scada_core_remote PUBLIC scada_core)
 
 find_package(Transport REQUIRED)

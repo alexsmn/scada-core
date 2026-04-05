@@ -3,7 +3,7 @@
 #include "base/struct_writer.h"
 #include "metrics/tracing.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 namespace scada {
 

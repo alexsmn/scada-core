@@ -9,7 +9,7 @@
 #include "scada/monitored_item.h"
 #include "scada/monitored_item_service.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 SubscriptionStub::SubscriptionStub(
     std::shared_ptr<Executor> executor,
