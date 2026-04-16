@@ -120,18 +120,24 @@ bool PathService::GetBuiltin(int key, std::filesystem::path* result) {
 }
 
 bool PathService::Get(int key, std::filesystem::path* result) {
-  std::lock_guard lock{GetMutex()};
+  std::vector<ProviderEntry> providers;
+  {
+    std::lock_guard lock{GetMutex()};
 
-  // Check overrides first.
-  auto& overrides = GetOverrides();
-  auto it = overrides.find(key);
-  if (it != overrides.end()) {
-    *result = it->second;
-    return true;
+    // Check overrides first.
+    auto& overrides = GetOverrides();
+    auto it = overrides.find(key);
+    if (it != overrides.end()) {
+      *result = it->second;
+      return true;
+    }
+
+    // Provider callbacks may call PathService::Get() recursively for builtin
+    // paths, so invoke them outside the mutex.
+    providers = GetProviders();
   }
 
   // Try registered providers (in reverse order so later registrations win).
-  auto& providers = GetProviders();
   for (auto i = providers.rbegin(); i != providers.rend(); ++i) {
     if (key >= i->key_start && key < i->key_end) {
       if (i->func(key, result))
