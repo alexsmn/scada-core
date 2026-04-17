@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
 project(scada-core VERSION 2.5.6 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
