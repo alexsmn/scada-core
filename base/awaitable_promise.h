@@ -68,7 +68,8 @@ inline auto PromiseToAwaitable(E executor,
         })
         .except([executor, completion, promise_holder](
                     std::exception_ptr e) mutable {
-          boost::asio::post(executor, [completion, promise_holder, e]() mutable {
+          boost::asio::post(
+              executor, [completion, promise_holder, e]() mutable {
            (*completion)(PromiseAwaitableResult<T>{
                .error = e});
          });
@@ -92,13 +93,15 @@ inline auto PromiseToAwaitable(E executor,
 
     promise_holder
         ->then([executor, completion, promise_holder]() mutable {
-          boost::asio::post(executor, [completion, promise_holder]() mutable {
+          boost::asio::post(
+              executor, [completion, promise_holder]() mutable {
            (*completion)(PromiseAwaitableVoidResult{});
          });
         })
         .except([executor, completion, promise_holder](
                     std::exception_ptr e) mutable {
-          boost::asio::post(executor, [completion, promise_holder, e]() mutable {
+          boost::asio::post(
+              executor, [completion, promise_holder, e]() mutable {
             (*completion)(PromiseAwaitableVoidResult{.error = e});
           });
         });

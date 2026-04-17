@@ -120,9 +120,10 @@ class SessionManagerObserver final : public RemoteSessionManager::Observer {
 class SessionProxyTest : public Test {
  public:
   void SetUp() override {
+    session_manager_executor_ = std::make_shared<TestExecutor>();
     session_manager_ = std::make_unique<RemoteSessionManager>(
         RemoteSessionManagerContext{
-            .executor_ = std::make_shared<TestExecutor>(),
+            .executor_ = session_manager_executor_,
             .services_ =
                 {.attribute_service = &attribute_service_,
                  .method_service = &method_service_,
@@ -144,15 +145,52 @@ class SessionProxyTest : public Test {
             .endpoints_ = {transport::TransportString{
                 network_env_.server_transport_string}}});
 
-    asio_env_.Wait(session_manager_->Init());
+    Wait(session_manager_->Init());
   }
 
   void TearDown() override {
     session_manager_.reset();
-    asio_env_.Poll();
+    Drain();
   }
 
  protected:
+  template <class T>
+  T Wait(promise<T> promise) {
+    using namespace std::chrono_literals;
+    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+      Poll();
+    }
+    return promise.get();
+  }
+
+  void Wait(promise<> promise) {
+    using namespace std::chrono_literals;
+    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+      Poll();
+    }
+    promise.get();
+  }
+
+  void Poll() {
+    if (session_manager_executor_) {
+      session_manager_executor_->Poll();
+    }
+    asio_env_.Poll();
+  }
+
+  void Drain() {
+    for (int i = 0; i < 1000; ++i) {
+      const auto session_manager_task_count =
+          session_manager_executor_ ? session_manager_executor_->GetTaskCount()
+                                    : 0;
+      Poll();
+      if (session_manager_task_count == 0 &&
+          session_manager_executor_ && session_manager_executor_->GetTaskCount() == 0) {
+        break;
+      }
+    }
+  }
+
   scada::SessionConnectParams GetConnectParams() const {
     return {.connection_string = network_env_.client_transport_string,
             .user_name = kUserName,
@@ -168,6 +206,7 @@ class SessionProxyTest : public Test {
   NoopHistoryService history_service_;
 
   std::optional<scada::StatusCode> auth_failure_status_;
+  std::shared_ptr<TestExecutor> session_manager_executor_;
   std::unique_ptr<RemoteSessionManager> session_manager_;
 
   inline static const scada::LocalizedText kUserName{u"username"};
@@ -183,11 +222,11 @@ TEST_F(SessionProxyTest, Connect) {
   SessionProxy session{{.executor_ = asio_env_.executor,
                         .transport_factory_ = asio_env_.transport_factory}};
 
-  asio_env_.Wait(session.Connect(GetConnectParams()));
+  Wait(session.Connect(GetConnectParams()));
 
   EXPECT_TRUE(session.IsConnected(nullptr));
 
-  asio_env_.Wait(session.Disconnect());
+  Wait(session.Disconnect());
 }
 
 // Verifies that Connect() with wrong credentials rejects the promise.
@@ -197,7 +236,7 @@ TEST_F(SessionProxyTest, Connect_BadPassword) {
   SessionProxy session{{.executor_ = asio_env_.executor,
                         .transport_factory_ = asio_env_.transport_factory}};
 
-  EXPECT_THROW(asio_env_.Wait(session.Connect(GetConnectParams())),
+  EXPECT_THROW(Wait(session.Connect(GetConnectParams())),
                scada::status_exception);
 }
 
@@ -206,10 +245,10 @@ TEST_F(SessionProxyTest, Connect_Disconnect) {
   SessionProxy session{{.executor_ = asio_env_.executor,
                         .transport_factory_ = asio_env_.transport_factory}};
 
-  asio_env_.Wait(session.Connect(GetConnectParams()));
+  Wait(session.Connect(GetConnectParams()));
   EXPECT_TRUE(session.IsConnected(nullptr));
 
-  asio_env_.Wait(session.Disconnect());
+  Wait(session.Disconnect());
   EXPECT_FALSE(session.IsConnected(nullptr));
 }
 
@@ -222,13 +261,13 @@ TEST_F(SessionProxyTest, Reconnect) {
   SessionProxy session{{.executor_ = asio_env_.executor,
                         .transport_factory_ = asio_env_.transport_factory}};
 
-  asio_env_.Wait(session.Connect(params));
+  Wait(session.Connect(params));
   EXPECT_TRUE(session.IsConnected(nullptr));
 
-  asio_env_.Wait(session.Reconnect());
+  Wait(session.Reconnect());
   EXPECT_TRUE(session.IsConnected(nullptr));
 
-  asio_env_.Wait(session.Disconnect());
+  Wait(session.Disconnect());
 }
 
 TEST_F(SessionProxyTest, ManagerObserverNotifiedOnOpenAndClose) {
@@ -238,11 +277,11 @@ TEST_F(SessionProxyTest, ManagerObserverNotifiedOnOpenAndClose) {
   SessionProxy session{{.executor_ = asio_env_.executor,
                         .transport_factory_ = asio_env_.transport_factory}};
 
-  asio_env_.Wait(session.Connect(GetConnectParams()));
+  Wait(session.Connect(GetConnectParams()));
   EXPECT_THAT(observer.opened_user_ids, ElementsAre(kUserId));
   EXPECT_THAT(observer.closed_user_ids, IsEmpty());
 
-  asio_env_.Wait(session.Disconnect());
+  Wait(session.Disconnect());
   EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId));
 
   session_manager_->RemoveObserver(observer);
@@ -254,15 +293,15 @@ TEST_F(SessionProxyTest, Connect_DuplicateUserRejectedWithoutRemoteLogoff) {
   SessionProxy session2{{.executor_ = asio_env_.executor,
                          .transport_factory_ = asio_env_.transport_factory}};
 
-  asio_env_.Wait(session1.Connect(GetConnectParams()));
+  Wait(session1.Connect(GetConnectParams()));
 
-  EXPECT_THROW(asio_env_.Wait(session2.Connect(GetConnectParams())),
+  EXPECT_THROW(Wait(session2.Connect(GetConnectParams())),
                scada::status_exception);
 
   EXPECT_TRUE(session1.IsConnected(nullptr));
   EXPECT_FALSE(session2.IsConnected(nullptr));
 
-  asio_env_.Wait(session1.Disconnect());
+  Wait(session1.Disconnect());
 }
 
 TEST_F(SessionProxyTest, Connect_DuplicateUserAllowedWithRemoteLogoff) {
@@ -275,25 +314,28 @@ TEST_F(SessionProxyTest, Connect_DuplicateUserAllowedWithRemoteLogoff) {
   SessionProxy session2{{.executor_ = asio_env_.executor,
                          .transport_factory_ = asio_env_.transport_factory}};
 
-  asio_env_.Wait(session1.Connect(params));
-  asio_env_.Wait(session2.Connect(second_params));
-  asio_env_.Poll();
+  Wait(session1.Connect(params));
+  Wait(session2.Connect(second_params));
+  Poll();
 
   EXPECT_FALSE(session1.IsConnected(nullptr));
   EXPECT_TRUE(session2.IsConnected(nullptr));
 
-  asio_env_.Wait(session2.Disconnect());
+  Wait(session2.Disconnect());
 }
 
 TEST_F(SessionProxyTest, CloseUserSessionsDisconnectsMatchingSession) {
   SessionProxy session{{.executor_ = asio_env_.executor,
                         .transport_factory_ = asio_env_.transport_factory}};
 
-  asio_env_.Wait(session.Connect(GetConnectParams()));
+  Wait(session.Connect(GetConnectParams()));
   EXPECT_TRUE(session.IsConnected(nullptr));
 
   session_manager_->CloseUserSessions(kUserId);
-  asio_env_.Poll();
+
+  for (int i = 0; i < 1000 && session.IsConnected(nullptr); ++i) {
+    Poll();
+  }
 
   EXPECT_FALSE(session.IsConnected(nullptr));
 }

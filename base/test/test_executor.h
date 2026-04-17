@@ -5,6 +5,9 @@
 #include "base/executor_factory.h"
 
 #include <algorithm>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 class TestExecutor : public Executor {
  public:
@@ -24,32 +27,38 @@ class TestExecutor : public Executor {
     }
   }*/
 
-  bool is_current_executor() { return running_; }
+  bool is_current_executor() {
+    return std::ranges::find(current_executor_stack_, this) !=
+           current_executor_stack_.end();
+  }
 
   virtual void PostDelayedTask(Duration delay,
                                Task task,
                                const std::source_location& location =
                                    std::source_location::current()) override {
-    if (instant_ || delay == Duration{}) {
-      base::AutoReset running{&running_, true};
+    if (instant_) {
+      ScopedCurrentExecutor current{this};
       task();
     } else {
+      // Queue zero-delay work as well. Running it inline makes this executor
+      // reentrant across foreign threads, which breaks Asio/coroutine adapter
+      // paths that expect posted continuations to run later when polled.
+      std::lock_guard lock{mutex_};
       pending_tasks_.emplace_back(delay, std::move(task), location);
     }
   }
 
-  virtual size_t GetTaskCount() const override { return pending_tasks_.size(); }
+  virtual size_t GetTaskCount() const override {
+    std::lock_guard lock{mutex_};
+    return pending_tasks_.size();
+  }
 
   void Poll() { Advance({}); }
 
   void Advance(Duration delta) {
-    base::AutoReset running{&running_, true};
+    ScopedCurrentExecutor current{this};
 
     auto run_tasks = PopRunTasks(delta);
-
-    for (auto& t : pending_tasks_) {
-      t.delay -= delta;
-    }
 
     for (auto& task : run_tasks) {
       task();
@@ -57,7 +66,22 @@ class TestExecutor : public Executor {
   }
 
  private:
+  class ScopedCurrentExecutor {
+   public:
+    explicit ScopedCurrentExecutor(const TestExecutor* executor)
+        : executor_{executor} {
+      current_executor_stack_.push_back(executor_);
+    }
+
+    ~ScopedCurrentExecutor() { current_executor_stack_.pop_back(); }
+
+   private:
+    const TestExecutor* executor_;
+  };
+
   std::vector<Task> PopRunTasks(Duration delta) {
+    std::lock_guard lock{mutex_};
+
     // Move run tasks with |task.delay <= delta| to the end of queue.
     auto p = std::stable_partition(
         pending_tasks_.begin(), pending_tasks_.end(),
@@ -77,6 +101,11 @@ class TestExecutor : public Executor {
 
     // Remove run tasks.
     pending_tasks_.erase(p, pending_tasks_.end());
+
+    for (auto& t : pending_tasks_) {
+      t.delay -= delta;
+    }
+
     return run_tasks;
   }
 
@@ -88,9 +117,10 @@ class TestExecutor : public Executor {
     std::source_location location;
   };
 
+  mutable std::mutex mutex_;
   std::vector<PendingTask> pending_tasks_;
-
-  bool running_ = false;
+  inline static thread_local std::vector<const TestExecutor*>
+      current_executor_stack_;
 };
 
 inline ExecutorFactory MakeTestExecutorFactory() {

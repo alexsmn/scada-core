@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/signals2/connection.hpp>
-#include <string_view>
+#include <string>
 
 namespace scada {
 
@@ -16,9 +16,9 @@ class SessionDebugger {
   struct RequestEvent {
     RequestId request_id = 0;
     RequestPhase phase = RequestPhase::Running;
-    std::string_view title;
-    std::string_view body;
-    std::string_view response_body;
+    std::string title;
+    std::string body;
+    std::string response_body;
   };
 
   using RequestEventCallback = std::function<void(const RequestEvent& request)>;

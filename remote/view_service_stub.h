@@ -25,7 +25,8 @@ struct ViewServiceStubContext {
   scada::ViewService& service_;
 };
 
-class ViewServiceStub final : private ViewServiceStubContext {
+class ViewServiceStub final : private ViewServiceStubContext,
+                              public std::enable_shared_from_this<ViewServiceStub> {
  public:
   explicit ViewServiceStub(ViewServiceStubContext&& context);
   ~ViewServiceStub();

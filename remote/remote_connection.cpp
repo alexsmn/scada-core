@@ -29,7 +29,19 @@ void ServerConnection::Start() {
   auto self = shared_from_this();
   boost::asio::co_spawn(
       transport_.get_executor(),
-      [self]() -> transport::awaitable<void> { co_await self->Run(); },
+      [self]() -> transport::awaitable<void> {
+        try {
+          co_await self->Run();
+        } catch (const std::exception& e) {
+          LOG_ERROR(*self->logger_) << "Connection coroutine failed"
+                                    << LOG_TAG("Error", e.what());
+          self->Close();
+        } catch (...) {
+          LOG_ERROR(*self->logger_)
+              << "Connection coroutine failed with unknown error";
+          self->Close();
+        }
+      },
       boost::asio::detached);
 }
 
@@ -139,20 +151,29 @@ void ServerConnection::Send(protocol::Message& message) {
   boost::asio::co_spawn(
       transport_.get_executor(),
       [self, string = std::move(string)]() -> transport::awaitable<void> {
-        if (self->closed_)
-          co_return;
+        try {
+          if (self->closed_)
+            co_return;
 
-        LOG_INFO(*self->logger_) << "Begin async write"
-                                 << LOG_TAG("Size", string.size());
-        auto bytes_written = co_await self->write_queue_.Write(string);
-        LOG_INFO(*self->logger_) << "Async write completed"
-                                 << LOG_TAG("Ok", bytes_written.ok())
-                                 << LOG_TAG("BytesWritten",
-                                            bytes_written.ok() ? *bytes_written
-                                                               : 0);
-        if (!bytes_written.ok() || *bytes_written != string.size()) {
+          LOG_INFO(*self->logger_) << "Begin async write"
+                                   << LOG_TAG("Size", string.size());
+          auto bytes_written = co_await self->write_queue_.Write(string);
+          LOG_INFO(*self->logger_) << "Async write completed"
+                                   << LOG_TAG("Ok", bytes_written.ok())
+                                   << LOG_TAG("BytesWritten",
+                                              bytes_written.ok() ? *bytes_written
+                                                                 : 0);
+          if (!bytes_written.ok() || *bytes_written != string.size()) {
+            self->Close();
+            co_return;
+          }
+        } catch (const std::exception& e) {
+          LOG_ERROR(*self->logger_) << "Async write failed"
+                                    << LOG_TAG("Error", e.what());
           self->Close();
-          co_return;
+        } catch (...) {
+          LOG_ERROR(*self->logger_) << "Async write failed with unknown error";
+          self->Close();
         }
       },
       boost::asio::detached);

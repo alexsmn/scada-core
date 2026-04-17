@@ -12,6 +12,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <utility>
 #include <transport/any_transport.h>
 #include <transport/transport_string.h>
 #include <optional>
@@ -93,6 +94,7 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   SessionMap session_map_;
 
   base::ObserverList<Observer> observers_;
+  std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
 
   friend class SessionStub;
 };

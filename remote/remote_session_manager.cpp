@@ -43,6 +43,8 @@ RemoteSessionManager::RemoteSessionManager(
 }
 
 RemoteSessionManager::~RemoteSessionManager() {
+  alive_.reset();
+
   for (auto& connection : connections_) {
     connection->Shutdown();
   }
@@ -67,9 +69,12 @@ Awaitable<void> RemoteSessionManager::InitAsync() {
   transport::log_source transport_logger{
       std::make_shared<NetBoostLoggerAdapter>(logger_)};
 
-  // TODO: Captures |this|.
+  std::weak_ptr<bool> alive = alive_;
   RemoteListener::AcceptHandler accept_handler =
-      [this](transport::any_transport transport) {
+      [this, alive](transport::any_transport transport) {
+        if (alive.expired()) {
+          return;
+        }
         OnSessionAccepted(std::move(transport));
       };
 
@@ -259,17 +264,32 @@ void RemoteSessionManager::OnSessionAccepted(
         std::make_unique<ProtocolMessageTransport>(std::move(transport))};
   }
 
+  std::weak_ptr<bool> alive = alive_;
   ServerConnectionContext connection_context;
   connection_context.transport_ = std::move(transport);
   connection_context.create_session_handler_ =
-      [this](protocol::CreateSession create_session)
+      [this, alive](protocol::CreateSession create_session)
           -> Awaitable<CreateSessionResult> {
+        if (alive.expired()) {
+          co_return CreateSessionResult{
+              .status = scada::StatusCode::Bad_Disconnected,
+              .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
+              .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
+        }
         co_return co_await CreateSessionAsync(std::move(create_session));
       };
-  connection_context.delete_session_handler_ = [this](SessionStub& session) {
-    DeleteSession(session.service_context().user_id());
-  };
-  connection_context.closed_handler_ = [this](ServerConnection& connection) {
+  connection_context.delete_session_handler_ =
+      [this, alive](SessionStub& session) {
+        if (alive.expired()) {
+          return;
+        }
+        DeleteSession(session.service_context().user_id());
+      };
+  connection_context.closed_handler_ = [this, alive](
+                                           ServerConnection& connection) {
+    if (alive.expired()) {
+      return;
+    }
     OnConnectionClosed(connection);
   };
 

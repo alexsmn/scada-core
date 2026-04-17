@@ -71,13 +71,21 @@ void NodeManagementStub::OnDeleteNodes(
       locked_sender->Send(message);
     return;
   }
-  CoSpawn(executor_, OnDeleteNodesAsync(request_id, inputs));
+  auto self = shared_from_this();
+  CoSpawn(executor_,
+          [self, request_id, inputs]() mutable -> Awaitable<void> {
+            co_await self->OnDeleteNodesAsync(request_id, std::move(inputs));
+          }());
 }
 
 void NodeManagementStub::OnAddNodes(
     unsigned request_id,
     const std::vector<scada::AddNodesItem>& inputs) {
-  CoSpawn(executor_, OnAddNodesAsync(request_id, inputs));
+  auto self = shared_from_this();
+  CoSpawn(executor_,
+          [self, request_id, inputs]() mutable -> Awaitable<void> {
+            co_await self->OnAddNodesAsync(request_id, std::move(inputs));
+          }());
 }
 
 void NodeManagementStub::OnAddReferences(
@@ -85,7 +93,11 @@ void NodeManagementStub::OnAddReferences(
     const std::vector<scada::AddReferencesItem>& inputs) {
   LOG_INFO(*logger_) << "Add references" << LOG_TAG("RequestId", request_id)
                      << LOG_TAG("Count", inputs.size());
-  CoSpawn(executor_, OnAddReferencesAsync(request_id, inputs));
+  auto self = shared_from_this();
+  CoSpawn(executor_,
+          [self, request_id, inputs]() mutable -> Awaitable<void> {
+            co_await self->OnAddReferencesAsync(request_id, std::move(inputs));
+          }());
 }
 
 void NodeManagementStub::OnDeleteReferences(
@@ -93,7 +105,12 @@ void NodeManagementStub::OnDeleteReferences(
     const std::vector<scada::DeleteReferencesItem>& inputs) {
   LOG_INFO(*logger_) << "Delete reference" << LOG_TAG("RequestId", request_id)
                      << LOG_TAG("Count", inputs.size());
-  CoSpawn(executor_, OnDeleteReferencesAsync(request_id, inputs));
+  auto self = shared_from_this();
+  CoSpawn(executor_,
+          [self, request_id, inputs]() mutable -> Awaitable<void> {
+            co_await self->OnDeleteReferencesAsync(request_id,
+                                                   std::move(inputs));
+          }());
 }
 
 Awaitable<void> NodeManagementStub::OnDeleteNodesAsync(

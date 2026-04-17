@@ -1,9 +1,11 @@
 #include "base/awaitable_promise.h"
 
 #include "base/test/asio_test_environment.h"
+#include "base/test/test_executor.h"
 
 #include <boost/asio/use_future.hpp>
 #include <gtest/gtest.h>
+#include <thread>
 
 using namespace std::chrono_literals;
 
@@ -28,6 +30,61 @@ promise<void> MakeDeferredVoidPromise(const std::shared_ptr<Executor>& executor)
   trigger.then([result]() mutable { result.resolve(); });
 
   return result;
+}
+
+template <class AdapterFactory>
+void RunRepeatedDeferredValueAwaitTest(AdapterFactory make_adapter) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  for (int i = 0; i < 1000; ++i) {
+    auto result = boost::asio::co_spawn(
+        make_adapter(executor),
+        AwaitPromise(make_adapter(executor),
+                     MakeDeferredValuePromise(executor, i)),
+        boost::asio::use_future);
+
+    while (result.wait_for(0ms) != std::future_status::ready) {
+      executor->Poll();
+    }
+
+    EXPECT_EQ(result.get(), i);
+  }
+}
+
+template <class AdapterFactory>
+void RunCrossThreadDeferredValueAwaitTest(AdapterFactory make_adapter) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  for (int i = 0; i < 1000; ++i) {
+    promise<int> result;
+
+    auto future = boost::asio::co_spawn(
+        make_adapter(executor),
+        AwaitPromise(make_adapter(executor), result),
+        boost::asio::use_future);
+
+    std::thread resolver{[result, i]() mutable { result.resolve(i); }};
+
+    while (future.wait_for(0ms) != std::future_status::ready) {
+      executor->Poll();
+    }
+
+    EXPECT_EQ(future.get(), i);
+    resolver.join();
+  }
+}
+
+template <class AdapterFactory>
+void RunCanonicalAdapterStateTest(AdapterFactory make_adapter) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  auto first = make_adapter(executor);
+  auto second = make_adapter(executor);
+
+  EXPECT_EQ(first, second);
+  EXPECT_EQ(
+      &first.query(boost::asio::execution::context),
+      &second.query(boost::asio::execution::context));
 }
 
 template <class T>
@@ -74,4 +131,68 @@ TEST(ToAwaitable, CompletesDeferredTemporaryVoidPromise) {
       }(asio_env.executor),
       boost::asio::use_future);
   EXPECT_NO_THROW(WaitForFuture(asio_env, result));
+}
+
+TEST(AwaitPromise, RepeatedDeferredTemporaryValuePromiseWithNetExecutorAdapter) {
+  RunRepeatedDeferredValueAwaitTest(
+      [](const std::shared_ptr<Executor>& executor) {
+        return NetExecutorAdapter{executor};
+      });
+}
+
+TEST(AwaitPromise, RepeatedDeferredTemporaryValuePromiseWithExecutorAdapter) {
+  RunRepeatedDeferredValueAwaitTest(
+      [](const std::shared_ptr<Executor>& executor) {
+        return ExecutorAdapter{executor};
+      });
+}
+
+TEST(AwaitPromise, CrossThreadDeferredTemporaryValuePromiseWithNetExecutorAdapter) {
+  RunCrossThreadDeferredValueAwaitTest(
+      [](const std::shared_ptr<Executor>& executor) {
+        return NetExecutorAdapter{executor};
+      });
+}
+
+TEST(AwaitPromise, CrossThreadDeferredTemporaryValuePromiseWithExecutorAdapter) {
+  RunCrossThreadDeferredValueAwaitTest(
+      [](const std::shared_ptr<Executor>& executor) {
+        return ExecutorAdapter{executor};
+      });
+}
+
+TEST(AwaitPromise, NetExecutorAdapterReusesCanonicalStatePerExecutor) {
+  RunCanonicalAdapterStateTest(
+      [](const std::shared_ptr<Executor>& executor) {
+        return NetExecutorAdapter{executor};
+      });
+}
+
+TEST(AwaitPromise, ExecutorAdapterReusesCanonicalStatePerExecutor) {
+  RunCanonicalAdapterStateTest(
+      [](const std::shared_ptr<Executor>& executor) {
+        return ExecutorAdapter{executor};
+      });
+}
+
+TEST(AwaitPromise, RepeatedDeferredTemporaryValuePromiseWithAsioExecutor) {
+  boost::asio::io_context io_context;
+
+  for (int i = 0; i < 1000; ++i) {
+    promise<int> result;
+    boost::asio::post(
+        io_context,
+        [result, i]() mutable { result.resolve(i); });
+
+    auto future = boost::asio::co_spawn(
+        io_context, AwaitPromise(io_context.get_executor(), std::move(result)),
+        boost::asio::use_future);
+
+    while (future.wait_for(0ms) != std::future_status::ready) {
+      io_context.run_for(10ms);
+      io_context.restart();
+    }
+
+    EXPECT_EQ(future.get(), i);
+  }
 }

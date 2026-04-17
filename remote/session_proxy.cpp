@@ -84,10 +84,17 @@ promise<void> SessionProxy::Disconnect() {
   promise<void> promise;
   Request(request, [this, promise](const protocol::Response& response) mutable {
     auto status = ConvertTo<scada::Status>(response.status());
-    if (status)
-      OnSessionDeleted();
+    if (!status) {
+      scada::CompleteStatusPromise(promise, std::move(status));
+      return;
+    }
 
-    scada::CompleteStatusPromise(promise, std::move(status));
+    if (status) {
+      OnSessionDeleted();
+      cancelation_.Cancel();
+    }
+
+    ForwardPromise(connect_loop_done_promise_, promise);
   });
   return promise;
 }
@@ -114,6 +121,7 @@ void SessionProxy::OnTransportOpened() {
 void SessionProxy::OnSessionCreated() {
   assert(!session_created_);
   session_created_ = true;
+  pending_connect_result_.reset();
 
   subscription_->OnChannelOpened(*this);
   view_service_proxy_->OnChannelOpened(*this);
@@ -146,8 +154,12 @@ void SessionProxy::OnSessionError(const scada::Status& status) {
 
   OnSessionDeleted();
 
-  auto copied_status = status;
-  ForwardConnectResult(std::move(copied_status));
+  if (!session_created_) {
+    pending_connect_result_ = status;
+  } else {
+    auto copied_status = status;
+    ForwardConnectResult(std::move(copied_status));
+  }
 
   session_state_changed_signal_(false, status);
 }
@@ -238,22 +250,28 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
       auto handler = std::move(i->second);
       requests_.erase(i);
 
-      debugger_->NotifyRequestEvent(
-          {.request_id = static_cast<scada::SessionDebugger::RequestId>(
-               response.request_id()),
-           .phase = scada::SessionDebugger::RequestPhase::Succeeded,
-           .title = response.GetTypeName(),
-           .response_body = response.DebugString()});
+      LOG_INFO(*logger_) << "Notifying response debugger event"
+                         << LOG_TAG("RequestId", response.request_id());
+      scada::SessionDebugger::RequestEvent event;
+      event.request_id = static_cast<scada::SessionDebugger::RequestId>(
+          response.request_id());
+      event.phase = scada::SessionDebugger::RequestPhase::Succeeded;
+      event.title = response.GetTypeName();
+      event.response_body = response.DebugString();
+      debugger_->NotifyRequestEvent(event);
+      LOG_INFO(*logger_) << "Invoking response handler"
+                         << LOG_TAG("RequestId", response.request_id());
 
       handler(response);
     }
   }
 
   for (auto& notification : message.notifications()) {
-    debugger_->NotifyRequestEvent(
-        {.phase = scada::SessionDebugger::RequestPhase::Succeeded,
-         .title = notification.GetTypeName(),
-         .body = notification.DebugString()});
+    scada::SessionDebugger::RequestEvent request_event;
+    request_event.phase = scada::SessionDebugger::RequestPhase::Succeeded;
+    request_event.title = notification.GetTypeName();
+    request_event.body = notification.DebugString();
+    debugger_->NotifyRequestEvent(request_event);
 
     auto status_code =
         notification.has_status_code()
@@ -301,11 +319,12 @@ void SessionProxy::Request(protocol::Request& request,
   if (response_handler)
     requests_[request_id] = std::move(response_handler);
 
-  debugger_->NotifyRequestEvent(
-      {.request_id = request_id,
-       .phase = scada::SessionDebugger::RequestPhase::Running,
-       .title = request.GetTypeName(),
-       .body = request.DebugString()});
+  scada::SessionDebugger::RequestEvent event;
+  event.request_id = request_id;
+  event.phase = scada::SessionDebugger::RequestPhase::Running;
+  event.title = request.GetTypeName();
+  event.body = request.DebugString();
+  debugger_->NotifyRequestEvent(event);
 
   request.set_request_id(request_id);
   assert(request.IsInitialized());
@@ -336,72 +355,86 @@ promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
 }
 
 transport::awaitable<void> SessionProxy::Connect() {
-  auto cancelation = cancelation_.ref();
-  auto executor = co_await boost::asio::this_coro::executor;
+  try {
+    auto cancelation = cancelation_.ref();
+    auto executor = co_await boost::asio::this_coro::executor;
 
-  LOG_INFO(*logger_) << "Connect" << LOG_TAG("UserName", user_name_)
-                     << LOG_TAG("ConnectionString", connection_string_);
+    LOG_INFO(*logger_) << "Connect" << LOG_TAG("UserName", user_name_)
+                       << LOG_TAG("ConnectionString", connection_string_);
 
-  auto transport = transport_factory_.CreateTransport(
-      transport::TransportString{connection_string_}, executor,
-      transport::log_source{std::make_shared<NetBoostLoggerAdapter>(logger_)});
+    auto transport = transport_factory_.CreateTransport(
+        transport::TransportString{connection_string_}, executor,
+        transport::log_source{std::make_shared<NetBoostLoggerAdapter>(logger_)});
 
-  if (!transport.ok()) {
-    LOG_WARNING(*logger_) << "Cannot create raw transport";
-    OnTransportClosed(transport.error());
-    co_return;
-  }
-
-  transport_ = transport::any_transport{
-      std::make_unique<ProtocolMessageTransport>(std::move(*transport))};
-
-  auto open_result = co_await transport_.open();
-
-  if (cancelation.canceled()) {
-    co_return;
-  }
-
-  if (open_result != transport::OK) {
-    OnTransportClosed(open_result);
-    co_return;
-  }
-
-  write_queue_.emplace(transport_);
-
-  OnTransportOpened();
-
-  std::vector<char> buffer;
-
-  for (;;) {
-    if (cancelation.canceled()) {
+    if (!transport.ok()) {
+      LOG_WARNING(*logger_) << "Cannot create raw transport";
+      OnTransportClosed(transport.error());
       co_return;
     }
 
-    // TODO: Set up message size.
-    buffer.resize(1024 * 1024);
-    auto bytes_read = co_await transport_.read(buffer);
+    transport_ = transport::any_transport{
+        std::make_unique<ProtocolMessageTransport>(std::move(*transport))};
+
+    auto open_result = co_await transport_.open();
 
     if (cancelation.canceled()) {
       co_return;
     }
 
-    if (!bytes_read.ok()) {
-      OnTransportClosed(bytes_read.error());
+    if (open_result != transport::OK) {
+      OnTransportClosed(open_result);
       co_return;
     }
 
-    // Graceful close.
-    if (*bytes_read == 0) {
-      OnTransportClosed(transport::OK);
-      co_return;
+    write_queue_.emplace(transport_);
+
+    OnTransportOpened();
+
+    std::vector<char> buffer;
+
+    for (;;) {
+      if (cancelation.canceled()) {
+        co_return;
+      }
+
+      // TODO: Set up message size.
+      buffer.resize(1024 * 1024);
+      auto bytes_read = co_await transport_.read(buffer);
+
+      LOG_INFO(*logger_) << "Read loop iteration completed"
+                         << LOG_TAG("Ok", bytes_read.ok())
+                         << LOG_TAG("BytesRead", bytes_read.ok() ? *bytes_read : 0);
+
+      if (cancelation.canceled()) {
+        co_return;
+      }
+
+      if (!bytes_read.ok()) {
+        OnTransportClosed(bytes_read.error());
+        co_return;
+      }
+
+      // Graceful close.
+      if (*bytes_read == 0) {
+        OnTransportClosed(transport::OK);
+        co_return;
+      }
+
+      buffer.resize(*bytes_read);
+
+      LOG_INFO(*logger_) << "Dispatching transport message"
+                         << LOG_TAG("BytesRead", *bytes_read);
+
+      OnTransportMessageReceived(buffer);
     }
-
-    buffer.resize(*bytes_read);
-
-    OnTransportMessageReceived(buffer);
+  } catch (const std::exception& e) {
+    LOG_ERROR(*logger_) << "Connect coroutine failed"
+                        << LOG_TAG("Error", e.what());
+    OnSessionError(scada::StatusCode::Bad_Disconnected);
+  } catch (...) {
+    LOG_ERROR(*logger_) << "Connect coroutine failed with unknown error";
+    OnSessionError(scada::StatusCode::Bad_Disconnected);
   }
-
-  co_return;
 }
 
 void SessionProxy::ForwardConnectResult(scada::Status&& status) {
@@ -519,9 +552,30 @@ promise<void> SessionProxy::Reconnect() {
     transport_.reset();
 
     connect_promise_ = promise<void>{};
+    connect_loop_done_promise_ = promise<void>{};
+    pending_connect_result_.reset();
 
-    boost::asio::co_spawn(NetExecutorAdapter{executor_}, Connect(),
-                          boost::asio::detached);
+    boost::asio::co_spawn(
+        NetExecutorAdapter{executor_}, Connect(),
+        [this, logger = logger_, loop_done = connect_loop_done_promise_](
+            std::exception_ptr e) mutable {
+          if (e) {
+            try {
+              std::rethrow_exception(e);
+            } catch (const std::exception& ex) {
+              LOG_ERROR(*logger) << "Connect loop failed"
+                                 << LOG_TAG("Error", ex.what());
+            } catch (...) {
+              LOG_ERROR(*logger) << "Connect loop failed with unknown error";
+            }
+          }
+          if (pending_connect_result_) {
+            auto status = *pending_connect_result_;
+            pending_connect_result_.reset();
+            ForwardConnectResult(std::move(status));
+          }
+          loop_done.resolve();
+        });
 
     return connect_promise_;
   });

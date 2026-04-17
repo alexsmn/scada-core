@@ -48,17 +48,26 @@ void ViewServiceStub::OnBrowse(const protocol::Request& request) {
       service_context_.with_request_id(request.request_id())
           .with_trace_id(request.trace_id());
 
-  CoSpawn(executor_,
-          OnBrowseAsync(request.request_id(), std::move(context),
-                        std::move(inputs)));
+  auto self = shared_from_this();
+  CoSpawn(
+      executor_,
+      [self, request_id = request.request_id(), context = std::move(context),
+       inputs = std::move(inputs)]() mutable -> Awaitable<void> {
+        co_await self->OnBrowseAsync(request_id, std::move(context),
+                                     std::move(inputs));
+      }());
 }
 
 void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
   auto inputs =
       ConvertTo<std::vector<scada::BrowsePath>>(request.browse_path());
 
+  auto self = shared_from_this();
   CoSpawn(executor_,
-          OnBrowsePathsAsync(request.request_id(), std::move(inputs)));
+          [self, request_id = request.request_id(),
+           inputs = std::move(inputs)]() mutable -> Awaitable<void> {
+            co_await self->OnBrowsePathsAsync(request_id, std::move(inputs));
+          }());
 }
 
 Awaitable<void> ViewServiceStub::OnBrowseAsync(

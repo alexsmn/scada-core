@@ -16,6 +16,7 @@
 #include <boost/signals2/signal.hpp>
 #include <transport/any_transport.h>
 #include <transport/write_queue.h>
+#include <optional>
 #include <unordered_map>
 
 namespace transport {
@@ -146,6 +147,8 @@ class SessionProxy : private SessionProxyContext,
       session_state_changed_signal_;
 
   promise<void> connect_promise_;
+  promise<void> connect_loop_done_promise_;
+  std::optional<scada::Status> pending_connect_result_;
 
   int next_request_id_ = 1;
 

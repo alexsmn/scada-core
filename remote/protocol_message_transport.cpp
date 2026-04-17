@@ -7,8 +7,8 @@
 #include <array>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <transport/transport_string.h>
 #include <transport/transport_util.h>
+#include <transport/transport_string.h>
 
 namespace {
 
@@ -83,10 +83,20 @@ ProtocolMessageTransport::read(std::span<char> data) {
 
   auto payload_size = co_await ReadPayloadSize(transport_);
   if (!payload_size.ok() || *payload_size == 0) {
+    LOG_INFO(logger) << "Read payload size failed or closed"
+                     << LOG_TAG("Ok", payload_size.ok())
+                     << LOG_TAG("Value", payload_size.ok() ? *payload_size : 0);
     co_return payload_size;
   }
 
-  co_return co_await ReadExact(transport_, data.subspan(0, *payload_size));
+  LOG_INFO(logger) << "Read payload"
+                   << LOG_TAG("PayloadSize", *payload_size);
+
+  auto payload_read = co_await ReadExact(transport_, data.subspan(0, *payload_size));
+  LOG_INFO(logger) << "Read payload completed"
+                   << LOG_TAG("Ok", payload_read.ok())
+                   << LOG_TAG("BytesRead", payload_read.ok() ? *payload_read : 0);
+  co_return payload_read;
 }
 
 transport::awaitable<transport::expected<size_t>>
@@ -97,16 +107,16 @@ ProtocolMessageTransport::write(std::span<const char> data) {
   message.insert(message.end(), data.begin(), data.end());
   protocol::UpdateMessageSize(message);
 
-  auto bytes_written = co_await transport_.write(message);
+  auto write_error = co_await transport::Write(
+      transport_, std::span<char>{message.data(), message.size()});
 
-  if (!bytes_written.ok()) {
+  if (write_error != transport::OK) {
     LOG_WARNING(logger) << "Write failed";
-    co_return bytes_written.error();
+    co_return write_error;
   }
 
-  // Per transport (and ASIO) specs, bytes written is always equal to the size
-  // of the message.
-  assert(*bytes_written == message.size());
+  LOG_INFO(logger) << "Write payload completed"
+                   << LOG_TAG("PayloadSize", data.size());
 
   // Return the size of the payload.
   co_return data.size();

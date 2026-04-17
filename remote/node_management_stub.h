@@ -22,7 +22,7 @@ class ServiceContext;
 class Executor;
 class MessageSender;
 
-class NodeManagementStub {
+class NodeManagementStub : public std::enable_shared_from_this<NodeManagementStub> {
  public:
   NodeManagementStub(std::shared_ptr<Executor> executor,
                      std::weak_ptr<MessageSender> sender,
