@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scada/service_context.h"
+#include "base/awaitable.h"
 #include "scada/view_service.h"
 
 #include <memory>
@@ -33,5 +34,12 @@ class ViewServiceStub final : private ViewServiceStubContext {
 
  private:
   void OnBrowse(const protocol::Request& request);
+  [[nodiscard]] Awaitable<void> OnBrowseAsync(
+      unsigned request_id,
+      scada::ServiceContext context,
+      std::vector<scada::BrowseDescription> inputs);
   void OnBrowsePaths(const protocol::Request& request);
+  [[nodiscard]] Awaitable<void> OnBrowsePathsAsync(
+      unsigned request_id,
+      std::vector<scada::BrowsePath> inputs);
 };

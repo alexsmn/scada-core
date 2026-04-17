@@ -20,6 +20,7 @@
 #include "scada/status_promise.h"
 
 #include <transport/transport_factory.h>
+#include <algorithm>
 #include <transport/transport_string.h>
 #include <ranges>
 #include <utility>
@@ -42,6 +43,12 @@ RemoteSessionManager::RemoteSessionManager(
 }
 
 RemoteSessionManager::~RemoteSessionManager() {
+  for (auto& connection : connections_) {
+    connection->Shutdown();
+  }
+  connections_.clear();
+  listeners_.clear();
+
   if (!session_map_.empty()) {
     LOG_INFO(*logger_) << "Closing opened sessions"
                        << LOG_TAG("SessionCount", session_map_.size());
@@ -50,9 +57,6 @@ RemoteSessionManager::~RemoteSessionManager() {
     }
     session_map_.clear();
   }
-
-  // All connections will be destroyed on |listening_transport_| destructor.
-  listeners_.clear();
 }
 
 promise<> RemoteSessionManager::Init() {
@@ -83,18 +87,13 @@ Awaitable<void> RemoteSessionManager::InitAsync() {
 
     auto listener_name = acceptor->name();
 
-    auto& listener = listeners_.emplace_back(std::make_unique<RemoteListener>(
-        logger_, std::move(*acceptor), std::move(listener_name),
-        accept_handler));
+    auto listener = RemoteListener::Create(logger_, std::move(*acceptor),
+                                           std::move(listener_name),
+                                           accept_handler);
+    listeners_.emplace_back(listener);
 
     co_await AwaitPromise(NetExecutorAdapter{executor_}, listener->Init());
   }
-}
-
-promise<CreateSessionResult> RemoteSessionManager::CreateSession(
-    const protocol::CreateSession& create_session) {
-  return ToPromise(NetExecutorAdapter{executor_},
-                   CreateSessionAsync(create_session));
 }
 
 Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
@@ -141,6 +140,9 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
     }
 
     auto& session = CreateNewSession(user_id, user_name);
+
+    LOG_INFO(*logger_) << "CreateSessionAsync returning success"
+                       << LOG_TAG("UserId", NodeIdToScadaString(user_id));
 
     co_return CreateSessionResult{
         .status = scada::StatusCode::Good,
@@ -200,10 +202,19 @@ SessionStub& RemoteSessionManager::CreateNewSession(
   auto& session_ref = *session;
   session_map_.insert_or_assign(user_id, std::move(session));
 
+  LOG_INFO(*logger_) << "Session stored"
+                     << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                     << LOG_TAG("SessionCount", session_map_.size());
+
   // Notify all observers.
   for (auto& o : observers_) {
+    LOG_INFO(*logger_) << "Notify session-open observer"
+                       << LOG_TAG("UserId", NodeIdToScadaString(user_id));
     o.OnSessionOpened(session_ref);
   }
+
+  LOG_INFO(*logger_) << "Session creation finalized"
+                     << LOG_TAG("UserId", NodeIdToScadaString(user_id));
 
   return session_ref;
 }
@@ -216,8 +227,7 @@ void RemoteSessionManager::DeleteSession(const scada::NodeId& user_id) {
   session_map_.erase(i);
 
   LOG_INFO(*logger_) << "Session deleted"
-                     << LOG_TAG("Context",
-                                ToString(session->service_context()));
+                     << " | Context = " << session->service_context();
 
   // Notify all observers.
   for (auto& o : observers_)
@@ -229,7 +239,7 @@ void RemoteSessionManager::CloseUserSessions(const scada::NodeId& user_id) {
     if (SessionStub* session = FindUserSession(user_id)) {
       LOG_WARNING(*logger_)
           << "Close session because of user deletion"
-          << LOG_TAG("Context", ToString(session->service_context()));
+          << " | Context = " << session->service_context();
       session->OnSessionDeleted();
       DeleteSession(user_id);
     }
@@ -252,14 +262,24 @@ void RemoteSessionManager::OnSessionAccepted(
   ServerConnectionContext connection_context;
   connection_context.transport_ = std::move(transport);
   connection_context.create_session_handler_ =
-      [this](const protocol::Request& request) {
-        return CreateSession(request.create_session());
+      [this](protocol::CreateSession create_session)
+          -> Awaitable<CreateSessionResult> {
+        co_return co_await CreateSessionAsync(std::move(create_session));
       };
   connection_context.delete_session_handler_ = [this](SessionStub& session) {
     DeleteSession(session.service_context().user_id());
   };
+  connection_context.closed_handler_ = [this](ServerConnection& connection) {
+    OnConnectionClosed(connection);
+  };
 
-  new ServerConnection(std::move(connection_context));
+  connections_.emplace_back(ServerConnection::Create(std::move(connection_context)));
+}
+
+void RemoteSessionManager::OnConnectionClosed(ServerConnection& connection) {
+  std::erase_if(connections_, [&connection](const auto& item) {
+    return item.get() == &connection;
+  });
 }
 
 void RemoteSessionManager::OnTransportClosed(transport::error_code error) {

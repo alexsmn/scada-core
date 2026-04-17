@@ -8,6 +8,7 @@
 #include "scada/method_service.h"
 #include "scada/node_management_service.h"
 #include "scada/service_context.h"
+#include "scada/view_service.h"
 
 namespace scada {
 
@@ -21,6 +22,30 @@ inline Awaitable<std::tuple<Status, std::vector<DataValue>>> ReadAsync(
                     auto callback) mutable {
         service.Read(context, inputs, std::move(callback));
       });
+}
+
+inline Awaitable<std::tuple<Status, std::vector<BrowseResult>>> BrowseAsync(
+    const std::shared_ptr<Executor>& executor,
+    ViewService& service,
+    ServiceContext context,
+    std::vector<BrowseDescription> inputs) {
+  co_return co_await CallbackToAwaitable<Status, std::vector<BrowseResult>>(
+      executor, [&service, context = std::move(context),
+                 inputs = std::move(inputs)](auto callback) mutable {
+        service.Browse(context, inputs, std::move(callback));
+      });
+}
+
+inline Awaitable<std::tuple<Status, std::vector<BrowsePathResult>>>
+TranslateBrowsePathsAsync(const std::shared_ptr<Executor>& executor,
+                          ViewService& service,
+                          std::vector<BrowsePath> inputs) {
+  co_return co_await
+      CallbackToAwaitable<Status, std::vector<BrowsePathResult>>(
+          executor,
+          [&service, inputs = std::move(inputs)](auto callback) mutable {
+            service.TranslateBrowsePaths(inputs, std::move(callback));
+          });
 }
 
 inline Awaitable<std::tuple<Status, std::vector<StatusCode>>> WriteAsync(

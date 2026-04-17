@@ -7,6 +7,7 @@
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/service_awaitable.h"
 #include "scada/status.h"
 #include "scada/view_service.h"
 
@@ -47,45 +48,53 @@ void ViewServiceStub::OnBrowse(const protocol::Request& request) {
       service_context_.with_request_id(request.request_id())
           .with_trace_id(request.trace_id());
 
-  service_.Browse(
-      context, inputs,
-      BindExecutor(executor_,
-                   [request_id = request.request_id(), sender = sender_](
-                       const scada::Status& status,
-                       const std::vector<scada::BrowseResult>& results) {
-                     protocol::Message message;
-                     auto& response = *message.add_responses();
-                     response.set_request_id(request_id);
-                     Convert(status, *response.mutable_status());
-                     auto& browse = *response.mutable_browse_result();
-                     if (status) {
-                       Convert(results, *browse.mutable_results());
-                     }
-
-                     if (auto locked_sender = sender.lock()) {
-                       locked_sender->Send(message);
-                     }
-                   }));
+  CoSpawn(executor_,
+          OnBrowseAsync(request.request_id(), std::move(context),
+                        std::move(inputs)));
 }
 
 void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
   auto inputs =
       ConvertTo<std::vector<scada::BrowsePath>>(request.browse_path());
 
-  service_.TranslateBrowsePaths(
-      inputs,
-      BindExecutor(executor_,
-                   [request_id = request.request_id(), sender = sender_](
-                       const scada::Status& status,
-                       const std::vector<scada::BrowsePathResult>& results) {
-                     protocol::Message message;
-                     auto& response = *message.add_responses();
-                     response.set_request_id(request_id);
-                     Convert(status, *response.mutable_status());
-                     Convert(results, *response.mutable_browse_path_result());
+  CoSpawn(executor_,
+          OnBrowsePathsAsync(request.request_id(), std::move(inputs)));
+}
 
-                     if (auto locked_sender = sender.lock()) {
-                       locked_sender->Send(message);
-                     }
-                   }));
+Awaitable<void> ViewServiceStub::OnBrowseAsync(
+    unsigned request_id,
+    scada::ServiceContext context,
+    std::vector<scada::BrowseDescription> inputs) {
+  auto [status, results] = co_await scada::BrowseAsync(
+      executor_, service_, std::move(context), std::move(inputs));
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(status, *response.mutable_status());
+  if (status) {
+    Convert(std::move(results),
+            *response.mutable_browse_result()->mutable_results());
+  }
+
+  if (auto locked_sender = sender_.lock()) {
+    locked_sender->Send(message);
+  }
+}
+
+Awaitable<void> ViewServiceStub::OnBrowsePathsAsync(
+    unsigned request_id,
+    std::vector<scada::BrowsePath> inputs) {
+  auto [status, results] = co_await scada::TranslateBrowsePathsAsync(
+      executor_, service_, std::move(inputs));
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(status, *response.mutable_status());
+  Convert(std::move(results), *response.mutable_browse_path_result());
+
+  if (auto locked_sender = sender_.lock()) {
+    locked_sender->Send(message);
+  }
 }

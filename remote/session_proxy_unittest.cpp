@@ -4,21 +4,152 @@
 #include "base/test/network_test_environment.h"
 #include "base/test/test_executor.h"
 #include "remote/remote_session_manager.h"
-#include "scada/authentication_mock.h"
+#include "remote/session_stub.h"
+#include "scada/attribute_service.h"
+#include "scada/history_service.h"
+#include "scada/method_service.h"
+#include "scada/node_management_service.h"
 #include "scada/status_promise.h"
+#include "scada/view_service.h"
 
 #include <gmock/gmock.h>
+#include <optional>
 
 using namespace testing;
+
+namespace {
+
+class NoopAttributeService final : public scada::AttributeService {
+ public:
+  void Read(const scada::ServiceContext&,
+            const std::shared_ptr<const std::vector<scada::ReadValueId>>&,
+            const scada::ReadCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+
+  void Write(const scada::ServiceContext&,
+             const std::shared_ptr<const std::vector<scada::WriteValue>>&,
+             const scada::WriteCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+};
+
+class NoopMethodService final : public scada::MethodService {
+ public:
+  void Call(const scada::NodeId&,
+            const scada::NodeId&,
+            const std::vector<scada::Variant>&,
+            const scada::NodeId&,
+            const scada::StatusCallback& callback) override {
+    callback(scada::StatusCode::Good);
+  }
+};
+
+class NoopViewService final : public scada::ViewService {
+ public:
+  void Browse(const scada::ServiceContext&,
+              const std::vector<scada::BrowseDescription>&,
+              const scada::BrowseCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+
+  void TranslateBrowsePaths(
+      const std::vector<scada::BrowsePath>&,
+      const scada::TranslateBrowsePathsCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+};
+
+class NoopNodeManagementService final : public scada::NodeManagementService {
+ public:
+  void AddNodes(const std::vector<scada::AddNodesItem>&,
+                const scada::AddNodesCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+
+  void DeleteNodes(const std::vector<scada::DeleteNodesItem>&,
+                   const scada::DeleteNodesCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+
+  void AddReferences(const std::vector<scada::AddReferencesItem>&,
+                     const scada::AddReferencesCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+
+  void DeleteReferences(
+      const std::vector<scada::DeleteReferencesItem>&,
+      const scada::DeleteReferencesCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+};
+
+class NoopHistoryService final : public scada::HistoryService {
+ public:
+  void HistoryReadRaw(const scada::HistoryReadRawDetails&,
+                      const scada::HistoryReadRawCallback& callback) override {
+    callback({});
+  }
+
+  void HistoryReadEvents(
+      const scada::NodeId&,
+      base::Time,
+      base::Time,
+      const scada::EventFilter&,
+      const scada::HistoryReadEventsCallback& callback) override {
+    callback({});
+  }
+};
+
+class SessionManagerObserver final : public RemoteSessionManager::Observer {
+ public:
+  void OnSessionOpened(SessionStub& session) override {
+    opened_user_ids.push_back(session.service_context().user_id());
+  }
+
+  void OnSessionClosed(SessionStub& session) override {
+    closed_user_ids.push_back(session.service_context().user_id());
+  }
+
+  std::vector<scada::NodeId> opened_user_ids;
+  std::vector<scada::NodeId> closed_user_ids;
+};
+
+}  // namespace
 
 class SessionProxyTest : public Test {
  public:
   void SetUp() override {
-    ON_CALL(authenticator_, Call(_, _))
-        .WillByDefault(Return(make_resolved_promise(
-            scada::AuthenticationResult{.user_id = kUserId})));
+    session_manager_ = std::make_unique<RemoteSessionManager>(
+        RemoteSessionManagerContext{
+            .executor_ = std::make_shared<TestExecutor>(),
+            .services_ =
+                {.attribute_service = &attribute_service_,
+                 .method_service = &method_service_,
+                 .history_service = &history_service_,
+                 .view_service = &view_service_,
+                 .node_management_service = &node_management_service_},
+            .authenticator_ =
+                [this](const scada::LocalizedText&,
+                       const scada::LocalizedText&) {
+                  if (auth_failure_status_) {
+                    return scada::MakeRejectedStatusPromise<
+                        scada::AuthenticationResult>(*auth_failure_status_);
+                  }
 
-    asio_env_.Wait(session_manager_.Init());
+                  return make_resolved_promise(
+                      scada::AuthenticationResult{.user_id = kUserId});
+                },
+            .transport_factory_ = asio_env_.transport_factory,
+            .endpoints_ = {transport::TransportString{
+                network_env_.server_transport_string}}});
+
+    asio_env_.Wait(session_manager_->Init());
+  }
+
+  void TearDown() override {
+    session_manager_.reset();
+    asio_env_.Poll();
   }
 
  protected:
@@ -30,16 +161,14 @@ class SessionProxyTest : public Test {
 
   AsioTestEnvironment asio_env_;
   NetworkTestEnvironment network_env_;
+  NoopAttributeService attribute_service_;
+  NoopMethodService method_service_;
+  NoopViewService view_service_;
+  NoopNodeManagementService node_management_service_;
+  NoopHistoryService history_service_;
 
-  NiceMock<scada::MockAuthenticator> authenticator_;
-
-  RemoteSessionManager session_manager_{
-      {.executor_ = std::make_shared<TestExecutor>(),
-       .services_ = {},
-       .authenticator_ = authenticator_.AsStdFunction(),
-       .transport_factory_ = asio_env_.transport_factory,
-       .endpoints_ = {transport::TransportString{
-           network_env_.server_transport_string}}}};
+  std::optional<scada::StatusCode> auth_failure_status_;
+  std::unique_ptr<RemoteSessionManager> session_manager_;
 
   inline static const scada::LocalizedText kUserName{u"username"};
   inline static const scada::LocalizedText kPassword{u"password"};
@@ -63,10 +192,7 @@ TEST_F(SessionProxyTest, Connect) {
 
 // Verifies that Connect() with wrong credentials rejects the promise.
 TEST_F(SessionProxyTest, Connect_BadPassword) {
-  EXPECT_CALL(authenticator_, Call(kUserName, kPassword))
-      .WillOnce(
-          Return(scada::MakeRejectedStatusPromise<scada::AuthenticationResult>(
-              scada::StatusCode::Bad_WrongLoginCredentials)));
+  auth_failure_status_ = scada::StatusCode::Bad_WrongLoginCredentials;
 
   SessionProxy session{{.executor_ = asio_env_.executor,
                         .transport_factory_ = asio_env_.transport_factory}};
@@ -103,4 +229,71 @@ TEST_F(SessionProxyTest, Reconnect) {
   EXPECT_TRUE(session.IsConnected(nullptr));
 
   asio_env_.Wait(session.Disconnect());
+}
+
+TEST_F(SessionProxyTest, ManagerObserverNotifiedOnOpenAndClose) {
+  SessionManagerObserver observer;
+  session_manager_->AddObserver(observer);
+
+  SessionProxy session{{.executor_ = asio_env_.executor,
+                        .transport_factory_ = asio_env_.transport_factory}};
+
+  asio_env_.Wait(session.Connect(GetConnectParams()));
+  EXPECT_THAT(observer.opened_user_ids, ElementsAre(kUserId));
+  EXPECT_THAT(observer.closed_user_ids, IsEmpty());
+
+  asio_env_.Wait(session.Disconnect());
+  EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId));
+
+  session_manager_->RemoveObserver(observer);
+}
+
+TEST_F(SessionProxyTest, Connect_DuplicateUserRejectedWithoutRemoteLogoff) {
+  SessionProxy session1{{.executor_ = asio_env_.executor,
+                         .transport_factory_ = asio_env_.transport_factory}};
+  SessionProxy session2{{.executor_ = asio_env_.executor,
+                         .transport_factory_ = asio_env_.transport_factory}};
+
+  asio_env_.Wait(session1.Connect(GetConnectParams()));
+
+  EXPECT_THROW(asio_env_.Wait(session2.Connect(GetConnectParams())),
+               scada::status_exception);
+
+  EXPECT_TRUE(session1.IsConnected(nullptr));
+  EXPECT_FALSE(session2.IsConnected(nullptr));
+
+  asio_env_.Wait(session1.Disconnect());
+}
+
+TEST_F(SessionProxyTest, Connect_DuplicateUserAllowedWithRemoteLogoff) {
+  auto params = GetConnectParams();
+  auto second_params = params;
+  second_params.allow_remote_logoff = true;
+
+  SessionProxy session1{{.executor_ = asio_env_.executor,
+                         .transport_factory_ = asio_env_.transport_factory}};
+  SessionProxy session2{{.executor_ = asio_env_.executor,
+                         .transport_factory_ = asio_env_.transport_factory}};
+
+  asio_env_.Wait(session1.Connect(params));
+  asio_env_.Wait(session2.Connect(second_params));
+  asio_env_.Poll();
+
+  EXPECT_FALSE(session1.IsConnected(nullptr));
+  EXPECT_TRUE(session2.IsConnected(nullptr));
+
+  asio_env_.Wait(session2.Disconnect());
+}
+
+TEST_F(SessionProxyTest, CloseUserSessionsDisconnectsMatchingSession) {
+  SessionProxy session{{.executor_ = asio_env_.executor,
+                        .transport_factory_ = asio_env_.transport_factory}};
+
+  asio_env_.Wait(session.Connect(GetConnectParams()));
+  EXPECT_TRUE(session.IsConnected(nullptr));
+
+  session_manager_->CloseUserSessions(kUserId);
+  asio_env_.Poll();
+
+  EXPECT_FALSE(session.IsConnected(nullptr));
 }

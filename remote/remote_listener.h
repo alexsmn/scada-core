@@ -2,12 +2,23 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <memory>
 #include <transport/any_transport.h>
 #include <transport/expected.h>
 
-class RemoteListener {
+class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
  public:
   using AcceptHandler = std::function<void(transport::any_transport transport)>;
+
+  static std::shared_ptr<RemoteListener> Create(
+      std::shared_ptr<BoostLogger> logger,
+      transport::any_transport transport,
+      std::string listener_name,
+      AcceptHandler accept_handler) {
+    return std::shared_ptr<RemoteListener>(new RemoteListener(
+        std::move(logger), std::move(transport), std::move(listener_name),
+        std::move(accept_handler)));
+  }
 
   // `listener_name` is used for logging purposes.
   RemoteListener(std::shared_ptr<BoostLogger> logger,
@@ -22,10 +33,11 @@ class RemoteListener {
   promise<> Init() {
     LOG_INFO(*logger_) << "Listening..." << LOG_TAG("Listener", listener_name_);
 
+    auto self = shared_from_this();
     boost::asio::co_spawn(
         acceptor_.get_executor(),
-        [this]() -> transport::awaitable<void> {
-          OnTransportClosed(co_await Run());
+        [self]() -> transport::awaitable<void> {
+          self->OnTransportClosed(co_await self->Run());
         },
         boost::asio::detached);
 

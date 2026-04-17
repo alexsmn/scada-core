@@ -9,15 +9,28 @@
 #include <boost/asio/detached.hpp>
 #include <stdexcept>
 
-ServerConnection::ServerConnection(ServerConnectionContext&& context)
-    : ServerConnectionContext{std::move(context)} {
-  boost::asio::co_spawn(transport_.get_executor(), Run(),
-                        boost::asio::detached);
+std::shared_ptr<ServerConnection> ServerConnection::Create(
+    ServerConnectionContext&& context) {
+  auto connection =
+      std::shared_ptr<ServerConnection>(new ServerConnection(std::move(context)));
+  connection->Start();
+  return connection;
 }
+
+ServerConnection::ServerConnection(ServerConnectionContext&& context)
+    : ServerConnectionContext{std::move(context)} {}
 
 ServerConnection::~ServerConnection() {
   if (session_)
     session_->SetConnection(nullptr);
+}
+
+void ServerConnection::Start() {
+  auto self = shared_from_this();
+  boost::asio::co_spawn(
+      transport_.get_executor(),
+      [self]() -> transport::awaitable<void> { co_await self->Run(); },
+      boost::asio::detached);
 }
 
 transport::awaitable<void> ServerConnection::Run() {
@@ -55,6 +68,11 @@ void ServerConnection::OnSessionDeleted() {
   session_ = nullptr;
 }
 
+void ServerConnection::Shutdown() {
+  closed_handler_ = {};
+  Close();
+}
+
 void ServerConnection::OnTransportMessageReceived(std::span<const char> data) {
   protocol::Message message;
   if (!message.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
@@ -80,7 +98,28 @@ void ServerConnection::OnTransportMessageReceived(std::span<const char> data) {
 }
 
 void ServerConnection::Close() {
-  delete this;
+  if (closed_)
+    return;
+
+  auto self = shared_from_this();
+  closed_ = true;
+  cancelation_.reset();
+
+  if (session_) {
+    session_->SetConnection(nullptr);
+    session_ = nullptr;
+  }
+
+  if (closed_handler_) {
+    closed_handler_(*this);
+  }
+
+  boost::asio::co_spawn(
+      transport_.get_executor(),
+      [self]() -> transport::awaitable<void> {
+        co_await self->transport_.close();
+      },
+      boost::asio::detached);
 }
 
 void ServerConnection::OnTransportClosed(transport::error_code error) {
@@ -88,17 +127,31 @@ void ServerConnection::OnTransportClosed(transport::error_code error) {
 }
 
 void ServerConnection::Send(protocol::Message& message) {
+  if (closed_)
+    return;
+
   std::string string;
   if (!message.AppendToString(&string)) {
     throw std::runtime_error("Can't serialize the message");
   }
 
+  auto self = shared_from_this();
   boost::asio::co_spawn(
       transport_.get_executor(),
-      [this, string = std::move(string)]() -> transport::awaitable<void> {
-        auto bytes_written = co_await write_queue_.Write(string);
+      [self, string = std::move(string)]() -> transport::awaitable<void> {
+        if (self->closed_)
+          co_return;
+
+        LOG_INFO(*self->logger_) << "Begin async write"
+                                 << LOG_TAG("Size", string.size());
+        auto bytes_written = co_await self->write_queue_.Write(string);
+        LOG_INFO(*self->logger_) << "Async write completed"
+                                 << LOG_TAG("Ok", bytes_written.ok())
+                                 << LOG_TAG("BytesWritten",
+                                            bytes_written.ok() ? *bytes_written
+                                                               : 0);
         if (!bytes_written.ok() || *bytes_written != string.size()) {
-          Close();
+          self->Close();
           co_return;
         }
       },
@@ -107,14 +160,27 @@ void ServerConnection::Send(protocol::Message& message) {
 
 void ServerConnection::OnCreateSession(const protocol::Request& request) {
   assert(request.has_create_session());
-  boost::asio::co_spawn(transport_.get_executor(), OnCreateSessionAsync(request),
-                        boost::asio::detached);
+  auto self = shared_from_this();
+  boost::asio::co_spawn(
+      transport_.get_executor(),
+      [self, request]() -> Awaitable<void> {
+        co_await self->OnCreateSessionAsync(request);
+      },
+      boost::asio::detached);
 }
 
 Awaitable<void> ServerConnection::OnCreateSessionAsync(protocol::Request request) {
   const auto request_id = request.request_id();
-  auto result = co_await AwaitPromise(transport_.get_executor(),
-                                      create_session_handler_(request));
+  auto result = co_await create_session_handler_(request.create_session());
+
+  if (closed_)
+    co_return;
+
+  LOG_INFO(*logger_)
+      << "CreateSession completed"
+      << LOG_TAG("RequestId", request_id)
+      << LOG_TAG("Status", ToString(result.status))
+      << LOG_TAG("HasSession", result.session != nullptr);
 
   protocol::Message message;
   auto& response = *message.add_responses();
@@ -129,16 +195,32 @@ Awaitable<void> ServerConnection::OnCreateSessionAsync(protocol::Request request
     Convert(result.user_id, *create_session_result.mutable_user_node_id());
     create_session_result.set_user_rights(result.user_rights);
   }
+  LOG_INFO(*logger_)
+      << "Sending create-session response"
+      << LOG_TAG("RequestId", request_id);
   Send(message);
 
   session_ = result.session;
+  if (session_)
+    LOG_INFO(*logger_)
+        << "Binding session to connection"
+        << LOG_TAG("RequestId", request_id);
   if (session_)
     session_->SetConnection(this);
 }
 
 void ServerConnection::OnDeleteSession(const protocol::Request& request) {
   assert(request.has_delete_session());
+  auto self = shared_from_this();
+  boost::asio::co_spawn(
+      transport_.get_executor(),
+      [self, request]() -> Awaitable<void> {
+        co_await self->OnDeleteSessionAsync(request);
+      },
+      boost::asio::detached);
+}
 
+Awaitable<void> ServerConnection::OnDeleteSessionAsync(protocol::Request request) {
   scada::Status status(scada::StatusCode::Good);
 
   if (session_) {
@@ -148,13 +230,17 @@ void ServerConnection::OnDeleteSession(const protocol::Request& request) {
     status = scada::Status(scada::StatusCode::Bad_SessionIsLoggedOff);
   }
 
-  protocol::Message message;
-  auto& response = *message.add_responses();
-  response.set_request_id(request.request_id());
-  Convert(status, *response.mutable_status());
+  if (!closed_) {
+    protocol::Message message;
+    auto& response = *message.add_responses();
+    response.set_request_id(request.request_id());
+    Convert(status, *response.mutable_status());
 
-  try {
-    Send(message);
-  } catch (const std::exception&) {
+    try {
+      Send(message);
+    } catch (const std::exception&) {
+    }
   }
+
+  co_return;
 }

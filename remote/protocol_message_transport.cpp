@@ -1,6 +1,7 @@
 #include "remote/protocol_message_transport.h"
 
 #include "base/auto_reset.h"
+#include "base/boost_log.h"
 #include "remote/protocol_buffer.h"
 
 #include <array>
@@ -10,6 +11,8 @@
 #include <transport/transport_util.h>
 
 namespace {
+
+BoostLogger logger{LOG_NAME("ProtocolMessageTransport")};
 
 // Reads exactly `data.size()` bytes from the transport.
 transport::awaitable<transport::expected<size_t>> ReadExact(
@@ -88,6 +91,7 @@ ProtocolMessageTransport::read(std::span<char> data) {
 
 transport::awaitable<transport::expected<size_t>>
 ProtocolMessageTransport::write(std::span<const char> data) {
+  LOG_INFO(logger) << "Write payload" << LOG_TAG("PayloadSize", data.size());
   std::string message;
   protocol::PrependMessageSize(message);
   message.insert(message.end(), data.begin(), data.end());
@@ -96,6 +100,7 @@ ProtocolMessageTransport::write(std::span<const char> data) {
   auto bytes_written = co_await transport_.write(message);
 
   if (!bytes_written.ok()) {
+    LOG_WARNING(logger) << "Write failed";
     co_return bytes_written.error();
   }
 

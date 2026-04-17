@@ -37,14 +37,22 @@ SessionStub::~SessionStub() {
 void SessionStub::Init() {
   const std::weak_ptr<MessageSender> sender = weak_from_this();
 
-  view_service_stub_ = std::make_shared<ViewServiceStub>(ViewServiceStubContext{
-      executor_, sender, service_context_, *services_.view_service});
+  if (services_.view_service) {
+    view_service_stub_ =
+        std::make_shared<ViewServiceStub>(ViewServiceStubContext{
+            executor_, sender, service_context_, *services_.view_service});
+  }
 
-  node_management_stub_ = std::make_shared<NodeManagementStub>(
-      executor_, sender, *services_.node_management_service, service_context_);
+  if (services_.node_management_service) {
+    node_management_stub_ = std::make_shared<NodeManagementStub>(
+        executor_, sender, *services_.node_management_service,
+        service_context_);
+  }
 
-  history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
-                                                sender, executor_);
+  if (services_.history_service) {
+    history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
+                                                  sender, executor_);
+  }
 }
 
 std::shared_ptr<SessionStub> SessionStub::Create(SessionContext&& context) {
@@ -129,9 +137,12 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
                           delete_monitored_item.monitored_item_id());
   }
 
-  view_service_stub_->OnRequestReceived(request);
-  node_management_stub_->OnRequestReceived(request);
-  history_stub_->OnRequestReceived(request);
+  if (view_service_stub_)
+    view_service_stub_->OnRequestReceived(request);
+  if (node_management_stub_)
+    node_management_stub_->OnRequestReceived(request);
+  if (history_stub_)
+    history_stub_->OnRequestReceived(request);
 }
 
 void SessionStub::Send(protocol::Message& message) {
@@ -218,6 +229,14 @@ void SessionStub::OnCall(unsigned request_id,
                          const scada::NodeId& node_id,
                          const scada::NodeId& method_id,
                          const std::vector<scada::Variant>& arguments) {
+  if (!services_.method_service) {
+    protocol::Response response;
+    response.set_request_id(request_id);
+    Convert(scada::Status{scada::StatusCode::Bad},
+            *response.mutable_status());
+    SendResponse(response);
+    return;
+  }
   auto self = shared_from_this();
   CoSpawn(executor_,
           self->OnCallAsync(request_id, node_id, method_id, arguments));
@@ -226,6 +245,14 @@ void SessionStub::OnCall(unsigned request_id,
 void SessionStub::OnRead(const protocol::Request& request) {
   if (!request.has_read())
     return;
+  if (!services_.attribute_service) {
+    protocol::Response response;
+    response.set_request_id(request.request_id());
+    Convert(scada::Status{scada::StatusCode::Bad},
+            *response.mutable_status());
+    SendResponse(response);
+    return;
+  }
 
   const auto inputs = std::make_shared<const std::vector<scada::ReadValueId>>(
       ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id()));
@@ -238,6 +265,14 @@ void SessionStub::OnRead(const protocol::Request& request) {
 void SessionStub::OnWrite(const protocol::Request& request) {
   if (request.write_size() == 0)
     return;
+  if (!services_.attribute_service) {
+    protocol::Response response;
+    response.set_request_id(request.request_id());
+    Convert(scada::Status{scada::StatusCode::Bad},
+            *response.mutable_status());
+    SendResponse(response);
+    return;
+  }
 
   const auto request_id = request.request_id();
   const auto inputs = std::make_shared<const std::vector<scada::WriteValue>>(

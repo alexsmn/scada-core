@@ -28,6 +28,7 @@ class Response;
 
 class Executor;
 class RemoteListener;
+class ServerConnection;
 class SessionStub;
 struct CreateSessionResult;
 
@@ -64,8 +65,6 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
  private:
   [[nodiscard]] Awaitable<void> InitAsync();
 
-  promise<CreateSessionResult> CreateSession(
-      const protocol::CreateSession& create_session);
   [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
       protocol::CreateSession create_session);
 
@@ -80,13 +79,15 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   SessionStub* FindUserSession(const scada::NodeId& user_id) const;
 
   void OnSessionAccepted(transport::any_transport transport);
+  void OnConnectionClosed(ServerConnection& connection);
 
   void OnTransportClosed(transport::error_code error);
 
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("SessionManager"));
 
-  std::vector<std::unique_ptr<RemoteListener>> listeners_;
+  std::vector<std::shared_ptr<RemoteListener>> listeners_;
+  std::vector<std::shared_ptr<ServerConnection>> connections_;
 
   using SessionMap = std::map<scada::NodeId, std::shared_ptr<SessionStub>>;
   SessionMap session_map_;

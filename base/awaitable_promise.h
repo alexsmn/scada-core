@@ -55,18 +55,23 @@ inline auto PromiseToAwaitable(E executor,
                       typename Handler>(Handler&& handler) mutable {
     auto completion =
         std::make_shared<std::decay_t<Handler>>(std::forward<Handler>(handler));
+    auto promise_holder = std::make_shared<promise<T>>(std::move(p));
 
-    p.then([executor, completion](const T& result) mutable {
-         boost::asio::post(executor, [completion, result]() mutable {
+    promise_holder
+        ->then([executor, completion, promise_holder](const T& result) mutable {
+          boost::asio::post(
+              executor, [completion, promise_holder, result]() mutable {
+                (*completion)(PromiseAwaitableResult<T>{
+                    .error = std::exception_ptr{},
+                    .value = std::make_shared<T>(result)});
+              });
+        })
+        .except([executor, completion, promise_holder](
+                    std::exception_ptr e) mutable {
+          boost::asio::post(executor, [completion, promise_holder, e]() mutable {
            (*completion)(PromiseAwaitableResult<T>{
-               .error = std::exception_ptr{},
-               .value = std::make_shared<T>(result)});
+               .error = e});
          });
-       })
-        .except([executor, completion](std::exception_ptr e) mutable {
-          boost::asio::post(executor, [completion, e]() mutable {
-            (*completion)(PromiseAwaitableResult<T>{.error = e});
-          });
         });
   };
 
@@ -83,14 +88,17 @@ inline auto PromiseToAwaitable(E executor,
                       typename Handler>(Handler&& handler) mutable {
     auto completion =
         std::make_shared<std::decay_t<Handler>>(std::forward<Handler>(handler));
+    auto promise_holder = std::make_shared<promise<void>>(std::move(p));
 
-    p.then([executor, completion]() mutable {
-         boost::asio::post(executor, [completion]() mutable {
+    promise_holder
+        ->then([executor, completion, promise_holder]() mutable {
+          boost::asio::post(executor, [completion, promise_holder]() mutable {
            (*completion)(PromiseAwaitableVoidResult{});
          });
-       })
-        .except([executor, completion](std::exception_ptr e) mutable {
-          boost::asio::post(executor, [completion, e]() mutable {
+        })
+        .except([executor, completion, promise_holder](
+                    std::exception_ptr e) mutable {
+          boost::asio::post(executor, [completion, promise_holder, e]() mutable {
             (*completion)(PromiseAwaitableVoidResult{.error = e});
           });
         });
@@ -114,14 +122,16 @@ inline Awaitable<void> AwaitPromise(E executor, promise<void> p) {
   auto result = co_await PromiseToAwaitable(std::move(executor), std::move(p));
   if (result.error)
     std::rethrow_exception(result.error);
+  co_return;
 }
 
 template <class CompletitionHandler = boost::asio::use_awaitable_t<>>
 inline auto ToAwaitable(promise<void> p, CompletitionHandler&& handler = {}) {
   auto initiate = [p]<typename Handler>(Handler&& self) mutable {
-    p.then([self = std::make_shared<Handler>(std::forward<Handler>(self))]() {
-       (*self)();
-    });
+    auto promise_holder = std::make_shared<promise<void>>(std::move(p));
+    promise_holder->then(
+        [self = std::make_shared<Handler>(std::forward<Handler>(self)),
+         promise_holder]() { (*self)(); });
   };
   return boost::asio::async_initiate<CompletitionHandler, void(/*result*/)>(
       initiate, handler);

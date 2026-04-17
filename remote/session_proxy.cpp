@@ -58,8 +58,8 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
 
 SessionProxy::~SessionProxy() {
   cancelation_.Cancel();
-  transport_.reset();
   write_queue_.reset();
+  transport_.reset();
 }
 
 scada::services SessionProxy::services() {
@@ -141,8 +141,8 @@ void SessionProxy::OnTransportClosed(transport::error_code error) {
 
 void SessionProxy::OnSessionError(const scada::Status& status) {
   cancelation_.Cancel();
-  transport_.reset();
   write_queue_.reset();
+  transport_.reset();
 
   OnSessionDeleted();
 
@@ -405,10 +405,13 @@ transport::awaitable<void> SessionProxy::Connect() {
 }
 
 void SessionProxy::ForwardConnectResult(scada::Status&& status) {
+  LOG_INFO(*logger_) << "Forward connect result"
+                     << LOG_TAG("Status", ToString(status));
   CompleteStatusPromise(connect_promise_, std::move(status));
 }
 
 void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
+  LOG_INFO(*logger_) << "Create-session response received";
   auto status = ConvertTo<scada::Status>(response.status());
   if (!status) {
     OnSessionError(status);
@@ -424,6 +427,10 @@ void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
   session_token_ = create_session_result.token();
   Convert(create_session_result.user_node_id(), user_node_id_);
   user_rights_ = create_session_result.user_rights();
+
+  LOG_INFO(*logger_) << "Create-session response parsed"
+                     << LOG_TAG("UserId", user_node_id_)
+                     << LOG_TAG("Rights", user_rights_);
 
   OnSessionCreated();
 }
@@ -508,8 +515,8 @@ promise<void> SessionProxy::Reconnect() {
     // Cancel the old Connect() coroutine and close the transport so the old
     // read loop exits cleanly before starting a new one.
     cancelation_.Cancel();
-    transport_.reset();
     write_queue_.reset();
+    transport_.reset();
 
     connect_promise_ = promise<void>{};
 

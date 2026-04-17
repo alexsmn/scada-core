@@ -148,7 +148,9 @@ void MonitoredItemProxy::OnChannelClosed() {
 void MonitoredItemProxy::OnCreateMonitoredItemResult(
     const scada::Status& status,
     int monitored_item_id) {
-  assert(router_);
+  if (!router_ || !channel_opened_ || state_ != State::CREATING) {
+    return;
+  }
 
   if (!status) {
     LOG_INFO(logger_) << "Create stub error"

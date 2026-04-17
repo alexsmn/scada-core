@@ -110,10 +110,7 @@ void SubscriptionProxy::OnChannelClosed() {
 
 void SubscriptionProxy::OnCreateSubscriptionResult(const scada::Status& status,
                                                    int subscription_id) {
-  assert(state_ == State::CREATING);
-  assert(sender_);
-
-  if (state_ != State::CREATING)
+  if (state_ != State::CREATING || !sender_)
     return;
 
   if (!status) {
