@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
+#include "base/awaitable.h"
 #include "remote/message_sender.h"
 #include "scada/service_context.h"
 #include "scada/services.h"
@@ -20,6 +21,7 @@ class NodeId;
 class Variant;
 struct MonitoringParameters;
 struct ReadValueId;
+struct WriteValue;
 }  // namespace scada
 
 class Connection;
@@ -75,11 +77,23 @@ class SessionStub : public MessageSender,
                              int monitored_item_id);
 
   void OnRead(const protocol::Request& request);
+  [[nodiscard]] Awaitable<void> OnReadAsync(
+      unsigned request_id,
+      scada::ServiceContext context,
+      std::shared_ptr<const std::vector<scada::ReadValueId>> inputs);
   void OnWrite(const protocol::Request& request);
+  [[nodiscard]] Awaitable<void> OnWriteAsync(
+      unsigned request_id,
+      std::shared_ptr<const std::vector<scada::WriteValue>> inputs);
   void OnCall(unsigned request_id,
               const scada::NodeId& node_id,
               const scada::NodeId& method_id,
               const std::vector<scada::Variant>& arguments);
+  [[nodiscard]] Awaitable<void> OnCallAsync(
+      unsigned request_id,
+      scada::NodeId node_id,
+      scada::NodeId method_id,
+      std::vector<scada::Variant> arguments);
 
   void SendResponse(protocol::Response& response);
 

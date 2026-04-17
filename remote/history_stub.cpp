@@ -1,15 +1,15 @@
 #include "remote/history_stub.h"
 
+#include "base/awaitable.h"
 #include "base/executor.h"
 #include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "scada/history_service.h"
+#include "scada/service_awaitable.h"
 
 #include "base/debug_util.h"
-
-#include <boost/asio/io_context.hpp>
 
 HistoryStub::HistoryStub(scada::HistoryService& service,
                          std::weak_ptr<MessageSender> sender,
@@ -83,37 +83,8 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
 
   LOG_INFO(logger_) << "History read raw" << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("NodeId", NodeIdToScadaString(details.node_id));
-
-  service_.HistoryReadRaw(
-      details,
-      BindExecutor(executor_, [request_id, details, ref = shared_from_this(),
-                               this](scada::HistoryReadRawResult result) {
-        LOG_INFO(logger_) << "History read raw completed"
-                          << LOG_TAG("RequestId", request_id)
-                          << LOG_TAG("Status", ToString(result.status))
-                          << LOG_TAG("ValueCount",
-                                     ToString(result.values.size()));
-
-        if (!result.continuation_point.empty())
-          continuation_points_.emplace(result.continuation_point, details);
-
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(result.status, *response.mutable_status());
-        if (!result.values.empty()) {
-          Convert(std::move(result.values),
-                  *response.mutable_history_read_raw_result()->mutable_value());
-        }
-        if (!result.continuation_point.empty()) {
-          Convert(std::move(result.continuation_point),
-                  *response.mutable_history_read_raw_result()
-                       ->mutable_continuation_point());
-        }
-
-        if (auto locked_sender = sender_.lock())
-          locked_sender->Send(message);
-      }));
+  auto self = shared_from_this();
+  CoSpawn(executor_, self->OnHistoryReadRawAsync(request_id, std::move(details)));
 }
 
 void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
@@ -133,27 +104,66 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
 
   LOG_INFO(logger_) << "History read events" << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
+  auto self = shared_from_this();
+  CoSpawn(executor_, self->OnHistoryReadEventsAsync(
+                         request_id, node_id, from, to, std::move(filter)));
+}
 
-  service_.HistoryReadEvents(
-      node_id, from, to, filter,
-      BindExecutor(executor_, [request_id, ref = shared_from_this(),
-                               this](scada::HistoryReadEventsResult result) {
-        LOG_INFO(logger_) << "History read events completed"
-                          << LOG_TAG("RequestId", request_id)
-                          << LOG_TAG("Status", ToString(result.status))
-                          << LOG_TAG("EventCount", result.events.size());
+Awaitable<void> HistoryStub::OnHistoryReadRawAsync(
+    unsigned request_id,
+    scada::HistoryReadRawDetails details) {
+  auto result =
+      co_await scada::HistoryReadRawAsync(executor_, service_, details);
 
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(result.status, *response.mutable_status());
-        if (!result.events.empty()) {
-          Convert(
-              std::move(result.events),
-              *response.mutable_history_read_events_result()->mutable_event());
-        }
+  LOG_INFO(logger_) << "History read raw completed"
+                    << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("Status", ToString(result.status))
+                    << LOG_TAG("ValueCount", ToString(result.values.size()));
 
-        if (auto locked_sender = sender_.lock())
-          locked_sender->Send(message);
-      }));
+  if (!result.continuation_point.empty())
+    continuation_points_.emplace(result.continuation_point, details);
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(result.status, *response.mutable_status());
+  if (!result.values.empty()) {
+    Convert(std::move(result.values),
+            *response.mutable_history_read_raw_result()->mutable_value());
+  }
+  if (!result.continuation_point.empty()) {
+    Convert(std::move(result.continuation_point),
+            *response.mutable_history_read_raw_result()
+                 ->mutable_continuation_point());
+  }
+
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
+}
+
+Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
+    unsigned request_id,
+    scada::NodeId node_id,
+    base::Time from,
+    base::Time to,
+    scada::EventFilter filter) {
+  auto result = co_await scada::HistoryReadEventsAsync(
+      executor_, service_, std::move(node_id), from, to, std::move(filter));
+
+  LOG_INFO(logger_) << "History read events completed"
+                    << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("Status", ToString(result.status))
+                    << LOG_TAG("EventCount", result.events.size());
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(result.status, *response.mutable_status());
+  if (!result.events.empty()) {
+    Convert(std::move(result.events),
+            *response.mutable_history_read_events_result()->mutable_event());
+  }
+
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
 }

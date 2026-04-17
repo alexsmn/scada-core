@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
+#include "base/awaitable.h"
 #include "scada/history_types.h"
 
 #include <map>
@@ -32,6 +33,15 @@ class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
  private:
   void OnHistoryReadRaw(const protocol::Request& request);
   void OnHistoryReadEvents(const protocol::Request& request);
+  [[nodiscard]] Awaitable<void> OnHistoryReadRawAsync(
+      unsigned request_id,
+      scada::HistoryReadRawDetails details);
+  [[nodiscard]] Awaitable<void> OnHistoryReadEventsAsync(
+      unsigned request_id,
+      scada::NodeId node_id,
+      base::Time from,
+      base::Time to,
+      scada::EventFilter filter);
 
   scada::HistoryService& service_;
   const std::weak_ptr<MessageSender> sender_;

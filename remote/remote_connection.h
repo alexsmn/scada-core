@@ -1,6 +1,8 @@
 #pragma once
 
 #include "remote/connection.h"
+#include "base/awaitable.h"
+#include "base/promise.h"
 #include "scada/node_id.h"
 #include "scada/status.h"
 
@@ -17,7 +19,7 @@ class Response;
 class SessionStub;
 
 struct CreateSessionResult {
-  scada::Status status;
+  scada::Status status = scada::StatusCode::Good;
   unsigned protocol_version_major = 0;
   unsigned protocol_version_minor = 0;
   scada::NodeId user_id;
@@ -25,12 +27,9 @@ struct CreateSessionResult {
   SessionStub* session = nullptr;
 };
 
-using CreateSessionCallback =
-    std::function<void(const CreateSessionResult& result)>;
-
 struct ServerConnectionContext {
   transport::any_transport transport_;
-  std::function<void(const protocol::Request&, CreateSessionCallback)>
+  std::function<promise<CreateSessionResult>(const protocol::Request&)>
       create_session_handler_;
   std::function<void(SessionStub&)> delete_session_handler_;
 };
@@ -49,6 +48,7 @@ class ServerConnection : public Connection, private ServerConnectionContext {
   void Close();
 
   void OnCreateSession(const protocol::Request& request);
+  [[nodiscard]] Awaitable<void> OnCreateSessionAsync(protocol::Request request);
   void OnDeleteSession(const protocol::Request& request);
 
   void OnTransportClosed(transport::error_code error);

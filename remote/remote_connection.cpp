@@ -1,5 +1,6 @@
 #include "remote/remote_connection.h"
 
+#include "base/awaitable_promise.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "remote/session_stub.h"
@@ -106,29 +107,33 @@ void ServerConnection::Send(protocol::Message& message) {
 
 void ServerConnection::OnCreateSession(const protocol::Request& request) {
   assert(request.has_create_session());
+  boost::asio::co_spawn(transport_.get_executor(), OnCreateSessionAsync(request),
+                        boost::asio::detached);
+}
 
-  auto request_id = request.request_id();
-  create_session_handler_(request, [this, request_id](
-                                       const CreateSessionResult& result) {
-    protocol::Message message;
-    auto& response = *message.add_responses();
-    response.set_request_id(request_id);
-    auto& create_session_result = *response.mutable_create_session_result();
-    create_session_result.set_protocol_version_major(
-        result.protocol_version_major);
-    create_session_result.set_protocol_version_minor(
-        result.protocol_version_minor);
-    Convert(result.status, *response.mutable_status());
-    if (result.status) {
-      Convert(result.user_id, *create_session_result.mutable_user_node_id());
-      create_session_result.set_user_rights(result.user_rights);
-    }
-    Send(message);
+Awaitable<void> ServerConnection::OnCreateSessionAsync(protocol::Request request) {
+  const auto request_id = request.request_id();
+  auto result = co_await AwaitPromise(transport_.get_executor(),
+                                      create_session_handler_(request));
 
-    session_ = result.session;
-    if (session_)
-      session_->SetConnection(this);
-  });
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  auto& create_session_result = *response.mutable_create_session_result();
+  create_session_result.set_protocol_version_major(
+      result.protocol_version_major);
+  create_session_result.set_protocol_version_minor(
+      result.protocol_version_minor);
+  Convert(result.status, *response.mutable_status());
+  if (result.status) {
+    Convert(result.user_id, *create_session_result.mutable_user_node_id());
+    create_session_result.set_user_rights(result.user_rights);
+  }
+  Send(message);
+
+  session_ = result.session;
+  if (session_)
+    session_->SetConnection(this);
 }
 
 void ServerConnection::OnDeleteSession(const protocol::Request& request) {

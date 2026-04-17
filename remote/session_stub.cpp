@@ -1,5 +1,6 @@
 #include "remote/session_stub.h"
 
+#include "base/awaitable.h"
 #include "base/executor.h"
 #include "base/range_util.h"
 #include "model/node_id_util.h"
@@ -14,6 +15,7 @@
 #include "scada/method_service.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/service_context.h"
+#include "scada/service_awaitable.h"
 #include "scada/write_flags.h"
 
 #include <boost/range/adaptor/transformed.hpp>
@@ -216,16 +218,9 @@ void SessionStub::OnCall(unsigned request_id,
                          const scada::NodeId& node_id,
                          const scada::NodeId& method_id,
                          const std::vector<scada::Variant>& arguments) {
-  services_.method_service->Call(
-      node_id, method_id, arguments, service_context_.user_id(),
-      BindExecutor(executor_, weak_from_this(),
-                   [this, request_id](const scada::Status& status) {
-                     protocol::Message message;
-                     auto& response = *message.add_responses();
-                     response.set_request_id(request_id);
-                     Convert(status, *response.mutable_status());
-                     Send(message);
-                   }));
+  auto self = shared_from_this();
+  CoSpawn(executor_,
+          self->OnCallAsync(request_id, node_id, method_id, arguments));
 }
 
 void SessionStub::OnRead(const protocol::Request& request) {
@@ -234,22 +229,10 @@ void SessionStub::OnRead(const protocol::Request& request) {
 
   const auto inputs = std::make_shared<const std::vector<scada::ReadValueId>>(
       ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id()));
-
-  services_.attribute_service->Read(
-      service_context_.with_trace_id(request.trace_id()), inputs,
-      BindExecutor(
-          executor_, weak_from_this(),
-          [this, request_id = request.request_id()](
-              scada::Status status, std::vector<scada::DataValue> results) {
-            protocol::Message message;
-            auto& response = *message.add_responses();
-            response.set_request_id(request_id);
-            Convert(std::move(status), *response.mutable_status());
-            Convert(std::move(results),
-                    *response.mutable_read_result()->mutable_value());
-
-            Send(message);
-          }));
+  auto self = shared_from_this();
+  CoSpawn(executor_, self->OnReadAsync(request.request_id(),
+                                       service_context_.with_trace_id(request.trace_id()),
+                                       inputs));
 }
 
 void SessionStub::OnWrite(const protocol::Request& request) {
@@ -259,18 +242,63 @@ void SessionStub::OnWrite(const protocol::Request& request) {
   const auto request_id = request.request_id();
   const auto inputs = std::make_shared<const std::vector<scada::WriteValue>>(
       ConvertTo<std::vector<scada::WriteValue>>(request.write()));
+  auto self = shared_from_this();
+  CoSpawn(executor_, self->OnWriteAsync(request_id, inputs));
+}
 
-  services_.attribute_service->Write(
-      service_context_, inputs,
-      BindExecutor(
-          executor_, weak_from_this(),
-          [this, request_id](scada::Status status,
-                             std::vector<scada::StatusCode> status_codes) {
-            protocol::Message message;
-            auto& response = *message.add_responses();
-            response.set_request_id(request_id);
-            Convert(status, *response.mutable_status());
-            Convert(std::move(status_codes), *response.mutable_write_result());
-            Send(message);
-          }));
+Awaitable<void> SessionStub::OnCallAsync(
+    unsigned request_id,
+    scada::NodeId node_id,
+    scada::NodeId method_id,
+    std::vector<scada::Variant> arguments) {
+  auto status =
+      co_await scada::CallAsync(executor_, *services_.method_service,
+                                std::move(node_id), std::move(method_id),
+                                std::move(arguments), service_context_.user_id());
+
+  if (!connection_)
+    co_return;
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(status, *response.mutable_status());
+  Send(message);
+}
+
+Awaitable<void> SessionStub::OnReadAsync(
+    unsigned request_id,
+    scada::ServiceContext context,
+    std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) {
+  auto [status, results] = co_await scada::ReadAsync(
+      executor_, *services_.attribute_service, std::move(context),
+      std::move(inputs));
+
+  if (!connection_)
+    co_return;
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(std::move(status), *response.mutable_status());
+  Convert(std::move(results), *response.mutable_read_result()->mutable_value());
+  Send(message);
+}
+
+Awaitable<void> SessionStub::OnWriteAsync(
+    unsigned request_id,
+    std::shared_ptr<const std::vector<scada::WriteValue>> inputs) {
+  auto [status, status_codes] =
+      co_await scada::WriteAsync(executor_, *services_.attribute_service,
+                                 service_context_, std::move(inputs));
+
+  if (!connection_)
+    co_return;
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(status, *response.mutable_status());
+  Convert(std::move(status_codes), *response.mutable_write_result());
+  Send(message);
 }

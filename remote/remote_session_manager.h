@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
+#include "base/awaitable.h"
 #include "base/nested_logger.h"
 #include "base/observer_list.h"
 #include "base/promise.h"
@@ -61,8 +62,12 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   }
 
  private:
+  [[nodiscard]] Awaitable<void> InitAsync();
+
   promise<CreateSessionResult> CreateSession(
       const protocol::CreateSession& create_session);
+  [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
+      protocol::CreateSession create_session);
 
   void DeleteSession(const scada::NodeId& user_node_id);
 

@@ -1,10 +1,12 @@
 #include "remote/node_management_stub.h"
 
+#include "base/awaitable.h"
 #include "base/executor.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "scada/node_management_service.h"
+#include "scada/service_awaitable.h"
 
 #include "base/debug_util.h"
 
@@ -69,46 +71,13 @@ void NodeManagementStub::OnDeleteNodes(
       locked_sender->Send(message);
     return;
   }
-
-  service_.DeleteNodes(
-      inputs,
-      BindExecutor(executor_, [request_id, sender = sender_](
-                                  scada::Status status,
-                                  std::vector<scada::StatusCode> results) {
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(status, *response.mutable_status());
-        if (status) {
-          Convert(results, *response.mutable_delete_node_result());
-        }
-
-        if (auto locked_sender = sender.lock()) {
-          locked_sender->Send(message);
-        }
-      }));
+  CoSpawn(executor_, OnDeleteNodesAsync(request_id, inputs));
 }
 
 void NodeManagementStub::OnAddNodes(
     unsigned request_id,
     const std::vector<scada::AddNodesItem>& inputs) {
-  service_.AddNodes(
-      inputs,
-      BindExecutor(executor_, [request_id, sender = sender_](
-                                  scada::Status status,
-                                  std::vector<scada::AddNodesResult> results) {
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(status, *response.mutable_status());
-        if (status) {
-          Convert(std::move(results), *response.mutable_add_node_result());
-        }
-
-        if (auto locked_sender = sender.lock()) {
-          locked_sender->Send(message);
-        }
-      }));
+  CoSpawn(executor_, OnAddNodesAsync(request_id, inputs));
 }
 
 void NodeManagementStub::OnAddReferences(
@@ -116,27 +85,7 @@ void NodeManagementStub::OnAddReferences(
     const std::vector<scada::AddReferencesItem>& inputs) {
   LOG_INFO(*logger_) << "Add references" << LOG_TAG("RequestId", request_id)
                      << LOG_TAG("Count", inputs.size());
-
-  service_.AddReferences(
-      inputs,
-      BindExecutor(executor_,
-                   [request_id, count = inputs.size(), sender = sender_,
-                    logger = logger_](scada::Status status,
-                                      std::vector<scada::StatusCode> results) {
-                     LOG_INFO(*logger) << "Add references completed"
-                                       << LOG_TAG("RequestId", request_id)
-                                       << LOG_TAG("Count", count)
-                                       << LOG_TAG("Status", ToString(status));
-
-                     protocol::Message message;
-                     auto& response = *message.add_responses();
-                     response.set_request_id(request_id);
-                     Convert(status, *response.mutable_status());
-                     Convert(results, *response.mutable_add_reference_result());
-
-                     if (auto locked_sender = sender.lock())
-                       locked_sender->Send(message);
-                   }));
+  CoSpawn(executor_, OnAddReferencesAsync(request_id, inputs));
 }
 
 void NodeManagementStub::OnDeleteReferences(
@@ -144,25 +93,85 @@ void NodeManagementStub::OnDeleteReferences(
     const std::vector<scada::DeleteReferencesItem>& inputs) {
   LOG_INFO(*logger_) << "Delete reference" << LOG_TAG("RequestId", request_id)
                      << LOG_TAG("Count", inputs.size());
+  CoSpawn(executor_, OnDeleteReferencesAsync(request_id, inputs));
+}
 
-  service_.DeleteReferences(
-      inputs,
-      BindExecutor(executor_, [request_id, count = inputs.size(),
-                               sender = sender_, logger = logger_](
-                                  scada::Status status,
-                                  std::vector<scada::StatusCode> results) {
-        LOG_INFO(*logger) << "Delete references completed"
-                          << LOG_TAG("RequestId", request_id)
-                          << LOG_TAG("Count", count)
-                          << LOG_TAG("Status", ToString(status));
+Awaitable<void> NodeManagementStub::OnDeleteNodesAsync(
+    unsigned request_id,
+    std::vector<scada::DeleteNodesItem> inputs) {
+  auto [status, results] =
+      co_await scada::DeleteNodesAsync(executor_, service_, std::move(inputs));
 
-        protocol::Message message;
-        auto& response = *message.add_responses();
-        response.set_request_id(request_id);
-        Convert(status, *response.mutable_status());
-        Convert(results, *response.mutable_delete_reference_result());
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(status, *response.mutable_status());
+  if (status) {
+    Convert(results, *response.mutable_delete_node_result());
+  }
 
-        if (auto locked_sender = sender.lock())
-          locked_sender->Send(message);
-      }));
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
+}
+
+Awaitable<void> NodeManagementStub::OnAddNodesAsync(
+    unsigned request_id,
+    std::vector<scada::AddNodesItem> inputs) {
+  auto [status, results] =
+      co_await scada::AddNodesAsync(executor_, service_, std::move(inputs));
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(status, *response.mutable_status());
+  if (status) {
+    Convert(std::move(results), *response.mutable_add_node_result());
+  }
+
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
+}
+
+Awaitable<void> NodeManagementStub::OnAddReferencesAsync(
+    unsigned request_id,
+    std::vector<scada::AddReferencesItem> inputs) {
+  const auto count = inputs.size();
+  auto [status, results] = co_await scada::AddReferencesAsync(
+      executor_, service_, std::move(inputs));
+
+  LOG_INFO(*logger_) << "Add references completed"
+                     << LOG_TAG("RequestId", request_id)
+                     << LOG_TAG("Count", count)
+                     << LOG_TAG("Status", ToString(status));
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(status, *response.mutable_status());
+  Convert(results, *response.mutable_add_reference_result());
+
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
+}
+
+Awaitable<void> NodeManagementStub::OnDeleteReferencesAsync(
+    unsigned request_id,
+    std::vector<scada::DeleteReferencesItem> inputs) {
+  const auto count = inputs.size();
+  auto [status, results] = co_await scada::DeleteReferencesAsync(
+      executor_, service_, std::move(inputs));
+
+  LOG_INFO(*logger_) << "Delete references completed"
+                     << LOG_TAG("RequestId", request_id)
+                     << LOG_TAG("Count", count)
+                     << LOG_TAG("Status", ToString(status));
+
+  protocol::Message message;
+  auto& response = *message.add_responses();
+  response.set_request_id(request_id);
+  Convert(status, *response.mutable_status());
+  Convert(results, *response.mutable_delete_reference_result());
+
+  if (auto locked_sender = sender_.lock())
+    locked_sender->Send(message);
 }

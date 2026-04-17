@@ -1,5 +1,6 @@
 #include "remote/remote_session_manager.h"
 
+#include "base/awaitable_promise.h"
 #include "base/boost_log_adapter.h"
 #include "base/debug_util.h"
 #include "base/promise_executor.h"
@@ -21,7 +22,7 @@
 #include <transport/transport_factory.h>
 #include <transport/transport_string.h>
 #include <ranges>
-
+#include <utility>
 
 namespace {
 
@@ -55,6 +56,10 @@ RemoteSessionManager::~RemoteSessionManager() {
 }
 
 promise<> RemoteSessionManager::Init() {
+  return ToPromise(NetExecutorAdapter{executor_}, InitAsync());
+}
+
+Awaitable<void> RemoteSessionManager::InitAsync() {
   transport::log_source transport_logger{
       std::make_shared<NetBoostLoggerAdapter>(logger_)};
 
@@ -64,7 +69,6 @@ promise<> RemoteSessionManager::Init() {
         OnSessionAccepted(std::move(transport));
       };
 
-  std::vector<promise<>> promises;
   for (const transport::TransportString& endpoint : endpoints_) {
     auto acceptor = transport_factory_.CreateTransport(
         endpoint, NetExecutorAdapter{executor_}, transport_logger);
@@ -74,8 +78,7 @@ promise<> RemoteSessionManager::Init() {
                           << LOG_TAG("Error",
                                      transport::ErrorToShortString(
                                          acceptor.error()));
-      return make_rejected_promise(
-          std::runtime_error{transport::ErrorToShortString(acceptor.error())});
+      throw std::runtime_error{transport::ErrorToShortString(acceptor.error())};
     }
 
     auto listener_name = acceptor->name();
@@ -84,14 +87,18 @@ promise<> RemoteSessionManager::Init() {
         logger_, std::move(*acceptor), std::move(listener_name),
         accept_handler));
 
-    promises.emplace_back(listener->Init());
+    co_await AwaitPromise(NetExecutorAdapter{executor_}, listener->Init());
   }
-
-  return make_all_promise_void(std::move(promises));
 }
 
 promise<CreateSessionResult> RemoteSessionManager::CreateSession(
     const protocol::CreateSession& create_session) {
+  return ToPromise(NetExecutorAdapter{executor_},
+                   CreateSessionAsync(create_session));
+}
+
+Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
+    protocol::CreateSession create_session) {
   auto user_name = scada::ToLocalizedText(
       UtfConvert<char16_t>(create_session.user_name_utf8()));
   auto password = scada::ToLocalizedText(
@@ -107,57 +114,53 @@ promise<CreateSessionResult> RemoteSessionManager::CreateSession(
                           << LOG_TAG("VersionMinor",
                                      create_session.protocol_version_minor());
 
-    return make_resolved_promise<CreateSessionResult>(
-        {.status = scada::StatusCode::Bad_UnsupportedProtocolVersion,
-         .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
-         .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR});
+    co_return CreateSessionResult{
+        .status = scada::StatusCode::Bad_UnsupportedProtocolVersion,
+        .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
+        .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
   }
 
-  return authenticator_(user_name, password)
-      .then(BindPromiseExecutor(
-          executor_,
-          [this, user_name,
-           delete_existing](const scada::AuthenticationResult& auth_result) {
-            auto& user_id = auth_result.user_id;
+  try {
+    auto auth_result =
+        co_await AwaitPromise(NetExecutorAdapter{executor_},
+                              authenticator_(user_name, password));
+    auto& user_id = auth_result.user_id;
 
-            LOG_INFO(*logger_)
-                << "Authorization succeeded"
-                << LOG_TAG("UserId", NodeIdToScadaString(user_id))
-                << LOG_TAG("UserName", ToString(user_name))
-                << LOG_TAG("AuthorizationResult", ToString(auth_result));
+    LOG_INFO(*logger_) << "Authorization succeeded"
+                       << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                       << LOG_TAG("UserName", ToString(user_name))
+                       << LOG_TAG("AuthorizationResult",
+                                  ToString(auth_result));
 
-            if (!auth_result.multi_sessions &&
-                !CheckExistingSession(user_id, user_name, delete_existing)) {
-              LOG_WARNING(*logger_)
-                  << "Session is already opened"
-                  << LOG_TAG("UserId", NodeIdToScadaString(user_id))
-                  << LOG_TAG("UserName", ToString(user_name));
-              return scada::MakeRejectedStatusPromise<CreateSessionResult>(
-                  scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
-            }
+    if (!auth_result.multi_sessions &&
+        !CheckExistingSession(user_id, user_name, delete_existing)) {
+      LOG_WARNING(*logger_) << "Session is already opened"
+                            << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                            << LOG_TAG("UserName", ToString(user_name));
+      throw scada::status_exception{scada::StatusCode::Bad_UserIsAlreadyLoggedOn};
+    }
 
-            auto& session = CreateNewSession(user_id, user_name);
+    auto& session = CreateNewSession(user_id, user_name);
 
-            return make_resolved_promise(CreateSessionResult{
-                .status = scada::StatusCode::Good,
-                .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
-                .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR,
-                .user_id = user_id,
-                .user_rights = auth_result.user_rights,
-                .session = &session});
-          }))
-      .except([this, user_name](const std::exception_ptr& e) {
-        auto status = scada::GetExceptionStatus(e);
+    co_return CreateSessionResult{
+        .status = scada::StatusCode::Good,
+        .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
+        .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR,
+        .user_id = user_id,
+        .user_rights = auth_result.user_rights,
+        .session = &session};
+  } catch (...) {
+    auto status = scada::GetExceptionStatus(std::current_exception());
 
-        LOG_WARNING(*logger_)
-            << "Authorization error" << LOG_TAG("UserName", ToString(user_name))
-            << LOG_TAG("ErrorString", ToString(status));
+    LOG_WARNING(*logger_)
+        << "Authorization error" << LOG_TAG("UserName", ToString(user_name))
+        << LOG_TAG("ErrorString", ToString(status));
 
-        return CreateSessionResult{
-            .status = status,
-            .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
-            .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
-      });
+    co_return CreateSessionResult{
+        .status = status,
+        .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
+        .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
+  }
 }
 
 bool RemoteSessionManager::CheckExistingSession(
@@ -249,9 +252,8 @@ void RemoteSessionManager::OnSessionAccepted(
   ServerConnectionContext connection_context;
   connection_context.transport_ = std::move(transport);
   connection_context.create_session_handler_ =
-      [this](const protocol::Request& request,
-             const CreateSessionCallback& callback) {
-        CreateSession(request.create_session()).then(callback);
+      [this](const protocol::Request& request) {
+        return CreateSession(request.create_session());
       };
   connection_context.delete_session_handler_ = [this](SessionStub& session) {
     DeleteSession(session.service_context().user_id());
