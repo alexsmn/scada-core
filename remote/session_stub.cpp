@@ -260,10 +260,12 @@ void SessionStub::OnRead(const protocol::Request& request) {
 
   const auto inputs = std::make_shared<const std::vector<scada::ReadValueId>>(
       ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id()));
+  scada::ServiceContext context =
+      service_context_.with_trace_id(request.trace_id());
   auto self = shared_from_this();
   CoSpawn(executor_,
           [self, request_id = request.request_id(),
-           context = service_context_.with_trace_id(request.trace_id()),
+           context = std::move(context),
            inputs]() mutable -> Awaitable<void> {
             co_await self->OnReadAsync(request_id, std::move(context), inputs);
           }());
