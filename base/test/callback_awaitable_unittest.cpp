@@ -80,3 +80,45 @@ TEST(CallbackToAwaitable, ResumesOnBoundExecutorWhenCallbackRunsOffExecutor) {
 
   EXPECT_NO_THROW(WaitForFuture(executor, future));
 }
+
+TEST(CallbackToAwaitable, CompletesWithCallbackValuesOnAnyExecutor) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto any_executor = MakeTestAnyExecutor(executor);
+
+  auto future = boost::asio::co_spawn(
+      ExecutorAdapter{executor},
+      [any_executor]() mutable -> Awaitable<int> {
+        auto [value] = co_await CallbackToAwaitable<int>(
+            std::move(any_executor),
+            [](auto callback) mutable { callback(42); });
+        co_return value;
+      }(),
+      boost::asio::use_future);
+
+  EXPECT_EQ(WaitForFuture(executor, future), 42);
+}
+
+TEST(CallbackToAwaitable,
+     ResumesOnBoundAnyExecutorWhenCallbackRunsOffExecutor) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto any_executor = MakeTestAnyExecutor(executor);
+
+  auto future = boost::asio::co_spawn(
+      ExecutorAdapter{executor},
+      [executor, any_executor]() mutable -> Awaitable<void> {
+        auto [value] = co_await CallbackToAwaitable<int>(
+            std::move(any_executor),
+            [](auto callback) mutable {
+              std::thread worker{[callback = std::move(callback)]() mutable {
+                callback(42);
+              }};
+              worker.join();
+            });
+
+        EXPECT_EQ(value, 42);
+        EXPECT_TRUE(executor->is_current_executor());
+      }(),
+      boost::asio::use_future);
+
+  EXPECT_NO_THROW(WaitForFuture(executor, future));
+}
