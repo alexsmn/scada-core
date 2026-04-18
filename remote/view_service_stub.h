@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/boost_log.h"
 #include "scada/service_context.h"
 #include "base/awaitable.h"
 #include "scada/view_service.h"
@@ -40,7 +41,9 @@ class ViewServiceStub final : private ViewServiceStubContext,
       scada::ServiceContext context,
       std::vector<scada::BrowseDescription> inputs);
   void OnBrowsePaths(const protocol::Request& request);
-  [[nodiscard]] Awaitable<void> OnBrowsePathsAsync(
+ [[nodiscard]] Awaitable<void> OnBrowsePathsAsync(
       unsigned request_id,
       std::vector<scada::BrowsePath> inputs);
+
+  BoostLogger logger_{LOG_NAME("ViewServiceStub")};
 };
