@@ -211,6 +211,25 @@ TEST(ToPromise, PropagatesAwaitableExceptions) {
   EXPECT_THROW(WaitForFuture(asio_env, result), std::runtime_error);
 }
 
+TEST(StartAwaitable, CompletesResolvedValueAwaitableIntoProvidedPromise) {
+  AsioTestEnvironment asio_env;
+
+  promise<int> promise;
+  StartAwaitable(NetExecutorAdapter{asio_env.executor}, promise, Return42());
+
+  EXPECT_EQ(WaitForPromise(asio_env, promise), 42);
+}
+
+TEST(StartAwaitable, PropagatesAwaitableExceptionsIntoProvidedPromise) {
+  AsioTestEnvironment asio_env;
+
+  promise<int> promise;
+  StartAwaitable(NetExecutorAdapter{asio_env.executor}, promise,
+                 ThrowRuntimeError());
+
+  EXPECT_THROW(WaitForPromise(asio_env, promise), std::runtime_error);
+}
+
 TEST(AwaitPromise, RepeatedDeferredTemporaryValuePromiseWithNetExecutorAdapter) {
   RunRepeatedDeferredValueAwaitTest(
       [](const std::shared_ptr<Executor>& executor) {

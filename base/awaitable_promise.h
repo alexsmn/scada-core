@@ -9,39 +9,39 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/post.hpp>
 #include <memory>
+#include <type_traits>
 
 template <class E, class T>
-inline promise<T> ToPromise(const E& executor, Awaitable<T> aw) {
-  promise<T> p;
+inline void StartAwaitable(E executor, promise<T> p, Awaitable<T> aw) {
   boost::asio::co_spawn(
-      executor,
+      std::move(executor),
       [p, aw = std::move(aw)]() mutable -> Awaitable<void> {
         try {
-          p.resolve(co_await std::move(aw));
+          if constexpr (std::is_void_v<T>) {
+            co_await std::move(aw);
+            p.resolve();
+          } else {
+            p.resolve(co_await std::move(aw));
+          }
         } catch (...) {
           p.reject(std::current_exception());
         }
         co_return;
       },
       boost::asio::detached);
+}
+
+template <class E, class T>
+inline promise<T> ToPromise(const E& executor, Awaitable<T> aw) {
+  promise<T> p;
+  StartAwaitable(executor, p, std::move(aw));
   return p;
 }
 
 template <class E>
 inline promise<void> ToPromise(const E& executor, Awaitable<void> aw) {
   promise<void> p;
-  boost::asio::co_spawn(
-      executor,
-      [p, aw = std::move(aw)]() mutable -> Awaitable<void> {
-        try {
-          co_await std::move(aw);
-          p.resolve();
-        } catch (...) {
-          p.reject(std::current_exception());
-        }
-        co_return;
-      },
-      boost::asio::detached);
+  StartAwaitable(executor, p, std::move(aw));
   return p;
 }
 
