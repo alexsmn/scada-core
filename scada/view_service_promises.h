@@ -3,6 +3,7 @@
 #include "scada/status_or.h"
 #include "scada/status_promise.h"
 #include "scada/view_service.h"
+#include "model/scada_node_ids.h"
 
 #include <algorithm>
 

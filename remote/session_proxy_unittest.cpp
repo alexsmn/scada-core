@@ -13,6 +13,7 @@
 #include "scada/view_service.h"
 
 #include <gmock/gmock.h>
+#include <cassert>
 #include <optional>
 
 using namespace testing;
@@ -32,6 +33,35 @@ class NoopAttributeService final : public scada::AttributeService {
              const scada::WriteCallback& callback) override {
     callback(scada::StatusCode::Good, {});
   }
+};
+
+class DeferredAttributeService final : public scada::AttributeService {
+ public:
+  void Read(const scada::ServiceContext&,
+            const std::shared_ptr<const std::vector<scada::ReadValueId>>&,
+            const scada::ReadCallback& callback) override {
+    assert(!read_callback_);
+    read_callback_ = callback;
+  }
+
+  void Write(const scada::ServiceContext&,
+             const std::shared_ptr<const std::vector<scada::WriteValue>>&,
+             const scada::WriteCallback& callback) override {
+    callback(scada::StatusCode::Good, {});
+  }
+
+  bool has_pending_read() const { return static_cast<bool>(read_callback_); }
+
+  void CompleteRead(scada::Status status,
+                    std::vector<scada::DataValue> results = {}) {
+    assert(read_callback_);
+    auto callback = std::move(*read_callback_);
+    read_callback_.reset();
+    callback(std::move(status), std::move(results));
+  }
+
+ private:
+  std::optional<scada::ReadCallback> read_callback_;
 };
 
 class NoopMethodService final : public scada::MethodService {
@@ -101,6 +131,37 @@ class NoopHistoryService final : public scada::HistoryService {
   }
 };
 
+class DeferredHistoryService final : public scada::HistoryService {
+ public:
+  void HistoryReadRaw(const scada::HistoryReadRawDetails&,
+                      const scada::HistoryReadRawCallback& callback) override {
+    assert(!history_read_raw_callback_);
+    history_read_raw_callback_ = callback;
+  }
+
+  void HistoryReadEvents(const scada::NodeId&,
+                         base::Time,
+                         base::Time,
+                         const scada::EventFilter&,
+                         const scada::HistoryReadEventsCallback& callback) override {
+    callback({});
+  }
+
+  bool has_pending_history_read_raw() const {
+    return static_cast<bool>(history_read_raw_callback_);
+  }
+
+  void CompleteHistoryReadRaw(scada::HistoryReadRawResult result = {}) {
+    assert(history_read_raw_callback_);
+    auto callback = std::move(*history_read_raw_callback_);
+    history_read_raw_callback_.reset();
+    callback(std::move(result));
+  }
+
+ private:
+  std::optional<scada::HistoryReadRawCallback> history_read_raw_callback_;
+};
+
 class SessionManagerObserver final : public RemoteSessionManager::Observer {
  public:
   void OnSessionOpened(SessionStub& session) override {
@@ -115,37 +176,106 @@ class SessionManagerObserver final : public RemoteSessionManager::Observer {
   std::vector<scada::NodeId> closed_user_ids;
 };
 
-}  // namespace
-
-class SessionProxyTest : public Test {
+class SessionProxyHarness {
  public:
-  void SetUp() override {
-    session_manager_executor_ = std::make_shared<TestExecutor>();
+  SessionProxyHarness(scada::AttributeService* attribute_service,
+                      scada::HistoryService* history_service)
+      : attribute_service_{attribute_service},
+        history_service_{history_service},
+        session_manager_executor_{std::make_shared<TestExecutor>()} {
+    CreateSessionManager();
+  }
+
+  ~SessionProxyHarness() {
+    session_manager_.reset();
+    Drain();
+  }
+
+  template <class T>
+  T Wait(promise<T> promise) {
+    using namespace std::chrono_literals;
+    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+      Poll();
+    }
+    return promise.get();
+  }
+
+  void Wait(promise<> promise) {
+    using namespace std::chrono_literals;
+    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+      Poll();
+    }
+    promise.get();
+  }
+
+  void Poll() {
+    session_manager_executor_->Poll();
+    asio_env_.Poll();
+  }
+
+  void Drain() {
+    for (int i = 0; i < 1000; ++i) {
+      const auto session_manager_task_count =
+          session_manager_executor_->GetTaskCount();
+      Poll();
+      if (session_manager_task_count == 0 &&
+          session_manager_executor_->GetTaskCount() == 0) {
+        break;
+      }
+    }
+  }
+
+  void ResetSessionManager() {
+    session_manager_.reset();
+    Drain();
+  }
+
+  void CreateSessionManager() {
     session_manager_ = std::make_unique<RemoteSessionManager>(
         RemoteSessionManagerContext{
             .executor_ = session_manager_executor_,
             .services_ =
-                {.attribute_service = &attribute_service_,
+                {.attribute_service = attribute_service_,
                  .method_service = &method_service_,
-                 .history_service = &history_service_,
+                 .history_service = history_service_,
                  .view_service = &view_service_,
                  .node_management_service = &node_management_service_},
             .authenticator_ =
-                [this](const scada::LocalizedText&,
-                       const scada::LocalizedText&) {
-                  if (auth_failure_status_) {
-                    return scada::MakeRejectedStatusPromise<
-                        scada::AuthenticationResult>(*auth_failure_status_);
-                  }
-
+                [](const scada::LocalizedText&, const scada::LocalizedText&) {
                   return make_resolved_promise(
-                      scada::AuthenticationResult{.user_id = kUserId});
+                      scada::AuthenticationResult{.user_id = {1, 1}});
                 },
             .transport_factory_ = asio_env_.transport_factory,
             .endpoints_ = {transport::TransportString{
                 network_env_.server_transport_string}}});
 
     Wait(session_manager_->Init());
+  }
+
+  scada::SessionConnectParams GetConnectParams() const {
+    return {.connection_string = network_env_.client_transport_string,
+            .user_name = scada::LocalizedText{u"username"},
+            .password = scada::LocalizedText{u"password"}};
+  }
+
+  AsioTestEnvironment asio_env_;
+  NetworkTestEnvironment network_env_;
+  NoopMethodService method_service_;
+  NoopViewService view_service_;
+  NoopNodeManagementService node_management_service_;
+  scada::AttributeService* attribute_service_;
+  scada::HistoryService* history_service_;
+  std::shared_ptr<TestExecutor> session_manager_executor_;
+  std::unique_ptr<RemoteSessionManager> session_manager_;
+};
+
+}  // namespace
+
+class SessionProxyTest : public Test {
+ public:
+  void SetUp() override {
+    session_manager_executor_ = std::make_shared<TestExecutor>();
+    CreateSessionManager();
   }
 
   void TearDown() override {
@@ -191,6 +321,39 @@ class SessionProxyTest : public Test {
     }
   }
 
+  void CreateSessionManager() {
+    session_manager_ = std::make_unique<RemoteSessionManager>(
+        RemoteSessionManagerContext{
+            .executor_ = session_manager_executor_,
+            .services_ =
+                {.attribute_service = attribute_service_,
+                 .method_service = &method_service_,
+                 .history_service = history_service_,
+                 .view_service = &view_service_,
+                 .node_management_service = &node_management_service_},
+            .authenticator_ =
+                [this](const scada::LocalizedText&,
+                       const scada::LocalizedText&) {
+                  if (auth_failure_status_) {
+                    return scada::MakeRejectedStatusPromise<
+                        scada::AuthenticationResult>(*auth_failure_status_);
+                  }
+
+                  return make_resolved_promise(
+                      scada::AuthenticationResult{.user_id = kUserId});
+                },
+            .transport_factory_ = asio_env_.transport_factory,
+            .endpoints_ = {transport::TransportString{
+                network_env_.server_transport_string}}});
+
+    Wait(session_manager_->Init());
+  }
+
+  void ResetSessionManager() {
+    session_manager_.reset();
+    Drain();
+  }
+
   scada::SessionConnectParams GetConnectParams() const {
     return {.connection_string = network_env_.client_transport_string,
             .user_name = kUserName,
@@ -199,11 +362,13 @@ class SessionProxyTest : public Test {
 
   AsioTestEnvironment asio_env_;
   NetworkTestEnvironment network_env_;
-  NoopAttributeService attribute_service_;
+  NoopAttributeService default_attribute_service_;
   NoopMethodService method_service_;
   NoopViewService view_service_;
   NoopNodeManagementService node_management_service_;
-  NoopHistoryService history_service_;
+  NoopHistoryService default_history_service_;
+  scada::AttributeService* attribute_service_ = &default_attribute_service_;
+  scada::HistoryService* history_service_ = &default_history_service_;
 
   std::optional<scada::StatusCode> auth_failure_status_;
   std::shared_ptr<TestExecutor> session_manager_executor_;
@@ -360,4 +525,124 @@ TEST_F(SessionProxyTest, ClientTransportDropClosesServerSession) {
   EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId));
 
   session_manager_->RemoveObserver(observer);
+}
+
+TEST_F(SessionProxyTest, DisconnectCancelsInFlightReadAndAllowsReconnect) {
+  DeferredAttributeService attribute_service;
+  NoopHistoryService history_service;
+  SessionProxyHarness harness{&attribute_service, &history_service};
+
+  SessionProxy session{{.executor_ = harness.asio_env_.executor,
+                        .transport_factory_ = harness.asio_env_.transport_factory}};
+
+  harness.Wait(session.Connect(harness.GetConnectParams()));
+
+  promise<scada::Status> read_status;
+  int callback_count = 0;
+  session.services().attribute_service->Read(
+      {},
+      std::make_shared<const std::vector<scada::ReadValueId>>(
+          std::vector<scada::ReadValueId>{{.node_id = {1, 2}}}),
+      [&](scada::Status status, std::vector<scada::DataValue>) mutable {
+        ++callback_count;
+        read_status.resolve(status);
+      });
+
+  for (int i = 0; i < 1000 && !attribute_service.has_pending_read(); ++i) {
+    harness.Poll();
+  }
+  ASSERT_TRUE(attribute_service.has_pending_read());
+
+  harness.Wait(session.Disconnect());
+
+  EXPECT_EQ(harness.Wait(read_status).code(), scada::StatusCode::Bad_Disconnected);
+  EXPECT_EQ(callback_count, 1);
+
+  attribute_service.CompleteRead(scada::StatusCode::Good,
+                                 {scada::MakeReadResult(123)});
+  harness.Drain();
+
+  EXPECT_EQ(callback_count, 1);
+
+  harness.Wait(session.Connect(harness.GetConnectParams()));
+  EXPECT_TRUE(session.IsConnected(nullptr));
+
+  harness.Wait(session.Disconnect());
+}
+
+TEST_F(SessionProxyTest,
+       RemoteLogoffCancelsInFlightHistoryReadWithoutLeavingStaleSession) {
+  NoopAttributeService attribute_service;
+  DeferredHistoryService history_service;
+  SessionProxyHarness harness{&attribute_service, &history_service};
+
+  auto params = harness.GetConnectParams();
+  auto second_params = params;
+  second_params.allow_remote_logoff = true;
+
+  SessionProxy session1{{.executor_ = harness.asio_env_.executor,
+                         .transport_factory_ = harness.asio_env_.transport_factory}};
+  SessionProxy session2{{.executor_ = harness.asio_env_.executor,
+                         .transport_factory_ = harness.asio_env_.transport_factory}};
+
+  harness.Wait(session1.Connect(params));
+
+  promise<scada::Status> history_status;
+  int callback_count = 0;
+  session1.services().history_service->HistoryReadRaw(
+      {.node_id = {1, 3}},
+      [&](scada::HistoryReadRawResult result) mutable {
+        ++callback_count;
+        history_status.resolve(result.status);
+      });
+
+  for (int i = 0; i < 1000 && !history_service.has_pending_history_read_raw();
+       ++i) {
+    harness.Poll();
+  }
+  ASSERT_TRUE(history_service.has_pending_history_read_raw());
+
+  harness.Wait(session2.Connect(second_params));
+
+  EXPECT_EQ(harness.Wait(history_status).code(),
+            scada::StatusCode::Bad_Disconnected);
+  EXPECT_EQ(callback_count, 1);
+  EXPECT_FALSE(session1.IsConnected(nullptr));
+  EXPECT_TRUE(session2.IsConnected(nullptr));
+
+  history_service.CompleteHistoryReadRaw(
+      {.status = scada::StatusCode::Good,
+       .values = {scada::MakeReadResult(456)}});
+  harness.Drain();
+
+  EXPECT_EQ(callback_count, 1);
+
+  harness.Wait(session2.Disconnect());
+  harness.Wait(session1.Connect(params));
+  EXPECT_TRUE(session1.IsConnected(nullptr));
+
+  harness.Wait(session1.Disconnect());
+}
+
+TEST_F(SessionProxyTest, ShutdownReleasesSessionStateAndDisconnectsClient) {
+  NoopAttributeService attribute_service;
+  NoopHistoryService history_service;
+  SessionProxyHarness harness{&attribute_service, &history_service};
+
+  {
+    SessionProxy session1{{.executor_ = harness.asio_env_.executor,
+                           .transport_factory_ =
+                               harness.asio_env_.transport_factory}};
+
+    harness.Wait(session1.Connect(harness.GetConnectParams()));
+    EXPECT_TRUE(session1.IsConnected(nullptr));
+
+    harness.ResetSessionManager();
+
+    for (int i = 0; i < 1000 && session1.IsConnected(nullptr); ++i) {
+      harness.Poll();
+    }
+
+    EXPECT_FALSE(session1.IsConnected(nullptr));
+  }
 }

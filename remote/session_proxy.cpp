@@ -54,7 +54,9 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       view_service_proxy_{std::make_unique<ViewServiceProxy>()},
       node_management_proxy_{std::make_unique<NodeManagementProxy>()},
       history_proxy_{std::make_unique<HistoryProxy>()},
-      ping_timer_{executor_} {}
+      ping_timer_{executor_} {
+  connect_loop_done_promise_ = make_resolved_promise();
+}
 
 SessionProxy::~SessionProxy() {
   cancelation_.Cancel();
@@ -543,8 +545,10 @@ std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
 promise<void> SessionProxy::Reconnect() {
   promise<void> disconnect_if_needed =
       session_created_ ? Disconnect() : make_resolved_promise();
+  promise<void> loop_done = connect_loop_done_promise_;
 
-  return disconnect_if_needed.then([this] {
+  return FoldPromises(std::move(disconnect_if_needed), std::move(loop_done))
+      .then([this] {
     // Cancel the old Connect() coroutine and close the transport so the old
     // read loop exits cleanly before starting a new one.
     cancelation_.Cancel();

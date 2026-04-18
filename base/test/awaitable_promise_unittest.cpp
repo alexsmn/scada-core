@@ -96,6 +96,38 @@ T WaitForFuture(AsioTestEnvironment& asio_env, std::future<T>& result) {
   return result.get();
 }
 
+template <class T>
+T WaitForPromise(AsioTestEnvironment& asio_env, promise<T>& result) {
+  while (result.wait_for(0ms) == promise_wait_status::timeout) {
+    asio_env.io_context.run_for(10ms);
+    asio_env.io_context.restart();
+  }
+  return result.get();
+}
+
+struct NonDefaultConstructible {
+  explicit NonDefaultConstructible(int value) : value{value} {}
+
+  int value;
+};
+
+Awaitable<int> Return42() {
+  co_return 42;
+}
+
+Awaitable<void> ReturnVoid() {
+  co_return;
+}
+
+Awaitable<NonDefaultConstructible> ReturnNonDefaultConstructible(int value) {
+  co_return NonDefaultConstructible{value};
+}
+
+Awaitable<int> ThrowRuntimeError() {
+  throw std::runtime_error{"boom"};
+  co_return 0;
+}
+
 }  // namespace
 
 TEST(AwaitPromise, ReturnsResolvedValue) {
@@ -131,6 +163,52 @@ TEST(ToAwaitable, CompletesDeferredTemporaryVoidPromise) {
       }(asio_env.executor),
       boost::asio::use_future);
   EXPECT_NO_THROW(WaitForFuture(asio_env, result));
+}
+
+TEST(ToPromise, CompletesResolvedValueAwaitable) {
+  AsioTestEnvironment asio_env;
+
+  auto promise = ToPromise(NetExecutorAdapter{asio_env.executor}, Return42());
+  auto result = boost::asio::co_spawn(
+      asio_env.io_context,
+      AwaitPromise(NetExecutorAdapter{asio_env.executor}, std::move(promise)),
+      boost::asio::use_future);
+
+  EXPECT_EQ(WaitForFuture(asio_env, result), 42);
+}
+
+TEST(ToPromise, CompletesResolvedVoidAwaitable) {
+  AsioTestEnvironment asio_env;
+
+  auto promise =
+      ToPromise(NetExecutorAdapter{asio_env.executor}, ReturnVoid());
+  auto result = boost::asio::co_spawn(
+      asio_env.io_context,
+      AwaitPromise(NetExecutorAdapter{asio_env.executor}, std::move(promise)),
+      boost::asio::use_future);
+
+  EXPECT_NO_THROW(WaitForFuture(asio_env, result));
+}
+
+TEST(ToPromise, CompletesNonDefaultConstructibleAwaitable) {
+  AsioTestEnvironment asio_env;
+
+  auto promise = ToPromise(NetExecutorAdapter{asio_env.executor},
+                           ReturnNonDefaultConstructible(42));
+  EXPECT_EQ(WaitForPromise(asio_env, promise).value, 42);
+}
+
+TEST(ToPromise, PropagatesAwaitableExceptions) {
+  AsioTestEnvironment asio_env;
+
+  auto promise =
+      ToPromise(NetExecutorAdapter{asio_env.executor}, ThrowRuntimeError());
+  auto result = boost::asio::co_spawn(
+      asio_env.io_context,
+      AwaitPromise(NetExecutorAdapter{asio_env.executor}, std::move(promise)),
+      boost::asio::use_future);
+
+  EXPECT_THROW(WaitForFuture(asio_env, result), std::runtime_error);
 }
 
 TEST(AwaitPromise, RepeatedDeferredTemporaryValuePromiseWithNetExecutorAdapter) {
