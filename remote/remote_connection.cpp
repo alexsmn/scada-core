@@ -118,8 +118,13 @@ void ServerConnection::Close() {
   cancelation_.reset();
 
   if (session_) {
-    session_->SetConnection(nullptr);
+    auto* session = session_;
     session_ = nullptr;
+    session->SetConnection(nullptr);
+
+    if (delete_session_handler_) {
+      delete_session_handler_(*session);
+    }
   }
 
   if (closed_handler_) {

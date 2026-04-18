@@ -45,6 +45,9 @@ inline promise<std::vector<scada::DataValue>> HistoryReadRaw(
 
             details_.continuation_point = result.continuation_point;
             ReadNext();
+          })
+          .except([this, ref = shared_from_this()](std::exception_ptr e) {
+            promise_.reject(e);
           });
     }
 

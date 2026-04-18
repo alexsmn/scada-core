@@ -339,3 +339,25 @@ TEST_F(SessionProxyTest, CloseUserSessionsDisconnectsMatchingSession) {
 
   EXPECT_FALSE(session.IsConnected(nullptr));
 }
+
+TEST_F(SessionProxyTest, ClientTransportDropClosesServerSession) {
+  SessionManagerObserver observer;
+  session_manager_->AddObserver(observer);
+
+  {
+    SessionProxy session{{.executor_ = asio_env_.executor,
+                          .transport_factory_ = asio_env_.transport_factory}};
+
+    Wait(session.Connect(GetConnectParams()));
+    EXPECT_THAT(observer.opened_user_ids, ElementsAre(kUserId));
+    EXPECT_THAT(observer.closed_user_ids, IsEmpty());
+  }
+
+  for (int i = 0; i < 1000 && observer.closed_user_ids.empty(); ++i) {
+    Poll();
+  }
+
+  EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId));
+
+  session_manager_->RemoveObserver(observer);
+}

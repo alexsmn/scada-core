@@ -51,6 +51,13 @@ function(scada_module_unittests MODULE_NAME)
                          PROPERTIES TIMEOUT 60)
 
     target_link_libraries(${MODULE_NAME}_unittests PRIVATE ${MODULE_NAME} base_unittest)
+
+    if(MSVC)
+      # RelWithDebInfo already uses embedded object debug info via the preset,
+      # so skipping the final executable PDB avoids LNK1140 on large test bins.
+      target_link_options(${MODULE_NAME}_unittests PRIVATE
+        $<$<CONFIG:RelWithDebInfo>:/PDB:NONE>)
+    endif()
   endif()
 
   target_sources(${MODULE_NAME}_unittests PRIVATE ${ARGN})
