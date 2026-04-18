@@ -1,0 +1,58 @@
+#pragma once
+
+#include "base/awaitable.h"
+#include "base/test/test_executor.h"
+
+using namespace std::chrono_literals;
+
+template <class T>
+T WaitPromise(std::shared_ptr<TestExecutor> executor, promise<T> promise) {
+  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+    executor->Poll();
+  }
+
+  return promise.get();
+}
+
+template <class T>
+T WaitPromise(std::shared_ptr<TestExecutor> executor,
+              std::shared_ptr<promise<T>> promise) {
+  while (promise->wait_for(1ms) == promise_wait_status::timeout) {
+    executor->Poll();
+  }
+
+  return promise->get();
+}
+
+template <class T>
+T WaitAwaitable(std::shared_ptr<TestExecutor> executor, Awaitable<T> awaitable) {
+  using PromiseT = promise<T>;
+  std::shared_ptr<PromiseT> promise{new PromiseT()};
+  CoSpawn(MakeTestAnyExecutor(executor),
+          [promise, awaitable = std::move(awaitable)]() mutable
+              -> Awaitable<void> {
+            try {
+              promise->resolve(co_await std::move(awaitable));
+            } catch (...) {
+              promise->reject(std::current_exception());
+            }
+          });
+  return WaitPromise(executor, std::move(promise));
+}
+
+inline void WaitAwaitable(std::shared_ptr<TestExecutor> executor,
+                          Awaitable<void> awaitable) {
+  using PromiseT = promise<void>;
+  std::shared_ptr<PromiseT> promise{new PromiseT()};
+  CoSpawn(MakeTestAnyExecutor(executor),
+          [promise, awaitable = std::move(awaitable)]() mutable
+              -> Awaitable<void> {
+            try {
+              co_await std::move(awaitable);
+              promise->resolve();
+            } catch (...) {
+              promise->reject(std::current_exception());
+            }
+          });
+  WaitPromise(executor, std::move(promise));
+}
