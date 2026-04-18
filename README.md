@@ -114,6 +114,10 @@ The library provides seven core services accessible via `scada::services`:
 | `NodeManagementService` | Create/delete nodes |
 | `SessionService` | Manage user sessions |
 
+Additional documentation:
+
+- `docs/services.md` for service API and adapter reference
+
 ## Usage Example
 
 ```cpp
