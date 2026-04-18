@@ -72,20 +72,22 @@ void NodeManagementStub::OnDeleteNodes(
     return;
   }
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id, inputs]() mutable -> Awaitable<void> {
-            co_await self->OnDeleteNodesAsync(request_id, std::move(inputs));
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id, inputs]() mutable -> Awaitable<void> {
+        co_await self->OnDeleteNodesAsync(request_id, std::move(inputs));
+      });
 }
 
 void NodeManagementStub::OnAddNodes(
     unsigned request_id,
-    const std::vector<scada::AddNodesItem>& inputs) {
+  const std::vector<scada::AddNodesItem>& inputs) {
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id, inputs]() mutable -> Awaitable<void> {
-            co_await self->OnAddNodesAsync(request_id, std::move(inputs));
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id, inputs]() mutable -> Awaitable<void> {
+        co_await self->OnAddNodesAsync(request_id, std::move(inputs));
+      });
 }
 
 void NodeManagementStub::OnAddReferences(
@@ -94,10 +96,11 @@ void NodeManagementStub::OnAddReferences(
   LOG_INFO(*logger_) << "Add references" << LOG_TAG("RequestId", request_id)
                      << LOG_TAG("Count", inputs.size());
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id, inputs]() mutable -> Awaitable<void> {
-            co_await self->OnAddReferencesAsync(request_id, std::move(inputs));
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id, inputs]() mutable -> Awaitable<void> {
+        co_await self->OnAddReferencesAsync(request_id, std::move(inputs));
+      });
 }
 
 void NodeManagementStub::OnDeleteReferences(
@@ -106,11 +109,11 @@ void NodeManagementStub::OnDeleteReferences(
   LOG_INFO(*logger_) << "Delete reference" << LOG_TAG("RequestId", request_id)
                      << LOG_TAG("Count", inputs.size());
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id, inputs]() mutable -> Awaitable<void> {
-            co_await self->OnDeleteReferencesAsync(request_id,
-                                                   std::move(inputs));
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id, inputs]() mutable -> Awaitable<void> {
+        co_await self->OnDeleteReferencesAsync(request_id, std::move(inputs));
+      });
 }
 
 Awaitable<void> NodeManagementStub::OnDeleteNodesAsync(

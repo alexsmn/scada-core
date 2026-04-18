@@ -17,7 +17,6 @@
 #include "scada/service_context.h"
 #include "scada/service_awaitable.h"
 #include "scada/write_flags.h"
-
 #include <boost/range/adaptor/transformed.hpp>
 
 SessionStub::SessionStub(SessionContext&& context)
@@ -77,6 +76,23 @@ void SessionStub::ProcessMessage(const protocol::Message& message) {
 }
 
 void SessionStub::ProcessRequest(const protocol::Request& request) {
+  LOG_INFO(logger_) << "Process request"
+                    << LOG_TAG("RequestId", request.request_id())
+                    << LOG_TAG("HasPing", request.has_ping())
+                    << LOG_TAG("HasRead", request.has_read())
+                    << LOG_TAG("WriteCount", request.write_size())
+                    << LOG_TAG("HasCall", request.has_call())
+                    << LOG_TAG("HasCreateSubscription",
+                               request.has_create_subscription())
+                    << LOG_TAG("HasDeleteSubscription",
+                               request.has_delete_subscription())
+                    << LOG_TAG("HasCreateMonitoredItem",
+                               request.has_create_monitored_item())
+                    << LOG_TAG("HasDeleteMonitoredItem",
+                               request.has_delete_monitored_item())
+                    << LOG_TAG("HasBrowse", request.has_browse())
+                    << LOG_TAG("BrowsePathCount", request.browse_path_size());
+
   if (request.has_ping()) {
     protocol::Response response;
     response.set_request_id(request.request_id());
@@ -238,12 +254,12 @@ void SessionStub::OnCall(unsigned request_id,
     return;
   }
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id, node_id, method_id,
-           arguments]() -> Awaitable<void> {
-            co_await self->OnCallAsync(request_id, node_id, method_id,
-                                       arguments);
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id, node_id, method_id,
+       arguments]() -> Awaitable<void> {
+        co_await self->OnCallAsync(request_id, node_id, method_id, arguments);
+      });
 }
 
 void SessionStub::OnRead(const protocol::Request& request) {
@@ -263,12 +279,12 @@ void SessionStub::OnRead(const protocol::Request& request) {
   scada::ServiceContext context =
       service_context_.with_trace_id(request.trace_id());
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id = request.request_id(),
-           context = std::move(context),
-           inputs]() mutable -> Awaitable<void> {
-            co_await self->OnReadAsync(request_id, std::move(context), inputs);
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id = request.request_id(), context = std::move(context),
+       inputs]() mutable -> Awaitable<void> {
+        co_await self->OnReadAsync(request_id, std::move(context), inputs);
+      });
 }
 
 void SessionStub::OnWrite(const protocol::Request& request) {
@@ -287,10 +303,11 @@ void SessionStub::OnWrite(const protocol::Request& request) {
   const auto inputs = std::make_shared<const std::vector<scada::WriteValue>>(
       ConvertTo<std::vector<scada::WriteValue>>(request.write()));
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id, inputs]() -> Awaitable<void> {
-            co_await self->OnWriteAsync(request_id, inputs);
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id, inputs]() -> Awaitable<void> {
+        co_await self->OnWriteAsync(request_id, inputs);
+      });
 }
 
 Awaitable<void> SessionStub::OnCallAsync(
@@ -324,6 +341,12 @@ Awaitable<void> SessionStub::OnReadAsync(
   if (!connection_)
     co_return;
 
+  LOG_INFO(logger_) << "Read async completed"
+                    << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("Status", ToString(status))
+                    << LOG_TAG("InputCount", inputs ? inputs->size() : 0)
+                    << LOG_TAG("ResultCount", results.size());
+
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
@@ -341,6 +364,12 @@ Awaitable<void> SessionStub::OnWriteAsync(
 
   if (!connection_)
     co_return;
+
+  LOG_INFO(logger_) << "Write async completed"
+                    << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("Status", ToString(status))
+                    << LOG_TAG("InputCount", inputs ? inputs->size() : 0)
+                    << LOG_TAG("ResultCount", status_codes.size());
 
   protocol::Message message;
   auto& response = *message.add_responses();

@@ -84,11 +84,12 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   LOG_INFO(logger_) << "History read raw" << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("NodeId", NodeIdToScadaString(details.node_id));
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id, details = std::move(details)]() mutable
-              -> Awaitable<void> {
-            co_await self->OnHistoryReadRawAsync(request_id, std::move(details));
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id, details = std::move(details)]() mutable
+          -> Awaitable<void> {
+        co_await self->OnHistoryReadRawAsync(request_id, std::move(details));
+      });
 }
 
 void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
@@ -109,12 +110,13 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   LOG_INFO(logger_) << "History read events" << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id, node_id = std::move(node_id), from, to,
-           filter = std::move(filter)]() mutable -> Awaitable<void> {
-            co_await self->OnHistoryReadEventsAsync(
-                request_id, std::move(node_id), from, to, std::move(filter));
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id, node_id = std::move(node_id), from, to,
+       filter = std::move(filter)]() mutable -> Awaitable<void> {
+        co_await self->OnHistoryReadEventsAsync(
+            request_id, std::move(node_id), from, to, std::move(filter));
+      });
 }
 
 Awaitable<void> HistoryStub::OnHistoryReadRawAsync(

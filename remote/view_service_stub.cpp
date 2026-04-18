@@ -55,7 +55,7 @@ void ViewServiceStub::OnBrowse(const protocol::Request& request) {
        inputs = std::move(inputs)]() mutable -> Awaitable<void> {
         co_await self->OnBrowseAsync(request_id, std::move(context),
                                      std::move(inputs));
-      }());
+      });
 }
 
 void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
@@ -63,11 +63,12 @@ void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
       ConvertTo<std::vector<scada::BrowsePath>>(request.browse_path());
 
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id = request.request_id(),
-           inputs = std::move(inputs)]() mutable -> Awaitable<void> {
-            co_await self->OnBrowsePathsAsync(request_id, std::move(inputs));
-          }());
+  CoSpawn(
+      executor_,
+      [self, request_id = request.request_id(),
+       inputs = std::move(inputs)]() mutable -> Awaitable<void> {
+        co_await self->OnBrowsePathsAsync(request_id, std::move(inputs));
+      });
 }
 
 Awaitable<void> ViewServiceStub::OnBrowseAsync(
@@ -76,6 +77,11 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
     std::vector<scada::BrowseDescription> inputs) {
   auto [status, results] = co_await scada::BrowseAsync(
       executor_, service_, std::move(context), std::move(inputs));
+
+  LOG_INFO(logger_) << "Browse async completed"
+                    << LOG_TAG("RequestId", request_id)
+                    << LOG_TAG("Status", ToString(status))
+                    << LOG_TAG("ResultCount", results.size());
 
   protocol::Message message;
   auto& response = *message.add_responses();
