@@ -48,4 +48,48 @@ TEST(CoSpawn, SupportsMoveOnlyCoroutineFactoryCaptures) {
   EXPECT_EQ(observed, 42);
 }
 
+TEST(CoSpawn, DefersCoroutineFactoryUntilAnyExecutorRuns) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto any_executor = MakeTestAnyExecutor(executor);
+
+  bool factory_called = false;
+  bool coroutine_started = false;
+
+  CoSpawn(any_executor, [&]() -> Awaitable<void> {
+    factory_called = true;
+    coroutine_started = true;
+    EXPECT_TRUE(executor->is_current_executor());
+    co_return;
+  });
+
+  EXPECT_FALSE(factory_called);
+  EXPECT_FALSE(coroutine_started);
+
+  executor->Poll();
+
+  EXPECT_TRUE(factory_called);
+  EXPECT_TRUE(coroutine_started);
+}
+
+TEST(CoSpawn, SupportsMoveOnlyCoroutineFactoryCapturesWithAnyExecutor) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto any_executor = MakeTestAnyExecutor(executor);
+  auto value = std::make_unique<int>(42);
+
+  int observed = 0;
+
+  CoSpawn(any_executor,
+          [owned = std::move(value), &observed]() -> Awaitable<void> {
+            observed = *owned;
+            co_return;
+          });
+
+  EXPECT_EQ(value, nullptr);
+  EXPECT_EQ(observed, 0);
+
+  executor->Poll();
+
+  EXPECT_EQ(observed, 42);
+}
+
 }  // namespace

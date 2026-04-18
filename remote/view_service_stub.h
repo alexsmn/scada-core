@@ -3,6 +3,7 @@
 #include "base/boost_log.h"
 #include "scada/service_context.h"
 #include "base/awaitable.h"
+#include "scada/coroutine_services.h"
 #include "scada/view_service.h"
 
 #include <memory>
@@ -45,5 +46,7 @@ class ViewServiceStub final : private ViewServiceStubContext,
       unsigned request_id,
       std::vector<scada::BrowsePath> inputs);
 
+  std::unique_ptr<scada::CallbackToCoroutineViewServiceAdapter>
+      coroutine_service_;
   BoostLogger logger_{LOG_NAME("ViewServiceStub")};
 };

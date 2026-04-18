@@ -2,6 +2,7 @@
 
 #include "base/boost_log.h"
 #include "base/awaitable.h"
+#include "scada/coroutine_services.h"
 #include "scada/history_types.h"
 
 #include <map>
@@ -44,6 +45,8 @@ class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
       scada::EventFilter filter);
 
   scada::HistoryService& service_;
+  std::unique_ptr<scada::CallbackToCoroutineHistoryServiceAdapter>
+      coroutine_service_;
   const std::weak_ptr<MessageSender> sender_;
   const std::shared_ptr<Executor> executor_;
 

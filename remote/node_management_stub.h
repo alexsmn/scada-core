@@ -2,6 +2,7 @@
 
 #include "base/boost_log.h"
 #include "base/awaitable.h"
+#include "scada/coroutine_services.h"
 #include "scada/node_attributes.h"
 #include "scada/node_id.h"
 #include "scada/node_management_service.h"
@@ -62,6 +63,8 @@ class NodeManagementStub : public std::enable_shared_from_this<NodeManagementStu
   const std::weak_ptr<MessageSender> sender_;
 
   scada::NodeManagementService& service_;
+  std::unique_ptr<scada::CallbackToCoroutineNodeManagementServiceAdapter>
+      coroutine_service_;
 
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("NodeManagementStub"));

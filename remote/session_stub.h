@@ -2,6 +2,7 @@
 
 #include "base/boost_log.h"
 #include "base/awaitable.h"
+#include "scada/coroutine_services.h"
 #include "remote/message_sender.h"
 #include "scada/service_context.h"
 #include "scada/services.h"
@@ -109,6 +110,10 @@ class SessionStub : public MessageSender,
   std::shared_ptr<ViewServiceStub> view_service_stub_;
   std::shared_ptr<NodeManagementStub> node_management_stub_;
   std::shared_ptr<HistoryStub> history_stub_;
+  std::unique_ptr<scada::CallbackToCoroutineAttributeServiceAdapter>
+      coroutine_attribute_service_;
+  std::unique_ptr<scada::CallbackToCoroutineMethodServiceAdapter>
+      coroutine_method_service_;
 
   int next_subscription_id_ = 1;
 

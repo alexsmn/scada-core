@@ -12,10 +12,10 @@
 #include "remote/subscription_stub.h"
 #include "remote/view_service_stub.h"
 #include "scada/attribute_service.h"
+#include "scada/coroutine_services.h"
 #include "scada/method_service.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/service_context.h"
-#include "scada/service_awaitable.h"
 #include "scada/write_flags.h"
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -51,6 +51,18 @@ void SessionStub::Init() {
   if (services_.history_service) {
     history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
                                                   sender, executor_);
+  }
+
+  if (services_.attribute_service) {
+    coroutine_attribute_service_ = std::make_unique<
+        scada::CallbackToCoroutineAttributeServiceAdapter>(
+        executor_, *services_.attribute_service);
+  }
+
+  if (services_.method_service) {
+    coroutine_method_service_ = std::make_unique<
+        scada::CallbackToCoroutineMethodServiceAdapter>(
+        executor_, *services_.method_service);
   }
 }
 
@@ -316,9 +328,10 @@ Awaitable<void> SessionStub::OnCallAsync(
     scada::NodeId method_id,
     std::vector<scada::Variant> arguments) {
   auto status =
-      co_await scada::CallAsync(executor_, *services_.method_service,
-                                std::move(node_id), std::move(method_id),
-                                std::move(arguments), service_context_.user_id());
+      co_await coroutine_method_service_->Call(std::move(node_id),
+                                               std::move(method_id),
+                                               std::move(arguments),
+                                               service_context_.user_id());
 
   if (!connection_)
     co_return;
@@ -334,9 +347,9 @@ Awaitable<void> SessionStub::OnReadAsync(
     unsigned request_id,
     scada::ServiceContext context,
     std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) {
-  auto [status, results] = co_await scada::ReadAsync(
-      executor_, *services_.attribute_service, std::move(context),
-      std::move(inputs));
+  auto [status, results] =
+      co_await coroutine_attribute_service_->Read(std::move(context),
+                                                  std::move(inputs));
 
   if (!connection_)
     co_return;
@@ -359,8 +372,8 @@ Awaitable<void> SessionStub::OnWriteAsync(
     unsigned request_id,
     std::shared_ptr<const std::vector<scada::WriteValue>> inputs) {
   auto [status, status_codes] =
-      co_await scada::WriteAsync(executor_, *services_.attribute_service,
-                                 service_context_, std::move(inputs));
+      co_await coroutine_attribute_service_->Write(service_context_,
+                                                   std::move(inputs));
 
   if (!connection_)
     co_return;

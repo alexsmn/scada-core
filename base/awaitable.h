@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "net/net_executor_adapter.h"
 
 #include <boost/asio/awaitable.hpp>
@@ -17,5 +18,11 @@ using Awaitable = boost::asio::awaitable<T>;
 template <class F>
 inline void CoSpawn(const std::shared_ptr<Executor>& executor, F&& fn) {
   boost::asio::co_spawn(NetExecutorAdapter{executor}, std::forward<F>(fn),
+                        boost::asio::detached);
+}
+
+template <class F>
+inline void CoSpawn(AnyExecutor executor, F&& fn) {
+  boost::asio::co_spawn(std::move(executor), std::forward<F>(fn),
                         boost::asio::detached);
 }

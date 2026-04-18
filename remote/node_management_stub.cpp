@@ -5,8 +5,8 @@
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/coroutine_services.h"
 #include "scada/node_management_service.h"
-#include "scada/service_awaitable.h"
 
 #include "base/debug_util.h"
 
@@ -28,6 +28,9 @@ NodeManagementStub::NodeManagementStub(
     : executor_{std::move(executor)},
       sender_{std::move(sender)},
       service_{service},
+      coroutine_service_{std::make_unique<
+          scada::CallbackToCoroutineNodeManagementServiceAdapter>(
+          executor_, service_)},
       service_context_{service_context} {}
 
 void NodeManagementStub::OnRequestReceived(const protocol::Request& request) {
@@ -120,7 +123,7 @@ Awaitable<void> NodeManagementStub::OnDeleteNodesAsync(
     unsigned request_id,
     std::vector<scada::DeleteNodesItem> inputs) {
   auto [status, results] =
-      co_await scada::DeleteNodesAsync(executor_, service_, std::move(inputs));
+      co_await coroutine_service_->DeleteNodes(std::move(inputs));
 
   protocol::Message message;
   auto& response = *message.add_responses();
@@ -138,7 +141,7 @@ Awaitable<void> NodeManagementStub::OnAddNodesAsync(
     unsigned request_id,
     std::vector<scada::AddNodesItem> inputs) {
   auto [status, results] =
-      co_await scada::AddNodesAsync(executor_, service_, std::move(inputs));
+      co_await coroutine_service_->AddNodes(std::move(inputs));
 
   protocol::Message message;
   auto& response = *message.add_responses();
@@ -156,8 +159,8 @@ Awaitable<void> NodeManagementStub::OnAddReferencesAsync(
     unsigned request_id,
     std::vector<scada::AddReferencesItem> inputs) {
   const auto count = inputs.size();
-  auto [status, results] = co_await scada::AddReferencesAsync(
-      executor_, service_, std::move(inputs));
+  auto [status, results] =
+      co_await coroutine_service_->AddReferences(std::move(inputs));
 
   LOG_INFO(*logger_) << "Add references completed"
                      << LOG_TAG("RequestId", request_id)
@@ -178,8 +181,8 @@ Awaitable<void> NodeManagementStub::OnDeleteReferencesAsync(
     unsigned request_id,
     std::vector<scada::DeleteReferencesItem> inputs) {
   const auto count = inputs.size();
-  auto [status, results] = co_await scada::DeleteReferencesAsync(
-      executor_, service_, std::move(inputs));
+  auto [status, results] =
+      co_await coroutine_service_->DeleteReferences(std::move(inputs));
 
   LOG_INFO(*logger_) << "Delete references completed"
                      << LOG_TAG("RequestId", request_id)

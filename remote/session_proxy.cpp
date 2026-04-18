@@ -543,12 +543,10 @@ std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
 }
 
 promise<void> SessionProxy::Reconnect() {
-  promise<void> disconnect_if_needed =
-      session_created_ ? Disconnect() : make_resolved_promise();
-  promise<void> loop_done = connect_loop_done_promise_;
+  promise<void> prerequisite =
+      session_created_ ? Disconnect() : connect_loop_done_promise_;
 
-  return FoldPromises(std::move(disconnect_if_needed), std::move(loop_done))
-      .then([this] {
+  return prerequisite.then([this] {
     // Cancel the old Connect() coroutine and close the transport so the old
     // read loop exits cleanly before starting a new one.
     cancelation_.Cancel();

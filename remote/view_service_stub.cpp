@@ -7,7 +7,7 @@
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
-#include "scada/service_awaitable.h"
+#include "scada/coroutine_services.h"
 #include "scada/status.h"
 #include "scada/view_service.h"
 
@@ -16,7 +16,9 @@ using namespace std::chrono_literals;
 // ViewServiceStub
 
 ViewServiceStub::ViewServiceStub(ViewServiceStubContext&& context)
-    : ViewServiceStubContext{std::move(context)} {}
+    : ViewServiceStubContext{std::move(context)},
+      coroutine_service_{std::make_unique<
+          scada::CallbackToCoroutineViewServiceAdapter>(executor_, service_)} {}
 
 ViewServiceStub::~ViewServiceStub() {}
 
@@ -75,8 +77,8 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
     unsigned request_id,
     scada::ServiceContext context,
     std::vector<scada::BrowseDescription> inputs) {
-  auto [status, results] = co_await scada::BrowseAsync(
-      executor_, service_, std::move(context), std::move(inputs));
+  auto [status, results] =
+      co_await coroutine_service_->Browse(std::move(context), std::move(inputs));
 
   LOG_INFO(logger_) << "Browse async completed"
                     << LOG_TAG("RequestId", request_id)
@@ -100,8 +102,8 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
 Awaitable<void> ViewServiceStub::OnBrowsePathsAsync(
     unsigned request_id,
     std::vector<scada::BrowsePath> inputs) {
-  auto [status, results] = co_await scada::TranslateBrowsePathsAsync(
-      executor_, service_, std::move(inputs));
+  auto [status, results] =
+      co_await coroutine_service_->TranslateBrowsePaths(std::move(inputs));
 
   protocol::Message message;
   auto& response = *message.add_responses();
