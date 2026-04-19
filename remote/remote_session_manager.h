@@ -42,7 +42,10 @@ struct RemoteSessionManagerContext {
   const std::vector<transport::TransportString> endpoints_;
 };
 
-// Accepts remote sessions and managers them.
+// Remote login/session lifecycle coordinator. Owns listeners, accepted
+// connections, and logical sessions for the remote protocol, and keeps the
+// create-session path on a coroutine-first authentication/session-management
+// flow.
 class RemoteSessionManager final : private RemoteSessionManagerContext {
  public:
   class Observer {
