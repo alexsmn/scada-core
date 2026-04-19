@@ -515,6 +515,27 @@ TEST_F(SessionProxyTest,
   session_manager_->RemoveObserver(observer);
 }
 
+TEST_F(SessionProxyTest,
+       ShutdownDuringPendingCreateSessionRejectsConnectPromise) {
+  delay_authentication_ = true;
+  auth_requested_ = false;
+
+  SessionProxy session{{.executor_ = asio_env_.executor,
+                        .transport_factory_ = asio_env_.transport_factory}};
+
+  auto connect_promise = session.Connect(GetConnectParams());
+
+  for (int i = 0; i < 1000 && !auth_requested_; ++i) {
+    Poll();
+  }
+  ASSERT_TRUE(auth_requested_);
+
+  ResetSessionManager();
+
+  EXPECT_THROW(Wait(std::move(connect_promise)), scada::status_exception);
+  EXPECT_FALSE(session.IsConnected(nullptr));
+}
+
 TEST_F(SessionProxyTest, Connect_DuplicateUserRejectedWithoutRemoteLogoff) {
   SessionProxy session1{{.executor_ = asio_env_.executor,
                          .transport_factory_ = asio_env_.transport_factory}};

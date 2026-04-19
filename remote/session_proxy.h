@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
+#include "base/awaitable.h"
 #include "base/cancelation.h"
 #include "base/executor_timer.h"
 #include "remote/message_sender.h"
@@ -104,7 +105,12 @@ class SessionProxy : private SessionProxyContext,
   void OnSessionDeleted();
 
   void OnMessageReceived(const protocol::Message& message);
-  void OnCreateSessionResult(const protocol::Response& response);
+
+  [[nodiscard]] Awaitable<void> AwaitCreateSessionAsync();
+  [[nodiscard]] Awaitable<void> DisconnectAsync();
+  [[nodiscard]] Awaitable<void> PingAsync();
+  [[nodiscard]] Awaitable<protocol::Response> RequestAsync(
+      protocol::Request request);
 
   void ForwardConnectResult(scada::Status&& status);
 

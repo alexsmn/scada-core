@@ -1,5 +1,7 @@
 #include "remote/session_proxy.h"
 
+#include "base/awaitable_promise.h"
+#include "base/callback_awaitable.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -79,45 +81,14 @@ promise<void> SessionProxy::Disconnect() {
   if (!session_created_)
     return MakeRejectedStatusPromise(scada::StatusCode::Bad_Disconnected);
 
-  protocol::Request request;
-  auto& delete_session = *request.mutable_delete_session();
-  delete_session;
-
-  promise<void> promise;
-  Request(request, [this, promise](const protocol::Response& response) mutable {
-    auto status = ConvertTo<scada::Status>(response.status());
-    if (!status) {
-      scada::CompleteStatusPromise(promise, std::move(status));
-      return;
-    }
-
-    if (status) {
-      OnSessionDeleted();
-      cancelation_.Cancel();
-    }
-
-    ForwardPromise(connect_loop_done_promise_, promise);
-  });
-  return promise;
+  return ToPromise(NetExecutorAdapter{executor_}, DisconnectAsync());
 }
 
 void SessionProxy::OnTransportOpened() {
   LOG_INFO(*logger_) << "Transport opened";
 
-  protocol::Request request;
-  auto& create_session = *request.mutable_create_session();
-  create_session.set_user_name_utf8(
-      UtfConvert<char>(user_name_));
-  create_session.set_password_utf8(
-      UtfConvert<char>(password_));
-  create_session.set_protocol_version_major(protocol::PROTOCOL_VERSION_MAJOR);
-  create_session.set_protocol_version_minor(protocol::PROTOCOL_VERSION_MINOR);
-  if (allow_remote_logoff_)
-    create_session.set_delete_existing(true);
-
-  Request(request, [this](const protocol::Response& response) {
-    OnCreateSessionResult(response);
-  });
+  boost::asio::co_spawn(NetExecutorAdapter{executor_}, AwaitCreateSessionAsync(),
+                        boost::asio::detached);
 }
 
 void SessionProxy::OnSessionCreated() {
@@ -176,32 +147,32 @@ void SessionProxy::OnTransportMessageReceived(std::span<const char> data) {
 }
 
 void SessionProxy::OnSessionDeleted() {
-  // When `OnSessionClosed` is called on the connection, the channel can be not
-  // opened yet.
+  // Fail all pending requests, including the initial create-session request.
+  // The login path now awaits the create-session response inside a coroutine,
+  // so shutdown/transport-close must complete that waiter instead of leaving it
+  // suspended until the read loop unwinds.
+  protocol::Response response;
+  Convert(scada::Status{scada::StatusCode::Bad_Disconnected},
+          *response.mutable_status());
+  auto requests = std::move(requests_);
+  for (const auto& [request_id, response_handler] : requests) {
+    response.set_request_id(request_id);
+
+    if (response_handler) {
+      response_handler(response);
+    }
+
+    debugger_->NotifyRequestEvent(
+        {.request_id = static_cast<scada::SessionDebugger::RequestId>(request_id),
+         .phase = scada::SessionDebugger::RequestPhase::Failed});
+  }
+
+  // When `OnSessionClosed` is called on the connection, the logical session
+  // might not be opened yet.
   if (!session_created_)
     return;
 
   session_created_ = false;
-
-  // Cancel all requests.
-  {
-    protocol::Response response;
-    Convert(scada::Status{scada::StatusCode::Bad_Disconnected},
-            *response.mutable_status());
-    auto requests = std::move(requests_);
-    for (const auto& [request_id, response_handler] : requests) {
-      response.set_request_id(request_id);
-
-      if (response_handler) {
-        response_handler(response);
-      }
-
-      debugger_->NotifyRequestEvent(
-          {.request_id =
-               static_cast<scada::SessionDebugger::RequestId>(request_id),
-           .phase = scada::SessionDebugger::RequestPhase::Failed});
-    }
-  }
 
   ping_time_ = {};
   ping_timer_.Stop();
@@ -214,6 +185,82 @@ void SessionProxy::OnSessionDeleted() {
 
 bool SessionProxy::HasPrivilege(scada::Privilege privilege) const {
   return (user_rights_ & (1 << static_cast<int>(privilege))) != 0;
+}
+
+Awaitable<protocol::Response> SessionProxy::RequestAsync(
+    protocol::Request request) {
+  auto [response] =
+      co_await CallbackToAwaitable<protocol::Response>(
+          executor_, [this, request = std::move(request)](auto callback) mutable {
+            Request(
+                request,
+                [callback = std::move(callback)](
+                    const protocol::Response& response) mutable {
+                  callback(response);
+                });
+          });
+  co_return response;
+}
+
+Awaitable<void> SessionProxy::AwaitCreateSessionAsync() {
+  protocol::Request request;
+  auto& create_session = *request.mutable_create_session();
+  create_session.set_user_name_utf8(UtfConvert<char>(user_name_));
+  create_session.set_password_utf8(UtfConvert<char>(password_));
+  create_session.set_protocol_version_major(protocol::PROTOCOL_VERSION_MAJOR);
+  create_session.set_protocol_version_minor(protocol::PROTOCOL_VERSION_MINOR);
+  if (allow_remote_logoff_)
+    create_session.set_delete_existing(true);
+
+  auto response = co_await RequestAsync(std::move(request));
+
+  // Transport/session teardown already routed the connect failure through
+  // OnSessionError(), so the connect loop completion will forward that status.
+  if (!transport_)
+    co_return;
+
+  LOG_INFO(*logger_) << "Create-session response received";
+  auto status = ConvertTo<scada::Status>(response.status());
+  if (!status) {
+    OnSessionError(status);
+    co_return;
+  }
+
+  if (!response.has_create_session_result()) {
+    OnSessionError(scada::StatusCode::Bad);
+    co_return;
+  }
+
+  auto& create_session_result = response.create_session_result();
+  session_token_ = create_session_result.token();
+  Convert(create_session_result.user_node_id(), user_node_id_);
+  user_rights_ = create_session_result.user_rights();
+
+  LOG_INFO(*logger_) << "Create-session response parsed"
+                     << LOG_TAG("UserId", user_node_id_)
+                     << LOG_TAG("Rights", user_rights_);
+
+  OnSessionCreated();
+}
+
+Awaitable<void> SessionProxy::DisconnectAsync() {
+  protocol::Request request;
+  request.mutable_delete_session();
+
+  auto response = co_await RequestAsync(std::move(request));
+  auto status = ConvertTo<scada::Status>(response.status());
+  if (!status) {
+    throw scada::status_exception(status);
+  }
+
+  if (status) {
+    OnSessionDeleted();
+    cancelation_.Cancel();
+    write_queue_.reset();
+    transport_.reset();
+  }
+
+  co_await AwaitPromise(NetExecutorAdapter{executor_}, connect_loop_done_promise_);
 }
 
 void SessionProxy::Send(protocol::Message& message) {
@@ -445,31 +492,6 @@ void SessionProxy::ForwardConnectResult(scada::Status&& status) {
   CompleteStatusPromise(connect_promise_, std::move(status));
 }
 
-void SessionProxy::OnCreateSessionResult(const protocol::Response& response) {
-  LOG_INFO(*logger_) << "Create-session response received";
-  auto status = ConvertTo<scada::Status>(response.status());
-  if (!status) {
-    OnSessionError(status);
-    return;
-  }
-
-  if (!response.has_create_session_result()) {
-    OnSessionError(scada::StatusCode::Bad);
-    return;
-  }
-
-  auto& create_session_result = response.create_session_result();
-  session_token_ = create_session_result.token();
-  Convert(create_session_result.user_node_id(), user_node_id_);
-  user_rights_ = create_session_result.user_rights();
-
-  LOG_INFO(*logger_) << "Create-session response parsed"
-                     << LOG_TAG("UserId", user_node_id_)
-                     << LOG_TAG("Rights", user_rights_);
-
-  OnSessionCreated();
-}
-
 void SessionProxy::Read(
     const scada::ServiceContext& context,
     const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
@@ -608,16 +630,23 @@ void SessionProxy::Ping() {
   assert(ping_time_.is_null());
 
   ping_time_ = base::TimeTicks::Now();
+  boost::asio::co_spawn(NetExecutorAdapter{executor_}, PingAsync(),
+                        boost::asio::detached);
+}
 
+Awaitable<void> SessionProxy::PingAsync() {
   protocol::Request request;
-  auto& ping = *request.mutable_ping();
-  ping;
+  request.mutable_ping();
 
-  Request(request, [this](const protocol::Response& response) {
-    last_ping_delay_ = base::TimeTicks::Now() - ping_time_;
-    ping_time_ = {};
-    SchedulePing();
-  });
+  co_await RequestAsync(std::move(request));
+
+  // Transport/session teardown already handled the disconnect path.
+  if (!transport_)
+    co_return;
+
+  last_ping_delay_ = base::TimeTicks::Now() - ping_time_;
+  ping_time_ = {};
+  SchedulePing();
 }
 
 bool SessionProxy::IsMessageLogged(const protocol::Message& message) const {
