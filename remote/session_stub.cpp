@@ -36,24 +36,9 @@ SessionStub::~SessionStub() {
 void SessionStub::Init() {
   const std::weak_ptr<MessageSender> sender = weak_from_this();
 
-  if (services_.view_service) {
-    view_service_stub_ =
-        std::make_shared<ViewServiceStub>(ViewServiceStubContext{
-            executor_, sender, service_context_, *services_.view_service});
-  }
-
-  if (services_.node_management_service) {
-    node_management_stub_ = std::make_shared<NodeManagementStub>(
-        executor_, sender, *services_.node_management_service,
-        service_context_);
-  }
-
-  if (services_.history_service) {
-    history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
-                                                  sender, executor_);
-  }
-
   if (services_.attribute_service) {
+    // Bind legacy callback services to coroutine adapters once per session so
+    // request handlers and nested stubs stay coroutine-first internally.
     coroutine_attribute_service_ = std::make_unique<
         scada::CallbackToCoroutineAttributeServiceAdapter>(
         executor_, *services_.attribute_service);
@@ -63,6 +48,42 @@ void SessionStub::Init() {
     coroutine_method_service_ = std::make_unique<
         scada::CallbackToCoroutineMethodServiceAdapter>(
         executor_, *services_.method_service);
+  }
+
+  if (services_.history_service) {
+    coroutine_history_service_ = std::make_unique<
+        scada::CallbackToCoroutineHistoryServiceAdapter>(
+        executor_, *services_.history_service);
+  }
+
+  if (services_.view_service) {
+    coroutine_view_service_ =
+        std::make_unique<scada::CallbackToCoroutineViewServiceAdapter>(
+            executor_, *services_.view_service);
+  }
+
+  if (services_.node_management_service) {
+    coroutine_node_management_service_ = std::make_unique<
+        scada::CallbackToCoroutineNodeManagementServiceAdapter>(
+        executor_, *services_.node_management_service);
+  }
+
+  if (services_.view_service) {
+    view_service_stub_ =
+        std::make_shared<ViewServiceStub>(ViewServiceStubContext{
+            executor_, sender, service_context_, *coroutine_view_service_});
+  }
+
+  if (services_.node_management_service) {
+    node_management_stub_ = std::make_shared<NodeManagementStub>(
+        executor_, sender, *coroutine_node_management_service_,
+        service_context_);
+  }
+
+  if (services_.history_service) {
+    history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
+                                                  *coroutine_history_service_,
+                                                  sender, executor_);
   }
 }
 

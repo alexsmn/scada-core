@@ -16,6 +16,7 @@ class Request;
 }
 
 namespace scada {
+class CoroutineHistoryService;
 class HistoryService;
 }
 
@@ -25,6 +26,7 @@ class MessageSender;
 class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
  public:
   HistoryStub(scada::HistoryService& service,
+              scada::CoroutineHistoryService& coroutine_service,
               std::weak_ptr<MessageSender> sender,
               std::shared_ptr<Executor> executor);
   ~HistoryStub();
@@ -45,8 +47,7 @@ class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
       scada::EventFilter filter);
 
   scada::HistoryService& service_;
-  std::unique_ptr<scada::CallbackToCoroutineHistoryServiceAdapter>
-      coroutine_service_;
+  scada::CoroutineHistoryService& coroutine_service_;
   const std::weak_ptr<MessageSender> sender_;
   const std::shared_ptr<Executor> executor_;
 

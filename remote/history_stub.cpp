@@ -12,11 +12,11 @@
 #include "base/debug_util.h"
 
 HistoryStub::HistoryStub(scada::HistoryService& service,
+                         scada::CoroutineHistoryService& coroutine_service,
                          std::weak_ptr<MessageSender> sender,
                          std::shared_ptr<Executor> executor)
     : service_{service},
-      coroutine_service_{std::make_unique<
-          scada::CallbackToCoroutineHistoryServiceAdapter>(executor, service_)},
+      coroutine_service_{coroutine_service},
       sender_{std::move(sender)},
       executor_{std::move(executor)} {}
 
@@ -124,7 +124,7 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
 Awaitable<void> HistoryStub::OnHistoryReadRawAsync(
     unsigned request_id,
     scada::HistoryReadRawDetails details) {
-  auto result = co_await coroutine_service_->HistoryReadRaw(details);
+  auto result = co_await coroutine_service_.HistoryReadRaw(details);
 
   LOG_INFO(logger_) << "History read raw completed"
                     << LOG_TAG("RequestId", request_id)
@@ -158,7 +158,7 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
     base::Time from,
     base::Time to,
     scada::EventFilter filter) {
-  auto result = co_await coroutine_service_->HistoryReadEvents(
+  auto result = co_await coroutine_service_.HistoryReadEvents(
       std::move(node_id), from, to, std::move(filter));
 
   LOG_INFO(logger_) << "History read events completed"

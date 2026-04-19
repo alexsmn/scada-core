@@ -17,8 +17,7 @@ using namespace std::chrono_literals;
 
 ViewServiceStub::ViewServiceStub(ViewServiceStubContext&& context)
     : ViewServiceStubContext{std::move(context)},
-      coroutine_service_{std::make_unique<
-          scada::CallbackToCoroutineViewServiceAdapter>(executor_, service_)} {}
+      coroutine_service_{coroutine_service_} {}
 
 ViewServiceStub::~ViewServiceStub() {}
 
@@ -78,7 +77,7 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
     scada::ServiceContext context,
     std::vector<scada::BrowseDescription> inputs) {
   auto [status, results] =
-      co_await coroutine_service_->Browse(std::move(context), std::move(inputs));
+      co_await coroutine_service_.Browse(std::move(context), std::move(inputs));
 
   LOG_INFO(logger_) << "Browse async completed"
                     << LOG_TAG("RequestId", request_id)
@@ -103,7 +102,7 @@ Awaitable<void> ViewServiceStub::OnBrowsePathsAsync(
     unsigned request_id,
     std::vector<scada::BrowsePath> inputs) {
   auto [status, results] =
-      co_await coroutine_service_->TranslateBrowsePaths(std::move(inputs));
+      co_await coroutine_service_.TranslateBrowsePaths(std::move(inputs));
 
   protocol::Message message;
   auto& response = *message.add_responses();

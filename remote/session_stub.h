@@ -114,6 +114,12 @@ class SessionStub : public MessageSender,
       coroutine_attribute_service_;
   std::unique_ptr<scada::CallbackToCoroutineMethodServiceAdapter>
       coroutine_method_service_;
+  std::unique_ptr<scada::CallbackToCoroutineHistoryServiceAdapter>
+      coroutine_history_service_;
+  std::unique_ptr<scada::CallbackToCoroutineViewServiceAdapter>
+      coroutine_view_service_;
+  std::unique_ptr<scada::CallbackToCoroutineNodeManagementServiceAdapter>
+      coroutine_node_management_service_;
 
   int next_subscription_id_ = 1;
 

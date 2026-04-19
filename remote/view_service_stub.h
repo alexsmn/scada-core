@@ -1,9 +1,9 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "scada/service_context.h"
 #include "base/awaitable.h"
 #include "scada/coroutine_services.h"
+#include "scada/service_context.h"
 #include "scada/view_service.h"
 
 #include <memory>
@@ -24,7 +24,7 @@ struct ViewServiceStubContext {
   const std::shared_ptr<Executor> executor_;
   const std::weak_ptr<MessageSender> sender_;
   const scada::ServiceContext service_context_;
-  scada::ViewService& service_;
+  scada::CoroutineViewService& coroutine_service_;
 };
 
 class ViewServiceStub final : private ViewServiceStubContext,
@@ -46,7 +46,6 @@ class ViewServiceStub final : private ViewServiceStubContext,
       unsigned request_id,
       std::vector<scada::BrowsePath> inputs);
 
-  std::unique_ptr<scada::CallbackToCoroutineViewServiceAdapter>
-      coroutine_service_;
+  scada::CoroutineViewService& coroutine_service_;
   BoostLogger logger_{LOG_NAME("ViewServiceStub")};
 };
