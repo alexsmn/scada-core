@@ -250,8 +250,13 @@ Awaitable<void> ServerConnection::OnDeleteSessionAsync(protocol::Request request
   scada::Status status(scada::StatusCode::Good);
 
   if (session_) {
-    delete_session_handler_(*session_);
+    auto* session = session_;
     session_ = nullptr;
+    // Drop the session's raw back-pointer before notifying higher layers.
+    // Late service completions can still arrive after delete-session and must
+    // observe a null connection instead of a dangling ServerConnection*.
+    session->SetConnection(nullptr);
+    delete_session_handler_(*session);
   } else {
     status = scada::Status(scada::StatusCode::Bad_SessionIsLoggedOff);
   }

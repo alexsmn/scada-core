@@ -48,10 +48,12 @@ class DeferredAttributeService final : public scada::AttributeService {
   void Write(const scada::ServiceContext&,
              const std::shared_ptr<const std::vector<scada::WriteValue>>&,
              const scada::WriteCallback& callback) override {
-    callback(scada::StatusCode::Good, {});
+    assert(!write_callback_);
+    write_callback_ = callback;
   }
 
   bool has_pending_read() const { return static_cast<bool>(read_callback_); }
+  bool has_pending_write() const { return static_cast<bool>(write_callback_); }
 
   void CompleteRead(scada::Status status,
                     std::vector<scada::DataValue> results = {}) {
@@ -61,8 +63,17 @@ class DeferredAttributeService final : public scada::AttributeService {
     callback(std::move(status), std::move(results));
   }
 
+  void CompleteWrite(scada::Status status,
+                     std::vector<scada::StatusCode> results = {}) {
+    assert(write_callback_);
+    auto callback = std::move(*write_callback_);
+    write_callback_.reset();
+    callback(std::move(status), std::move(results));
+  }
+
  private:
   std::optional<scada::ReadCallback> read_callback_;
+  std::optional<scada::WriteCallback> write_callback_;
 };
 
 class NoopMethodService final : public scada::MethodService {
@@ -74,6 +85,30 @@ class NoopMethodService final : public scada::MethodService {
             const scada::StatusCallback& callback) override {
     callback(scada::StatusCode::Good);
   }
+};
+
+class DeferredMethodService final : public scada::MethodService {
+ public:
+  void Call(const scada::NodeId&,
+            const scada::NodeId&,
+            const std::vector<scada::Variant>&,
+            const scada::NodeId&,
+            const scada::StatusCallback& callback) override {
+    assert(!call_callback_);
+    call_callback_ = callback;
+  }
+
+  bool has_pending_call() const { return static_cast<bool>(call_callback_); }
+
+  void CompleteCall(scada::Status status) {
+    assert(call_callback_);
+    auto callback = std::move(*call_callback_);
+    call_callback_.reset();
+    callback(std::move(status));
+  }
+
+ private:
+  std::optional<scada::StatusCallback> call_callback_;
 };
 
 class NoopViewService final : public scada::ViewService {
@@ -180,9 +215,11 @@ class SessionManagerObserver final : public RemoteSessionManager::Observer {
 class SessionProxyHarness {
  public:
   SessionProxyHarness(scada::AttributeService* attribute_service,
-                      scada::HistoryService* history_service)
+                      scada::HistoryService* history_service,
+                      scada::MethodService* method_service = nullptr)
       : attribute_service_{attribute_service},
         history_service_{history_service},
+        method_service_{method_service ? method_service : &default_method_service_},
         session_manager_executor_{std::make_shared<TestExecutor>()} {
     CreateSessionManager();
   }
@@ -237,7 +274,7 @@ class SessionProxyHarness {
             .executor_ = session_manager_executor_,
             .services_ =
                 {.attribute_service = attribute_service_,
-                 .method_service = &method_service_,
+                 .method_service = method_service_,
                  .history_service = history_service_,
                  .view_service = &view_service_,
                  .node_management_service = &node_management_service_},
@@ -261,11 +298,12 @@ class SessionProxyHarness {
 
   AsioTestEnvironment asio_env_;
   NetworkTestEnvironment network_env_;
-  NoopMethodService method_service_;
+  NoopMethodService default_method_service_;
   NoopViewService view_service_;
   NoopNodeManagementService node_management_service_;
   scada::AttributeService* attribute_service_;
   scada::HistoryService* history_service_;
+  scada::MethodService* method_service_;
   std::shared_ptr<TestExecutor> session_manager_executor_;
   std::unique_ptr<RemoteSessionManager> session_manager_;
 };
@@ -674,6 +712,96 @@ TEST_F(SessionProxyTest, DisconnectCancelsInFlightReadAndAllowsReconnect) {
 
   attribute_service.CompleteRead(scada::StatusCode::Good,
                                  {scada::MakeReadResult(123)});
+  harness.Drain();
+
+  EXPECT_EQ(callback_count, 1);
+
+  harness.Wait(session.Connect(harness.GetConnectParams()));
+  EXPECT_TRUE(session.IsConnected(nullptr));
+
+  harness.Wait(session.Disconnect());
+}
+
+TEST_F(SessionProxyTest, DisconnectCancelsInFlightWriteAndAllowsReconnect) {
+  DeferredAttributeService attribute_service;
+  NoopHistoryService history_service;
+  SessionProxyHarness harness{&attribute_service, &history_service};
+
+  SessionProxy session{{.executor_ = harness.asio_env_.executor,
+                        .transport_factory_ = harness.asio_env_.transport_factory}};
+
+  harness.Wait(session.Connect(harness.GetConnectParams()));
+
+  promise<scada::Status> write_status;
+  int callback_count = 0;
+  session.services().attribute_service->Write(
+      {},
+      std::make_shared<const std::vector<scada::WriteValue>>(
+          std::vector<scada::WriteValue>{{{1, 2},
+                                          scada::AttributeId::Value,
+                                          scada::Variant{scada::Int32{5}},
+                                          {}}}),
+      [&](scada::Status status, std::vector<scada::StatusCode>) mutable {
+        ++callback_count;
+        write_status.resolve(status);
+      });
+
+  for (int i = 0; i < 1000 && !attribute_service.has_pending_write(); ++i) {
+    harness.Poll();
+  }
+  ASSERT_TRUE(attribute_service.has_pending_write());
+
+  harness.Wait(session.Disconnect());
+
+  EXPECT_EQ(harness.Wait(write_status).code(),
+            scada::StatusCode::Bad_Disconnected);
+  EXPECT_EQ(callback_count, 1);
+
+  attribute_service.CompleteWrite(scada::StatusCode::Good,
+                                  {scada::StatusCode::Good});
+  harness.Drain();
+
+  EXPECT_EQ(callback_count, 1);
+
+  harness.Wait(session.Connect(harness.GetConnectParams()));
+  EXPECT_TRUE(session.IsConnected(nullptr));
+
+  harness.Wait(session.Disconnect());
+}
+
+TEST_F(SessionProxyTest, DisconnectCancelsInFlightCallAndAllowsReconnect) {
+  NoopAttributeService attribute_service;
+  NoopHistoryService history_service;
+  DeferredMethodService method_service;
+  SessionProxyHarness harness{&attribute_service, &history_service,
+                              &method_service};
+
+  SessionProxy session{{.executor_ = harness.asio_env_.executor,
+                        .transport_factory_ = harness.asio_env_.transport_factory}};
+
+  harness.Wait(session.Connect(harness.GetConnectParams()));
+
+  promise<scada::Status> call_status;
+  int callback_count = 0;
+  session.services().method_service->Call(
+      {1, 2}, {1, 3}, {}, {1, 1},
+      [&](scada::Status status) mutable {
+        ++callback_count;
+        call_status.resolve(status);
+      });
+
+  for (int i = 0; i < 1000 && !method_service.has_pending_call(); ++i) {
+    harness.Poll();
+  }
+  ASSERT_TRUE(method_service.has_pending_call());
+
+  harness.Wait(session.Disconnect());
+
+  EXPECT_EQ(harness.Wait(call_status).code(),
+            scada::StatusCode::Bad_Disconnected);
+  EXPECT_EQ(callback_count, 1);
+
+  method_service.CompleteCall(scada::StatusCode::Good);
   harness.Drain();
 
   EXPECT_EQ(callback_count, 1);
