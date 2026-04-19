@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
+#include "base/promise.h"
 #include "base/test/test_executor.h"
 
 using namespace std::chrono_literals;

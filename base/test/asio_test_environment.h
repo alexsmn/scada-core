@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/asio_executor.h"
 #include "base/executor_adapter.h"
 #include "base/executor_factory.h"
@@ -32,6 +34,15 @@ struct AsioTestEnvironment {
       io_context.run_for(100ms);
     }
     promise.get();
+  }
+
+  template <class T>
+  T Wait(Awaitable<T> awaitable) {
+    return Wait(ToPromise(any_executor_factory(), std::move(awaitable)));
+  }
+
+  void Wait(Awaitable<void> awaitable) {
+    Wait(ToPromise(any_executor_factory(), std::move(awaitable)));
   }
 
   void Poll() {
