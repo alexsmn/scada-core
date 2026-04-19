@@ -17,6 +17,7 @@
 #include "remote/remote_listener.h"
 #include "remote/session_stub.h"
 #include "scada/service_context.h"
+#include "scada/status_or.h"
 #include "scada/status_promise.h"
 
 #include <transport/transport_factory.h>
@@ -30,6 +31,26 @@ namespace {
 inline bool IsCompatibleProtocol(int major, int minor) {
   return major == protocol::PROTOCOL_VERSION_MAJOR &&
          minor <= protocol::PROTOCOL_VERSION_MINOR;
+}
+
+CreateSessionResult MakeCreateSessionResult(scada::Status status) {
+  return CreateSessionResult{
+      .status = std::move(status),
+      .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
+      .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
+}
+
+Awaitable<scada::StatusOr<scada::AuthenticationResult>>
+AuthenticateAsync(const std::shared_ptr<Executor>& executor,
+                  const scada::Authenticator& authenticator,
+                  scada::LocalizedText user_name,
+                  scada::LocalizedText password) {
+  try {
+    co_return co_await AwaitPromise(NetExecutorAdapter{executor},
+                                    authenticator(user_name, password));
+  } catch (...) {
+    co_return scada::GetExceptionStatus(std::current_exception());
+  }
 }
 
 }  // namespace
@@ -118,30 +139,33 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
                           << LOG_TAG("VersionMinor",
                                      create_session.protocol_version_minor());
 
-    co_return CreateSessionResult{
-        .status = scada::StatusCode::Bad_UnsupportedProtocolVersion,
-        .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
-        .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
+    co_return MakeCreateSessionResult(
+        scada::StatusCode::Bad_UnsupportedProtocolVersion);
+  }
+
+  auto auth_result = co_await AuthenticateAsync(executor_, authenticator_,
+                                                user_name, password);
+  if (!auth_result.ok()) {
+    LOG_WARNING(*logger_)
+        << "Authorization error" << LOG_TAG("UserName", ToString(user_name))
+        << LOG_TAG("ErrorString", ToString(auth_result.status()));
+    co_return MakeCreateSessionResult(auth_result.status());
   }
 
   try {
-    auto auth_result =
-        co_await AwaitPromise(NetExecutorAdapter{executor_},
-                              authenticator_(user_name, password));
-    auto& user_id = auth_result.user_id;
-
+    auto& user_id = auth_result->user_id;
     LOG_INFO(*logger_) << "Authorization succeeded"
                        << LOG_TAG("UserId", NodeIdToScadaString(user_id))
                        << LOG_TAG("UserName", ToString(user_name))
-                       << LOG_TAG("AuthorizationResult",
-                                  ToString(auth_result));
+                       << LOG_TAG("AuthorizationResult", ToString(*auth_result));
 
-    if (!auth_result.multi_sessions &&
+    if (!auth_result->multi_sessions &&
         !CheckExistingSession(user_id, user_name, delete_existing)) {
       LOG_WARNING(*logger_) << "Session is already opened"
                             << LOG_TAG("UserId", NodeIdToScadaString(user_id))
                             << LOG_TAG("UserName", ToString(user_name));
-      throw scada::status_exception{scada::StatusCode::Bad_UserIsAlreadyLoggedOn};
+      co_return MakeCreateSessionResult(
+          scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
     }
 
     auto& session = CreateNewSession(user_id, user_name);
@@ -154,19 +178,16 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
         .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
         .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR,
         .user_id = user_id,
-        .user_rights = auth_result.user_rights,
+        .user_rights = auth_result->user_rights,
         .session = &session};
   } catch (...) {
     auto status = scada::GetExceptionStatus(std::current_exception());
 
-    LOG_WARNING(*logger_)
-        << "Authorization error" << LOG_TAG("UserName", ToString(user_name))
+    LOG_ERROR(*logger_)
+        << "Create-session error" << LOG_TAG("UserName", ToString(user_name))
         << LOG_TAG("ErrorString", ToString(status));
 
-    co_return CreateSessionResult{
-        .status = status,
-        .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
-        .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
+    co_return MakeCreateSessionResult(status);
   }
 }
 

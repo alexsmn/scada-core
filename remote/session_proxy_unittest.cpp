@@ -452,6 +452,24 @@ TEST_F(SessionProxyTest, ManagerObserverNotifiedOnOpenAndClose) {
   session_manager_->RemoveObserver(observer);
 }
 
+TEST_F(SessionProxyTest, ManagerObserverNotNotifiedOnFailedAuthentication) {
+  auth_failure_status_ = scada::StatusCode::Bad_WrongLoginCredentials;
+
+  SessionManagerObserver observer;
+  session_manager_->AddObserver(observer);
+
+  SessionProxy session{{.executor_ = asio_env_.executor,
+                        .transport_factory_ = asio_env_.transport_factory}};
+
+  EXPECT_THROW(Wait(session.Connect(GetConnectParams())),
+               scada::status_exception);
+
+  EXPECT_THAT(observer.opened_user_ids, IsEmpty());
+  EXPECT_THAT(observer.closed_user_ids, IsEmpty());
+
+  session_manager_->RemoveObserver(observer);
+}
+
 TEST_F(SessionProxyTest, Connect_DuplicateUserRejectedWithoutRemoteLogoff) {
   SessionProxy session1{{.executor_ = asio_env_.executor,
                          .transport_factory_ = asio_env_.transport_factory}};
@@ -467,6 +485,33 @@ TEST_F(SessionProxyTest, Connect_DuplicateUserRejectedWithoutRemoteLogoff) {
   EXPECT_FALSE(session2.IsConnected(nullptr));
 
   Wait(session1.Disconnect());
+}
+
+TEST_F(SessionProxyTest, ManagerObserverNotifiedWhenSessionIsReplaced) {
+  auto params = GetConnectParams();
+  auto second_params = params;
+  second_params.allow_remote_logoff = true;
+
+  SessionManagerObserver observer;
+  session_manager_->AddObserver(observer);
+
+  SessionProxy session1{{.executor_ = asio_env_.executor,
+                         .transport_factory_ = asio_env_.transport_factory}};
+  SessionProxy session2{{.executor_ = asio_env_.executor,
+                         .transport_factory_ = asio_env_.transport_factory}};
+
+  Wait(session1.Connect(params));
+  Wait(session2.Connect(second_params));
+  Poll();
+
+  EXPECT_THAT(observer.opened_user_ids, ElementsAre(kUserId, kUserId));
+  EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId));
+
+  Wait(session2.Disconnect());
+
+  EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId, kUserId));
+
+  session_manager_->RemoveObserver(observer);
 }
 
 TEST_F(SessionProxyTest, Connect_DuplicateUserAllowedWithRemoteLogoff) {
