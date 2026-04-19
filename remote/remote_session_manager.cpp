@@ -46,19 +46,7 @@ CreateSessionResult MakeCreateSessionResult(scada::Status status) {
 
 RemoteSessionManager::RemoteSessionManager(
     RemoteSessionManagerContext&& context)
-    : RemoteSessionManagerContext{std::move(context)},
-      async_authenticator_{
-          [executor = executor_,
-           authenticator = authenticator_](scada::LocalizedText user_name,
-                                          scada::LocalizedText password)
-              -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
-            try {
-              co_return co_await AwaitPromise(NetExecutorAdapter{executor},
-                                              authenticator(user_name, password));
-            } catch (...) {
-              co_return scada::GetExceptionStatus(std::current_exception());
-            }
-          }} {
+    : RemoteSessionManagerContext{std::move(context)} {
   LOG_INFO(*logger_) << "Initialization";
 }
 
@@ -142,7 +130,7 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
         scada::StatusCode::Bad_UnsupportedProtocolVersion);
   }
 
-  auto auth_result = co_await async_authenticator_(user_name, password);
+  auto auth_result = co_await authenticator_(user_name, password);
   if (!auth_result.ok()) {
     LOG_WARNING(*logger_)
         << "Authorization error" << LOG_TAG("UserName", ToString(user_name))

@@ -1,5 +1,6 @@
 #include "remote/session_proxy.h"
 
+#include "base/awaitable_promise.h"
 #include "base/test/asio_test_environment.h"
 #include "base/test/network_test_environment.h"
 #include "base/test/test_executor.h"
@@ -241,9 +242,9 @@ class SessionProxyHarness {
                  .view_service = &view_service_,
                  .node_management_service = &node_management_service_},
             .authenticator_ =
-                [](const scada::LocalizedText&, const scada::LocalizedText&) {
-                  return make_resolved_promise(
-                      scada::AuthenticationResult{.user_id = {1, 1}});
+                [](scada::LocalizedText, scada::LocalizedText)
+                    -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
+                  co_return scada::AuthenticationResult{.user_id = {1, 1}};
                 },
             .transport_factory_ = asio_env_.transport_factory,
             .endpoints_ = {transport::TransportString{
@@ -332,20 +333,25 @@ class SessionProxyTest : public Test {
                  .view_service = &view_service_,
                  .node_management_service = &node_management_service_},
             .authenticator_ =
-                [this](const scada::LocalizedText&,
-                       const scada::LocalizedText&) {
+                [this](scada::LocalizedText, scada::LocalizedText)
+                    -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
                   auth_requested_ = true;
                   if (delay_authentication_) {
-                    return auth_promise_;
+                    try {
+                      co_return co_await AwaitPromise(
+                          MakeTestAnyExecutor(session_manager_executor_),
+                          auth_promise_);
+                    } catch (...) {
+                      co_return scada::GetExceptionStatus(
+                          std::current_exception());
+                    }
                   }
 
                   if (auth_failure_status_) {
-                    return scada::MakeRejectedStatusPromise<
-                        scada::AuthenticationResult>(*auth_failure_status_);
+                    co_return *auth_failure_status_;
                   }
 
-                  return make_resolved_promise(
-                      scada::AuthenticationResult{.user_id = kUserId});
+                  co_return scada::AuthenticationResult{.user_id = kUserId};
                 },
             .transport_factory_ = asio_env_.transport_factory,
             .endpoints_ = {transport::TransportString{
@@ -565,7 +571,10 @@ TEST_F(SessionProxyTest, Connect_DuplicateUserAllowedWithRemoteLogoff) {
 
   Wait(session1.Connect(params));
   Wait(session2.Connect(second_params));
-  Poll();
+
+  for (int i = 0; i < 1000 && session1.IsConnected(nullptr); ++i) {
+    Poll();
+  }
 
   EXPECT_FALSE(session1.IsConnected(nullptr));
   EXPECT_TRUE(session2.IsConnected(nullptr));

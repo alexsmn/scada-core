@@ -37,7 +37,7 @@ struct CreateSessionResult;
 struct RemoteSessionManagerContext {
   const std::shared_ptr<Executor> executor_;
   scada::services services_;
-  const scada::Authenticator authenticator_;
+  const scada::AsyncAuthenticator authenticator_;
   transport::TransportFactory& transport_factory_;
   const std::vector<transport::TransportString> endpoints_;
 };
@@ -68,11 +68,6 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   }
 
  private:
-  using AsyncAuthenticator =
-      std::function<Awaitable<scada::StatusOr<scada::AuthenticationResult>>(
-          scada::LocalizedText user_name,
-          scada::LocalizedText password)>;
-
   [[nodiscard]] Awaitable<void> InitAsync();
 
   [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
@@ -98,7 +93,6 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
   std::vector<std::shared_ptr<RemoteListener>> listeners_;
   std::vector<std::shared_ptr<ServerConnection>> connections_;
-  AsyncAuthenticator async_authenticator_;
 
   using SessionMap = std::map<scada::NodeId, std::shared_ptr<SessionStub>>;
   SessionMap session_map_;

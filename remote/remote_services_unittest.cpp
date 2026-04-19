@@ -60,9 +60,9 @@ class TestServer {
       {.executor_ = std::make_shared<TestExecutor>(),
        .services_ = {.monitored_item_service = &monitored_item_service_},
        .authenticator_ =
-           [](const scada::LocalizedText&, const scada::LocalizedText&) {
-             return make_resolved_promise(
-                 scada::AuthenticationResult{.user_id = {1, 1}});
+           [](scada::LocalizedText, scada::LocalizedText)
+               -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
+             co_return scada::AuthenticationResult{.user_id = {1, 1}};
            },
        .transport_factory_ = asio_env_.transport_factory,
        .endpoints_ = {transport::TransportString{network_.server_transport_string}}}};

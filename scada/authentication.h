@@ -1,10 +1,12 @@
 #pragma once
 
+#include "base/awaitable.h"
 #include "base/promise.h"
 #include "base/struct_writer.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
 #include "scada/status.h"
+#include "scada/status_or.h"
 
 #include <functional>
 
@@ -23,6 +25,11 @@ using AuthenticationCallback =
 using Authenticator = std::function<promise<AuthenticationResult>(
     const scada::LocalizedText& user_name,
     const scada::LocalizedText& password)>;
+
+using AsyncAuthenticator = std::function<
+    Awaitable<scada::StatusOr<AuthenticationResult>>(
+        scada::LocalizedText user_name,
+        scada::LocalizedText password)>;
 
 inline std::ostream& operator<<(std::ostream& stream,
                                 const AuthenticationResult& result) {
