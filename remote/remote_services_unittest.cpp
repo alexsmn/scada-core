@@ -3,7 +3,6 @@
 #include "base/logger.h"
 #include "base/test/asio_test_environment.h"
 #include "base/test/network_test_environment.h"
-#include "base/test/test_executor.h"
 #include "remote/remote_session_manager.h"
 #include "scada/client.h"
 #include "scada/client_monitored_item.h"
@@ -56,8 +55,12 @@ class TestServer {
 
   FakeMonitoredItemService monitored_item_service_;
 
+  // Use the asio executor so coroutine continuations (e.g. the authenticator)
+  // run when `asio_env_.Wait` polls the io_context. An unpolled TestExecutor
+  // here causes `session_manager_.Init()` to hang indefinitely after the
+  // coroutine-authenticator migration.
   RemoteSessionManager session_manager_{
-      {.executor_ = std::make_shared<TestExecutor>(),
+      {.executor_ = asio_env_.executor,
        .services_ = {.monitored_item_service = &monitored_item_service_},
        .authenticator_ =
            [](scada::LocalizedText, scada::LocalizedText)
@@ -90,7 +93,7 @@ void RemoteServicesTest::SetUp() {
 
   ASSERT_TRUE(CreateRemoteServices(
       DataServicesContext{.logger = NullLogger::GetInstance(),
-                          .executor = std::make_shared<TestExecutor>(),
+                          .executor = asio_env_.executor,
                           .transport_factory = asio_env_.transport_factory},
       data_services_));
 
