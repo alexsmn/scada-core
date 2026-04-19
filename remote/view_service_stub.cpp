@@ -16,8 +16,7 @@ using namespace std::chrono_literals;
 // ViewServiceStub
 
 ViewServiceStub::ViewServiceStub(ViewServiceStubContext&& context)
-    : ViewServiceStubContext{std::move(context)},
-      coroutine_service_{coroutine_service_} {}
+    : ViewServiceStubContext{std::move(context)} {}
 
 ViewServiceStub::~ViewServiceStub() {}
 

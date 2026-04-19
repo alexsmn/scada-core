@@ -46,6 +46,5 @@ class ViewServiceStub final : private ViewServiceStubContext,
       unsigned request_id,
       std::vector<scada::BrowsePath> inputs);
 
-  scada::CoroutineViewService& coroutine_service_;
   BoostLogger logger_{LOG_NAME("ViewServiceStub")};
 };
