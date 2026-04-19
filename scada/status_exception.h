@@ -26,8 +26,11 @@ inline Status GetExceptionStatus(std::exception_ptr e) {
   } catch (const status_exception& e) {
     return e.status();
   } catch (...) {
-    return StatusCode::Bad;
   }
+  // Reached for anything that is not a `status_exception`. The trailing
+  // return also satisfies cppcheck's `missingReturn` checker, which does
+  // not treat `std::rethrow_exception` as terminating control flow.
+  return StatusCode::Bad;
 }
 
 }  // namespace scada
