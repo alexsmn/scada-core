@@ -5,10 +5,16 @@
 
 using namespace std::chrono_literals;
 
+inline void Drain(const std::shared_ptr<TestExecutor>& executor) {
+  while (executor->GetTaskCount() > 0) {
+    executor->Poll();
+  }
+}
+
 template <class T>
 T WaitPromise(std::shared_ptr<TestExecutor> executor, promise<T> promise) {
   while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-    executor->Poll();
+    Drain(executor);
   }
 
   return promise.get();
@@ -18,7 +24,7 @@ template <class T>
 T WaitPromise(std::shared_ptr<TestExecutor> executor,
               std::shared_ptr<promise<T>> promise) {
   while (promise->wait_for(1ms) == promise_wait_status::timeout) {
-    executor->Poll();
+    Drain(executor);
   }
 
   return promise->get();
