@@ -12,6 +12,15 @@ inline void Drain(const std::shared_ptr<TestExecutor>& executor) {
   }
 }
 
+inline void WaitPromise(std::shared_ptr<TestExecutor> executor,
+                        promise<void> promise) {
+  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+    Drain(executor);
+  }
+
+  promise.get();
+}
+
 template <class T>
 T WaitPromise(std::shared_ptr<TestExecutor> executor, promise<T> promise) {
   while (promise.wait_for(1ms) == promise_wait_status::timeout) {
@@ -29,6 +38,15 @@ T WaitPromise(std::shared_ptr<TestExecutor> executor,
   }
 
   return promise->get();
+}
+
+inline void WaitPromise(std::shared_ptr<TestExecutor> executor,
+                        std::shared_ptr<promise<void>> promise) {
+  while (promise->wait_for(1ms) == promise_wait_status::timeout) {
+    Drain(executor);
+  }
+
+  promise->get();
 }
 
 template <class T>

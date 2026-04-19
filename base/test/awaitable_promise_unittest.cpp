@@ -1,6 +1,8 @@
 #include "base/awaitable_promise.h"
+#include "base/callback_awaitable.h"
 
 #include "base/test/asio_test_environment.h"
+#include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 
 #include <boost/asio/use_future.hpp>
@@ -128,6 +130,33 @@ Awaitable<int> ThrowRuntimeError() {
   co_return 0;
 }
 
+promise<int> MakeTestExecutorDeferredValuePromise(
+    const std::shared_ptr<TestExecutor>& executor,
+    int value) {
+  promise<int> result;
+  Dispatch(*executor, [result, value]() mutable { result.resolve(value); });
+  return result;
+}
+
+promise<void> MakeTestExecutorDeferredVoidPromise(
+    const std::shared_ptr<TestExecutor>& executor) {
+  promise<void> result;
+  Dispatch(*executor, [result]() mutable { result.resolve(); });
+  return result;
+}
+
+Awaitable<int> ReturnDeferredValue(const std::shared_ptr<TestExecutor>& executor,
+                                   int value) {
+  co_await CallbackToAwaitable(
+      MakeTestAnyExecutor(executor),
+      [executor](auto callback) mutable {
+        Dispatch(*executor, [callback = std::move(callback)]() mutable {
+          callback();
+        });
+      });
+  co_return value;
+}
+
 }  // namespace
 
 TEST(AwaitPromise, ReturnsResolvedValue) {
@@ -209,6 +238,34 @@ TEST(ToPromise, PropagatesAwaitableExceptions) {
       boost::asio::use_future);
 
   EXPECT_THROW(WaitForFuture(asio_env, result), std::runtime_error);
+}
+
+TEST(WaitPromiseHelper, CompletesDeferredValuePromiseOnTestExecutor) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  EXPECT_EQ(WaitPromise(executor, MakeTestExecutorDeferredValuePromise(executor,
+                                                                       42)),
+            42);
+}
+
+TEST(WaitPromiseHelper, CompletesDeferredVoidPromiseOnTestExecutor) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  EXPECT_NO_THROW(
+      WaitPromise(executor, MakeTestExecutorDeferredVoidPromise(executor)));
+}
+
+TEST(WaitAwaitableHelper, CompletesDeferredAwaitableOnTestExecutor) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  EXPECT_EQ(WaitAwaitable(executor, ReturnDeferredValue(executor, 42)), 42);
+}
+
+TEST(WaitAwaitableHelper, PropagatesAwaitableExceptionsOnTestExecutor) {
+  auto executor = std::make_shared<TestExecutor>();
+
+  EXPECT_THROW(WaitAwaitable(executor, ThrowRuntimeError()),
+               std::runtime_error);
 }
 
 TEST(StartAwaitable, CompletesResolvedValueAwaitableIntoProvidedPromise) {
