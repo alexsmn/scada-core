@@ -334,6 +334,11 @@ class SessionProxyTest : public Test {
             .authenticator_ =
                 [this](const scada::LocalizedText&,
                        const scada::LocalizedText&) {
+                  auth_requested_ = true;
+                  if (delay_authentication_) {
+                    return auth_promise_;
+                  }
+
                   if (auth_failure_status_) {
                     return scada::MakeRejectedStatusPromise<
                         scada::AuthenticationResult>(*auth_failure_status_);
@@ -371,6 +376,9 @@ class SessionProxyTest : public Test {
   scada::HistoryService* history_service_ = &default_history_service_;
 
   std::optional<scada::StatusCode> auth_failure_status_;
+  bool auth_requested_ = false;
+  bool delay_authentication_ = false;
+  promise<scada::AuthenticationResult> auth_promise_;
   std::shared_ptr<TestExecutor> session_manager_executor_;
   std::unique_ptr<RemoteSessionManager> session_manager_;
 
@@ -467,6 +475,37 @@ TEST_F(SessionProxyTest, ManagerObserverNotNotifiedOnFailedAuthentication) {
   EXPECT_THAT(observer.opened_user_ids, IsEmpty());
   EXPECT_THAT(observer.closed_user_ids, IsEmpty());
 
+  session_manager_->RemoveObserver(observer);
+}
+
+TEST_F(SessionProxyTest,
+       ManagerObserverNotNotifiedBeforeDelayedAuthenticationCompletes) {
+  delay_authentication_ = true;
+  auth_requested_ = false;
+
+  SessionManagerObserver observer;
+  session_manager_->AddObserver(observer);
+
+  SessionProxy session{{.executor_ = asio_env_.executor,
+                        .transport_factory_ = asio_env_.transport_factory}};
+
+  auto connect_promise = session.Connect(GetConnectParams());
+
+  for (int i = 0; i < 1000 && !auth_requested_; ++i) {
+    Poll();
+  }
+  ASSERT_TRUE(auth_requested_);
+  EXPECT_THAT(observer.opened_user_ids, IsEmpty());
+  EXPECT_THAT(observer.closed_user_ids, IsEmpty());
+  EXPECT_FALSE(session.IsConnected(nullptr));
+
+  auth_promise_.resolve(scada::AuthenticationResult{.user_id = kUserId});
+
+  Wait(std::move(connect_promise));
+  EXPECT_THAT(observer.opened_user_ids, ElementsAre(kUserId));
+  EXPECT_THAT(observer.closed_user_ids, IsEmpty());
+
+  Wait(session.Disconnect());
   session_manager_->RemoveObserver(observer);
 }
 

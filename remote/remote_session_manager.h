@@ -7,6 +7,7 @@
 #include "base/promise.h"
 #include "scada/authentication.h"
 #include "scada/services.h"
+#include "scada/status_or.h"
 #include "scada/view_service.h"
 
 #include <functional>
@@ -64,6 +65,11 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   }
 
  private:
+  using AsyncAuthenticator =
+      std::function<Awaitable<scada::StatusOr<scada::AuthenticationResult>>(
+          scada::LocalizedText user_name,
+          scada::LocalizedText password)>;
+
   [[nodiscard]] Awaitable<void> InitAsync();
 
   [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
@@ -89,6 +95,7 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
   std::vector<std::shared_ptr<RemoteListener>> listeners_;
   std::vector<std::shared_ptr<ServerConnection>> connections_;
+  AsyncAuthenticator async_authenticator_;
 
   using SessionMap = std::map<scada::NodeId, std::shared_ptr<SessionStub>>;
   SessionMap session_map_;
