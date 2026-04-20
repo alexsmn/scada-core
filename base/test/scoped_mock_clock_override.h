@@ -11,10 +11,7 @@ namespace base {
 // at a time per thread.
 class ScopedMockClockOverride {
  public:
-  ScopedMockClockOverride() {
-    now_ = Time::Now();
-    current_ = this;
-  }
+  ScopedMockClockOverride() : now_{Time::Now()} { current_ = this; }
 
   ~ScopedMockClockOverride() { current_ = nullptr; }
 
