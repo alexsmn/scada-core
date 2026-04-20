@@ -35,7 +35,10 @@ struct ReferenceDescription {
 using ReferenceDescriptions = std::vector<ReferenceDescription>;
 
 struct BrowseResult {
+  bool operator==(const BrowseResult&) const = default;
+
   StatusCode status_code = StatusCode::Good;
+  ByteString continuation_point;
   ReferenceDescriptions references;
 };
 
