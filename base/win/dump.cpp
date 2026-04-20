@@ -26,7 +26,7 @@ bool DumpException(const wchar_t* path, const EXCEPTION_POINTERS& exc) {
   MINIDUMP_EXCEPTION_INFORMATION info;
   info.ThreadId = GetCurrentThreadId();
   info.ClientPointers = FALSE;
-  info.ExceptionPointers = (EXCEPTION_POINTERS*)&exc;
+  info.ExceptionPointers = const_cast<EXCEPTION_POINTERS*>(&exc);
 
   BOOL res = MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), file,
                                MiniDumpWithDataSegs /*MiniDumpWithFullMemory*/,
