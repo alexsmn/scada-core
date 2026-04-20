@@ -1,3 +1,5 @@
+#pragma once
+
 #include "scada/node_management_service.h"
 
 #include <gmock/gmock.h>
