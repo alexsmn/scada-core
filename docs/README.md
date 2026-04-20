@@ -8,6 +8,7 @@ Documents:
 
 - [services.md](./services.md): core SCADA service APIs, async styles, and
   adapter reference
+- [remote.md](./remote.md): remote transport, session, and proxy/stub design
 
 Related source headers:
 

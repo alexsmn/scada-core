@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client as SessionProxy
+    participant Conn as ServerConnection
+    participant Manager as RemoteSessionManager
+    participant Auth as AsyncAuthenticator
+    participant Session as SessionStub
+
+    Client->>Conn: CreateSession
+    Conn->>Manager: CreateSessionAsync(...)
+    Manager->>Auth: Authenticate(user, password)
+    Auth-->>Manager: AuthenticationResult / Status
+    Manager->>Session: Create(session context)
+    Manager-->>Conn: CreateSessionResult
+    Conn->>Session: SetConnection(this)
+    Conn-->>Client: CreateSessionResult response

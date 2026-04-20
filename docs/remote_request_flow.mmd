@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client as Local SCADA caller
+    participant Proxy as SessionProxy / service proxy
+    participant Conn as ServerConnection
+    participant Stub as SessionStub / nested stub
+    participant Service as SCADA service
+
+    Client->>Proxy: Read / Write / Call / Browse / History / NodeMgmt
+    Proxy->>Conn: Protocol request
+    Conn->>Stub: Dispatch request
+    Stub->>Service: Service call or coroutine await
+    Service-->>Stub: Result
+    Stub-->>Conn: Protocol response
+    Conn-->>Proxy: Response
+    Proxy-->>Client: Callback / promise completion

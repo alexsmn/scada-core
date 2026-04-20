@@ -1,0 +1,33 @@
+flowchart LR
+    subgraph Server["Server Side"]
+        RM["RemoteSessionManager"]
+        RL["RemoteListener"]
+        SC["ServerConnection"]
+        SS["SessionStub"]
+        HS["HistoryStub"]
+        NMS["NodeManagementStub"]
+        VS["ViewServiceStub"]
+    end
+
+    subgraph Client["Client Side"]
+        SP["SessionProxy"]
+        HP["HistoryProxy"]
+        NMP["NodeManagementProxy"]
+        VP["ViewServiceProxy"]
+        SUB["SubscriptionProxy"]
+    end
+
+    RL --> RM
+    RM --> SC
+    RM --> SS
+    SC <--> SS
+    SS --> HS
+    SS --> NMS
+    SS --> VS
+
+    SP --> HP
+    SP --> NMP
+    SP --> VP
+    SP --> SUB
+
+    SP <-->|protocol transport| SC

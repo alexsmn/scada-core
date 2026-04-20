@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client as SessionProxy
+    participant Conn as ServerConnection
+    participant Manager as RemoteSessionManager
+    participant Session as SessionStub
+    participant Service as Underlying service
+
+    Client->>Conn: DeleteSession / transport close
+    Conn->>Session: SetConnection(nullptr)
+    Conn->>Manager: delete_session_handler(session)
+    Manager->>Manager: Remove from session map
+    Client-->>Client: Complete pending requests with Bad_Disconnected
+    Service-->>Session: Late completion
+    Session-->>Session: Ignore, no live connection
