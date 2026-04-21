@@ -2,6 +2,7 @@
 #include "scada/variant_utils.h"
 
 #include <gmock/gmock.h>
+#include <sstream>
 
 using namespace testing;
 
@@ -41,4 +42,46 @@ TEST(VariantTest, ConvertToWstringFromInt) {
   std::wstring result;
   EXPECT_TRUE(scada::ConvertVariant(v, result));
   EXPECT_EQ(L"42", result);
+}
+
+// Variant::Dump must be safe for every alternative — including LocalizedText
+// (which is a std::u16string and has no std::ostream::operator<<). A missing
+// specialisation in DumpHelper used to either fail to compile or, under
+// MSVC's permissive lookup, pick an overload that silently looped, causing
+// GTest's pretty-printer for vector<DataValue> to hang. Pin behaviour with a
+// stream-roundtrip test for each alternative we care about.
+TEST(VariantTest, DumpsLocalizedTextAsUtf8WithoutHanging) {
+  scada::Variant v{scada::LocalizedText{u"Pump"}};
+  std::ostringstream stream;
+  v.Dump(stream);
+  EXPECT_EQ(stream.str(), R"("Pump")");
+}
+
+TEST(VariantTest, DumpsEmptyVariantAsNull) {
+  scada::Variant v;
+  std::ostringstream stream;
+  v.Dump(stream);
+  EXPECT_EQ(stream.str(), "null");
+}
+
+TEST(VariantTest, DumpsScalarsThroughOstreamOperator) {
+  // The free `operator<<(std::ostream&, const Variant&)` defined in the
+  // header is the entry point GTest uses when pretty-printing failing
+  // EXPECT_EQ assertions. Sanity-check it for the alternatives Phase 0+
+  // exercises so a future regression in DumpHelper surfaces here directly.
+  std::ostringstream s_int;
+  s_int << scada::Variant{scada::Int32{42}};
+  EXPECT_EQ(s_int.str(), "42");
+
+  std::ostringstream s_double;
+  s_double << scada::Variant{2.5};
+  EXPECT_EQ(s_double.str(), "2.5");
+
+  std::ostringstream s_text;
+  s_text << scada::Variant{scada::LocalizedText{u"Pump"}};
+  EXPECT_EQ(s_text.str(), R"("Pump")");
+
+  std::ostringstream s_string;
+  s_string << scada::Variant{std::string{"hello"}};
+  EXPECT_EQ(s_string.str(), "hello");
 }
