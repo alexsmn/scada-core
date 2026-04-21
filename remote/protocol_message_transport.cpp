@@ -34,7 +34,7 @@ transport::awaitable<transport::expected<size_t>> ReadExact(
 
 transport::awaitable<transport::expected<size_t>> ReadPayloadSize(
     const transport::any_transport& transport) {
-  std::array<char, protocol::kHeaderSize> header;
+  std::array<char, protocol::kHeaderSize> header{};
   auto bytes_read = co_await ReadExact(transport, header);
 
   if (!bytes_read.ok() || *bytes_read == 0) {
