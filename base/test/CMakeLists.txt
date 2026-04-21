@@ -19,6 +19,7 @@ endif()
 set_property(TARGET base_unittest PROPERTY FOLDER ${scada_core_folder})
 
 add_executable(base_awaitable_promise_unittests
+  "awaitable_completion_unittest.cpp"
   "callback_awaitable_unittest.cpp"
   "awaitable_promise_unittest.cpp"
   "awaitable_unittest.cpp"
