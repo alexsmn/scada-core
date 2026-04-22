@@ -95,6 +95,10 @@ const Entry kEntries[] = {
     {scada::StatusCode::Bad_NothingToDo, "Bad_NothingToDo", L"Запрос пуст"},
     {scada::StatusCode::Bad_BrowseNameInvalid, "Bad_BrowseNameInvalid",
      L"Имя не найдено"},
+    {scada::StatusCode::Bad_MonitoredItemIdInvalid,
+     "Bad_MonitoredItemIdInvalid", L"Неправильный номер элемента мониторинга"},
+    {scada::StatusCode::Bad_MessageNotAvailable, "Bad_MessageNotAvailable",
+     L"Запрошенное сообщение больше недоступно"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {

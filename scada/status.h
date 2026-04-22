@@ -77,6 +77,8 @@ enum class StatusCode : unsigned {
   Bad_NothingToDo = Bad | 34,
   Bad_BrowseNameInvalid = Bad | 35,
   Bad_WrongTargetId = Bad | 36,
+  Bad_MonitoredItemIdInvalid = Bad | 37,
+  Bad_MessageNotAvailable = Bad | 38,
 };
 
 enum class StatusLimit {
