@@ -9,12 +9,15 @@ namespace scada {
 class DataValue;
 class Status;
 
-// When first subscribed, an initial value is sent. Initial value may be null.
+// When first subscribed, a cached value is sent immediately if one is already
+// available. If no cached value exists yet, the first callback is expected to
+// arrive once the initial value or status becomes available from the source.
 using DataChangeHandler = std::function<void(const DataValue& data_value)>;
 
-// When first subscribed, an initial `status` update is sent. Initial status
-// update may have or may not have an `event`. WARNING: `event` may be not set
-// for initial status update.
+// When first subscribed, a cached status update may be sent immediately if one
+// is already available. Otherwise the first callback is expected once the
+// initial status (and optional event payload) becomes available from the
+// source. WARNING: `event` may be not set for the initial status update.
 using EventHandler =
     std::function<void(const Status& status, const std::any& event)>;
 
