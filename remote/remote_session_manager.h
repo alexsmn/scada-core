@@ -38,7 +38,7 @@ struct CreateSessionResult;
 struct RemoteSessionManagerContext {
   const AnyExecutor executor_;
   scada::services services_;
-  const scada::AsyncAuthenticator authenticator_;
+  std::shared_ptr<scada::CoroutineAuthenticator> authenticator_;
   transport::TransportFactory& transport_factory_;
   const std::vector<transport::TransportString> endpoints_;
 };

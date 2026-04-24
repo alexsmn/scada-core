@@ -31,6 +31,15 @@ using AsyncAuthenticator = std::function<
         scada::LocalizedText user_name,
         scada::LocalizedText password)>;
 
+class CoroutineAuthenticator {
+ public:
+  virtual ~CoroutineAuthenticator() = default;
+
+  virtual Awaitable<scada::StatusOr<AuthenticationResult>> Authenticate(
+      scada::LocalizedText user_name,
+      scada::LocalizedText password) = 0;
+};
+
 inline std::ostream& operator<<(std::ostream& stream,
                                 const AuthenticationResult& result) {
   StructWriter{stream}

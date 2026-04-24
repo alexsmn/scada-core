@@ -7,6 +7,7 @@
 #include "remote/remote_session_manager.h"
 #include "remote/session_stub.h"
 #include "scada/attribute_service.h"
+#include "scada/authentication_adapters.h"
 #include "scada/history_service.h"
 #include "scada/method_service.h"
 #include "scada/node_management_service.h"
@@ -278,11 +279,11 @@ class SessionProxyHarness {
                  .history_service = history_service_,
                  .view_service = &view_service_,
                  .node_management_service = &node_management_service_},
-            .authenticator_ =
+            .authenticator_ = scada::MakeCoroutineAuthenticator(
                 [](scada::LocalizedText, scada::LocalizedText)
                     -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
                   co_return scada::AuthenticationResult{.user_id = {1, 1}};
-                },
+                }),
             .transport_factory_ = asio_env_.transport_factory,
             .endpoints_ = {transport::TransportString{
                 network_env_.server_transport_string}}});
@@ -370,7 +371,7 @@ class SessionProxyTest : public Test {
                  .history_service = history_service_,
                  .view_service = &view_service_,
                  .node_management_service = &node_management_service_},
-            .authenticator_ =
+            .authenticator_ = scada::MakeCoroutineAuthenticator(
                 [this](scada::LocalizedText, scada::LocalizedText)
                     -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
                   auth_requested_ = true;
@@ -390,7 +391,7 @@ class SessionProxyTest : public Test {
                   }
 
                   co_return scada::AuthenticationResult{.user_id = kUserId};
-                },
+                }),
             .transport_factory_ = asio_env_.transport_factory,
             .endpoints_ = {transport::TransportString{
                 network_env_.server_transport_string}}});

@@ -4,6 +4,7 @@
 #include "base/test/asio_test_environment.h"
 #include "base/test/network_test_environment.h"
 #include "remote/remote_session_manager.h"
+#include "scada/authentication_adapters.h"
 #include "scada/client.h"
 #include "scada/client_monitored_item.h"
 #include "scada/data_services_factory.h"
@@ -62,11 +63,11 @@ class TestServer {
   RemoteSessionManager session_manager_{
       {.executor_ = asio_env_.any_executor_factory(),
        .services_ = {.monitored_item_service = &monitored_item_service_},
-       .authenticator_ =
+       .authenticator_ = scada::MakeCoroutineAuthenticator(
            [](scada::LocalizedText, scada::LocalizedText)
                -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
              co_return scada::AuthenticationResult{.user_id = {1, 1}};
-           },
+           }),
        .transport_factory_ = asio_env_.transport_factory,
        .endpoints_ = {transport::TransportString{network_.server_transport_string}}}};
 };

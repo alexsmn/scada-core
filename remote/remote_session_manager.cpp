@@ -158,7 +158,8 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
         scada::StatusCode::Bad_UnsupportedProtocolVersion);
   }
 
-  auto auth_result = co_await authenticator_(user_name, password);
+  auto auth_result =
+      co_await authenticator_->Authenticate(user_name, password);
   if (!auth_result.ok()) {
     LOG_WARNING(*logger_)
         << "Authorization error" << LOG_TAG("UserName", ToString(user_name))

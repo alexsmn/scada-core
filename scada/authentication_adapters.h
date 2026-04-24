@@ -5,7 +5,51 @@
 #include "scada/authentication.h"
 #include "scada/status_exception.h"
 
+#include <memory>
+
 namespace scada {
+
+inline AsyncAuthenticator MakeAsyncAuthenticator(AnyExecutor executor,
+                                                 Authenticator authenticator);
+
+class FunctionCoroutineAuthenticator final : public CoroutineAuthenticator {
+ public:
+  explicit FunctionCoroutineAuthenticator(AsyncAuthenticator authenticator)
+      : authenticator_{std::move(authenticator)} {}
+
+  Awaitable<StatusOr<AuthenticationResult>> Authenticate(
+      LocalizedText user_name,
+      LocalizedText password) override {
+    co_return co_await authenticator_(std::move(user_name),
+                                      std::move(password));
+  }
+
+ private:
+  AsyncAuthenticator authenticator_;
+};
+
+inline std::shared_ptr<CoroutineAuthenticator> MakeCoroutineAuthenticator(
+    AsyncAuthenticator authenticator) {
+  return std::make_shared<FunctionCoroutineAuthenticator>(
+      std::move(authenticator));
+}
+
+inline std::shared_ptr<CoroutineAuthenticator> MakeCoroutineAuthenticator(
+    AnyExecutor executor,
+    Authenticator authenticator) {
+  return MakeCoroutineAuthenticator(
+      MakeAsyncAuthenticator(std::move(executor), std::move(authenticator)));
+}
+
+inline AsyncAuthenticator MakeAsyncAuthenticator(
+    CoroutineAuthenticator& authenticator) {
+  return [&authenticator](LocalizedText user_name,
+                          LocalizedText password)
+             -> Awaitable<StatusOr<AuthenticationResult>> {
+    co_return co_await authenticator.Authenticate(std::move(user_name),
+                                                  std::move(password));
+  };
+}
 
 inline Authenticator MakeAuthenticator(AnyExecutor executor,
                                        AsyncAuthenticator async_authenticator) {
@@ -26,6 +70,12 @@ inline Authenticator MakeAuthenticator(AnyExecutor executor,
           co_return std::move(*result);
         }());
   };
+}
+
+inline Authenticator MakeAuthenticator(AnyExecutor executor,
+                                       CoroutineAuthenticator& authenticator) {
+  return MakeAuthenticator(std::move(executor),
+                           MakeAsyncAuthenticator(authenticator));
 }
 
 inline AsyncAuthenticator MakeAsyncAuthenticator(AnyExecutor executor,
