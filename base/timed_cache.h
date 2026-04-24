@@ -1,6 +1,7 @@
 #pragma once
 
-#include "base/executor_timer.h"
+#include "base/any_executor.h"
+#include "base/any_executor_timer.h"
 #include "base/time/time.h"
 
 #include <concepts>
@@ -14,7 +15,7 @@ template <class Key, class Value>
   requires std::totally_ordered<Key>
 class TimedCache {
  public:
-  explicit TimedCache(std::shared_ptr<Executor> executor);
+  explicit TimedCache(AnyExecutor executor);
 
   template <class T>
   void Add(const Key& key, T&& value);
@@ -37,7 +38,7 @@ class TimedCache {
 
   std::map<Key, CacheEntry> map_;
 
-  ExecutorTimer timer_;
+  AnyExecutorTimer timer_;
 
 #ifdef _DEBUG
   static const unsigned kCacheDurationS = 10;
@@ -48,7 +49,7 @@ class TimedCache {
 
 template <class Key, class Value>
   requires std::totally_ordered<Key>
-inline TimedCache<Key, Value>::TimedCache(std::shared_ptr<Executor> executor)
+inline TimedCache<Key, Value>::TimedCache(AnyExecutor executor)
     : timer_{std::move(executor)} {
   using namespace std::chrono_literals;
   timer_.StartRepeating(1s, [this] { OnTimer(); });
