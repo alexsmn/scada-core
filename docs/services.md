@@ -120,7 +120,11 @@ awaitable wrappers such as:
 - `AddNodesAsync`
 
 Those helpers remain useful for direct adaptation of existing callback
-services.
+services. They now centralize both executor entrypoints on one implementation
+path: the legacy `std::shared_ptr<Executor>` overloads forward to the
+`AnyExecutor` overloads, so coroutine consumers in `common/` and `server/`
+reuse the same callback-to-awaitable bridge instead of maintaining local
+copies.
 
 `core/scada/coroutine_services.h` adds coroutine-native service interfaces and
 named adapters so coroutine-based implementations can participate in the same
