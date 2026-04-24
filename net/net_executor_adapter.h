@@ -53,8 +53,13 @@ class NetExecutorAdapter {
   static std::shared_ptr<State> GetSharedState(
       std::shared_ptr<Executor> executor) {
     struct RegistryEntry {
-      const Executor* executor = nullptr;
+      std::weak_ptr<Executor> executor;
       std::weak_ptr<State> state;
+    };
+
+    auto has_same_owner = [](const std::weak_ptr<Executor>& a,
+                             const std::shared_ptr<Executor>& b) {
+      return !a.owner_before(b) && !b.owner_before(a);
     };
 
     static std::mutex mutex;
@@ -65,11 +70,10 @@ class NetExecutorAdapter {
       return entry.state.expired();
     });
 
-    const auto* executor_ptr = executor.get();
     auto it = std::find_if(
         registry.begin(), registry.end(),
-        [executor_ptr](const RegistryEntry& entry) {
-          return entry.executor == executor_ptr;
+        [&](const RegistryEntry& entry) {
+          return has_same_owner(entry.executor, executor);
         });
     if (it != registry.end()) {
       if (auto state = it->state.lock()) {
@@ -78,7 +82,7 @@ class NetExecutorAdapter {
     }
 
     auto state = std::make_shared<State>(std::move(executor));
-    registry.push_back(RegistryEntry{executor_ptr, state});
+    registry.push_back(RegistryEntry{state->executor, state});
     return state;
   }
 

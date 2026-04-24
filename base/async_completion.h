@@ -27,29 +27,14 @@ namespace base {
 //   co_await ready.Wait();
 class AsyncCompletion {
  public:
-  explicit AsyncCompletion(AnyExecutor executor) : executor_{std::move(executor)} {}
+  explicit AsyncCompletion(AnyExecutor executor)
+      : state_{std::make_shared<State>(std::move(executor))} {}
+
+  AsyncCompletion(const AsyncCompletion&) = delete;
+  AsyncCompletion& operator=(const AsyncCompletion&) = delete;
 
   [[nodiscard]] Awaitable<void> Wait() const {
-    auto [error] = co_await CallbackToAwaitable<std::exception_ptr>(
-        executor_, [this](auto callback) mutable {
-          auto completion =
-              std::make_shared<std::decay_t<decltype(callback)>>(
-                  std::move(callback));
-
-          if (completed_) {
-            (*completion)(error_);
-            return;
-          }
-
-          waiters_.emplace_back([completion](std::exception_ptr error) mutable {
-            (*completion)(std::move(error));
-          });
-        });
-
-    if (error) {
-      std::rethrow_exception(error);
-    }
-    co_return;
+    return WaitOnState(state_);
   }
 
   void Complete() {
@@ -61,31 +46,62 @@ class AsyncCompletion {
     Finish(std::move(error));
   }
 
-  [[nodiscard]] bool completed() const { return completed_; }
+  [[nodiscard]] bool completed() const { return state_->completed; }
 
  private:
   using Handler = std::function<void(std::exception_ptr)>;
 
+  struct State {
+    explicit State(AnyExecutor executor) : executor{std::move(executor)} {}
+
+    AnyExecutor executor;
+    bool completed = false;
+    std::exception_ptr error;
+    std::vector<Handler> waiters;
+  };
+
+  static Awaitable<void> WaitOnState(std::shared_ptr<State> state) {
+    auto executor = state->executor;
+    auto [error] = co_await CallbackToAwaitable<std::exception_ptr>(
+        std::move(executor), [state = std::move(state)](auto callback) mutable {
+          auto completion =
+              std::make_shared<std::decay_t<decltype(callback)>>(
+                  std::move(callback));
+
+          if (state->completed) {
+            (*completion)(state->error);
+            return;
+          }
+
+          state->waiters.emplace_back(
+              [completion](std::exception_ptr error) mutable {
+                (*completion)(std::move(error));
+              });
+        });
+
+    if (error) {
+      std::rethrow_exception(error);
+    }
+    co_return;
+  }
+
   void Finish(std::exception_ptr error) {
-    assert(!completed_);
-    if (completed_) {
+    assert(!state_->completed);
+    if (state_->completed) {
       return;
     }
 
-    completed_ = true;
-    error_ = std::move(error);
+    state_->completed = true;
+    state_->error = std::move(error);
 
-    auto completion_error = error_;
-    auto waiters = std::move(waiters_);
+    auto completion_error = state_->error;
+    auto waiters = std::move(state_->waiters);
     for (auto& waiter : waiters) {
       waiter(completion_error);
     }
   }
 
-  AnyExecutor executor_;
-  bool completed_ = false;
-  std::exception_ptr error_;
-  mutable std::vector<Handler> waiters_;
+  std::shared_ptr<State> state_;
 };
 
 }  // namespace base

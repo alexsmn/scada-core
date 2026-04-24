@@ -322,11 +322,51 @@ TEST(AwaitPromise, NetExecutorAdapterReusesCanonicalStatePerExecutor) {
       });
 }
 
+TEST(AwaitPromise, NetExecutorAdapterDoesNotReuseStateForDifferentOwners) {
+  auto* raw_executor = new TestExecutor;
+  auto noop_delete = [](Executor*) {};
+
+  {
+    auto first_owner = std::shared_ptr<Executor>{raw_executor, noop_delete};
+    auto first = NetExecutorAdapter{first_owner};
+    first_owner.reset();
+
+    auto second_owner = std::shared_ptr<Executor>{raw_executor, noop_delete};
+    auto second = NetExecutorAdapter{second_owner};
+
+    EXPECT_NE(first, second);
+    EXPECT_NE(&first.query(boost::asio::execution::context),
+              &second.query(boost::asio::execution::context));
+  }
+
+  delete raw_executor;
+}
+
 TEST(AwaitPromise, ExecutorAdapterReusesCanonicalStatePerExecutor) {
   RunCanonicalAdapterStateTest(
       [](const std::shared_ptr<Executor>& executor) {
         return ExecutorAdapter{executor};
       });
+}
+
+TEST(AwaitPromise, ExecutorAdapterDoesNotReuseStateForDifferentOwners) {
+  auto* raw_executor = new TestExecutor;
+  auto noop_delete = [](Executor*) {};
+
+  {
+    auto first_owner = std::shared_ptr<Executor>{raw_executor, noop_delete};
+    auto first = ExecutorAdapter{first_owner};
+    first_owner.reset();
+
+    auto second_owner = std::shared_ptr<Executor>{raw_executor, noop_delete};
+    auto second = ExecutorAdapter{second_owner};
+
+    EXPECT_NE(first, second);
+    EXPECT_NE(&first.query(boost::asio::execution::context),
+              &second.query(boost::asio::execution::context));
+  }
+
+  delete raw_executor;
 }
 
 TEST(AwaitPromise, RepeatedDeferredTemporaryValuePromiseWithAsioExecutor) {

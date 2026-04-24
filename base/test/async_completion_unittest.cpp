@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <stdexcept>
 
 using namespace std::chrono_literals;
@@ -47,4 +48,16 @@ TEST(AsyncCompletion, FailurePropagatesToCurrentAndFutureWaiters) {
 
   EXPECT_THROW(WaitPromise(executor, std::move(waiter)), std::runtime_error);
   EXPECT_THROW(WaitAwaitable(executor, completion.Wait()), std::runtime_error);
+}
+
+TEST(AsyncCompletion, PrecreatedWaitDoesNotDependOnOwnerLifetime) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto completion =
+      std::make_unique<base::AsyncCompletion>(MakeTestAnyExecutor(executor));
+
+  auto waiter = completion->Wait();
+  completion->Complete();
+  completion.reset();
+
+  EXPECT_NO_THROW(WaitAwaitable(executor, std::move(waiter)));
 }
