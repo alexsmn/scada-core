@@ -92,4 +92,61 @@ TEST(CoSpawn, SupportsMoveOnlyCoroutineFactoryCapturesWithAnyExecutor) {
   EXPECT_EQ(observed, 42);
 }
 
+TEST(CoSpawn, WeakPtrFactoryReceivesLockedSharedPtrWhenAlive) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto alive = std::make_shared<int>(42);
+
+  bool factory_called = false;
+  int observed = 0;
+
+  CoSpawn(executor, std::weak_ptr{alive},
+          [&](std::shared_ptr<int> locked) -> Awaitable<void> {
+            factory_called = true;
+            observed = *locked;
+            co_return;
+          });
+
+  EXPECT_FALSE(factory_called);
+  EXPECT_EQ(observed, 0);
+
+  executor->Poll();
+
+  EXPECT_TRUE(factory_called);
+  EXPECT_EQ(observed, 42);
+}
+
+TEST(CoSpawn, WeakPtrFactoryDoesNotRunAfterCancelationExpires) {
+  auto executor = std::make_shared<TestExecutor>();
+  auto alive = std::make_shared<int>(42);
+
+  bool factory_called = false;
+
+  CoSpawn(executor, std::weak_ptr{alive}, [&]() -> Awaitable<void> {
+    factory_called = true;
+    co_return;
+  });
+
+  alive.reset();
+  executor->Poll();
+
+  EXPECT_FALSE(factory_called);
+}
+
+TEST(CoSpawn, CancelationFactoryDoesNotRunAfterCancelationCancels) {
+  auto executor = std::make_shared<TestExecutor>();
+  Cancelation cancelation;
+
+  bool factory_called = false;
+
+  CoSpawn(executor, cancelation, [&]() -> Awaitable<void> {
+    factory_called = true;
+    co_return;
+  });
+
+  cancelation.Cancel();
+  executor->Poll();
+
+  EXPECT_FALSE(factory_called);
+}
+
 }  // namespace
