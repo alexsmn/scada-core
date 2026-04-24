@@ -20,6 +20,7 @@ set_property(TARGET base_unittest PROPERTY FOLDER ${scada_core_folder})
 
 add_executable(base_awaitable_promise_unittests
   "async_cache_unittest.cpp"
+  "async_completion_unittest.cpp"
   "callback_awaitable_unittest.cpp"
   "awaitable_promise_unittest.cpp"
   "awaitable_unittest.cpp"
