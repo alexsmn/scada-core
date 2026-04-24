@@ -788,6 +788,6 @@ void Convert(const protocol::DeleteNode& source,
 void Convert(const scada::DeleteNodesItem& source,
              protocol::DeleteNode& target) {
   Convert(source.node_id, *target.mutable_node_id());
-  if (target.delete_target_references())
+  if (source.delete_target_references)
     target.set_delete_target_references(true);
 }

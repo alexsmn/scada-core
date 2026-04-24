@@ -436,7 +436,7 @@ class SessionProxyTest : public Test {
 // before co_spawn, ensuring the promise returned by Reconnect() is the same one
 // resolved by ForwardConnectResult() inside the Connect() coroutine.
 TEST_F(SessionProxyTest, Connect) {
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   Wait(session.Connect(GetConnectParams()));
@@ -450,7 +450,7 @@ TEST_F(SessionProxyTest, Connect) {
 TEST_F(SessionProxyTest, Connect_BadPassword) {
   auth_failure_status_ = scada::StatusCode::Bad_WrongLoginCredentials;
 
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   EXPECT_THROW(Wait(session.Connect(GetConnectParams())),
@@ -459,7 +459,7 @@ TEST_F(SessionProxyTest, Connect_BadPassword) {
 
 // Verifies that Connect() followed by Disconnect() completes cleanly.
 TEST_F(SessionProxyTest, Connect_Disconnect) {
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   Wait(session.Connect(GetConnectParams()));
@@ -475,7 +475,7 @@ TEST_F(SessionProxyTest, Reconnect) {
   auto params = GetConnectParams();
   params.allow_remote_logoff = true;
 
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   Wait(session.Connect(params));
@@ -491,7 +491,7 @@ TEST_F(SessionProxyTest, ManagerObserverNotifiedOnOpenAndClose) {
   SessionManagerObserver observer;
   session_manager_->AddObserver(observer);
 
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   Wait(session.Connect(GetConnectParams()));
@@ -510,7 +510,7 @@ TEST_F(SessionProxyTest, ManagerObserverNotNotifiedOnFailedAuthentication) {
   SessionManagerObserver observer;
   session_manager_->AddObserver(observer);
 
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   EXPECT_THROW(Wait(session.Connect(GetConnectParams())),
@@ -530,7 +530,7 @@ TEST_F(SessionProxyTest,
   SessionManagerObserver observer;
   session_manager_->AddObserver(observer);
 
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   auto connect_promise = session.Connect(GetConnectParams());
@@ -558,7 +558,7 @@ TEST_F(SessionProxyTest,
   delay_authentication_ = true;
   auth_requested_ = false;
 
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   auto connect_promise = session.Connect(GetConnectParams());
@@ -575,9 +575,9 @@ TEST_F(SessionProxyTest,
 }
 
 TEST_F(SessionProxyTest, Connect_DuplicateUserRejectedWithoutRemoteLogoff) {
-  SessionProxy session1{{.executor_ = asio_env_.executor,
+  SessionProxy session1{{.executor_ = asio_env_.any_executor_factory(),
                          .transport_factory_ = asio_env_.transport_factory}};
-  SessionProxy session2{{.executor_ = asio_env_.executor,
+  SessionProxy session2{{.executor_ = asio_env_.any_executor_factory(),
                          .transport_factory_ = asio_env_.transport_factory}};
 
   Wait(session1.Connect(GetConnectParams()));
@@ -599,9 +599,9 @@ TEST_F(SessionProxyTest, ManagerObserverNotifiedWhenSessionIsReplaced) {
   SessionManagerObserver observer;
   session_manager_->AddObserver(observer);
 
-  SessionProxy session1{{.executor_ = asio_env_.executor,
+  SessionProxy session1{{.executor_ = asio_env_.any_executor_factory(),
                          .transport_factory_ = asio_env_.transport_factory}};
-  SessionProxy session2{{.executor_ = asio_env_.executor,
+  SessionProxy session2{{.executor_ = asio_env_.any_executor_factory(),
                          .transport_factory_ = asio_env_.transport_factory}};
 
   Wait(session1.Connect(params));
@@ -623,9 +623,9 @@ TEST_F(SessionProxyTest, Connect_DuplicateUserAllowedWithRemoteLogoff) {
   auto second_params = params;
   second_params.allow_remote_logoff = true;
 
-  SessionProxy session1{{.executor_ = asio_env_.executor,
+  SessionProxy session1{{.executor_ = asio_env_.any_executor_factory(),
                          .transport_factory_ = asio_env_.transport_factory}};
-  SessionProxy session2{{.executor_ = asio_env_.executor,
+  SessionProxy session2{{.executor_ = asio_env_.any_executor_factory(),
                          .transport_factory_ = asio_env_.transport_factory}};
 
   Wait(session1.Connect(params));
@@ -642,7 +642,7 @@ TEST_F(SessionProxyTest, Connect_DuplicateUserAllowedWithRemoteLogoff) {
 }
 
 TEST_F(SessionProxyTest, CloseUserSessionsDisconnectsMatchingSession) {
-  SessionProxy session{{.executor_ = asio_env_.executor,
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   Wait(session.Connect(GetConnectParams()));
@@ -662,7 +662,7 @@ TEST_F(SessionProxyTest, ClientTransportDropClosesServerSession) {
   session_manager_->AddObserver(observer);
 
   {
-    SessionProxy session{{.executor_ = asio_env_.executor,
+    SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                           .transport_factory_ = asio_env_.transport_factory}};
 
     Wait(session.Connect(GetConnectParams()));
@@ -684,7 +684,7 @@ TEST_F(SessionProxyTest, DisconnectCancelsInFlightReadAndAllowsReconnect) {
   NoopHistoryService history_service;
   SessionProxyHarness harness{&attribute_service, &history_service};
 
-  SessionProxy session{{.executor_ = harness.asio_env_.executor,
+  SessionProxy session{{.executor_ = harness.asio_env_.any_executor_factory(),
                         .transport_factory_ = harness.asio_env_.transport_factory}};
 
   harness.Wait(session.Connect(harness.GetConnectParams()));
@@ -727,7 +727,7 @@ TEST_F(SessionProxyTest, DisconnectCancelsInFlightWriteAndAllowsReconnect) {
   NoopHistoryService history_service;
   SessionProxyHarness harness{&attribute_service, &history_service};
 
-  SessionProxy session{{.executor_ = harness.asio_env_.executor,
+  SessionProxy session{{.executor_ = harness.asio_env_.any_executor_factory(),
                         .transport_factory_ = harness.asio_env_.transport_factory}};
 
   harness.Wait(session.Connect(harness.GetConnectParams()));
@@ -776,7 +776,7 @@ TEST_F(SessionProxyTest, DisconnectCancelsInFlightCallAndAllowsReconnect) {
   SessionProxyHarness harness{&attribute_service, &history_service,
                               &method_service};
 
-  SessionProxy session{{.executor_ = harness.asio_env_.executor,
+  SessionProxy session{{.executor_ = harness.asio_env_.any_executor_factory(),
                         .transport_factory_ = harness.asio_env_.transport_factory}};
 
   harness.Wait(session.Connect(harness.GetConnectParams()));
@@ -822,9 +822,9 @@ TEST_F(SessionProxyTest,
   auto second_params = params;
   second_params.allow_remote_logoff = true;
 
-  SessionProxy session1{{.executor_ = harness.asio_env_.executor,
+  SessionProxy session1{{.executor_ = harness.asio_env_.any_executor_factory(),
                          .transport_factory_ = harness.asio_env_.transport_factory}};
-  SessionProxy session2{{.executor_ = harness.asio_env_.executor,
+  SessionProxy session2{{.executor_ = harness.asio_env_.any_executor_factory(),
                          .transport_factory_ = harness.asio_env_.transport_factory}};
 
   harness.Wait(session1.Connect(params));
@@ -872,7 +872,7 @@ TEST_F(SessionProxyTest, ShutdownReleasesSessionStateAndDisconnectsClient) {
   SessionProxyHarness harness{&attribute_service, &history_service};
 
   {
-    SessionProxy session1{{.executor_ = harness.asio_env_.executor,
+    SessionProxy session1{{.executor_ = harness.asio_env_.any_executor_factory(),
                            .transport_factory_ =
                                harness.asio_env_.transport_factory}};
 

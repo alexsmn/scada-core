@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/promise.h"
+
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <memory>
@@ -36,12 +38,39 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
     auto self = shared_from_this();
     boost::asio::co_spawn(
         acceptor_.get_executor(),
-        [self]() -> transport::awaitable<void> {
-          self->OnTransportClosed(co_await self->Run());
+        [self]() -> transport::awaitable<transport::error_code> {
+          co_return co_await self->Run();
         },
-        boost::asio::detached);
+        [self](std::exception_ptr e, transport::error_code error) mutable {
+          if (e) {
+            try {
+              std::rethrow_exception(e);
+            } catch (const std::exception& ex) {
+              LOG_ERROR(*self->logger_) << "Listener exception"
+                                        << LOG_TAG("Listener", self->listener_name_)
+                                        << LOG_TAG("ErrorString", ex.what());
+            } catch (...) {
+              LOG_ERROR(*self->logger_) << "Listener exception"
+                                        << LOG_TAG("Listener", self->listener_name_);
+            }
+          } else {
+            self->OnTransportClosed(error);
+          }
+          self->close_promise_.resolve();
+        });
 
     return open_promise_;
+  }
+
+  promise<> Shutdown() {
+    auto self = shared_from_this();
+    boost::asio::co_spawn(
+        acceptor_.get_executor(),
+        [self]() -> transport::awaitable<void> {
+          [[maybe_unused]] auto result = co_await self->acceptor_.close();
+        },
+        boost::asio::detached);
+    return close_promise_;
   }
 
  private:
@@ -51,6 +80,7 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
     LOG_INFO(*logger_) << "Listener opened"
                        << LOG_TAG("Listener", listener_name_);
 
+    opened_ = true;
     open_promise_.resolve();
 
     for (;;) {
@@ -65,13 +95,21 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
   }
 
   void OnTransportClosed(transport::error_code error) {
-    LOG_ERROR(*logger_) << "Listener error"
-                        << LOG_TAG("Listener", listener_name_)
-                        << LOG_TAG("ErrorString",
-                                   transport::ErrorToString(error));
+    if (!opened_) {
+      LOG_ERROR(*logger_) << "Listener error"
+                          << LOG_TAG("Listener", listener_name_)
+                          << LOG_TAG("ErrorString",
+                                     transport::ErrorToString(error));
 
-    open_promise_.reject(
-        std::runtime_error{transport::ErrorToString(error)});
+      open_promise_.reject(
+          std::runtime_error{transport::ErrorToString(error)});
+      return;
+    }
+
+    LOG_INFO(*logger_) << "Listener closed"
+                       << LOG_TAG("Listener", listener_name_)
+                       << LOG_TAG("ErrorString",
+                                  transport::ErrorToString(error));
   }
 
   const std::shared_ptr<BoostLogger> logger_;
@@ -80,4 +118,6 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
   const AcceptHandler accept_handler_;
 
   promise<> open_promise_;
+  promise<> close_promise_;
+  bool opened_ = false;
 };

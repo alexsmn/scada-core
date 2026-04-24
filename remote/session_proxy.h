@@ -155,6 +155,7 @@ class SessionProxy : private SessionProxyContext,
 
   promise<void> connect_promise_;
   promise<void> connect_loop_done_promise_;
+  promise<void> ping_done_promise_;
   std::optional<scada::Status> pending_connect_result_;
 
   int next_request_id_ = 1;

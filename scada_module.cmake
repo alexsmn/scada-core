@@ -51,6 +51,9 @@ function(scada_module_unittests MODULE_NAME)
                          PROPERTIES TIMEOUT 60)
 
     target_link_libraries(${MODULE_NAME}_unittests PRIVATE ${MODULE_NAME} base_unittest)
+    target_include_directories(${MODULE_NAME}_unittests PRIVATE
+      ${CMAKE_SOURCE_DIR}
+      ${CMAKE_SOURCE_DIR}/server)
 
     if(MSVC)
       # RelWithDebInfo already uses embedded object debug info via the preset,

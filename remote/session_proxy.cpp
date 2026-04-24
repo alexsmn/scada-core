@@ -58,10 +58,12 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       history_proxy_{std::make_unique<HistoryProxy>()},
       ping_timer_{executor_} {
   connect_loop_done_promise_ = make_resolved_promise();
+  ping_done_promise_ = make_resolved_promise();
 }
 
 SessionProxy::~SessionProxy() {
   cancelation_.Cancel();
+  ping_timer_.Stop();
   write_queue_.reset();
   transport_.reset();
 }
@@ -262,6 +264,7 @@ Awaitable<void> SessionProxy::DisconnectAsync() {
   }
 
   co_await AwaitPromise(executor_, connect_loop_done_promise_);
+  co_await AwaitPromise(executor_, ping_done_promise_);
 }
 
 void SessionProxy::Send(protocol::Message& message) {
@@ -631,7 +634,23 @@ void SessionProxy::Ping() {
   assert(ping_time_.is_null());
 
   ping_time_ = base::TimeTicks::Now();
-  boost::asio::co_spawn(executor_, PingAsync(), boost::asio::detached);
+  ping_done_promise_ = promise<void>{};
+  boost::asio::co_spawn(
+      executor_, PingAsync(),
+      [logger = logger_, ping_done = ping_done_promise_](
+          std::exception_ptr e) mutable {
+        if (e) {
+          try {
+            std::rethrow_exception(e);
+          } catch (const std::exception& ex) {
+            LOG_ERROR(*logger) << "Ping loop failed"
+                               << LOG_TAG("Error", ex.what());
+          } catch (...) {
+            LOG_ERROR(*logger) << "Ping loop failed with unknown error";
+          }
+        }
+        ping_done.resolve();
+      });
 }
 
 Awaitable<void> SessionProxy::PingAsync() {

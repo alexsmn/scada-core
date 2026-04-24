@@ -60,7 +60,7 @@ class TestServer {
   // here causes `session_manager_.Init()` to hang indefinitely after the
   // coroutine-authenticator migration.
   RemoteSessionManager session_manager_{
-      {.executor_ = asio_env_.executor,
+      {.executor_ = asio_env_.any_executor_factory(),
        .services_ = {.monitored_item_service = &monitored_item_service_},
        .authenticator_ =
            [](scada::LocalizedText, scada::LocalizedText)

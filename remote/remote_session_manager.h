@@ -60,6 +60,7 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
   // Throws an exception on error.
   promise<> Init();
+  promise<> Shutdown();
 
   void CloseUserSessions(const scada::NodeId& user_id);
 
@@ -70,6 +71,7 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
  private:
   [[nodiscard]] Awaitable<void> InitAsync();
+  [[nodiscard]] Awaitable<void> ShutdownAsync();
 
   [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
       protocol::CreateSession create_session);

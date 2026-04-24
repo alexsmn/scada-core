@@ -74,6 +74,10 @@ promise<> RemoteSessionManager::Init() {
   return ToPromise(executor_, InitAsync());
 }
 
+promise<> RemoteSessionManager::Shutdown() {
+  return ToPromise(executor_, ShutdownAsync());
+}
+
 Awaitable<void> RemoteSessionManager::InitAsync() {
   transport::log_source transport_logger{
       std::make_shared<NetBoostLoggerAdapter>(logger_)};
@@ -107,6 +111,29 @@ Awaitable<void> RemoteSessionManager::InitAsync() {
     listeners_.emplace_back(listener);
 
     co_await AwaitPromise(executor_, listener->Init());
+  }
+}
+
+Awaitable<void> RemoteSessionManager::ShutdownAsync() {
+  alive_.reset();
+
+  auto listeners = std::move(listeners_);
+  for (auto& listener : listeners) {
+    co_await AwaitPromise(executor_, listener->Shutdown());
+  }
+
+  for (auto& connection : connections_) {
+    connection->Shutdown();
+  }
+  connections_.clear();
+
+  if (!session_map_.empty()) {
+    LOG_INFO(*logger_) << "Closing opened sessions"
+                       << LOG_TAG("SessionCount", session_map_.size());
+    for (const auto& session_stub : session_map_ | std::views::values) {
+      session_stub->OnSessionDeleted();
+    }
+    session_map_.clear();
   }
 }
 
