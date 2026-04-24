@@ -1,9 +1,10 @@
 #pragma once
 
+#include "base/any_executor.h"
+#include "base/any_executor_timer.h"
 #include "base/boost_log.h"
 #include "base/awaitable.h"
 #include "base/cancelation.h"
-#include "base/executor_timer.h"
 #include "remote/message_sender.h"
 #include "scada/attribute_service.h"
 #include "scada/logging.h"
@@ -38,7 +39,7 @@ class ViewServiceProxy;
 class SessionProxyDebugger;
 
 struct SessionProxyContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   transport::TransportFactory& transport_factory_;
   const scada::ServiceLogParams service_log_params_;
 };
@@ -159,7 +160,7 @@ class SessionProxy : private SessionProxyContext,
   int next_request_id_ = 1;
 
   // Ping.
-  ExecutorTimer ping_timer_;
+  AnyExecutorTimer ping_timer_;
   base::TimeTicks ping_time_;
   base::TimeDelta last_ping_delay_;
 

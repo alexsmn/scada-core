@@ -1,7 +1,7 @@
 #include "trace_sink_impl.h"
 
 #include "base/boost_log.h"
-#include "base/executor.h"
+#include "base/executor_util.h"
 #include "metrics/tracing.h"
 
 #include <mutex>
@@ -11,7 +11,7 @@
 
 class TraceSinkImpl::Core : public std::enable_shared_from_this<Core> {
  public:
-  Core(std::shared_ptr<Executor> executor, std::chrono::milliseconds timeout)
+  Core(AnyExecutor executor, std::chrono::milliseconds timeout)
       : executor_{std::move(executor)}, timeout_{timeout} {}
 
   void StartSpan(const TraceSpanId& span_id,
@@ -32,7 +32,7 @@ class TraceSinkImpl::Core : public std::enable_shared_from_this<Core> {
 
   BoostLogger logger_{LOG_NAME("Trace")};
 
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   std::chrono::milliseconds timeout_;
 
   std::mutex mutex_;
@@ -57,8 +57,7 @@ void TraceSinkImpl::Core::StartSpan(const TraceSpanId& span_id,
     active_spans_.try_emplace(span_id, std::string{name}, parent_span_id);
   }
 
-  executor_->PostDelayedTask(
-      timeout_, [this, ref = shared_from_this(), span_id] {
+  PostDelayedTask(executor_, timeout_, [this, ref = shared_from_this(), span_id] {
         std::optional<SpanInfo> timed_out_span;
         {
           std::lock_guard lock{mutex_};
@@ -101,7 +100,7 @@ void TraceSinkImpl::Core::OnTimeout(const TraceSpanId& span_id,
 
 // TraceSinkImpl
 
-TraceSinkImpl::TraceSinkImpl(std::shared_ptr<Executor> executor,
+TraceSinkImpl::TraceSinkImpl(AnyExecutor executor,
                              std::chrono::milliseconds timeout)
     : core_{std::make_shared<Core>(std::move(executor), timeout)} {}
 

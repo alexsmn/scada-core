@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "base/boost_log.h"
 #include "base/awaitable.h"
 #include "base/nested_logger.h"
@@ -35,7 +36,7 @@ class SessionStub;
 struct CreateSessionResult;
 
 struct RemoteSessionManagerContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   scada::services services_;
   const scada::AsyncAuthenticator authenticator_;
   transport::TransportFactory& transport_factory_;

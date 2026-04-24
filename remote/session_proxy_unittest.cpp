@@ -271,7 +271,7 @@ class SessionProxyHarness {
   void CreateSessionManager() {
     session_manager_ = std::make_unique<RemoteSessionManager>(
         RemoteSessionManagerContext{
-            .executor_ = session_manager_executor_,
+            .executor_ = MakeTestAnyExecutor(session_manager_executor_),
             .services_ =
                 {.attribute_service = attribute_service_,
                  .method_service = method_service_,
@@ -363,7 +363,7 @@ class SessionProxyTest : public Test {
   void CreateSessionManager() {
     session_manager_ = std::make_unique<RemoteSessionManager>(
         RemoteSessionManagerContext{
-            .executor_ = session_manager_executor_,
+            .executor_ = MakeTestAnyExecutor(session_manager_executor_),
             .services_ =
                 {.attribute_service = attribute_service_,
                  .method_service = &method_service_,

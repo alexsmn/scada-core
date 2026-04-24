@@ -1,12 +1,14 @@
 #include "scada/data_services_factory.h"
 
+#include "base/executor_conversions.h"
 #include "remote/session_proxy.h"
 #include "remote/view_service_proxy.h"
 
 bool CreateRemoteServices(const DataServicesContext& context,
                           DataServices& services) {
   auto session_proxy = std::make_shared<SessionProxy>(SessionProxyContext{
-      context.executor, context.transport_factory, context.service_log_params});
+      MakeAnyExecutor(context.executor), context.transport_factory,
+      context.service_log_params});
 
   auto raw_services = session_proxy->services();
 

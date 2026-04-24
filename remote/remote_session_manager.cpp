@@ -1,9 +1,9 @@
 #include "remote/remote_session_manager.h"
 
 #include "base/awaitable_promise.h"
+#include "base/any_executor_dispatch.h"
 #include "base/boost_log_adapter.h"
 #include "base/debug_util.h"
-#include "base/promise_executor.h"
 #include "base/utf_convert.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
@@ -70,7 +70,7 @@ RemoteSessionManager::~RemoteSessionManager() {
 }
 
 promise<> RemoteSessionManager::Init() {
-  return ToPromise(NetExecutorAdapter{executor_}, InitAsync());
+  return ToPromise(executor_, InitAsync());
 }
 
 Awaitable<void> RemoteSessionManager::InitAsync() {
@@ -87,8 +87,8 @@ Awaitable<void> RemoteSessionManager::InitAsync() {
       };
 
   for (const transport::TransportString& endpoint : endpoints_) {
-    auto acceptor = transport_factory_.CreateTransport(
-        endpoint, NetExecutorAdapter{executor_}, transport_logger);
+    auto acceptor =
+        transport_factory_.CreateTransport(endpoint, executor_, transport_logger);
 
     if (!acceptor.ok()) {
       LOG_ERROR(*logger_) << "Cannot create listener transport"
@@ -105,7 +105,7 @@ Awaitable<void> RemoteSessionManager::InitAsync() {
                                            accept_handler);
     listeners_.emplace_back(listener);
 
-    co_await AwaitPromise(NetExecutorAdapter{executor_}, listener->Init());
+    co_await AwaitPromise(executor_, listener->Init());
   }
 }
 
@@ -247,7 +247,7 @@ void RemoteSessionManager::DeleteSession(const scada::NodeId& user_id) {
 }
 
 void RemoteSessionManager::CloseUserSessions(const scada::NodeId& user_id) {
-  Dispatch(*executor_, [this, user_id] {
+  Dispatch(executor_, [this, user_id] {
     if (SessionStub* session = FindUserSession(user_id)) {
       LOG_WARNING(*logger_)
           << "Close session because of user deletion"

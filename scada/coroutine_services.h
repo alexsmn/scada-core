@@ -1,9 +1,10 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "base/awaitable_promise.h"
 #include "base/callback_awaitable.h"
-#include "base/executor.h"
+#include "base/executor_conversions.h"
 #include "scada/attribute_service.h"
 #include "scada/history_service.h"
 #include "scada/method_service.h"
@@ -113,9 +114,14 @@ class CallbackToCoroutineAttributeServiceAdapter final
     : public CoroutineAttributeService {
  public:
   CallbackToCoroutineAttributeServiceAdapter(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       AttributeService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CallbackToCoroutineAttributeServiceAdapter(
+      std::shared_ptr<Executor> executor,
+      AttributeService& service)
+      : CallbackToCoroutineAttributeServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   Awaitable<std::tuple<Status, std::vector<DataValue>>> Read(
       ServiceContext context,
@@ -140,16 +146,20 @@ class CallbackToCoroutineAttributeServiceAdapter final
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   AttributeService& service_;
 };
 
 class CallbackToCoroutineMethodServiceAdapter final
     : public CoroutineMethodService {
  public:
-  CallbackToCoroutineMethodServiceAdapter(std::shared_ptr<Executor> executor,
+  CallbackToCoroutineMethodServiceAdapter(AnyExecutor executor,
                                           MethodService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CallbackToCoroutineMethodServiceAdapter(std::shared_ptr<Executor> executor,
+                                          MethodService& service)
+      : CallbackToCoroutineMethodServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   Awaitable<Status> Call(NodeId node_id,
                          NodeId method_id,
@@ -167,16 +177,20 @@ class CallbackToCoroutineMethodServiceAdapter final
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   MethodService& service_;
 };
 
 class CallbackToCoroutineHistoryServiceAdapter final
     : public CoroutineHistoryService {
  public:
-  CallbackToCoroutineHistoryServiceAdapter(std::shared_ptr<Executor> executor,
+  CallbackToCoroutineHistoryServiceAdapter(AnyExecutor executor,
                                            HistoryService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CallbackToCoroutineHistoryServiceAdapter(std::shared_ptr<Executor> executor,
+                                           HistoryService& service)
+      : CallbackToCoroutineHistoryServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   Awaitable<HistoryReadRawResult> HistoryReadRaw(
       HistoryReadRawDetails details) override {
@@ -204,15 +218,19 @@ class CallbackToCoroutineHistoryServiceAdapter final
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   HistoryService& service_;
 };
 
 class CallbackToCoroutineViewServiceAdapter final : public CoroutineViewService {
  public:
-  CallbackToCoroutineViewServiceAdapter(std::shared_ptr<Executor> executor,
+  CallbackToCoroutineViewServiceAdapter(AnyExecutor executor,
                                         ViewService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CallbackToCoroutineViewServiceAdapter(std::shared_ptr<Executor> executor,
+                                        ViewService& service)
+      : CallbackToCoroutineViewServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   Awaitable<std::tuple<Status, std::vector<BrowseResult>>> Browse(
       ServiceContext context,
@@ -236,7 +254,7 @@ class CallbackToCoroutineViewServiceAdapter final : public CoroutineViewService 
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   ViewService& service_;
 };
 
@@ -244,9 +262,14 @@ class CallbackToCoroutineNodeManagementServiceAdapter final
     : public CoroutineNodeManagementService {
  public:
   CallbackToCoroutineNodeManagementServiceAdapter(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       NodeManagementService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CallbackToCoroutineNodeManagementServiceAdapter(
+      std::shared_ptr<Executor> executor,
+      NodeManagementService& service)
+      : CallbackToCoroutineNodeManagementServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   Awaitable<std::tuple<Status, std::vector<AddNodesResult>>> AddNodes(
       std::vector<AddNodesItem> inputs) override {
@@ -285,28 +308,31 @@ class CallbackToCoroutineNodeManagementServiceAdapter final
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   NodeManagementService& service_;
 };
 
 class PromiseToCoroutineSessionServiceAdapter final
     : public CoroutineSessionService {
  public:
-  PromiseToCoroutineSessionServiceAdapter(std::shared_ptr<Executor> executor,
+  PromiseToCoroutineSessionServiceAdapter(AnyExecutor executor,
                                           SessionService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  PromiseToCoroutineSessionServiceAdapter(std::shared_ptr<Executor> executor,
+                                          SessionService& service)
+      : PromiseToCoroutineSessionServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   Awaitable<void> Connect(SessionConnectParams params) override {
-    co_await AwaitPromise(NetExecutorAdapter{executor_},
-                          service_.Connect(std::move(params)));
+    co_await AwaitPromise(executor_, service_.Connect(std::move(params)));
   }
 
   Awaitable<void> Reconnect() override {
-    co_await AwaitPromise(NetExecutorAdapter{executor_}, service_.Reconnect());
+    co_await AwaitPromise(executor_, service_.Reconnect());
   }
 
   Awaitable<void> Disconnect() override {
-    co_await AwaitPromise(NetExecutorAdapter{executor_}, service_.Disconnect());
+    co_await AwaitPromise(executor_, service_.Disconnect());
   }
 
   bool IsConnected(base::TimeDelta* ping_delay = nullptr) const override {
@@ -333,15 +359,19 @@ class PromiseToCoroutineSessionServiceAdapter final
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   SessionService& service_;
 };
 
 class CoroutineToCallbackAttributeServiceAdapter final : public AttributeService {
  public:
-  CoroutineToCallbackAttributeServiceAdapter(std::shared_ptr<Executor> executor,
+  CoroutineToCallbackAttributeServiceAdapter(AnyExecutor executor,
                                              CoroutineAttributeService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CoroutineToCallbackAttributeServiceAdapter(std::shared_ptr<Executor> executor,
+                                             CoroutineAttributeService& service)
+      : CoroutineToCallbackAttributeServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   void Read(const ServiceContext& context,
             const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
@@ -375,15 +405,19 @@ class CoroutineToCallbackAttributeServiceAdapter final : public AttributeService
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   CoroutineAttributeService& service_;
 };
 
 class CoroutineToCallbackMethodServiceAdapter final : public MethodService {
  public:
-  CoroutineToCallbackMethodServiceAdapter(std::shared_ptr<Executor> executor,
+  CoroutineToCallbackMethodServiceAdapter(AnyExecutor executor,
                                           CoroutineMethodService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CoroutineToCallbackMethodServiceAdapter(std::shared_ptr<Executor> executor,
+                                          CoroutineMethodService& service)
+      : CoroutineToCallbackMethodServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   void Call(const NodeId& node_id,
             const NodeId& method_id,
@@ -405,15 +439,19 @@ class CoroutineToCallbackMethodServiceAdapter final : public MethodService {
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   CoroutineMethodService& service_;
 };
 
 class CoroutineToCallbackHistoryServiceAdapter final : public HistoryService {
  public:
-  CoroutineToCallbackHistoryServiceAdapter(std::shared_ptr<Executor> executor,
+  CoroutineToCallbackHistoryServiceAdapter(AnyExecutor executor,
                                            CoroutineHistoryService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CoroutineToCallbackHistoryServiceAdapter(std::shared_ptr<Executor> executor,
+                                           CoroutineHistoryService& service)
+      : CoroutineToCallbackHistoryServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   void HistoryReadRaw(const HistoryReadRawDetails& details,
                       const HistoryReadRawCallback& callback) override {
@@ -447,15 +485,19 @@ class CoroutineToCallbackHistoryServiceAdapter final : public HistoryService {
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   CoroutineHistoryService& service_;
 };
 
 class CoroutineToCallbackViewServiceAdapter final : public ViewService {
  public:
-  CoroutineToCallbackViewServiceAdapter(std::shared_ptr<Executor> executor,
+  CoroutineToCallbackViewServiceAdapter(AnyExecutor executor,
                                         CoroutineViewService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CoroutineToCallbackViewServiceAdapter(std::shared_ptr<Executor> executor,
+                                        CoroutineViewService& service)
+      : CoroutineToCallbackViewServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   void Browse(const ServiceContext& context,
               const std::vector<BrowseDescription>& inputs,
@@ -488,7 +530,7 @@ class CoroutineToCallbackViewServiceAdapter final : public ViewService {
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   CoroutineViewService& service_;
 };
 
@@ -496,9 +538,14 @@ class CoroutineToCallbackNodeManagementServiceAdapter final
     : public NodeManagementService {
  public:
   CoroutineToCallbackNodeManagementServiceAdapter(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       CoroutineNodeManagementService& service)
       : executor_{std::move(executor)}, service_{service} {}
+  CoroutineToCallbackNodeManagementServiceAdapter(
+      std::shared_ptr<Executor> executor,
+      CoroutineNodeManagementService& service)
+      : CoroutineToCallbackNodeManagementServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
 
   void AddNodes(const std::vector<AddNodesItem>& inputs,
                 const AddNodesCallback& callback) override {
@@ -557,7 +604,7 @@ class CoroutineToCallbackNodeManagementServiceAdapter final
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   CoroutineNodeManagementService& service_;
 };
 

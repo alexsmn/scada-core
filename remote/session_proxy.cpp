@@ -1,6 +1,7 @@
 #include "remote/session_proxy.h"
 
 #include "base/awaitable_promise.h"
+#include "base/awaitable.h"
 #include "base/callback_awaitable.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -8,7 +9,6 @@
 
 #include "base/utf_convert.h"
 #include "net/net_boost_logger_adapter.h"
-#include "net/net_executor_adapter.h"
 #include "remote/history_proxy.h"
 #include "remote/node_management_proxy.h"
 #include "remote/protocol.h"
@@ -81,14 +81,15 @@ promise<void> SessionProxy::Disconnect() {
   if (!session_created_)
     return MakeRejectedStatusPromise(scada::StatusCode::Bad_Disconnected);
 
-  return ToPromise(NetExecutorAdapter{executor_}, DisconnectAsync());
+  return ToPromise(executor_, DisconnectAsync());
 }
 
 void SessionProxy::OnTransportOpened() {
   LOG_INFO(*logger_) << "Transport opened";
 
-  boost::asio::co_spawn(NetExecutorAdapter{executor_}, AwaitCreateSessionAsync(),
-                        boost::asio::detached);
+  CoSpawn(executor_, [this]() -> Awaitable<void> {
+    co_await AwaitCreateSessionAsync();
+  });
 }
 
 void SessionProxy::OnSessionCreated() {
@@ -260,7 +261,7 @@ Awaitable<void> SessionProxy::DisconnectAsync() {
     transport_.reset();
   }
 
-  co_await AwaitPromise(NetExecutorAdapter{executor_}, connect_loop_done_promise_);
+  co_await AwaitPromise(executor_, connect_loop_done_promise_);
 }
 
 void SessionProxy::Send(protocol::Message& message) {

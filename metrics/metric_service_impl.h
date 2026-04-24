@@ -1,14 +1,13 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "base/common_types.h"
 #include "metrics/metric_service.h"
-
-class Executor;
 
 // Thread-safe.
 class MetricServiceImpl final : public MetricService {
  public:
-  MetricServiceImpl(std::shared_ptr<Executor> executor,
+  MetricServiceImpl(AnyExecutor executor,
                     Duration report_metrics_period);
 
   // MetricService
@@ -18,7 +17,7 @@ class MetricServiceImpl final : public MetricService {
  private:
   class ProviderReporter;
 
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   const Duration report_metrics_period_;
 
   std::vector<Sink> sinks_;

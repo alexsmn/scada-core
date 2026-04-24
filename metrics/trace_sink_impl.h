@@ -1,15 +1,14 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "metrics/trace_sink.h"
 
 #include <chrono>
 #include <memory>
 
-class Executor;
-
 class TraceSinkImpl final : public TraceSink {
  public:
-  TraceSinkImpl(std::shared_ptr<Executor> executor,
+  TraceSinkImpl(AnyExecutor executor,
                 std::chrono::milliseconds timeout);
 
   // TraceSink

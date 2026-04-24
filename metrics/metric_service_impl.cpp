@@ -1,6 +1,7 @@
 #include "metrics/metric_service_impl.h"
 
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
+#include "base/executor_util.h"
 #include "metrics/metrics.h"
 
 // MetricServiceImpl::ProviderReporter
@@ -8,7 +9,7 @@
 class MetricServiceImpl::ProviderReporter
     : public std::enable_shared_from_this<ProviderReporter> {
  public:
-  ProviderReporter(std::shared_ptr<Executor> executor,
+  ProviderReporter(AnyExecutor executor,
                    Duration report_metrics_period,
                    const Provider& provider,
                    const Sink& sink)
@@ -18,9 +19,8 @@ class MetricServiceImpl::ProviderReporter
         sink_{sink} {}
 
   void Schedule() {
-    executor_->PostDelayedTask(
-        report_metrics_period_,
-        std::bind_front(&ProviderReporter::Report, shared_from_this()));
+    PostDelayedTask(executor_, report_metrics_period_,
+                    std::bind_front(&ProviderReporter::Report, shared_from_this()));
   }
 
  private:
@@ -33,7 +33,7 @@ class MetricServiceImpl::ProviderReporter
         }));
   }
 
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   const Duration report_metrics_period_;
   const Provider provider_;
   const Sink sink_;
@@ -41,7 +41,7 @@ class MetricServiceImpl::ProviderReporter
 
 // MetricServiceImpl
 
-MetricServiceImpl::MetricServiceImpl(std::shared_ptr<Executor> executor,
+MetricServiceImpl::MetricServiceImpl(AnyExecutor executor,
                                      Duration report_metrics_period)
     : executor_{std::move(executor)},
       report_metrics_period_{report_metrics_period} {
@@ -59,5 +59,5 @@ void MetricServiceImpl::RegisterProvider(const Provider& provider) {
 }
 
 void MetricServiceImpl::RegisterSink(const Sink& sink) {
-  Dispatch(*executor_, [this, sink] { sinks_.emplace_back(sink); });
+  Dispatch(executor_, [this, sink] { sinks_.emplace_back(sink); });
 }
