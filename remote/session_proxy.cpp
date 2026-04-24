@@ -581,7 +581,7 @@ promise<void> SessionProxy::Reconnect() {
     pending_connect_result_.reset();
 
     boost::asio::co_spawn(
-        NetExecutorAdapter{executor_}, Connect(),
+        executor_, Connect(),
         [this, logger = logger_, loop_done = connect_loop_done_promise_](
             std::exception_ptr e) mutable {
           if (e) {
@@ -631,8 +631,7 @@ void SessionProxy::Ping() {
   assert(ping_time_.is_null());
 
   ping_time_ = base::TimeTicks::Now();
-  boost::asio::co_spawn(NetExecutorAdapter{executor_}, PingAsync(),
-                        boost::asio::detached);
+  boost::asio::co_spawn(executor_, PingAsync(), boost::asio::detached);
 }
 
 Awaitable<void> SessionProxy::PingAsync() {
