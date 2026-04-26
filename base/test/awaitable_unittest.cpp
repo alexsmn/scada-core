@@ -2,7 +2,13 @@
 
 #include "base/test/test_executor.h"
 
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <gtest/gtest.h>
+#include <stdexcept>
+
+using namespace std::chrono_literals;
 
 namespace {
 
@@ -147,6 +153,46 @@ TEST(CoSpawn, CancelationFactoryDoesNotRunAfterCancelationCancels) {
   executor->Poll();
 
   EXPECT_FALSE(factory_called);
+}
+
+TEST(RunAwaitable, RunsIoContextUntilAwaitableCompletes) {
+  boost::asio::io_context io_context;
+
+  bool after_timer = false;
+  auto result = RunAwaitable(io_context, [&]() -> Awaitable<int> {
+    boost::asio::steady_timer timer{io_context};
+    timer.expires_after(1ms);
+    co_await timer.async_wait(boost::asio::use_awaitable);
+    after_timer = true;
+    co_return 42;
+  });
+
+  EXPECT_TRUE(after_timer);
+  EXPECT_EQ(result, 42);
+}
+
+TEST(RunAwaitable, RestartsStoppedIoContext) {
+  boost::asio::io_context io_context;
+  io_context.stop();
+
+  bool ran = false;
+  RunAwaitable(io_context, [&]() -> Awaitable<void> {
+    ran = true;
+    co_return;
+  });
+
+  EXPECT_TRUE(ran);
+}
+
+TEST(RunAwaitable, PropagatesAwaitableExceptions) {
+  boost::asio::io_context io_context;
+
+  EXPECT_THROW(
+      RunAwaitable(io_context, []() -> Awaitable<void> {
+        throw std::runtime_error{"run-awaitable-failed"};
+        co_return;
+      }),
+      std::runtime_error);
 }
 
 }  // namespace

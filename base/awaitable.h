@@ -7,7 +7,10 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/use_future.hpp>
+#include <chrono>
 #include <functional>
+#include <future>
 #include <type_traits>
 
 template <typename T>
@@ -92,4 +95,16 @@ inline void CoSpawn(AnyExecutor executor,
                     const Cancelation& cancelation,
                     F&& fn) {
   CoSpawn(std::move(executor), cancelation.weak_ptr(), std::forward<F>(fn));
+}
+
+template <class ExecutionContext, class F>
+auto RunAwaitable(ExecutionContext& context, F&& fn) {
+  context.restart();
+  auto result = boost::asio::co_spawn(context, std::forward<F>(fn),
+                                      boost::asio::use_future);
+  while (result.wait_for(std::chrono::seconds{0}) !=
+         std::future_status::ready) {
+    context.run_one();
+  }
+  return result.get();
 }
