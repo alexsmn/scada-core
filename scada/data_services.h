@@ -4,6 +4,15 @@
 
 #include <memory>
 
+namespace scada {
+class CoroutineAttributeService;
+class CoroutineHistoryService;
+class CoroutineMethodService;
+class CoroutineNodeManagementService;
+class CoroutineSessionService;
+class CoroutineViewService;
+}  // namespace scada
+
 // TODO: Move under `scada` namespace.
 // TODO: Replace with `std::shared_ptr<scada::services>`.
 struct DataServices {
@@ -66,4 +75,13 @@ struct DataServices {
   std::shared_ptr<scada::AttributeService> attribute_service_;
   std::shared_ptr<scada::MethodService> method_service_;
   std::shared_ptr<scada::MonitoredItemService> monitored_item_service_;
+
+  std::shared_ptr<scada::CoroutineSessionService> coroutine_session_service_;
+  std::shared_ptr<scada::CoroutineViewService> coroutine_view_service_;
+  std::shared_ptr<scada::CoroutineNodeManagementService>
+      coroutine_node_management_service_;
+  std::shared_ptr<scada::CoroutineHistoryService> coroutine_history_service_;
+  std::shared_ptr<scada::CoroutineAttributeService>
+      coroutine_attribute_service_;
+  std::shared_ptr<scada::CoroutineMethodService> coroutine_method_service_;
 };
