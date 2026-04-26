@@ -1,5 +1,6 @@
 #include "scada/coroutine_services.h"
 
+#include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/history_service_mock.h"
@@ -12,29 +13,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-using namespace std::chrono_literals;
-
 namespace scada {
 namespace {
 
 using testing::_;
 using testing::Invoke;
-
-template <class T>
-T WaitForPromise(const std::shared_ptr<TestExecutor>& executor, promise<T>& p) {
-  while (p.wait_for(0ms) == promise_wait_status::timeout) {
-    executor->Poll();
-  }
-  return p.get();
-}
-
-void WaitForPromise(const std::shared_ptr<TestExecutor>& executor,
-                    promise<void>& p) {
-  while (p.wait_for(0ms) == promise_wait_status::timeout) {
-    executor->Poll();
-  }
-  p.get();
-}
 
 class TestCoroutineAttributeService final : public CoroutineAttributeService {
  public:
@@ -274,7 +257,7 @@ TEST(CallbackToCoroutineAttributeServiceAdapter, ReadAndWriteForwardResults) {
 
   auto read_promise =
       ToPromise(NetExecutorAdapter{executor}, adapter.Read(context, read_inputs));
-  auto [read_status, read_results] = WaitForPromise(executor, read_promise);
+  auto [read_status, read_results] = WaitPromise(executor, read_promise);
   EXPECT_TRUE(read_status);
   ASSERT_EQ(read_results.size(), 1u);
   EXPECT_EQ(read_results[0], DataValue(Variant{42}, {}, {}, {}));
@@ -292,7 +275,7 @@ TEST(CallbackToCoroutineAttributeServiceAdapter, ReadAndWriteForwardResults) {
 
   auto write_promise = ToPromise(NetExecutorAdapter{executor},
                                  adapter.Write(context, write_inputs));
-  auto [write_status, write_results] = WaitForPromise(executor, write_promise);
+  auto [write_status, write_results] = WaitPromise(executor, write_promise);
   EXPECT_TRUE(write_status);
   EXPECT_THAT(write_results, testing::ElementsAre(StatusCode::Good));
 }
@@ -314,7 +297,7 @@ TEST(CallbackToCoroutineMethodServiceAdapter, CallForwardsArguments) {
                            adapter.Call(NodeId{1}, NodeId{2},
                                         {Variant{3}}, NodeId{4}));
 
-  EXPECT_TRUE(WaitForPromise(executor, promise));
+  EXPECT_TRUE(WaitPromise(executor, promise));
 }
 
 TEST(CallbackToCoroutineHistoryServiceAdapter, ForwardsHistoryReads) {
@@ -336,7 +319,7 @@ TEST(CallbackToCoroutineHistoryServiceAdapter, ForwardsHistoryReads) {
 
   auto raw_promise =
       ToPromise(NetExecutorAdapter{executor}, adapter.HistoryReadRaw(raw_details));
-  auto raw_result = WaitForPromise(executor, raw_promise);
+  auto raw_result = WaitPromise(executor, raw_promise);
   EXPECT_TRUE(raw_result.status);
   ASSERT_EQ(raw_result.values.size(), 1u);
   EXPECT_EQ(raw_result.values[0], DataValue(Variant{7}, {}, {}, {}));
@@ -350,7 +333,7 @@ TEST(CallbackToCoroutineHistoryServiceAdapter, ForwardsHistoryReads) {
   auto events_promise = ToPromise(NetExecutorAdapter{executor},
                                   adapter.HistoryReadEvents(NodeId{3}, {}, {},
                                                             {}));
-  EXPECT_TRUE(WaitForPromise(executor, events_promise).status);
+  EXPECT_TRUE(WaitPromise(executor, events_promise).status);
 }
 
 TEST(CallbackToCoroutineViewServiceAdapter, ForwardsBrowseOperations) {
@@ -377,7 +360,7 @@ TEST(CallbackToCoroutineViewServiceAdapter, ForwardsBrowseOperations) {
   auto browse_promise =
       ToPromise(NetExecutorAdapter{executor}, adapter.Browse(context, browse_inputs));
   auto [browse_status, browse_results] =
-      WaitForPromise(executor, browse_promise);
+      WaitPromise(executor, browse_promise);
   EXPECT_TRUE(browse_status);
   ASSERT_EQ(browse_results.size(), 1u);
   EXPECT_EQ(browse_results[0].references[0].node_id, NodeId{3});
@@ -398,7 +381,7 @@ TEST(CallbackToCoroutineViewServiceAdapter, ForwardsBrowseOperations) {
                                      adapter.TranslateBrowsePaths(
                                          translate_inputs));
   auto [translate_status, translate_results] =
-      WaitForPromise(executor, translate_promise);
+      WaitPromise(executor, translate_promise);
   EXPECT_TRUE(translate_status);
   ASSERT_EQ(translate_results.size(), 1u);
   EXPECT_EQ(translate_results[0].targets[0].target_id.node_id(), NodeId{5});
@@ -423,7 +406,7 @@ TEST(CallbackToCoroutineNodeManagementServiceAdapter,
   auto add_nodes_promise = ToPromise(NetExecutorAdapter{executor},
                                      adapter.AddNodes(add_nodes_inputs));
   auto [add_nodes_status, add_nodes_results] =
-      WaitForPromise(executor, add_nodes_promise);
+      WaitPromise(executor, add_nodes_promise);
   EXPECT_TRUE(add_nodes_status);
   EXPECT_EQ(add_nodes_results[0].added_node_id, NodeId{3});
 
@@ -442,7 +425,7 @@ TEST(CallbackToCoroutineNodeManagementServiceAdapter,
   auto delete_nodes_promise = ToPromise(NetExecutorAdapter{executor},
                                         adapter.DeleteNodes(delete_nodes_inputs));
   auto [delete_nodes_status, delete_nodes_results] =
-      WaitForPromise(executor, delete_nodes_promise);
+      WaitPromise(executor, delete_nodes_promise);
   EXPECT_TRUE(delete_nodes_status);
   EXPECT_THAT(delete_nodes_results, testing::ElementsAre(StatusCode::Good));
 
@@ -467,7 +450,7 @@ TEST(CallbackToCoroutineNodeManagementServiceAdapter,
                                           adapter.AddReferences(
                                               add_references_inputs));
   auto [add_references_status, add_references_results] =
-      WaitForPromise(executor, add_references_promise);
+      WaitPromise(executor, add_references_promise);
   EXPECT_TRUE(add_references_status);
   EXPECT_THAT(add_references_results, testing::ElementsAre(StatusCode::Good));
 
@@ -492,7 +475,7 @@ TEST(CallbackToCoroutineNodeManagementServiceAdapter,
       NetExecutorAdapter{executor},
       adapter.DeleteReferences(delete_references_inputs));
   auto [delete_references_status, delete_references_results] =
-      WaitForPromise(executor, delete_references_promise);
+      WaitPromise(executor, delete_references_promise);
   EXPECT_TRUE(delete_references_status);
   EXPECT_THAT(delete_references_results, testing::ElementsAre(StatusCode::Good));
 }
@@ -513,7 +496,7 @@ TEST(PromiseToCoroutineSessionServiceAdapter, ConnectsAndPassesThroughState) {
 
   auto promise =
       ToPromise(NetExecutorAdapter{executor}, adapter.Connect(params));
-  EXPECT_NO_THROW(WaitForPromise(executor, promise));
+  EXPECT_NO_THROW(WaitPromise(executor, promise));
 
   EXPECT_CALL(service, IsConnected(_)).WillOnce(Invoke([](base::TimeDelta*) {
     return true;
@@ -537,7 +520,7 @@ TEST(CoroutineToCallbackAttributeServiceAdapter, ReadAndWriteForwardResults) {
         EXPECT_EQ(results.size(), 1u);
         read_result.resolve(std::move(results[0]));
       });
-  EXPECT_EQ(WaitForPromise(executor, read_result),
+  EXPECT_EQ(WaitPromise(executor, read_result),
             DataValue(Variant{42}, {}, {}, {}));
   EXPECT_EQ(service.last_read_context.request_id(), context.request_id());
   ASSERT_TRUE(service.last_read_inputs);
@@ -552,7 +535,7 @@ TEST(CoroutineToCallbackAttributeServiceAdapter, ReadAndWriteForwardResults) {
         EXPECT_TRUE(status);
         write_result.resolve(std::move(results));
       });
-  EXPECT_THAT(WaitForPromise(executor, write_result),
+  EXPECT_THAT(WaitPromise(executor, write_result),
               testing::ElementsAre(StatusCode::Good));
   EXPECT_EQ(service.last_write_context.request_id(), context.request_id());
   ASSERT_TRUE(service.last_write_inputs);
@@ -575,7 +558,7 @@ TEST(CoroutineToCallbackAttributeServiceAdapter,
                  status_result.resolve(status.code());
                });
 
-  EXPECT_EQ(WaitForPromise(executor, status_result), StatusCode::Bad);
+  EXPECT_EQ(WaitPromise(executor, status_result), StatusCode::Bad);
 }
 
 TEST(CoroutineToCallbackMethodServiceAdapter, CallForwardsResults) {
@@ -587,7 +570,7 @@ TEST(CoroutineToCallbackMethodServiceAdapter, CallForwardsResults) {
   adapter.Call(NodeId{1}, NodeId{2}, {Variant{3}}, NodeId{4},
                [result](Status&& status) mutable { result.resolve(status.code()); });
 
-  EXPECT_EQ(WaitForPromise(executor, result), StatusCode::Good);
+  EXPECT_EQ(WaitPromise(executor, result), StatusCode::Good);
   EXPECT_EQ(service.last_node_id, NodeId{1});
   EXPECT_EQ(service.last_method_id, NodeId{2});
   EXPECT_THAT(service.last_arguments, testing::ElementsAre(Variant{3}));
@@ -605,7 +588,7 @@ TEST(CoroutineToCallbackHistoryServiceAdapter, ForwardsHistoryReads) {
                          [raw_promise](HistoryReadRawResult result) mutable {
                            raw_promise.resolve(std::move(result));
                          });
-  auto raw_result = WaitForPromise(executor, raw_promise);
+  auto raw_result = WaitPromise(executor, raw_promise);
   EXPECT_TRUE(raw_result.status);
   EXPECT_EQ(service.last_raw_details.node_id, raw_details.node_id);
   EXPECT_EQ(service.last_raw_details.max_count, raw_details.max_count);
@@ -615,7 +598,7 @@ TEST(CoroutineToCallbackHistoryServiceAdapter, ForwardsHistoryReads) {
                             [events_promise](HistoryReadEventsResult result) mutable {
                               events_promise.resolve(std::move(result));
                             });
-  EXPECT_TRUE(WaitForPromise(executor, events_promise).status);
+  EXPECT_TRUE(WaitPromise(executor, events_promise).status);
   EXPECT_EQ(service.last_node_id, NodeId{2});
 }
 
@@ -633,7 +616,7 @@ TEST(CoroutineToCallbackViewServiceAdapter, ForwardsBrowseOperations) {
         EXPECT_TRUE(status);
         browse_promise.resolve(std::move(results));
       });
-  auto browse_results = WaitForPromise(executor, browse_promise);
+  auto browse_results = WaitPromise(executor, browse_promise);
   ASSERT_EQ(browse_results.size(), 1u);
   EXPECT_EQ(browse_results[0].references[0].node_id, NodeId{3});
   EXPECT_EQ(service.last_browse_context.request_id(), context.request_id());
@@ -649,7 +632,7 @@ TEST(CoroutineToCallbackViewServiceAdapter, ForwardsBrowseOperations) {
         EXPECT_TRUE(status);
         translate_promise.resolve(std::move(results));
       });
-  auto translate_results = WaitForPromise(executor, translate_promise);
+  auto translate_results = WaitPromise(executor, translate_promise);
   ASSERT_EQ(translate_results.size(), 1u);
   EXPECT_EQ(translate_results[0].targets[0].target_id.node_id(), NodeId{4});
   EXPECT_EQ(service.last_translate_inputs, translate_inputs);
@@ -670,7 +653,7 @@ TEST(CoroutineToCallbackNodeManagementServiceAdapter,
         EXPECT_TRUE(status);
         add_nodes_promise.resolve(std::move(results));
       });
-  EXPECT_EQ(WaitForPromise(executor, add_nodes_promise)[0].added_node_id,
+  EXPECT_EQ(WaitPromise(executor, add_nodes_promise)[0].added_node_id,
             NodeId{5});
   EXPECT_EQ(service.last_add_nodes_inputs, add_nodes_inputs);
 
@@ -683,7 +666,7 @@ TEST(CoroutineToCallbackNodeManagementServiceAdapter,
         EXPECT_TRUE(status);
         delete_nodes_promise.resolve(std::move(results));
       });
-  EXPECT_THAT(WaitForPromise(executor, delete_nodes_promise),
+  EXPECT_THAT(WaitPromise(executor, delete_nodes_promise),
               testing::ElementsAre(StatusCode::Good));
   ASSERT_EQ(service.last_delete_nodes_inputs.size(), delete_nodes_inputs.size());
   EXPECT_EQ(service.last_delete_nodes_inputs[0].node_id,
@@ -703,7 +686,7 @@ TEST(CoroutineToCallbackNodeManagementServiceAdapter,
         EXPECT_TRUE(status);
         add_references_promise.resolve(std::move(results));
       });
-  EXPECT_THAT(WaitForPromise(executor, add_references_promise),
+  EXPECT_THAT(WaitPromise(executor, add_references_promise),
               testing::ElementsAre(StatusCode::Good));
   ASSERT_EQ(service.last_add_references_inputs.size(), add_references_inputs.size());
   EXPECT_EQ(service.last_add_references_inputs[0].source_node_id,
@@ -725,7 +708,7 @@ TEST(CoroutineToCallbackNodeManagementServiceAdapter,
         EXPECT_TRUE(status);
         delete_references_promise.resolve(std::move(results));
       });
-  EXPECT_THAT(WaitForPromise(executor, delete_references_promise),
+  EXPECT_THAT(WaitPromise(executor, delete_references_promise),
               testing::ElementsAre(StatusCode::Good));
   ASSERT_EQ(service.last_delete_references_inputs.size(),
             delete_references_inputs.size());
@@ -744,7 +727,7 @@ TEST(CoroutineToPromiseSessionServiceAdapter, ConnectsAndPassesThroughState) {
 
   SessionConnectParams params{.host = "opc.tcp://127.0.0.1:4840"};
   auto connect_promise = adapter.Connect(params);
-  WaitForPromise(executor, connect_promise);
+  WaitPromise(executor, connect_promise);
   EXPECT_EQ(service.last_connect_params.host, params.host);
   EXPECT_TRUE(service.connected);
 
@@ -754,7 +737,7 @@ TEST(CoroutineToPromiseSessionServiceAdapter, ConnectsAndPassesThroughState) {
   EXPECT_TRUE(adapter.IsScada());
 
   auto disconnect_promise = adapter.Disconnect();
-  WaitForPromise(executor, disconnect_promise);
+  WaitPromise(executor, disconnect_promise);
   EXPECT_TRUE(service.disconnect_called);
   EXPECT_FALSE(service.connected);
 }
