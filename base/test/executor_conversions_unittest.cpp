@@ -1,17 +1,15 @@
 #include "base/any_executor_dispatch.h"
 #include "base/executor.h"
 #include "base/executor_conversions.h"
+#include "base/test/future_test.h"
 #include "base/test/test_executor.h"
 
 #include <gtest/gtest.h>
 
-#include <chrono>
 #include <future>
 #include <thread>
 
 namespace {
-
-using namespace std::chrono_literals;
 
 TEST(ExecutorConversions, LegacyExecutorDispatchesOnWrappedAnyExecutor) {
   auto executor = std::make_shared<TestExecutor>();
@@ -53,8 +51,7 @@ TEST(ExecutorConversions, ThreadAnyExecutorRunsTaskOnWorkerThread) {
     result.set_value(std::this_thread::get_id());
   });
 
-  ASSERT_EQ(future.wait_for(1s), std::future_status::ready);
-  EXPECT_NE(future.get(), std::this_thread::get_id());
+  EXPECT_NE(WaitFuture(future), std::this_thread::get_id());
 }
 
 }  // namespace
