@@ -4,6 +4,7 @@
 #include "base/promise.h"
 #include "base/test/test_executor.h"
 
+#include <chrono>
 #include <thread>
 
 using namespace std::chrono_literals;
@@ -14,24 +15,36 @@ inline void Drain(const std::shared_ptr<TestExecutor>& executor) {
   }
 }
 
-inline void WaitPromise(std::shared_ptr<TestExecutor> executor,
-                        promise<void> promise) {
+template <class Drain>
+void WaitPromise(promise<void> promise, Drain&& drain) {
   while (promise.wait_for(0ms) == promise_wait_status::timeout) {
-    Drain(executor);
+    drain();
     std::this_thread::yield();
   }
 
   promise.get();
 }
 
-template <class T>
-T WaitPromise(std::shared_ptr<TestExecutor> executor, promise<T> promise) {
+template <class T, class Drain>
+T WaitPromise(promise<T> promise, Drain&& drain) {
   while (promise.wait_for(0ms) == promise_wait_status::timeout) {
-    Drain(executor);
+    drain();
     std::this_thread::yield();
   }
 
   return promise.get();
+}
+
+inline void WaitPromise(std::shared_ptr<TestExecutor> executor,
+                        promise<void> promise) {
+  WaitPromise(std::move(promise),
+              [executor = std::move(executor)] { Drain(executor); });
+}
+
+template <class T>
+T WaitPromise(std::shared_ptr<TestExecutor> executor, promise<T> promise) {
+  return WaitPromise(std::move(promise),
+                     [executor = std::move(executor)] { Drain(executor); });
 }
 
 template <class T>

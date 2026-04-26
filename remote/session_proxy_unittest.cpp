@@ -2,6 +2,7 @@
 
 #include "base/awaitable_promise.h"
 #include "base/test/asio_test_environment.h"
+#include "base/test/awaitable_test.h"
 #include "base/test/network_test_environment.h"
 #include "base/test/test_executor.h"
 #include "remote/remote_session_manager.h"
@@ -232,19 +233,11 @@ class SessionProxyHarness {
 
   template <class T>
   T Wait(promise<T> promise) {
-    using namespace std::chrono_literals;
-    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-      Poll();
-    }
-    return promise.get();
+    return WaitPromise(std::move(promise), [this] { Poll(); });
   }
 
   void Wait(promise<> promise) {
-    using namespace std::chrono_literals;
-    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-      Poll();
-    }
-    promise.get();
+    WaitPromise(std::move(promise), [this] { Poll(); });
   }
 
   void Poll() {
@@ -326,19 +319,11 @@ class SessionProxyTest : public Test {
  protected:
   template <class T>
   T Wait(promise<T> promise) {
-    using namespace std::chrono_literals;
-    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-      Poll();
-    }
-    return promise.get();
+    return WaitPromise(std::move(promise), [this] { Poll(); });
   }
 
   void Wait(promise<> promise) {
-    using namespace std::chrono_literals;
-    while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-      Poll();
-    }
-    promise.get();
+    WaitPromise(std::move(promise), [this] { Poll(); });
   }
 
   void Poll() {

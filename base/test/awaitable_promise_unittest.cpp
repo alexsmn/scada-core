@@ -209,6 +209,32 @@ TEST(WaitPromiseHelper, CompletesDeferredVoidPromiseOnTestExecutor) {
       WaitPromise(executor, MakeTestExecutorDeferredVoidPromise(executor)));
 }
 
+TEST(WaitPromiseHelper, CompletesValuePromiseWithCustomDrain) {
+  promise<int> resolver;
+  promise<int> waiter = resolver;
+  int drain_count = 0;
+
+  EXPECT_EQ(WaitPromise(std::move(waiter),
+                        [&] {
+                          ++drain_count;
+                          resolver.resolve(42);
+                        }),
+            42);
+  EXPECT_EQ(drain_count, 1);
+}
+
+TEST(WaitPromiseHelper, CompletesVoidPromiseWithCustomDrain) {
+  promise<void> resolver;
+  promise<void> waiter = resolver;
+  int drain_count = 0;
+
+  EXPECT_NO_THROW(WaitPromise(std::move(waiter), [&] {
+    ++drain_count;
+    resolver.resolve();
+  }));
+  EXPECT_EQ(drain_count, 1);
+}
+
 TEST(WaitAwaitableHelper, CompletesDeferredAwaitableOnTestExecutor) {
   auto executor = std::make_shared<TestExecutor>();
 
