@@ -3,9 +3,9 @@
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "base/awaitable_promise.h"
-#include "base/callback_awaitable.h"
 #include "base/executor_conversions.h"
 #include "scada/attribute_service.h"
+#include "scada/callback_awaitable.h"
 #include "scada/history_service.h"
 #include "scada/method_service.h"
 #include "scada/node_management_service.h"
@@ -126,7 +126,7 @@ class CallbackToCoroutineAttributeServiceAdapter final
   Awaitable<std::tuple<Status, std::vector<DataValue>>> Read(
       ServiceContext context,
       std::shared_ptr<const std::vector<ReadValueId>> inputs) override {
-    co_return co_await CallbackToAwaitable<Status, std::vector<DataValue>>(
+    co_return co_await AwaitCallbackTuple<Status, std::vector<DataValue>>(
         executor_,
         [this, context = std::move(context), inputs = std::move(inputs)](
             auto callback) mutable {
@@ -137,7 +137,7 @@ class CallbackToCoroutineAttributeServiceAdapter final
   Awaitable<std::tuple<Status, std::vector<StatusCode>>> Write(
       ServiceContext context,
       std::shared_ptr<const std::vector<WriteValue>> inputs) override {
-    co_return co_await CallbackToAwaitable<Status, std::vector<StatusCode>>(
+    co_return co_await AwaitStatusCodesCallback(
         executor_,
         [this, context = std::move(context), inputs = std::move(inputs)](
             auto callback) mutable {
@@ -165,7 +165,7 @@ class CallbackToCoroutineMethodServiceAdapter final
                          NodeId method_id,
                          std::vector<Variant> arguments,
                          NodeId user_id) override {
-    auto [status] = co_await CallbackToAwaitable<Status>(
+    co_return co_await AwaitStatusCallback(
         executor_, [this, node_id = std::move(node_id),
                     method_id = std::move(method_id),
                     arguments = std::move(arguments),
@@ -173,7 +173,6 @@ class CallbackToCoroutineMethodServiceAdapter final
           service_.Call(node_id, method_id, arguments, user_id,
                         std::move(callback));
         });
-    co_return std::move(status);
   }
 
  private:
@@ -194,12 +193,11 @@ class CallbackToCoroutineHistoryServiceAdapter final
 
   Awaitable<HistoryReadRawResult> HistoryReadRaw(
       HistoryReadRawDetails details) override {
-    auto [result] = co_await CallbackToAwaitable<HistoryReadRawResult>(
+    co_return co_await AwaitCallbackValue<HistoryReadRawResult>(
         executor_,
         [this, details = std::move(details)](auto callback) mutable {
           service_.HistoryReadRaw(details, std::move(callback));
         });
-    co_return std::move(result);
   }
 
   Awaitable<HistoryReadEventsResult> HistoryReadEvents(
@@ -207,14 +205,13 @@ class CallbackToCoroutineHistoryServiceAdapter final
       base::Time from,
       base::Time to,
       EventFilter filter) override {
-    auto [result] = co_await CallbackToAwaitable<HistoryReadEventsResult>(
+    co_return co_await AwaitCallbackValue<HistoryReadEventsResult>(
         executor_,
         [this, node_id = std::move(node_id), from, to,
          filter = std::move(filter)](auto callback) mutable {
           service_.HistoryReadEvents(node_id, from, to, filter,
                                      std::move(callback));
         });
-    co_return std::move(result);
   }
 
  private:
@@ -235,7 +232,7 @@ class CallbackToCoroutineViewServiceAdapter final : public CoroutineViewService 
   Awaitable<std::tuple<Status, std::vector<BrowseResult>>> Browse(
       ServiceContext context,
       std::vector<BrowseDescription> inputs) override {
-    co_return co_await CallbackToAwaitable<Status, std::vector<BrowseResult>>(
+    co_return co_await AwaitCallbackTuple<Status, std::vector<BrowseResult>>(
         executor_,
         [this, context = std::move(context), inputs = std::move(inputs)](
             auto callback) mutable {
@@ -246,7 +243,7 @@ class CallbackToCoroutineViewServiceAdapter final : public CoroutineViewService 
   Awaitable<std::tuple<Status, std::vector<BrowsePathResult>>>
   TranslateBrowsePaths(std::vector<BrowsePath> inputs) override {
     co_return co_await
-        CallbackToAwaitable<Status, std::vector<BrowsePathResult>>(
+        AwaitCallbackTuple<Status, std::vector<BrowsePathResult>>(
             executor_,
             [this, inputs = std::move(inputs)](auto callback) mutable {
               service_.TranslateBrowsePaths(inputs, std::move(callback));
@@ -273,7 +270,7 @@ class CallbackToCoroutineNodeManagementServiceAdapter final
 
   Awaitable<std::tuple<Status, std::vector<AddNodesResult>>> AddNodes(
       std::vector<AddNodesItem> inputs) override {
-    co_return co_await CallbackToAwaitable<Status, std::vector<AddNodesResult>>(
+    co_return co_await AwaitCallbackTuple<Status, std::vector<AddNodesResult>>(
         executor_,
         [this, inputs = std::move(inputs)](auto callback) mutable {
           service_.AddNodes(inputs, std::move(callback));
@@ -282,7 +279,7 @@ class CallbackToCoroutineNodeManagementServiceAdapter final
 
   Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteNodes(
       std::vector<DeleteNodesItem> inputs) override {
-    co_return co_await CallbackToAwaitable<Status, std::vector<StatusCode>>(
+    co_return co_await AwaitStatusCodesCallback(
         executor_,
         [this, inputs = std::move(inputs)](auto callback) mutable {
           service_.DeleteNodes(inputs, std::move(callback));
@@ -291,7 +288,7 @@ class CallbackToCoroutineNodeManagementServiceAdapter final
 
   Awaitable<std::tuple<Status, std::vector<StatusCode>>> AddReferences(
       std::vector<AddReferencesItem> inputs) override {
-    co_return co_await CallbackToAwaitable<Status, std::vector<StatusCode>>(
+    co_return co_await AwaitStatusCodesCallback(
         executor_,
         [this, inputs = std::move(inputs)](auto callback) mutable {
           service_.AddReferences(inputs, std::move(callback));
@@ -300,7 +297,7 @@ class CallbackToCoroutineNodeManagementServiceAdapter final
 
   Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteReferences(
       std::vector<DeleteReferencesItem> inputs) override {
-    co_return co_await CallbackToAwaitable<Status, std::vector<StatusCode>>(
+    co_return co_await AwaitStatusCodesCallback(
         executor_,
         [this, inputs = std::move(inputs)](auto callback) mutable {
           service_.DeleteReferences(inputs, std::move(callback));

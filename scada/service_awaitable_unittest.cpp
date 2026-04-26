@@ -36,10 +36,12 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
        .direction = BrowseDirection::Forward,
        .reference_type_id = NodeId{4},
        .include_subtypes = false}};
+  const auto expected_browse_input = browse_inputs[0];
   std::vector<BrowsePath> translate_inputs{
       {.node_id = NodeId{5},
        .relative_path = {{.reference_type_id = NodeId{6},
                           .target_name = {"Leaf", 7}}}}};
+  const auto expected_translate_input = translate_inputs[0];
 
   EXPECT_CALL(attribute_service, Read(_, _, _))
       .WillOnce(Invoke([&](const ServiceContext& actual_context,
@@ -66,7 +68,7 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
                            const BrowseCallback& callback) {
         EXPECT_EQ(actual_context.user_id(), user_id);
         EXPECT_EQ(actual_context.request_id(), 17u);
-        EXPECT_THAT(actual_inputs, ElementsAre(browse_inputs[0]));
+        EXPECT_THAT(actual_inputs, ElementsAre(expected_browse_input));
         callback(StatusCode::Good,
                  {BrowseResult{
                      .status_code = StatusCode::Good,
@@ -77,7 +79,7 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
   EXPECT_CALL(view_service, TranslateBrowsePaths(_, _))
       .WillOnce(Invoke([&](const std::vector<BrowsePath>& actual_inputs,
                            const TranslateBrowsePathsCallback& callback) {
-        EXPECT_THAT(actual_inputs, ElementsAre(translate_inputs[0]));
+        EXPECT_THAT(actual_inputs, ElementsAre(expected_translate_input));
         callback(StatusCode::Good,
                  {BrowsePathResult{
                      .status_code = StatusCode::Good,
@@ -142,20 +144,25 @@ TEST(ServiceAwaitableTest,
   EventFilter filter;
   filter.types = EventFilter::UNACKED;
   filter.add_of_type(NodeId{30}).add_child_of(NodeId{31});
+  const auto expected_filter = filter;
   std::vector<AddNodesItem> add_nodes_inputs{
       {.requested_id = NodeId{14},
        .parent_id = NodeId{15},
        .type_definition_id = NodeId{16}}};
+  const auto expected_add_node = add_nodes_inputs[0];
   std::vector<DeleteNodesItem> delete_nodes_inputs{
       {.node_id = NodeId{17}, .delete_target_references = true}};
+  const auto expected_delete_node = delete_nodes_inputs[0];
   std::vector<AddReferencesItem> add_references_inputs{
       {.source_node_id = NodeId{18},
        .reference_type_id = NodeId{19},
        .target_node_id = ExpandedNodeId{NodeId{20}}}};
+  const auto expected_add_reference = add_references_inputs[0];
   std::vector<DeleteReferencesItem> delete_references_inputs{
       {.source_node_id = NodeId{21},
        .reference_type_id = NodeId{22},
        .target_node_id = ExpandedNodeId{NodeId{23}}}};
+  const auto expected_delete_reference = delete_references_inputs[0];
 
   EXPECT_CALL(method_service, Call(node_id, method_id, arguments, user_id, _))
       .WillOnce(Invoke([](const NodeId&, const NodeId&,
@@ -180,17 +187,19 @@ TEST(ServiceAwaitableTest,
       .WillOnce(Invoke([&](const NodeId&, base::Time, base::Time,
                            const EventFilter& actual_filter,
                            const HistoryReadEventsCallback& callback) {
-        EXPECT_EQ(actual_filter, filter);
-        callback(HistoryReadEventsResult{.status = StatusCode::Bad_Disconnected});
+        EXPECT_EQ(actual_filter, expected_filter);
+        callback(
+            HistoryReadEventsResult{.status = StatusCode::Bad_Disconnected});
       }));
   EXPECT_CALL(node_management_service, AddNodes(_, _))
       .WillOnce(Invoke([&](const std::vector<AddNodesItem>& actual_inputs,
                           const AddNodesCallback& callback) {
         ASSERT_EQ(actual_inputs.size(), 1u);
-        EXPECT_EQ(actual_inputs[0].requested_id, add_nodes_inputs[0].requested_id);
-        EXPECT_EQ(actual_inputs[0].parent_id, add_nodes_inputs[0].parent_id);
+        EXPECT_EQ(actual_inputs[0].requested_id,
+                  expected_add_node.requested_id);
+        EXPECT_EQ(actual_inputs[0].parent_id, expected_add_node.parent_id);
         EXPECT_EQ(actual_inputs[0].type_definition_id,
-                  add_nodes_inputs[0].type_definition_id);
+                  expected_add_node.type_definition_id);
         callback(StatusCode::Good,
                  {AddNodesResult{
                      .status_code = StatusCode::Good,
@@ -200,9 +209,9 @@ TEST(ServiceAwaitableTest,
       .WillOnce(Invoke([&](const std::vector<DeleteNodesItem>& actual_inputs,
                           const DeleteNodesCallback& callback) {
         ASSERT_EQ(actual_inputs.size(), 1u);
-        EXPECT_EQ(actual_inputs[0].node_id, delete_nodes_inputs[0].node_id);
+        EXPECT_EQ(actual_inputs[0].node_id, expected_delete_node.node_id);
         EXPECT_EQ(actual_inputs[0].delete_target_references,
-                  delete_nodes_inputs[0].delete_target_references);
+                  expected_delete_node.delete_target_references);
         callback(StatusCode::Good, {StatusCode::Bad_WrongNodeId});
       }));
   EXPECT_CALL(node_management_service, AddReferences(_, _))
@@ -210,11 +219,11 @@ TEST(ServiceAwaitableTest,
                           const AddReferencesCallback& callback) {
         ASSERT_EQ(actual_inputs.size(), 1u);
         EXPECT_EQ(actual_inputs[0].source_node_id,
-                  add_references_inputs[0].source_node_id);
+                  expected_add_reference.source_node_id);
         EXPECT_EQ(actual_inputs[0].reference_type_id,
-                  add_references_inputs[0].reference_type_id);
+                  expected_add_reference.reference_type_id);
         EXPECT_EQ(actual_inputs[0].target_node_id,
-                  add_references_inputs[0].target_node_id);
+                  expected_add_reference.target_node_id);
         callback(StatusCode::Good, {StatusCode::Bad_WrongTargetId});
       }));
   EXPECT_CALL(node_management_service, DeleteReferences(_, _))
@@ -222,11 +231,11 @@ TEST(ServiceAwaitableTest,
                           const DeleteReferencesCallback& callback) {
         ASSERT_EQ(actual_inputs.size(), 1u);
         EXPECT_EQ(actual_inputs[0].source_node_id,
-                  delete_references_inputs[0].source_node_id);
+                  expected_delete_reference.source_node_id);
         EXPECT_EQ(actual_inputs[0].reference_type_id,
-                  delete_references_inputs[0].reference_type_id);
+                  expected_delete_reference.reference_type_id);
         EXPECT_EQ(actual_inputs[0].target_node_id,
-                  delete_references_inputs[0].target_node_id);
+                  expected_delete_reference.target_node_id);
         callback(StatusCode::Bad_Disconnected,
                  {StatusCode::Bad_Disconnected});
       }));

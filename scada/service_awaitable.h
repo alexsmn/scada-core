@@ -2,9 +2,9 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
-#include "base/callback_awaitable.h"
 #include "base/executor_conversions.h"
 #include "scada/attribute_service.h"
+#include "scada/callback_awaitable.h"
 #include "scada/history_service.h"
 #include "scada/method_service.h"
 #include "scada/node_management_service.h"
@@ -179,7 +179,7 @@ inline Awaitable<std::tuple<Status, std::vector<DataValue>>> ReadAsync(
     AttributeService& service,
     ServiceContext context,
     std::shared_ptr<const std::vector<ReadValueId>> inputs) {
-  co_return co_await CallbackToAwaitable<Status, std::vector<DataValue>>(
+  co_return co_await AwaitCallbackTuple<Status, std::vector<DataValue>>(
       std::move(executor),
       [&service, context = std::move(context),
        inputs = std::move(inputs)](auto callback) mutable {
@@ -192,7 +192,7 @@ inline Awaitable<std::tuple<Status, std::vector<BrowseResult>>> BrowseAsync(
     ViewService& service,
     ServiceContext context,
     std::vector<BrowseDescription> inputs) {
-  co_return co_await CallbackToAwaitable<Status, std::vector<BrowseResult>>(
+  co_return co_await AwaitCallbackTuple<Status, std::vector<BrowseResult>>(
       std::move(executor),
       [&service, context = std::move(context),
        inputs = std::move(inputs)](auto callback) mutable {
@@ -205,7 +205,7 @@ TranslateBrowsePathsAsync(AnyExecutor executor,
                           ViewService& service,
                           std::vector<BrowsePath> inputs) {
   co_return co_await
-      CallbackToAwaitable<Status, std::vector<BrowsePathResult>>(
+      AwaitCallbackTuple<Status, std::vector<BrowsePathResult>>(
           std::move(executor),
           [&service, inputs = std::move(inputs)](auto callback) mutable {
             service.TranslateBrowsePaths(inputs, std::move(callback));
@@ -217,7 +217,7 @@ inline Awaitable<std::tuple<Status, std::vector<StatusCode>>> WriteAsync(
     AttributeService& service,
     const ServiceContext& context,
     std::shared_ptr<const std::vector<WriteValue>> inputs) {
-  co_return co_await CallbackToAwaitable<Status, std::vector<StatusCode>>(
+  co_return co_await AwaitStatusCodesCallback(
       std::move(executor),
       [&service, &context, inputs = std::move(inputs)](auto callback) mutable {
         service.Write(context, inputs, std::move(callback));
@@ -230,7 +230,7 @@ inline Awaitable<Status> CallAsync(AnyExecutor executor,
                                    NodeId method_id,
                                    std::vector<Variant> arguments,
                                    NodeId user_id) {
-  auto [status] = co_await CallbackToAwaitable<Status>(
+  co_return co_await AwaitStatusCallback(
       std::move(executor),
       [&service, node_id = std::move(node_id),
        method_id = std::move(method_id), arguments = std::move(arguments),
@@ -238,19 +238,17 @@ inline Awaitable<Status> CallAsync(AnyExecutor executor,
         service.Call(node_id, method_id, arguments, user_id,
                      std::move(callback));
       });
-  co_return std::move(status);
 }
 
 inline Awaitable<HistoryReadRawResult> HistoryReadRawAsync(
     AnyExecutor executor,
     HistoryService& service,
     HistoryReadRawDetails details) {
-  auto [result] = co_await CallbackToAwaitable<HistoryReadRawResult>(
+  co_return co_await AwaitCallbackValue<HistoryReadRawResult>(
       std::move(executor),
       [&service, details = std::move(details)](auto callback) mutable {
         service.HistoryReadRaw(details, std::move(callback));
       });
-  co_return std::move(result);
 }
 
 inline Awaitable<HistoryReadEventsResult> HistoryReadEventsAsync(
@@ -260,21 +258,20 @@ inline Awaitable<HistoryReadEventsResult> HistoryReadEventsAsync(
     base::Time from,
     base::Time to,
     EventFilter filter) {
-  auto [result] = co_await CallbackToAwaitable<HistoryReadEventsResult>(
+  co_return co_await AwaitCallbackValue<HistoryReadEventsResult>(
       std::move(executor),
       [&service, node_id = std::move(node_id), from, to,
        filter = std::move(filter)](auto callback) mutable {
         service.HistoryReadEvents(node_id, from, to, filter,
                                   std::move(callback));
       });
-  co_return std::move(result);
 }
 
 inline Awaitable<std::tuple<Status, std::vector<AddNodesResult>>> AddNodesAsync(
     AnyExecutor executor,
     NodeManagementService& service,
     std::vector<AddNodesItem> inputs) {
-  co_return co_await CallbackToAwaitable<Status, std::vector<AddNodesResult>>(
+  co_return co_await AwaitCallbackTuple<Status, std::vector<AddNodesResult>>(
       std::move(executor),
       [&service, inputs = std::move(inputs)](auto callback) mutable {
         service.AddNodes(inputs, std::move(callback));
@@ -285,7 +282,7 @@ inline Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteNodesAsync(
     AnyExecutor executor,
     NodeManagementService& service,
     std::vector<DeleteNodesItem> inputs) {
-  co_return co_await CallbackToAwaitable<Status, std::vector<StatusCode>>(
+  co_return co_await AwaitStatusCodesCallback(
       std::move(executor),
       [&service, inputs = std::move(inputs)](auto callback) mutable {
         service.DeleteNodes(inputs, std::move(callback));
@@ -296,7 +293,7 @@ inline Awaitable<std::tuple<Status, std::vector<StatusCode>>>
 AddReferencesAsync(AnyExecutor executor,
                    NodeManagementService& service,
                    std::vector<AddReferencesItem> inputs) {
-  co_return co_await CallbackToAwaitable<Status, std::vector<StatusCode>>(
+  co_return co_await AwaitStatusCodesCallback(
       std::move(executor),
       [&service, inputs = std::move(inputs)](auto callback) mutable {
         service.AddReferences(inputs, std::move(callback));
@@ -307,7 +304,7 @@ inline Awaitable<std::tuple<Status, std::vector<StatusCode>>>
 DeleteReferencesAsync(AnyExecutor executor,
                       NodeManagementService& service,
                       std::vector<DeleteReferencesItem> inputs) {
-  co_return co_await CallbackToAwaitable<Status, std::vector<StatusCode>>(
+  co_return co_await AwaitStatusCodesCallback(
       std::move(executor),
       [&service, inputs = std::move(inputs)](auto callback) mutable {
         service.DeleteReferences(inputs, std::move(callback));
