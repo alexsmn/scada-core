@@ -5,6 +5,7 @@ sequenceDiagram
     participant Auth as AsyncAuthenticator
     participant Session as SessionStub
 
+    Client->>Client: Await ConnectAsync gate
     Client->>Conn: CreateSession
     Conn->>Manager: CreateSessionAsync(...)
     Manager->>Auth: Authenticate(user, password)
@@ -13,3 +14,4 @@ sequenceDiagram
     Manager-->>Conn: CreateSessionResult
     Conn->>Session: SetConnection(this)
     Conn-->>Client: CreateSessionResult response
+    Client-->>Client: Complete connect gate

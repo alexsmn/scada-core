@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
+#include "base/async_completion.h"
 #include "base/boost_log.h"
 #include "base/awaitable.h"
 #include "base/cancelation.h"
@@ -99,6 +100,8 @@ class SessionProxy : private SessionProxyContext,
 
  private:
   [[nodiscard]] transport::awaitable<void> Connect();
+  [[nodiscard]] Awaitable<void> ConnectAsync(scada::SessionConnectParams params);
+  [[nodiscard]] Awaitable<void> ReconnectAsync();
 
   void OnSessionError(const scada::Status& status);
 
@@ -153,9 +156,9 @@ class SessionProxy : private SessionProxyContext,
   boost::signals2::signal<void(bool connected, const scada::Status& status)>
       session_state_changed_signal_;
 
-  promise<void> connect_promise_;
-  promise<void> connect_loop_done_promise_;
-  promise<void> ping_done_promise_;
+  base::AsyncCompletion connect_completion_;
+  base::AsyncCompletion connect_loop_completion_;
+  base::AsyncCompletion ping_completion_;
   std::optional<scada::Status> pending_connect_result_;
 
   int next_request_id_ = 1;
@@ -168,6 +171,7 @@ class SessionProxy : private SessionProxyContext,
   std::optional<transport::WriteQueue> write_queue_;
 
   Cancelation cancelation_;
+  std::shared_ptr<void> lifetime_ = std::make_shared<bool>();
 
   friend class EventServiceProxy;
 };

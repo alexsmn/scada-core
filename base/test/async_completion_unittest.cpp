@@ -36,6 +36,22 @@ TEST(AsyncCompletion, WaitAfterCompleteReturnsImmediately) {
   EXPECT_NO_THROW(WaitAwaitable(executor, completion.Wait()));
 }
 
+TEST(AsyncCompletion, CopiesShareCompletionState) {
+  auto executor = std::make_shared<TestExecutor>();
+  base::AsyncCompletion owner{MakeTestAnyExecutor(executor)};
+  auto handle = owner;
+
+  auto waiter = ToPromise(MakeTestAnyExecutor(executor), owner.Wait());
+  Drain(executor);
+  EXPECT_EQ(waiter.wait_for(0ms), promise_wait_status::timeout);
+
+  handle.Complete();
+
+  EXPECT_NO_THROW(WaitPromise(executor, std::move(waiter)));
+  EXPECT_TRUE(owner.completed());
+  EXPECT_NO_THROW(WaitAwaitable(executor, handle.Wait()));
+}
+
 TEST(AsyncCompletion, FailurePropagatesToCurrentAndFutureWaiters) {
   auto executor = std::make_shared<TestExecutor>();
   base::AsyncCompletion completion{MakeTestAnyExecutor(executor)};

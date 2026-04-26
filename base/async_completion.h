@@ -18,6 +18,10 @@ namespace base {
 // `Complete()` or `Fail(error)`. Waiters that arrive after completion observe
 // the stored result immediately, and failures are rethrown from `Wait()`.
 //
+// Copies share the same one-shot completion state. This lets coroutine
+// launchers keep the gate alive independently of the object that created it
+// without forcing every call site to add a separate `std::shared_ptr` wrapper.
+//
 // Example:
 //   base::AsyncCompletion ready{executor};
 //   CoSpawn(executor, [&]() -> Awaitable<void> {
@@ -30,18 +34,18 @@ class AsyncCompletion {
   explicit AsyncCompletion(AnyExecutor executor)
       : state_{std::make_shared<State>(std::move(executor))} {}
 
-  AsyncCompletion(const AsyncCompletion&) = delete;
-  AsyncCompletion& operator=(const AsyncCompletion&) = delete;
+  AsyncCompletion(const AsyncCompletion&) = default;
+  AsyncCompletion& operator=(const AsyncCompletion&) = default;
 
   [[nodiscard]] Awaitable<void> Wait() const {
     return WaitOnState(state_);
   }
 
-  void Complete() {
+  void Complete() const {
     Finish({});
   }
 
-  void Fail(std::exception_ptr error) {
+  void Fail(std::exception_ptr error) const {
     assert(error);
     Finish(std::move(error));
   }
@@ -85,7 +89,7 @@ class AsyncCompletion {
     co_return;
   }
 
-  void Finish(std::exception_ptr error) {
+  void Finish(std::exception_ptr error) const {
     assert(!state_->completed);
     if (state_->completed) {
       return;

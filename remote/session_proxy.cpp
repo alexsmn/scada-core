@@ -19,6 +19,7 @@
 #include "remote/subscription_proxy.h"
 #include "remote/view_service_proxy.h"
 #include "scada/monitored_item.h"
+#include "scada/status_exception.h"
 #include "scada/status_promise.h"
 
 #include <boost/asio/co_spawn.hpp>
@@ -56,13 +57,18 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       view_service_proxy_{std::make_unique<ViewServiceProxy>()},
       node_management_proxy_{std::make_unique<NodeManagementProxy>()},
       history_proxy_{std::make_unique<HistoryProxy>()},
-      ping_timer_{executor_} {
-  connect_loop_done_promise_ = make_resolved_promise();
-  ping_done_promise_ = make_resolved_promise();
+      ping_timer_{executor_},
+      connect_completion_{executor_},
+      connect_loop_completion_{executor_},
+      ping_completion_{executor_} {
+  connect_completion_.Complete();
+  connect_loop_completion_.Complete();
+  ping_completion_.Complete();
 }
 
 SessionProxy::~SessionProxy() {
   cancelation_.Cancel();
+  lifetime_.reset();
   ping_timer_.Stop();
   write_queue_.reset();
   transport_.reset();
@@ -263,8 +269,8 @@ Awaitable<void> SessionProxy::DisconnectAsync() {
     transport_.reset();
   }
 
-  co_await AwaitPromise(executor_, connect_loop_done_promise_);
-  co_await AwaitPromise(executor_, ping_done_promise_);
+  co_await connect_loop_completion_.Wait();
+  co_await ping_completion_.Wait();
 }
 
 void SessionProxy::Send(protocol::Message& message) {
@@ -388,10 +394,14 @@ void SessionProxy::Request(protocol::Request& request,
 }
 
 promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
+  return ToPromise(executor_, ConnectAsync(params));
+}
+
+Awaitable<void> SessionProxy::ConnectAsync(scada::SessionConnectParams params) {
   assert(!transport_);
 
   if (session_created_) {
-    return MakeRejectedStatusPromise(scada::StatusCode::Bad);
+    throw scada::status_exception{scada::StatusCode::Bad};
   }
 
   user_name_ = params.user_name;
@@ -404,7 +414,7 @@ promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
 
   allow_remote_logoff_ = params.allow_remote_logoff;
 
-  return Reconnect();
+  co_await ReconnectAsync();
 }
 
 transport::awaitable<void> SessionProxy::Connect() {
@@ -454,13 +464,13 @@ transport::awaitable<void> SessionProxy::Connect() {
       buffer.resize(1024 * 1024);
       auto bytes_read = co_await transport_.read(buffer);
 
-      LOG_INFO(*logger_) << "Read loop iteration completed"
-                         << LOG_TAG("Ok", bytes_read.ok())
-                         << LOG_TAG("BytesRead", bytes_read.ok() ? *bytes_read : 0);
-
       if (cancelation.canceled()) {
         co_return;
       }
+
+      LOG_INFO(*logger_) << "Read loop iteration completed"
+                         << LOG_TAG("Ok", bytes_read.ok())
+                         << LOG_TAG("BytesRead", bytes_read.ok() ? *bytes_read : 0);
 
       if (!bytes_read.ok()) {
         OnTransportClosed(bytes_read.error());
@@ -493,7 +503,16 @@ transport::awaitable<void> SessionProxy::Connect() {
 void SessionProxy::ForwardConnectResult(scada::Status&& status) {
   LOG_INFO(*logger_) << "Forward connect result"
                      << LOG_TAG("Status", ToString(status));
-  CompleteStatusPromise(connect_promise_, std::move(status));
+  if (connect_completion_.completed()) {
+    return;
+  }
+
+  if (status) {
+    connect_completion_.Complete();
+  } else {
+    connect_completion_.Fail(
+        std::make_exception_ptr(scada::status_exception{std::move(status)}));
+  }
 }
 
 void SessionProxy::Read(
@@ -569,24 +588,32 @@ std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
 }
 
 promise<void> SessionProxy::Reconnect() {
-  promise<void> prerequisite =
-      session_created_ ? Disconnect() : connect_loop_done_promise_;
+  return ToPromise(executor_, ReconnectAsync());
+}
 
-  return prerequisite.then([this] {
-    // Cancel the old Connect() coroutine and close the transport so the old
-    // read loop exits cleanly before starting a new one.
-    cancelation_.Cancel();
-    write_queue_.reset();
-    transport_.reset();
+Awaitable<void> SessionProxy::ReconnectAsync() {
+  if (session_created_) {
+    co_await DisconnectAsync();
+  } else {
+    co_await connect_loop_completion_.Wait();
+  }
 
-    connect_promise_ = promise<void>{};
-    connect_loop_done_promise_ = promise<void>{};
-    pending_connect_result_.reset();
+  // Cancel the old Connect() coroutine and close the transport so the old
+  // read loop exits cleanly before starting a new one.
+  cancelation_.Cancel();
+  write_queue_.reset();
+  transport_.reset();
 
-    boost::asio::co_spawn(
-        executor_, Connect(),
-        [this, logger = logger_, loop_done = connect_loop_done_promise_](
-            std::exception_ptr e) mutable {
+  connect_completion_ = base::AsyncCompletion{executor_};
+  connect_loop_completion_ = base::AsyncCompletion{executor_};
+  pending_connect_result_.reset();
+
+  auto lifetime = std::weak_ptr<void>{lifetime_};
+  boost::asio::co_spawn(
+      executor_, Connect(),
+      [this, lifetime, logger = logger_,
+       loop_done = connect_loop_completion_](std::exception_ptr e) mutable {
+        if (auto alive = lifetime.lock()) {
           if (e) {
             try {
               std::rethrow_exception(e);
@@ -596,17 +623,19 @@ promise<void> SessionProxy::Reconnect() {
             } catch (...) {
               LOG_ERROR(*logger) << "Connect loop failed with unknown error";
             }
+            OnSessionError(scada::StatusCode::Bad_Disconnected);
           }
+
           if (pending_connect_result_) {
             auto status = *pending_connect_result_;
             pending_connect_result_.reset();
             ForwardConnectResult(std::move(status));
           }
-          loop_done.resolve();
-        });
+        }
+        loop_done.Complete();
+      });
 
-    return connect_promise_;
-  });
+  co_await connect_completion_.Wait();
 }
 
 bool SessionProxy::IsConnected(base::TimeDelta* ping_delay) const {
@@ -634,12 +663,13 @@ void SessionProxy::Ping() {
   assert(ping_time_.is_null());
 
   ping_time_ = base::TimeTicks::Now();
-  ping_done_promise_ = promise<void>{};
+  ping_completion_ = base::AsyncCompletion{executor_};
+  auto lifetime = std::weak_ptr<void>{lifetime_};
   boost::asio::co_spawn(
       executor_, PingAsync(),
-      [logger = logger_, ping_done = ping_done_promise_](
+      [lifetime, logger = logger_, ping_done = ping_completion_](
           std::exception_ptr e) mutable {
-        if (e) {
+        if (e && lifetime.lock()) {
           try {
             std::rethrow_exception(e);
           } catch (const std::exception& ex) {
@@ -649,7 +679,7 @@ void SessionProxy::Ping() {
             LOG_ERROR(*logger) << "Ping loop failed with unknown error";
           }
         }
-        ping_done.resolve();
+        ping_done.Complete();
       });
 }
 

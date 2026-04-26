@@ -12,4 +12,4 @@ sequenceDiagram
     Service-->>Stub: Result
     Stub-->>Conn: Protocol response
     Conn-->>Proxy: Response
-    Proxy-->>Client: Callback / promise completion
+    Proxy-->>Client: Callback / awaitable / promise completion
