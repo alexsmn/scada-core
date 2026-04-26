@@ -245,6 +245,18 @@ class SessionProxyHarness {
     asio_env_.Poll();
   }
 
+  template <class Predicate>
+  bool DrainUntil(Predicate&& predicate, int max_iterations = 1000) {
+    for (int i = 0; i < max_iterations && !predicate(); ++i) {
+      Poll();
+    }
+    if (!predicate()) {
+      return false;
+    }
+    Poll();
+    return true;
+  }
+
   void Drain() {
     for (int i = 0; i < 1000; ++i) {
       const auto session_manager_task_count =
@@ -331,6 +343,18 @@ class SessionProxyTest : public Test {
       session_manager_executor_->Poll();
     }
     asio_env_.Poll();
+  }
+
+  template <class Predicate>
+  bool DrainUntil(Predicate&& predicate, int max_iterations = 1000) {
+    for (int i = 0; i < max_iterations && !predicate(); ++i) {
+      Poll();
+    }
+    if (!predicate()) {
+      return false;
+    }
+    Poll();
+    return true;
   }
 
   void Drain() {
@@ -521,10 +545,7 @@ TEST_F(SessionProxyTest,
 
   auto connect_promise = session.Connect(GetConnectParams());
 
-  for (int i = 0; i < 1000 && !auth_requested_; ++i) {
-    Poll();
-  }
-  ASSERT_TRUE(auth_requested_);
+  ASSERT_TRUE(DrainUntil([this] { return auth_requested_; }));
   EXPECT_THAT(observer.opened_user_ids, IsEmpty());
   EXPECT_THAT(observer.closed_user_ids, IsEmpty());
   EXPECT_FALSE(session.IsConnected(nullptr));
@@ -549,10 +570,7 @@ TEST_F(SessionProxyTest,
 
   auto connect_promise = session.Connect(GetConnectParams());
 
-  for (int i = 0; i < 1000 && !auth_requested_; ++i) {
-    Poll();
-  }
-  ASSERT_TRUE(auth_requested_);
+  ASSERT_TRUE(DrainUntil([this] { return auth_requested_; }));
 
   ResetSessionManager();
 
@@ -592,7 +610,7 @@ TEST_F(SessionProxyTest, ManagerObserverNotifiedWhenSessionIsReplaced) {
 
   Wait(session1.Connect(params));
   Wait(session2.Connect(second_params));
-  Poll();
+  ASSERT_TRUE(DrainUntil([&] { return observer.closed_user_ids.size() == 1; }));
 
   EXPECT_THAT(observer.opened_user_ids, ElementsAre(kUserId, kUserId));
   EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId));
@@ -617,10 +635,7 @@ TEST_F(SessionProxyTest, Connect_DuplicateUserAllowedWithRemoteLogoff) {
   Wait(session1.Connect(params));
   Wait(session2.Connect(second_params));
 
-  for (int i = 0; i < 1000 && session1.IsConnected(nullptr); ++i) {
-    Poll();
-  }
-
+  ASSERT_TRUE(DrainUntil([&] { return !session1.IsConnected(nullptr); }));
   EXPECT_FALSE(session1.IsConnected(nullptr));
   EXPECT_TRUE(session2.IsConnected(nullptr));
 
@@ -636,10 +651,7 @@ TEST_F(SessionProxyTest, CloseUserSessionsDisconnectsMatchingSession) {
 
   session_manager_->CloseUserSessions(kUserId);
 
-  for (int i = 0; i < 1000 && session.IsConnected(nullptr); ++i) {
-    Poll();
-  }
-
+  ASSERT_TRUE(DrainUntil([&] { return !session.IsConnected(nullptr); }));
   EXPECT_FALSE(session.IsConnected(nullptr));
 }
 
@@ -656,10 +668,7 @@ TEST_F(SessionProxyTest, ClientTransportDropClosesServerSession) {
     EXPECT_THAT(observer.closed_user_ids, IsEmpty());
   }
 
-  for (int i = 0; i < 1000 && observer.closed_user_ids.empty(); ++i) {
-    Poll();
-  }
-
+  ASSERT_TRUE(DrainUntil([&] { return !observer.closed_user_ids.empty(); }));
   EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId));
 
   session_manager_->RemoveObserver(observer);
@@ -686,10 +695,8 @@ TEST_F(SessionProxyTest, DisconnectCancelsInFlightReadAndAllowsReconnect) {
         read_status.resolve(status);
       });
 
-  for (int i = 0; i < 1000 && !attribute_service.has_pending_read(); ++i) {
-    harness.Poll();
-  }
-  ASSERT_TRUE(attribute_service.has_pending_read());
+  ASSERT_TRUE(
+      harness.DrainUntil([&] { return attribute_service.has_pending_read(); }));
 
   harness.Wait(session.Disconnect());
 
@@ -732,10 +739,8 @@ TEST_F(SessionProxyTest, DisconnectCancelsInFlightWriteAndAllowsReconnect) {
         write_status.resolve(status);
       });
 
-  for (int i = 0; i < 1000 && !attribute_service.has_pending_write(); ++i) {
-    harness.Poll();
-  }
-  ASSERT_TRUE(attribute_service.has_pending_write());
+  ASSERT_TRUE(harness.DrainUntil(
+      [&] { return attribute_service.has_pending_write(); }));
 
   harness.Wait(session.Disconnect());
 
@@ -776,10 +781,8 @@ TEST_F(SessionProxyTest, DisconnectCancelsInFlightCallAndAllowsReconnect) {
         call_status.resolve(status);
       });
 
-  for (int i = 0; i < 1000 && !method_service.has_pending_call(); ++i) {
-    harness.Poll();
-  }
-  ASSERT_TRUE(method_service.has_pending_call());
+  ASSERT_TRUE(
+      harness.DrainUntil([&] { return method_service.has_pending_call(); }));
 
   harness.Wait(session.Disconnect());
 
@@ -824,11 +827,8 @@ TEST_F(SessionProxyTest,
         history_status.resolve(result.status);
       });
 
-  for (int i = 0; i < 1000 && !history_service.has_pending_history_read_raw();
-       ++i) {
-    harness.Poll();
-  }
-  ASSERT_TRUE(history_service.has_pending_history_read_raw());
+  ASSERT_TRUE(harness.DrainUntil(
+      [&] { return history_service.has_pending_history_read_raw(); }));
 
   harness.Wait(session2.Connect(second_params));
 
@@ -867,10 +867,8 @@ TEST_F(SessionProxyTest, ShutdownReleasesSessionStateAndDisconnectsClient) {
 
     harness.ResetSessionManager();
 
-    for (int i = 0; i < 1000 && session1.IsConnected(nullptr); ++i) {
-      harness.Poll();
-    }
-
+    ASSERT_TRUE(
+        harness.DrainUntil([&] { return !session1.IsConnected(nullptr); }));
     EXPECT_FALSE(session1.IsConnected(nullptr));
   }
 }
