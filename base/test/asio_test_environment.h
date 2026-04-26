@@ -65,6 +65,15 @@ struct AsioTestEnvironment {
     }
   }
 
+  void PumpFor(std::chrono::milliseconds duration,
+               std::chrono::milliseconds step = std::chrono::milliseconds{1}) {
+    const auto deadline = std::chrono::steady_clock::now() + duration;
+    while (std::chrono::steady_clock::now() < deadline) {
+      RunOneReadyOrBlockFor(step);
+    }
+    Poll();
+  }
+
   boost::asio::io_context io_context;
   // Work guard to prevent io_context from stopping when there are no more
   // tasks.
