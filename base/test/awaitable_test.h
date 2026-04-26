@@ -4,6 +4,8 @@
 #include "base/promise.h"
 #include "base/test/test_executor.h"
 
+#include <thread>
+
 using namespace std::chrono_literals;
 
 inline void Drain(const std::shared_ptr<TestExecutor>& executor) {
@@ -14,8 +16,9 @@ inline void Drain(const std::shared_ptr<TestExecutor>& executor) {
 
 inline void WaitPromise(std::shared_ptr<TestExecutor> executor,
                         promise<void> promise) {
-  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+  while (promise.wait_for(0ms) == promise_wait_status::timeout) {
     Drain(executor);
+    std::this_thread::yield();
   }
 
   promise.get();
@@ -23,8 +26,9 @@ inline void WaitPromise(std::shared_ptr<TestExecutor> executor,
 
 template <class T>
 T WaitPromise(std::shared_ptr<TestExecutor> executor, promise<T> promise) {
-  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+  while (promise.wait_for(0ms) == promise_wait_status::timeout) {
     Drain(executor);
+    std::this_thread::yield();
   }
 
   return promise.get();
@@ -33,8 +37,9 @@ T WaitPromise(std::shared_ptr<TestExecutor> executor, promise<T> promise) {
 template <class T>
 T WaitPromise(std::shared_ptr<TestExecutor> executor,
               std::shared_ptr<promise<T>> promise) {
-  while (promise->wait_for(1ms) == promise_wait_status::timeout) {
+  while (promise->wait_for(0ms) == promise_wait_status::timeout) {
     Drain(executor);
+    std::this_thread::yield();
   }
 
   return promise->get();
@@ -42,8 +47,9 @@ T WaitPromise(std::shared_ptr<TestExecutor> executor,
 
 inline void WaitPromise(std::shared_ptr<TestExecutor> executor,
                         std::shared_ptr<promise<void>> promise) {
-  while (promise->wait_for(1ms) == promise_wait_status::timeout) {
+  while (promise->wait_for(0ms) == promise_wait_status::timeout) {
     Drain(executor);
+    std::this_thread::yield();
   }
 
   promise->get();

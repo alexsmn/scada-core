@@ -461,6 +461,8 @@ Adapter:
 Behavior:
 
 - uses `ToPromise(...)`
+- `ToPromise(...)` starts the coroutine through the shared `CoSpawn(...)`
+  launch helper
 - keeps `SessionService` API compatibility while allowing coroutine-based
   implementation internals
 

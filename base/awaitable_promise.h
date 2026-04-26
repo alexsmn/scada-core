@@ -5,16 +5,14 @@
 #include "base/promise.h"
 
 #include <boost/asio/async_result.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/post.hpp>
 #include <memory>
 #include <type_traits>
 
 template <class E, class T>
 inline void StartAwaitable(E executor, promise<T> p, Awaitable<T> aw) {
-  boost::asio::co_spawn(
-      std::move(executor),
+  CoSpawn(
+      AnyExecutor{std::move(executor)},
       [p, aw = std::move(aw)]() mutable -> Awaitable<void> {
         try {
           if constexpr (std::is_void_v<T>) {
@@ -27,8 +25,7 @@ inline void StartAwaitable(E executor, promise<T> p, Awaitable<T> aw) {
           p.reject(std::current_exception());
         }
         co_return;
-      },
-      boost::asio::detached);
+      });
 }
 
 template <class E, class T>
