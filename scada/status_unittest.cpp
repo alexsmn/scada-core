@@ -1,5 +1,8 @@
 #include "scada/status.h"
+#include "scada/status_or.h"
+#include "scada/test/status_matchers.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 // ToCString
@@ -125,3 +128,46 @@ TEST(StatusTest, IsUncertainForUncertainCode) {
   EXPECT_TRUE(
       scada::IsUncertain(scada::StatusCode::Uncertain_StateWasNotChanged));
 }
+
+TEST(StatusTest, TestStatusMatchersAcceptStatusAndStatusOr) {
+  EXPECT_THAT(scada::Status{scada::StatusCode::Bad_Disconnected},
+              scada::test::StatusIs(scada::StatusCode::Bad_Disconnected));
+
+  const scada::StatusOr<int> bad_result{scada::StatusCode::Bad_Timeout};
+  EXPECT_THAT(bad_result, scada::test::StatusIs(scada::StatusCode::Bad_Timeout));
+
+  const scada::StatusOr<int> good_result{42};
+  EXPECT_THAT(good_result, scada::test::IsOkAndHolds(testing::Eq(42)));
+}
+
+TEST(StatusTest, TestStatusMacrosAcceptOkResults) {
+  EXPECT_OK(scada::Status{scada::StatusCode::Good});
+
+  const scada::StatusOr<int> result{7};
+  ASSERT_OK(result);
+  ASSERT_OK_AND_ASSIGN(auto value, result);
+  EXPECT_EQ(value, 7);
+}
+
+#if GTEST_HAS_DEATH_TEST
+TEST(StatusTest, StatusOrValuePanicsWithoutValue) {
+  const scada::StatusOr<int> result{scada::StatusCode::Bad};
+
+  EXPECT_DEATH(
+      {
+        (void)result.value();
+      },
+      "Panic: StatusOr value access without a value\r?\n.*"
+      "status_unittest.cpp");
+}
+
+TEST(StatusTest, StatusOrOkStatusWithoutValuePanics) {
+  EXPECT_DEATH(
+      {
+        const scada::StatusOr<int> result{scada::StatusCode::Good};
+        (void)result;
+      },
+      "Panic: StatusOr constructed without a value from an ok status.*"
+      "\r?\n.*status_or.h");
+}
+#endif

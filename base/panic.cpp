@@ -28,12 +28,16 @@ namespace {
 
 }  // namespace
 
-[[noreturn]] void Panic(std::string_view message) {
+[[noreturn]] void Panic(std::string_view message,
+                        const std::source_location& location) {
   // Keep panic reporting on stderr. Boost.Log is too heavyweight for a panic
   // path because it may allocate, lock, or depend on partially torn down
   // logging infrastructure.
+  std::fputs("Panic: ", stderr);
   std::fwrite(message.data(), 1, message.size(), stderr);
   std::fputc('\n', stderr);
+  std::fprintf(stderr, "  at %s:%u:%u in %s\n", location.file_name(),
+               location.line(), location.column(), location.function_name());
   std::fflush(stderr);
   ImmediateCrash();
 }

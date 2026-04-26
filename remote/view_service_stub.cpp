@@ -75,8 +75,10 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
     unsigned request_id,
     scada::ServiceContext context,
     std::vector<scada::BrowseDescription> inputs) {
-  auto [status, results] =
+  auto result =
       co_await coroutine_service_.Browse(std::move(context), std::move(inputs));
+  auto status = result.status();
+  auto results = std::move(result).value_or({});
 
   LOG_INFO(logger_) << "Browse async completed"
                     << LOG_TAG("RequestId", request_id)
@@ -100,8 +102,10 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
 Awaitable<void> ViewServiceStub::OnBrowsePathsAsync(
     unsigned request_id,
     std::vector<scada::BrowsePath> inputs) {
-  auto [status, results] =
+  auto result =
       co_await coroutine_service_.TranslateBrowsePaths(std::move(inputs));
+  auto status = result.status();
+  auto results = std::move(result).value_or({});
 
   protocol::Message message;
   auto& response = *message.add_responses();

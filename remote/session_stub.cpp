@@ -368,9 +368,10 @@ Awaitable<void> SessionStub::OnReadAsync(
     unsigned request_id,
     scada::ServiceContext context,
     std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) {
-  auto [status, results] =
-      co_await coroutine_attribute_service_->Read(std::move(context),
-                                                  std::move(inputs));
+  auto result = co_await coroutine_attribute_service_->Read(std::move(context),
+                                                            std::move(inputs));
+  auto status = result.status();
+  auto results = std::move(result).value_or({});
 
   if (!connection_)
     co_return;
@@ -392,9 +393,10 @@ Awaitable<void> SessionStub::OnReadAsync(
 Awaitable<void> SessionStub::OnWriteAsync(
     unsigned request_id,
     std::shared_ptr<const std::vector<scada::WriteValue>> inputs) {
-  auto [status, status_codes] =
-      co_await coroutine_attribute_service_->Write(service_context_,
-                                                   std::move(inputs));
+  auto result = co_await coroutine_attribute_service_->Write(service_context_,
+                                                             std::move(inputs));
+  auto status = result.status();
+  auto status_codes = std::move(result).value_or({});
 
   if (!connection_)
     co_return;

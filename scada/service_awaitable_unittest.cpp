@@ -87,26 +87,28 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
                                   .remaining_path_index = 0}}}});
       }));
 
-  auto [read_status, read_results] = WaitAwaitable(
+  auto read_result = WaitAwaitable(
       executor,
       ReadAsync(MakeTestAnyExecutor(executor), attribute_service, context,
                 read_inputs));
-  EXPECT_EQ(read_status.code(), StatusCode::Good);
+  ASSERT_TRUE(read_result.ok());
+  const auto& read_results = *read_result;
   ASSERT_EQ(read_results.size(), 1u);
   EXPECT_EQ(read_results[0].value, Variant{LocalizedText{u"Pump"}});
 
-  auto [write_status, write_results] = WaitAwaitable(
+  auto write_result = WaitAwaitable(
       executor,
       WriteAsync(MakeTestAnyExecutor(executor), attribute_service, context,
                  write_inputs));
-  EXPECT_EQ(write_status.code(), StatusCode::Good);
-  EXPECT_THAT(write_results, ElementsAre(StatusCode::Good));
+  ASSERT_TRUE(write_result.ok());
+  EXPECT_THAT(*write_result, ElementsAre(StatusCode::Good));
 
-  auto [browse_status, browse_results] = WaitAwaitable(
+  auto browse_result = WaitAwaitable(
       executor,
       BrowseAsync(MakeTestAnyExecutor(executor), view_service, context,
                   std::move(browse_inputs)));
-  EXPECT_EQ(browse_status.code(), StatusCode::Good);
+  ASSERT_TRUE(browse_result.ok());
+  const auto& browse_results = *browse_result;
   ASSERT_EQ(browse_results.size(), 1u);
   EXPECT_THAT(browse_results[0].references,
               ElementsAre(ReferenceDescription{
@@ -114,12 +116,13 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
                   .forward = true,
                   .node_id = NodeId{8}}));
 
-  auto [translate_status, translate_results] =
+  auto translate_result =
       WaitAwaitable(executor,
                     TranslateBrowsePathsAsync(MakeTestAnyExecutor(executor),
                                               view_service,
                                               std::move(translate_inputs)));
-  EXPECT_EQ(translate_status.code(), StatusCode::Good);
+  ASSERT_TRUE(translate_result.ok());
+  const auto& translate_results = *translate_result;
   ASSERT_EQ(translate_results.size(), 1u);
   ASSERT_EQ(translate_results[0].targets.size(), 1u);
   EXPECT_EQ(translate_results[0].targets[0].target_id,
@@ -258,36 +261,37 @@ TEST(ServiceAwaitableTest,
                              std::move(filter)));
   EXPECT_EQ(events_result.status.code(), StatusCode::Bad_Disconnected);
 
-  auto [add_nodes_status, add_nodes_results] = WaitAwaitable(
+  auto add_nodes_result = WaitAwaitable(
       executor,
       AddNodesAsync(executor, node_management_service,
                     std::move(add_nodes_inputs)));
-  EXPECT_EQ(add_nodes_status.code(), StatusCode::Good);
+  ASSERT_TRUE(add_nodes_result.ok());
+  const auto& add_nodes_results = *add_nodes_result;
   ASSERT_EQ(add_nodes_results.size(), 1u);
   EXPECT_EQ(add_nodes_results[0].added_node_id, NodeId{24});
 
-  auto [delete_nodes_status, delete_nodes_results] = WaitAwaitable(
+  auto delete_nodes_result = WaitAwaitable(
       executor,
       DeleteNodesAsync(executor, node_management_service,
                        std::move(delete_nodes_inputs)));
-  EXPECT_EQ(delete_nodes_status.code(), StatusCode::Good);
-  EXPECT_THAT(delete_nodes_results, ElementsAre(StatusCode::Bad_WrongNodeId));
+  ASSERT_TRUE(delete_nodes_result.ok());
+  EXPECT_THAT(*delete_nodes_result, ElementsAre(StatusCode::Bad_WrongNodeId));
 
-  auto [add_references_status, add_references_results] = WaitAwaitable(
+  auto add_references_result = WaitAwaitable(
       executor,
       AddReferencesAsync(executor, node_management_service,
                          std::move(add_references_inputs)));
-  EXPECT_EQ(add_references_status.code(), StatusCode::Good);
-  EXPECT_THAT(add_references_results,
+  ASSERT_TRUE(add_references_result.ok());
+  EXPECT_THAT(*add_references_result,
               ElementsAre(StatusCode::Bad_WrongTargetId));
 
-  auto [delete_references_status, delete_references_results] = WaitAwaitable(
+  auto delete_references_result = WaitAwaitable(
       executor,
       DeleteReferencesAsync(executor, node_management_service,
                             std::move(delete_references_inputs)));
-  EXPECT_EQ(delete_references_status.code(), StatusCode::Bad_Disconnected);
-  EXPECT_THAT(delete_references_results,
-              ElementsAre(StatusCode::Bad_Disconnected));
+  EXPECT_FALSE(delete_references_result.ok());
+  EXPECT_EQ(delete_references_result.status().code(),
+            StatusCode::Bad_Disconnected);
 }
 
 }  // namespace

@@ -45,10 +45,11 @@ TEST(ScadaCallbackAwaitable, AwaitsStatusCodesCallback) {
                                           StatusCode::Bad_WrongAttributeId});
                                }));
 
-  auto [status, codes] = WaitPromise(executor, std::move(result_promise));
-  EXPECT_TRUE(status.good());
-  EXPECT_EQ(codes, (std::vector<StatusCode>{StatusCode::Good,
-                                            StatusCode::Bad_WrongAttributeId}));
+  auto result = WaitPromise(executor, std::move(result_promise));
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(*result,
+            (std::vector<StatusCode>{StatusCode::Good,
+                                     StatusCode::Bad_WrongAttributeId}));
 }
 
 TEST(ScadaCallbackAwaitable, AwaitsSingleCallbackValue) {

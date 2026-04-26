@@ -4,6 +4,7 @@
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
 #include "scada/status.h"
+#include "scada/status_or.h"
 
 #include <tuple>
 #include <type_traits>
@@ -36,10 +37,19 @@ template <class Start>
 }
 
 template <class Start>
-[[nodiscard]] Awaitable<std::tuple<Status, std::vector<StatusCode>>>
+[[nodiscard]] Awaitable<StatusOr<std::vector<StatusCode>>>
 AwaitStatusCodesCallback(AnyExecutor executor, Start&& start) {
   co_return co_await AwaitCallbackTuple<Status, std::vector<StatusCode>>(
       std::move(executor), std::forward<Start>(start));
+}
+
+template <class T, class Start>
+[[nodiscard]] Awaitable<StatusOr<T>> AwaitStatusOrCallback(AnyExecutor executor,
+                                                           Start&& start) {
+  auto [status, value] = co_await AwaitCallbackTuple<Status, T>(
+      std::move(executor), std::forward<Start>(start));
+  co_return status ? StatusOr<T>{std::move(value)}
+                   : StatusOr<T>{std::move(status)};
 }
 
 }  // namespace scada

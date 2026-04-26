@@ -1,9 +1,12 @@
 #pragma once
 
+#include "base/panic.h"
 #include "scada/status.h"
 
-#include <cassert>
 #include <ostream>
+#include <source_location>
+#include <tuple>
+#include <utility>
 #include <variant>
 
 namespace scada {
@@ -12,12 +15,17 @@ template <class T>
 class [[nodiscard]] StatusOr {
  public:
   StatusOr(Status status) : value_{std::move(status)} {
-    assert(!this->status());
+    if (this->status()) {
+      base::Panic("StatusOr constructed without a value from an ok status");
+    }
   }
 
   StatusOr(StatusCode status_code) : StatusOr{Status(status_code)} {}
 
   StatusOr(T value) : value_{std::move(value)} {}
+
+  StatusOr(std::tuple<Status, T> result)
+      : value_{MakeVariant(std::move(result))} {}
 
   bool ok() const { return std::holds_alternative<T>(value_); }
 
@@ -26,32 +34,56 @@ class [[nodiscard]] StatusOr {
     return status ? *status : Status{StatusCode::Good};
   }
 
-  T& value() {
-    assert(ok());
+  T& value(const std::source_location& location =
+               std::source_location::current()) {
+    CheckValuePresent(location);
     return std::get<T>(value_);
   }
 
-  const T& value() const {
-    assert(ok());
+  const T& value(const std::source_location& location =
+                     std::source_location::current()) const {
+    CheckValuePresent(location);
     return std::get<T>(value_);
   }
 
-  T& operator*() { return value(); }
+  T& operator*() {
+    CheckValuePresent(std::source_location::current());
+    return std::get<T>(value_);
+  }
 
-  const T& operator*() const { return value(); }
+  const T& operator*() const {
+    CheckValuePresent(std::source_location::current());
+    return std::get<T>(value_);
+  }
+
+  T value_or(T fallback) && {
+    return ok() ? std::move(value()) : std::move(fallback);
+  }
 
   T* operator->() {
-    assert(ok());
+    CheckValuePresent(std::source_location::current());
     return &std::get<T>(value_);
   }
 
   const T* operator->() const {
-    assert(ok());
+    CheckValuePresent(std::source_location::current());
     return &std::get<T>(value_);
   }
 
  private:
   using StatusVariant = std::variant<Status, T>;
+
+  void CheckValuePresent(const std::source_location& location) const {
+    if (!ok()) {
+      base::Panic("StatusOr value access without a value", location);
+    }
+  }
+
+  static StatusVariant MakeVariant(std::tuple<Status, T> result) {
+    auto [status, value] = std::move(result);
+    return status ? StatusVariant{std::move(value)}
+                  : StatusVariant{std::move(status)};
+  }
 
   StatusVariant value_;
 };

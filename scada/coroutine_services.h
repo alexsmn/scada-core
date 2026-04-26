@@ -12,6 +12,7 @@
 #include "scada/service_context.h"
 #include "scada/session_service.h"
 #include "scada/status_exception.h"
+#include "scada/status_or.h"
 #include "scada/view_service.h"
 
 #include <memory>
@@ -21,15 +22,25 @@
 
 namespace scada {
 
+template <class Callback, class T>
+void CompleteStatusOrCallback(Callback&& callback, StatusOr<T>&& result) {
+  if (result.ok()) {
+    std::forward<Callback>(callback)(Status{StatusCode::Good},
+                                     std::move(*result));
+  } else {
+    std::forward<Callback>(callback)(result.status(), {});
+  }
+}
+
 class CoroutineAttributeService {
  public:
   virtual ~CoroutineAttributeService() = default;
 
-  virtual Awaitable<std::tuple<Status, std::vector<DataValue>>> Read(
+  virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
       ServiceContext context,
       std::shared_ptr<const std::vector<ReadValueId>> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<StatusCode>>> Write(
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
       ServiceContext context,
       std::shared_ptr<const std::vector<WriteValue>> inputs) = 0;
 };
@@ -62,11 +73,11 @@ class CoroutineViewService {
  public:
   virtual ~CoroutineViewService() = default;
 
-  virtual Awaitable<std::tuple<Status, std::vector<BrowseResult>>> Browse(
+  virtual Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
       ServiceContext context,
       std::vector<BrowseDescription> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<BrowsePathResult>>>
+  virtual Awaitable<StatusOr<std::vector<BrowsePathResult>>>
   TranslateBrowsePaths(std::vector<BrowsePath> inputs) = 0;
 };
 
@@ -74,16 +85,16 @@ class CoroutineNodeManagementService {
  public:
   virtual ~CoroutineNodeManagementService() = default;
 
-  virtual Awaitable<std::tuple<Status, std::vector<AddNodesResult>>> AddNodes(
+  virtual Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodes(
       std::vector<AddNodesItem> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteNodes(
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodes(
       std::vector<DeleteNodesItem> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<StatusCode>>>
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>>
   AddReferences(std::vector<AddReferencesItem> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<StatusCode>>>
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>>
   DeleteReferences(std::vector<DeleteReferencesItem> inputs) = 0;
 };
 
@@ -123,10 +134,10 @@ class CallbackToCoroutineAttributeServiceAdapter final
       : CallbackToCoroutineAttributeServiceAdapter(
             MakeAnyExecutor(std::move(executor)), service) {}
 
-  Awaitable<std::tuple<Status, std::vector<DataValue>>> Read(
+  Awaitable<StatusOr<std::vector<DataValue>>> Read(
       ServiceContext context,
       std::shared_ptr<const std::vector<ReadValueId>> inputs) override {
-    co_return co_await AwaitCallbackTuple<Status, std::vector<DataValue>>(
+    co_return co_await AwaitStatusOrCallback<std::vector<DataValue>>(
         executor_,
         [this, context = std::move(context), inputs = std::move(inputs)](
             auto callback) mutable {
@@ -134,10 +145,10 @@ class CallbackToCoroutineAttributeServiceAdapter final
         });
   }
 
-  Awaitable<std::tuple<Status, std::vector<StatusCode>>> Write(
+  Awaitable<StatusOr<std::vector<StatusCode>>> Write(
       ServiceContext context,
       std::shared_ptr<const std::vector<WriteValue>> inputs) override {
-    co_return co_await AwaitStatusCodesCallback(
+    co_return co_await AwaitStatusOrCallback<std::vector<StatusCode>>(
         executor_,
         [this, context = std::move(context), inputs = std::move(inputs)](
             auto callback) mutable {
@@ -229,10 +240,10 @@ class CallbackToCoroutineViewServiceAdapter final : public CoroutineViewService 
       : CallbackToCoroutineViewServiceAdapter(
             MakeAnyExecutor(std::move(executor)), service) {}
 
-  Awaitable<std::tuple<Status, std::vector<BrowseResult>>> Browse(
+  Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
       ServiceContext context,
       std::vector<BrowseDescription> inputs) override {
-    co_return co_await AwaitCallbackTuple<Status, std::vector<BrowseResult>>(
+    co_return co_await AwaitStatusOrCallback<std::vector<BrowseResult>>(
         executor_,
         [this, context = std::move(context), inputs = std::move(inputs)](
             auto callback) mutable {
@@ -240,14 +251,12 @@ class CallbackToCoroutineViewServiceAdapter final : public CoroutineViewService 
         });
   }
 
-  Awaitable<std::tuple<Status, std::vector<BrowsePathResult>>>
+  Awaitable<StatusOr<std::vector<BrowsePathResult>>>
   TranslateBrowsePaths(std::vector<BrowsePath> inputs) override {
-    co_return co_await
-        AwaitCallbackTuple<Status, std::vector<BrowsePathResult>>(
-            executor_,
-            [this, inputs = std::move(inputs)](auto callback) mutable {
-              service_.TranslateBrowsePaths(inputs, std::move(callback));
-            });
+    co_return co_await AwaitStatusOrCallback<std::vector<BrowsePathResult>>(
+        executor_, [this, inputs = std::move(inputs)](auto callback) mutable {
+          service_.TranslateBrowsePaths(inputs, std::move(callback));
+        });
   }
 
  private:
@@ -268,36 +277,36 @@ class CallbackToCoroutineNodeManagementServiceAdapter final
       : CallbackToCoroutineNodeManagementServiceAdapter(
             MakeAnyExecutor(std::move(executor)), service) {}
 
-  Awaitable<std::tuple<Status, std::vector<AddNodesResult>>> AddNodes(
+  Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodes(
       std::vector<AddNodesItem> inputs) override {
-    co_return co_await AwaitCallbackTuple<Status, std::vector<AddNodesResult>>(
+    co_return co_await AwaitStatusOrCallback<std::vector<AddNodesResult>>(
         executor_,
         [this, inputs = std::move(inputs)](auto callback) mutable {
           service_.AddNodes(inputs, std::move(callback));
         });
   }
 
-  Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteNodes(
+  Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodes(
       std::vector<DeleteNodesItem> inputs) override {
-    co_return co_await AwaitStatusCodesCallback(
+    co_return co_await AwaitStatusOrCallback<std::vector<StatusCode>>(
         executor_,
         [this, inputs = std::move(inputs)](auto callback) mutable {
           service_.DeleteNodes(inputs, std::move(callback));
         });
   }
 
-  Awaitable<std::tuple<Status, std::vector<StatusCode>>> AddReferences(
+  Awaitable<StatusOr<std::vector<StatusCode>>> AddReferences(
       std::vector<AddReferencesItem> inputs) override {
-    co_return co_await AwaitStatusCodesCallback(
+    co_return co_await AwaitStatusOrCallback<std::vector<StatusCode>>(
         executor_,
         [this, inputs = std::move(inputs)](auto callback) mutable {
           service_.AddReferences(inputs, std::move(callback));
         });
   }
 
-  Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteReferences(
+  Awaitable<StatusOr<std::vector<StatusCode>>> DeleteReferences(
       std::vector<DeleteReferencesItem> inputs) override {
-    co_return co_await AwaitStatusCodesCallback(
+    co_return co_await AwaitStatusOrCallback<std::vector<StatusCode>>(
         executor_,
         [this, inputs = std::move(inputs)](auto callback) mutable {
           service_.DeleteReferences(inputs, std::move(callback));
@@ -376,9 +385,9 @@ class CoroutineToCallbackAttributeServiceAdapter final : public AttributeService
     CoSpawn(executor_,
             [this, context, inputs, callback]() mutable -> Awaitable<void> {
               try {
-                auto [status, results] =
-                    co_await service_.Read(context, std::move(inputs));
-                callback(std::move(status), std::move(results));
+                CompleteStatusOrCallback(
+                    callback,
+                    co_await service_.Read(context, std::move(inputs)));
               } catch (...) {
                 callback(GetExceptionStatus(std::current_exception()), {});
               }
@@ -391,9 +400,9 @@ class CoroutineToCallbackAttributeServiceAdapter final : public AttributeService
     CoSpawn(executor_,
             [this, context, inputs, callback]() mutable -> Awaitable<void> {
               try {
-                auto [status, results] =
-                    co_await service_.Write(context, std::move(inputs));
-                callback(std::move(status), std::move(results));
+                CompleteStatusOrCallback(
+                    callback,
+                    co_await service_.Write(context, std::move(inputs)));
               } catch (...) {
                 auto status = GetExceptionStatus(std::current_exception());
                 callback(std::move(status), {});
@@ -502,9 +511,8 @@ class CoroutineToCallbackViewServiceAdapter final : public ViewService {
     CoSpawn(executor_,
             [this, context, inputs, callback]() mutable -> Awaitable<void> {
               try {
-                auto [status, results] =
-                    co_await service_.Browse(context, inputs);
-                callback(std::move(status), std::move(results));
+                CompleteStatusOrCallback(
+                    callback, co_await service_.Browse(context, inputs));
               } catch (...) {
                 callback(GetExceptionStatus(std::current_exception()), {});
               }
@@ -517,9 +525,9 @@ class CoroutineToCallbackViewServiceAdapter final : public ViewService {
     CoSpawn(executor_,
             [this, inputs, callback]() mutable -> Awaitable<void> {
               try {
-                auto [status, results] =
-                    co_await service_.TranslateBrowsePaths(inputs);
-                callback(std::move(status), std::move(results));
+                CompleteStatusOrCallback(
+                    callback,
+                    co_await service_.TranslateBrowsePaths(inputs));
               } catch (...) {
                 callback(GetExceptionStatus(std::current_exception()), {});
               }
@@ -549,8 +557,8 @@ class CoroutineToCallbackNodeManagementServiceAdapter final
     CoSpawn(executor_,
             [this, inputs, callback]() mutable -> Awaitable<void> {
               try {
-                auto [status, results] = co_await service_.AddNodes(inputs);
-                callback(std::move(status), std::move(results));
+                CompleteStatusOrCallback(callback,
+                                         co_await service_.AddNodes(inputs));
               } catch (...) {
                 callback(GetExceptionStatus(std::current_exception()), {});
               }
@@ -562,8 +570,8 @@ class CoroutineToCallbackNodeManagementServiceAdapter final
     CoSpawn(executor_,
             [this, inputs, callback]() mutable -> Awaitable<void> {
               try {
-                auto [status, results] = co_await service_.DeleteNodes(inputs);
-                callback(std::move(status), std::move(results));
+                CompleteStatusOrCallback(callback,
+                                         co_await service_.DeleteNodes(inputs));
               } catch (...) {
                 callback(GetExceptionStatus(std::current_exception()), {});
               }
@@ -575,9 +583,8 @@ class CoroutineToCallbackNodeManagementServiceAdapter final
     CoSpawn(executor_,
             [this, inputs, callback]() mutable -> Awaitable<void> {
               try {
-                auto [status, results] =
-                    co_await service_.AddReferences(inputs);
-                callback(std::move(status), std::move(results));
+                CompleteStatusOrCallback(
+                    callback, co_await service_.AddReferences(inputs));
               } catch (...) {
                 auto status = GetExceptionStatus(std::current_exception());
                 callback(std::move(status), {});
@@ -590,9 +597,8 @@ class CoroutineToCallbackNodeManagementServiceAdapter final
     CoSpawn(executor_,
             [this, inputs, callback]() mutable -> Awaitable<void> {
               try {
-                auto [status, results] =
-                    co_await service_.DeleteReferences(inputs);
-                callback(std::move(status), std::move(results));
+                CompleteStatusOrCallback(
+                    callback, co_await service_.DeleteReferences(inputs));
               } catch (...) {
                 auto status = GetExceptionStatus(std::current_exception());
                 callback(std::move(status), {});

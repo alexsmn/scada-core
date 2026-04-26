@@ -21,7 +21,7 @@ using testing::Invoke;
 
 class TestCoroutineAttributeService final : public CoroutineAttributeService {
  public:
-  Awaitable<std::tuple<Status, std::vector<DataValue>>> Read(
+  Awaitable<StatusOr<std::vector<DataValue>>> Read(
       ServiceContext context,
       std::shared_ptr<const std::vector<ReadValueId>> inputs) override {
     last_read_context = std::move(context);
@@ -32,7 +32,7 @@ class TestCoroutineAttributeService final : public CoroutineAttributeService {
     co_return read_result;
   }
 
-  Awaitable<std::tuple<Status, std::vector<StatusCode>>> Write(
+  Awaitable<StatusOr<std::vector<StatusCode>>> Write(
       ServiceContext context,
       std::shared_ptr<const std::vector<WriteValue>> inputs) override {
     last_write_context = std::move(context);
@@ -45,10 +45,10 @@ class TestCoroutineAttributeService final : public CoroutineAttributeService {
   ServiceContext last_write_context;
   std::shared_ptr<const std::vector<WriteValue>> last_write_inputs;
   bool throw_on_read = false;
-  std::tuple<Status, std::vector<DataValue>> read_result{
-      StatusCode::Good, {DataValue{Variant{42}, {}, {}, {}}}};
-  std::tuple<Status, std::vector<StatusCode>> write_result{
-      StatusCode::Good, {StatusCode::Good}};
+  StatusOr<std::vector<DataValue>> read_result{
+      std::vector{DataValue{Variant{42}, {}, {}, {}}}};
+  StatusOr<std::vector<StatusCode>> write_result{
+      std::vector{StatusCode::Good}};
 };
 
 class TestCoroutineMethodService final : public CoroutineMethodService {
@@ -105,7 +105,7 @@ class TestCoroutineHistoryService final : public CoroutineHistoryService {
 
 class TestCoroutineViewService final : public CoroutineViewService {
  public:
-  Awaitable<std::tuple<Status, std::vector<BrowseResult>>> Browse(
+  Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
       ServiceContext context,
       std::vector<BrowseDescription> inputs) override {
     last_browse_context = std::move(context);
@@ -113,7 +113,7 @@ class TestCoroutineViewService final : public CoroutineViewService {
     co_return browse_result;
   }
 
-  Awaitable<std::tuple<Status, std::vector<BrowsePathResult>>>
+  Awaitable<StatusOr<std::vector<BrowsePathResult>>>
   TranslateBrowsePaths(std::vector<BrowsePath> inputs) override {
     last_translate_inputs = std::move(inputs);
     co_return translate_result;
@@ -122,16 +122,13 @@ class TestCoroutineViewService final : public CoroutineViewService {
   ServiceContext last_browse_context;
   std::vector<BrowseDescription> last_browse_inputs;
   std::vector<BrowsePath> last_translate_inputs;
-  std::tuple<Status, std::vector<BrowseResult>> browse_result{
-      StatusCode::Good,
-      {BrowseResult{
+  StatusOr<std::vector<BrowseResult>> browse_result{std::vector{BrowseResult{
           .status_code = StatusCode::Good,
           .references = {{.reference_type_id = NodeId{2},
                           .forward = true,
                           .node_id = NodeId{3}}}}}};
-  std::tuple<Status, std::vector<BrowsePathResult>> translate_result{
-      StatusCode::Good,
-      {BrowsePathResult{
+  StatusOr<std::vector<BrowsePathResult>> translate_result{
+      std::vector{BrowsePathResult{
           .status_code = StatusCode::Good,
           .targets = {{.target_id = ExpandedNodeId{NodeId{4}},
                        .remaining_path_index = 0}}}}};
@@ -140,25 +137,25 @@ class TestCoroutineViewService final : public CoroutineViewService {
 class TestCoroutineNodeManagementService final
     : public CoroutineNodeManagementService {
  public:
-  Awaitable<std::tuple<Status, std::vector<AddNodesResult>>> AddNodes(
+  Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodes(
       std::vector<AddNodesItem> inputs) override {
     last_add_nodes_inputs = std::move(inputs);
     co_return add_nodes_result;
   }
 
-  Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteNodes(
+  Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodes(
       std::vector<DeleteNodesItem> inputs) override {
     last_delete_nodes_inputs = std::move(inputs);
     co_return delete_nodes_result;
   }
 
-  Awaitable<std::tuple<Status, std::vector<StatusCode>>> AddReferences(
+  Awaitable<StatusOr<std::vector<StatusCode>>> AddReferences(
       std::vector<AddReferencesItem> inputs) override {
     last_add_references_inputs = std::move(inputs);
     co_return add_references_result;
   }
 
-  Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteReferences(
+  Awaitable<StatusOr<std::vector<StatusCode>>> DeleteReferences(
       std::vector<DeleteReferencesItem> inputs) override {
     last_delete_references_inputs = std::move(inputs);
     co_return delete_references_result;
@@ -168,16 +165,15 @@ class TestCoroutineNodeManagementService final
   std::vector<DeleteNodesItem> last_delete_nodes_inputs;
   std::vector<AddReferencesItem> last_add_references_inputs;
   std::vector<DeleteReferencesItem> last_delete_references_inputs;
-  std::tuple<Status, std::vector<AddNodesResult>> add_nodes_result{
-      StatusCode::Good,
-      {AddNodesResult{.status_code = StatusCode::Good,
-                      .added_node_id = NodeId{5}}}};
-  std::tuple<Status, std::vector<StatusCode>> delete_nodes_result{
-      StatusCode::Good, {StatusCode::Good}};
-  std::tuple<Status, std::vector<StatusCode>> add_references_result{
-      StatusCode::Good, {StatusCode::Good}};
-  std::tuple<Status, std::vector<StatusCode>> delete_references_result{
-      StatusCode::Good, {StatusCode::Good}};
+  StatusOr<std::vector<AddNodesResult>> add_nodes_result{
+      std::vector{AddNodesResult{.status_code = StatusCode::Good,
+                                 .added_node_id = NodeId{5}}}};
+  StatusOr<std::vector<StatusCode>> delete_nodes_result{
+      std::vector{StatusCode::Good}};
+  StatusOr<std::vector<StatusCode>> add_references_result{
+      std::vector{StatusCode::Good}};
+  StatusOr<std::vector<StatusCode>> delete_references_result{
+      std::vector{StatusCode::Good}};
 };
 
 class TestCoroutineSessionService final : public CoroutineSessionService {
@@ -257,8 +253,9 @@ TEST(CallbackToCoroutineAttributeServiceAdapter, ReadAndWriteForwardResults) {
 
   auto read_promise =
       ToPromise(NetExecutorAdapter{executor}, adapter.Read(context, read_inputs));
-  auto [read_status, read_results] = WaitPromise(executor, read_promise);
-  EXPECT_TRUE(read_status);
+  auto read_result = WaitPromise(executor, read_promise);
+  ASSERT_TRUE(read_result.ok());
+  const auto& read_results = *read_result;
   ASSERT_EQ(read_results.size(), 1u);
   EXPECT_EQ(read_results[0], DataValue(Variant{42}, {}, {}, {}));
 
@@ -275,9 +272,9 @@ TEST(CallbackToCoroutineAttributeServiceAdapter, ReadAndWriteForwardResults) {
 
   auto write_promise = ToPromise(NetExecutorAdapter{executor},
                                  adapter.Write(context, write_inputs));
-  auto [write_status, write_results] = WaitPromise(executor, write_promise);
-  EXPECT_TRUE(write_status);
-  EXPECT_THAT(write_results, testing::ElementsAre(StatusCode::Good));
+  auto write_result = WaitPromise(executor, write_promise);
+  ASSERT_TRUE(write_result.ok());
+  EXPECT_THAT(*write_result, testing::ElementsAre(StatusCode::Good));
 }
 
 TEST(CallbackToCoroutineMethodServiceAdapter, CallForwardsArguments) {
@@ -359,9 +356,9 @@ TEST(CallbackToCoroutineViewServiceAdapter, ForwardsBrowseOperations) {
 
   auto browse_promise =
       ToPromise(NetExecutorAdapter{executor}, adapter.Browse(context, browse_inputs));
-  auto [browse_status, browse_results] =
-      WaitPromise(executor, browse_promise);
-  EXPECT_TRUE(browse_status);
+  auto browse_result = WaitPromise(executor, browse_promise);
+  ASSERT_TRUE(browse_result.ok());
+  const auto& browse_results = *browse_result;
   ASSERT_EQ(browse_results.size(), 1u);
   EXPECT_EQ(browse_results[0].references[0].node_id, NodeId{3});
 
@@ -380,9 +377,9 @@ TEST(CallbackToCoroutineViewServiceAdapter, ForwardsBrowseOperations) {
   auto translate_promise = ToPromise(NetExecutorAdapter{executor},
                                      adapter.TranslateBrowsePaths(
                                          translate_inputs));
-  auto [translate_status, translate_results] =
-      WaitPromise(executor, translate_promise);
-  EXPECT_TRUE(translate_status);
+  auto translate_result = WaitPromise(executor, translate_promise);
+  ASSERT_TRUE(translate_result.ok());
+  const auto& translate_results = *translate_result;
   ASSERT_EQ(translate_results.size(), 1u);
   EXPECT_EQ(translate_results[0].targets[0].target_id.node_id(), NodeId{5});
 }
@@ -405,9 +402,9 @@ TEST(CallbackToCoroutineNodeManagementServiceAdapter,
 
   auto add_nodes_promise = ToPromise(NetExecutorAdapter{executor},
                                      adapter.AddNodes(add_nodes_inputs));
-  auto [add_nodes_status, add_nodes_results] =
-      WaitPromise(executor, add_nodes_promise);
-  EXPECT_TRUE(add_nodes_status);
+  auto add_nodes_result = WaitPromise(executor, add_nodes_promise);
+  ASSERT_TRUE(add_nodes_result.ok());
+  const auto& add_nodes_results = *add_nodes_result;
   EXPECT_EQ(add_nodes_results[0].added_node_id, NodeId{3});
 
   const std::vector<DeleteNodesItem> delete_nodes_inputs{
@@ -424,10 +421,9 @@ TEST(CallbackToCoroutineNodeManagementServiceAdapter,
 
   auto delete_nodes_promise = ToPromise(NetExecutorAdapter{executor},
                                         adapter.DeleteNodes(delete_nodes_inputs));
-  auto [delete_nodes_status, delete_nodes_results] =
-      WaitPromise(executor, delete_nodes_promise);
-  EXPECT_TRUE(delete_nodes_status);
-  EXPECT_THAT(delete_nodes_results, testing::ElementsAre(StatusCode::Good));
+  auto delete_nodes_result = WaitPromise(executor, delete_nodes_promise);
+  ASSERT_TRUE(delete_nodes_result.ok());
+  EXPECT_THAT(*delete_nodes_result, testing::ElementsAre(StatusCode::Good));
 
   const std::vector<AddReferencesItem> add_references_inputs{
       {.source_node_id = NodeId{5},
@@ -449,10 +445,10 @@ TEST(CallbackToCoroutineNodeManagementServiceAdapter,
   auto add_references_promise = ToPromise(NetExecutorAdapter{executor},
                                           adapter.AddReferences(
                                               add_references_inputs));
-  auto [add_references_status, add_references_results] =
+  auto add_references_result =
       WaitPromise(executor, add_references_promise);
-  EXPECT_TRUE(add_references_status);
-  EXPECT_THAT(add_references_results, testing::ElementsAre(StatusCode::Good));
+  ASSERT_TRUE(add_references_result.ok());
+  EXPECT_THAT(*add_references_result, testing::ElementsAre(StatusCode::Good));
 
   const std::vector<DeleteReferencesItem> delete_references_inputs{
       {.source_node_id = NodeId{8},
@@ -474,10 +470,10 @@ TEST(CallbackToCoroutineNodeManagementServiceAdapter,
   auto delete_references_promise = ToPromise(
       NetExecutorAdapter{executor},
       adapter.DeleteReferences(delete_references_inputs));
-  auto [delete_references_status, delete_references_results] =
+  auto delete_references_result =
       WaitPromise(executor, delete_references_promise);
-  EXPECT_TRUE(delete_references_status);
-  EXPECT_THAT(delete_references_results, testing::ElementsAre(StatusCode::Good));
+  ASSERT_TRUE(delete_references_result.ok());
+  EXPECT_THAT(*delete_references_result, testing::ElementsAre(StatusCode::Good));
 }
 
 TEST(PromiseToCoroutineSessionServiceAdapter, ConnectsAndPassesThroughState) {

@@ -119,8 +119,9 @@ void NodeManagementStub::OnDeleteReferences(
 Awaitable<void> NodeManagementStub::OnDeleteNodesAsync(
     unsigned request_id,
     std::vector<scada::DeleteNodesItem> inputs) {
-  auto [status, results] =
-      co_await coroutine_service_.DeleteNodes(std::move(inputs));
+  auto result = co_await coroutine_service_.DeleteNodes(std::move(inputs));
+  auto status = result.status();
+  auto results = std::move(result).value_or({});
 
   protocol::Message message;
   auto& response = *message.add_responses();
@@ -137,8 +138,9 @@ Awaitable<void> NodeManagementStub::OnDeleteNodesAsync(
 Awaitable<void> NodeManagementStub::OnAddNodesAsync(
     unsigned request_id,
     std::vector<scada::AddNodesItem> inputs) {
-  auto [status, results] =
-      co_await coroutine_service_.AddNodes(std::move(inputs));
+  auto result = co_await coroutine_service_.AddNodes(std::move(inputs));
+  auto status = result.status();
+  auto results = std::move(result).value_or({});
 
   protocol::Message message;
   auto& response = *message.add_responses();
@@ -156,8 +158,9 @@ Awaitable<void> NodeManagementStub::OnAddReferencesAsync(
     unsigned request_id,
     std::vector<scada::AddReferencesItem> inputs) {
   const auto count = inputs.size();
-  auto [status, results] =
-      co_await coroutine_service_.AddReferences(std::move(inputs));
+  auto result = co_await coroutine_service_.AddReferences(std::move(inputs));
+  auto status = result.status();
+  auto results = std::move(result).value_or({});
 
   LOG_INFO(*logger_) << "Add references completed"
                      << LOG_TAG("RequestId", request_id)
@@ -178,8 +181,9 @@ Awaitable<void> NodeManagementStub::OnDeleteReferencesAsync(
     unsigned request_id,
     std::vector<scada::DeleteReferencesItem> inputs) {
   const auto count = inputs.size();
-  auto [status, results] =
-      co_await coroutine_service_.DeleteReferences(std::move(inputs));
+  auto result = co_await coroutine_service_.DeleteReferences(std::move(inputs));
+  auto status = result.status();
+  auto results = std::move(result).value_or({});
 
   LOG_INFO(*logger_) << "Delete references completed"
                      << LOG_TAG("RequestId", request_id)

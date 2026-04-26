@@ -14,7 +14,7 @@ namespace {
 
 class TestCoroutineViewService final : public scada::CoroutineViewService {
  public:
-  Awaitable<std::tuple<scada::Status, std::vector<scada::BrowseResult>>> Browse(
+  Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>> Browse(
       scada::ServiceContext context,
       std::vector<scada::BrowseDescription> inputs) override {
     browse_called = true;
@@ -24,7 +24,7 @@ class TestCoroutineViewService final : public scada::CoroutineViewService {
                              {.status_code = scada::StatusCode::Good}}};
   }
 
-  Awaitable<std::tuple<scada::Status, std::vector<scada::BrowsePathResult>>>
+  Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
   TranslateBrowsePaths(std::vector<scada::BrowsePath>) override {
     co_return std::tuple{scada::Status{scada::StatusCode::Good},
                          std::vector<scada::BrowsePathResult>{}};

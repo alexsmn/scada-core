@@ -14,7 +14,7 @@ namespace {
 class TestCoroutineNodeManagementService final
     : public scada::CoroutineNodeManagementService {
  public:
-  Awaitable<std::tuple<scada::Status, std::vector<scada::AddNodesResult>>>
+  Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>>
   AddNodes(std::vector<scada::AddNodesItem> inputs) override {
     add_nodes_called = true;
     last_add_nodes_inputs = std::move(inputs);
@@ -24,7 +24,7 @@ class TestCoroutineNodeManagementService final
             {.status_code = scada::StatusCode::Good, .added_node_id = {2, 3}}}};
   }
 
-  Awaitable<std::tuple<scada::Status, std::vector<scada::StatusCode>>>
+  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
   DeleteNodes(std::vector<scada::DeleteNodesItem> inputs) override {
     delete_nodes_called = true;
     last_delete_nodes_inputs = std::move(inputs);
@@ -32,13 +32,13 @@ class TestCoroutineNodeManagementService final
                          std::vector<scada::StatusCode>{}};
   }
 
-  Awaitable<std::tuple<scada::Status, std::vector<scada::StatusCode>>>
+  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
   AddReferences(std::vector<scada::AddReferencesItem>) override {
     co_return std::tuple{scada::Status{scada::StatusCode::Good},
                          std::vector<scada::StatusCode>{}};
   }
 
-  Awaitable<std::tuple<scada::Status, std::vector<scada::StatusCode>>>
+  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
   DeleteReferences(std::vector<scada::DeleteReferencesItem>) override {
     co_return std::tuple{scada::Status{scada::StatusCode::Good},
                          std::vector<scada::StatusCode>{}};
