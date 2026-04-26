@@ -1,10 +1,10 @@
 #include "remote/remote_session_manager.h"
 
-#include "base/awaitable_promise.h"
 #include "base/any_executor_dispatch.h"
+#include "base/awaitable_promise.h"
 #include "base/boost_log_adapter.h"
-#include "base/executor_conversions.h"
 #include "base/debug_util.h"
+#include "base/executor_conversions.h"
 #include "base/utf_convert.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
@@ -21,10 +21,10 @@
 #include "scada/status_or.h"
 #include "scada/status_promise.h"
 
-#include <transport/transport_factory.h>
 #include <algorithm>
-#include <transport/transport_string.h>
 #include <ranges>
+#include <transport/transport_factory.h>
+#include <transport/transport_string.h>
 #include <utility>
 
 namespace {
@@ -92,25 +92,24 @@ Awaitable<void> RemoteSessionManager::InitAsync() {
       };
 
   for (const transport::TransportString& endpoint : endpoints_) {
-    auto acceptor =
-        transport_factory_.CreateTransport(endpoint, executor_, transport_logger);
+    auto acceptor = transport_factory_.CreateTransport(endpoint, executor_,
+                                                       transport_logger);
 
     if (!acceptor.ok()) {
       LOG_ERROR(*logger_) << "Cannot create listener transport"
-                          << LOG_TAG("Error",
-                                     transport::ErrorToShortString(
-                                         acceptor.error()));
+                          << LOG_TAG("Error", transport::ErrorToShortString(
+                                                  acceptor.error()));
       throw std::runtime_error{transport::ErrorToShortString(acceptor.error())};
     }
 
     auto listener_name = acceptor->name();
 
-    auto listener = RemoteListener::Create(logger_, std::move(*acceptor),
-                                           std::move(listener_name),
-                                           accept_handler);
+    auto listener =
+        RemoteListener::Create(logger_, std::move(*acceptor),
+                               std::move(listener_name), accept_handler);
     listeners_.emplace_back(listener);
 
-    co_await AwaitPromise(executor_, listener->Init());
+    co_await listener->InitAsync();
   }
 }
 
@@ -119,7 +118,7 @@ Awaitable<void> RemoteSessionManager::ShutdownAsync() {
 
   auto listeners = std::move(listeners_);
   for (auto& listener : listeners) {
-    co_await AwaitPromise(executor_, listener->Shutdown());
+    co_await listener->ShutdownAsync();
   }
 
   for (auto& connection : connections_) {
@@ -158,12 +157,12 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
         scada::StatusCode::Bad_UnsupportedProtocolVersion);
   }
 
-  auto auth_result =
-      co_await authenticator_->Authenticate(user_name, password);
+  auto auth_result = co_await authenticator_->Authenticate(user_name, password);
   if (!auth_result.ok()) {
-    LOG_WARNING(*logger_)
-        << "Authorization error" << LOG_TAG("UserName", ToString(user_name))
-        << LOG_TAG("ErrorString", ToString(auth_result.status()));
+    LOG_WARNING(*logger_) << "Authorization error"
+                          << LOG_TAG("UserName", ToString(user_name))
+                          << LOG_TAG("ErrorString",
+                                     ToString(auth_result.status()));
     co_return MakeCreateSessionResult(auth_result.status());
   }
 
@@ -172,7 +171,8 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
     LOG_INFO(*logger_) << "Authorization succeeded"
                        << LOG_TAG("UserId", NodeIdToScadaString(user_id))
                        << LOG_TAG("UserName", ToString(user_name))
-                       << LOG_TAG("AuthorizationResult", ToString(*auth_result));
+                       << LOG_TAG("AuthorizationResult",
+                                  ToString(*auth_result));
 
     if (!auth_result->multi_sessions &&
         !CheckExistingSession(user_id, user_name, delete_existing)) {
@@ -198,9 +198,9 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
   } catch (...) {
     auto status = scada::GetExceptionStatus(std::current_exception());
 
-    LOG_ERROR(*logger_)
-        << "Create-session error" << LOG_TAG("UserName", ToString(user_name))
-        << LOG_TAG("ErrorString", ToString(status));
+    LOG_ERROR(*logger_) << "Create-session error"
+                        << LOG_TAG("UserName", ToString(user_name))
+                        << LOG_TAG("ErrorString", ToString(status));
 
     co_return MakeCreateSessionResult(status);
   }
@@ -281,9 +281,8 @@ void RemoteSessionManager::DeleteSession(const scada::NodeId& user_id) {
 void RemoteSessionManager::CloseUserSessions(const scada::NodeId& user_id) {
   Dispatch(executor_, [this, user_id] {
     if (SessionStub* session = FindUserSession(user_id)) {
-      LOG_WARNING(*logger_)
-          << "Close session because of user deletion"
-          << " | Context = " << session->service_context();
+      LOG_WARNING(*logger_) << "Close session because of user deletion"
+                            << " | Context = " << session->service_context();
       session->OnSessionDeleted();
       DeleteSession(user_id);
     }
@@ -308,31 +307,32 @@ void RemoteSessionManager::OnSessionAccepted(
   connection_context.transport_ = std::move(transport);
   connection_context.create_session_handler_ =
       [this, alive](protocol::CreateSession create_session)
-          -> Awaitable<CreateSessionResult> {
-        if (alive.expired()) {
-          co_return CreateSessionResult{
-              .status = scada::StatusCode::Bad_Disconnected,
-              .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
-              .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
-        }
-        co_return co_await CreateSessionAsync(std::move(create_session));
-      };
-  connection_context.delete_session_handler_ =
-      [this, alive](SessionStub& session) {
-        if (alive.expired()) {
-          return;
-        }
-        DeleteSession(session.service_context().user_id());
-      };
-  connection_context.closed_handler_ = [this, alive](
-                                           ServerConnection& connection) {
+      -> Awaitable<CreateSessionResult> {
+    if (alive.expired()) {
+      co_return CreateSessionResult{
+          .status = scada::StatusCode::Bad_Disconnected,
+          .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
+          .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
+    }
+    co_return co_await CreateSessionAsync(std::move(create_session));
+  };
+  connection_context.delete_session_handler_ = [this,
+                                                alive](SessionStub& session) {
+    if (alive.expired()) {
+      return;
+    }
+    DeleteSession(session.service_context().user_id());
+  };
+  connection_context.closed_handler_ = [this,
+                                        alive](ServerConnection& connection) {
     if (alive.expired()) {
       return;
     }
     OnConnectionClosed(connection);
   };
 
-  connections_.emplace_back(ServerConnection::Create(std::move(connection_context)));
+  connections_.emplace_back(
+      ServerConnection::Create(std::move(connection_context)));
 }
 
 void RemoteSessionManager::OnConnectionClosed(ServerConnection& connection) {

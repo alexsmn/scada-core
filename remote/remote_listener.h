@@ -1,12 +1,17 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/async_completion.h"
+#include "base/awaitable.h"
+#include "base/boost_log.h"
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
+#include <exception>
+#include <functional>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <transport/any_transport.h>
 #include <transport/expected.h>
+#include <utility>
 
 class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
  public:
@@ -30,47 +35,33 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
       : logger_{std::move(logger)},
         acceptor_{std::move(transport)},
         listener_name_{std::move(listener_name)},
-        accept_handler_{std::move(accept_handler)} {}
+        accept_handler_{std::move(accept_handler)},
+        open_completion_{acceptor_.get_executor()},
+        close_completion_{acceptor_.get_executor()} {}
 
-  promise<> Init() {
+  [[nodiscard]] Awaitable<void> InitAsync() {
     LOG_INFO(*logger_) << "Listening..." << LOG_TAG("Listener", listener_name_);
 
     auto self = shared_from_this();
-    boost::asio::co_spawn(
-        acceptor_.get_executor(),
-        [self]() -> transport::awaitable<transport::error_code> {
-          co_return co_await self->Run();
-        },
-        [self](std::exception_ptr e, transport::error_code error) mutable {
-          if (e) {
-            try {
-              std::rethrow_exception(e);
-            } catch (const std::exception& ex) {
-              LOG_ERROR(*self->logger_) << "Listener exception"
-                                        << LOG_TAG("Listener", self->listener_name_)
-                                        << LOG_TAG("ErrorString", ex.what());
-            } catch (...) {
-              LOG_ERROR(*self->logger_) << "Listener exception"
-                                        << LOG_TAG("Listener", self->listener_name_);
-            }
-          } else {
-            self->OnTransportClosed(error);
-          }
-          self->close_promise_.resolve();
-        });
+    CoSpawn(acceptor_.get_executor(), [self]() -> Awaitable<void> {
+      try {
+        self->OnTransportClosed(co_await self->Run());
+      } catch (...) {
+        self->OnListenerException(std::current_exception());
+      }
+      self->close_completion_.Complete();
+    });
 
-    return open_promise_;
+    co_await open_completion_.Wait();
   }
 
-  promise<> Shutdown() {
+  [[nodiscard]] Awaitable<void> ShutdownAsync() {
     auto self = shared_from_this();
-    boost::asio::co_spawn(
-        acceptor_.get_executor(),
-        [self]() -> transport::awaitable<void> {
-          [[maybe_unused]] auto result = co_await self->acceptor_.close();
-        },
-        boost::asio::detached);
-    return close_promise_;
+    CoSpawn(acceptor_.get_executor(), [self]() -> Awaitable<void> {
+      [[maybe_unused]] auto result = co_await self->acceptor_.close();
+    });
+
+    co_await close_completion_.Wait();
   }
 
  private:
@@ -81,7 +72,7 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
                        << LOG_TAG("Listener", listener_name_);
 
     opened_ = true;
-    open_promise_.resolve();
+    open_completion_.Complete();
 
     for (;;) {
       NET_ASSIGN_OR_CO_RETURN(auto transport, co_await acceptor_.accept());
@@ -101,8 +92,8 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
                           << LOG_TAG("ErrorString",
                                      transport::ErrorToString(error));
 
-      open_promise_.reject(
-          std::runtime_error{transport::ErrorToString(error)});
+      open_completion_.Fail(std::make_exception_ptr(
+          std::runtime_error{transport::ErrorToString(error)}));
       return;
     }
 
@@ -112,12 +103,29 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
                                   transport::ErrorToString(error));
   }
 
+  void OnListenerException(std::exception_ptr error) {
+    try {
+      std::rethrow_exception(error);
+    } catch (const std::exception& ex) {
+      LOG_ERROR(*logger_) << "Listener exception"
+                          << LOG_TAG("Listener", listener_name_)
+                          << LOG_TAG("ErrorString", ex.what());
+    } catch (...) {
+      LOG_ERROR(*logger_) << "Listener exception"
+                          << LOG_TAG("Listener", listener_name_);
+    }
+
+    if (!opened_) {
+      open_completion_.Fail(std::move(error));
+    }
+  }
+
   const std::shared_ptr<BoostLogger> logger_;
   transport::any_transport acceptor_;
   const std::string listener_name_;
   const AcceptHandler accept_handler_;
 
-  promise<> open_promise_;
-  promise<> close_promise_;
+  base::AsyncCompletion open_completion_;
+  base::AsyncCompletion close_completion_;
   bool opened_ = false;
 };

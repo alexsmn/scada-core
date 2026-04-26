@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/any_executor.h"
-#include "base/boost_log.h"
 #include "base/awaitable.h"
+#include "base/boost_log.h"
 #include "base/nested_logger.h"
 #include "base/observer_list.h"
 #include "base/promise.h"
@@ -14,10 +14,10 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <utility>
+#include <optional>
 #include <transport/any_transport.h>
 #include <transport/transport_string.h>
-#include <optional>
+#include <utility>
 
 namespace transport {
 class TransportFactory;
@@ -61,6 +61,8 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   // Throws an exception on error.
   promise<> Init();
   promise<> Shutdown();
+  [[nodiscard]] Awaitable<void> InitAsync();
+  [[nodiscard]] Awaitable<void> ShutdownAsync();
 
   void CloseUserSessions(const scada::NodeId& user_id);
 
@@ -70,9 +72,6 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   }
 
  private:
-  [[nodiscard]] Awaitable<void> InitAsync();
-  [[nodiscard]] Awaitable<void> ShutdownAsync();
-
   [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
       protocol::CreateSession create_session);
 
