@@ -5,7 +5,7 @@ A C++ library providing a distributed SCADA (Supervisory Control and Data Acquis
 - **Language:** C++20
 - **Build System:** CMake
 - **License:** GPLv3
-- **Version:** 2.5.5
+- **Version:** 2.6.0
 - **Platforms:** Windows (MSVC), Linux (GCC/Clang)
 
 ## Features

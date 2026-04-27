@@ -9,7 +9,7 @@ This document provides comprehensive guidance for AI assistants working with the
 - **Language:** C++20
 - **Build System:** CMake
 - **License:** GPLv3
-- **Version:** 2.5.5
+- **Version:** 2.6.0
 - **Platforms:** Windows (MSVC), Linux (GCC/Clang)
 
 ## Quick Reference Commands
