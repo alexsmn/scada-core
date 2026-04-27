@@ -26,7 +26,8 @@ class MetricServiceTest : public Test {
   StrictMock<MockFunction<promise<Metrics>()>> metric_provider_;
   StrictMock<MockFunction<void(const Metrics&)>> metric_sink_;
 
-  MetricServiceImpl metric_service_{executor_, kReportPeriod};
+  MetricServiceImpl metric_service_{MakeTestAnyExecutor(executor_),
+                                    kReportPeriod};
 
   inline static const std::chrono::milliseconds kReportPeriod{1000};
   inline static const char kMetricName[] = "Metric";
