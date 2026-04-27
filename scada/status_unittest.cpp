@@ -100,6 +100,16 @@ TEST(StatusTest, BadStatusIsFalse) {
   EXPECT_FALSE(status.good());
 }
 
+TEST(StatusTest, OkStatusReturnsGoodStatus) {
+  EXPECT_EQ(scada::StatusCode::Good, scada::OkStatus().code());
+  EXPECT_TRUE(scada::OkStatus());
+}
+
+TEST(StatusTest, BadStatusReturnsBadStatus) {
+  EXPECT_EQ(scada::StatusCode::Bad, scada::BadStatus().code());
+  EXPECT_FALSE(scada::BadStatus());
+}
+
 TEST(StatusTest, StatusCodeRoundTrip) {
   scada::Status status(scada::StatusCode::Bad_Timeout);
   EXPECT_EQ(scada::StatusCode::Bad_Timeout, status.code());

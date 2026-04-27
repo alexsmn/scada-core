@@ -5,7 +5,6 @@
 
 #include <ostream>
 #include <source_location>
-#include <tuple>
 #include <utility>
 #include <variant>
 
@@ -23,9 +22,6 @@ class [[nodiscard]] StatusOr {
   StatusOr(StatusCode status_code) : StatusOr{Status(status_code)} {}
 
   StatusOr(T value) : value_{std::move(value)} {}
-
-  StatusOr(std::tuple<Status, T> result)
-      : value_{MakeVariant(std::move(result))} {}
 
   bool ok() const { return std::holds_alternative<T>(value_); }
 
@@ -77,12 +73,6 @@ class [[nodiscard]] StatusOr {
     if (!ok()) {
       base::Panic("StatusOr value access without a value", location);
     }
-  }
-
-  static StatusVariant MakeVariant(std::tuple<Status, T> result) {
-    auto [status, value] = std::move(result);
-    return status ? StatusVariant{std::move(value)}
-                  : StatusVariant{std::move(status)};
   }
 
   StatusVariant value_;

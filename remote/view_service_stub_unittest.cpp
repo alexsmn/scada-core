@@ -19,15 +19,13 @@ class TestCoroutineViewService final : public scada::CoroutineViewService {
       std::vector<scada::BrowseDescription> inputs) override {
     browse_called = true;
     last_browse_inputs = std::move(inputs);
-    co_return std::tuple{scada::Status{scada::StatusCode::Good},
-                         std::vector<scada::BrowseResult>{
-                             {.status_code = scada::StatusCode::Good}}};
+    co_return std::vector<scada::BrowseResult>{
+        {.status_code = scada::StatusCode::Good}};
   }
 
   Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
   TranslateBrowsePaths(std::vector<scada::BrowsePath>) override {
-    co_return std::tuple{scada::Status{scada::StatusCode::Good},
-                         std::vector<scada::BrowsePathResult>{}};
+    co_return std::vector<scada::BrowsePathResult>{};
   }
 
   bool browse_called = false;

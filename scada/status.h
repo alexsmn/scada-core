@@ -20,7 +20,7 @@ enum class StatusSeverity {
   Bad = 2,
 
   // Reserved for future use. All Clients should treat a StatusCode with this
-  // severity as “Bad”.
+  // severity as Bad.
   Reserved = 3
 };
 
@@ -171,6 +171,14 @@ class Status {
  private:
   unsigned full_code_;
 };
+
+inline constexpr Status OkStatus() noexcept {
+  return Status{StatusCode::Good};
+}
+
+inline constexpr Status BadStatus() noexcept {
+  return Status{StatusCode::Bad};
+}
 
 }  // namespace scada
 

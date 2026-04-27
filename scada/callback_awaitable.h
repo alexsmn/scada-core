@@ -39,8 +39,11 @@ template <class Start>
 template <class Start>
 [[nodiscard]] Awaitable<StatusOr<std::vector<StatusCode>>>
 AwaitStatusCodesCallback(AnyExecutor executor, Start&& start) {
-  co_return co_await AwaitCallbackTuple<Status, std::vector<StatusCode>>(
+  auto [status, value] =
+      co_await AwaitCallbackTuple<Status, std::vector<StatusCode>>(
       std::move(executor), std::forward<Start>(start));
+  co_return status ? StatusOr<std::vector<StatusCode>>{std::move(value)}
+                   : StatusOr<std::vector<StatusCode>>{std::move(status)};
 }
 
 template <class T, class Start>

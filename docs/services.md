@@ -165,11 +165,11 @@ Coroutine equivalent:
 
 ```cpp
 class CoroutineAttributeService {
-  virtual Awaitable<std::tuple<Status, std::vector<DataValue>>> Read(
+  virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
       ServiceContext context,
       std::shared_ptr<const std::vector<ReadValueId>> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<StatusCode>>> Write(
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
       ServiceContext context,
       std::shared_ptr<const std::vector<WriteValue>> inputs) = 0;
 };
@@ -269,11 +269,11 @@ Coroutine equivalent:
 
 ```cpp
 class CoroutineViewService {
-  virtual Awaitable<std::tuple<Status, std::vector<BrowseResult>>> Browse(
+  virtual Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
       ServiceContext context,
       std::vector<BrowseDescription> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<BrowsePathResult>>>
+  virtual Awaitable<StatusOr<std::vector<BrowsePathResult>>>
   TranslateBrowsePaths(std::vector<BrowsePath> inputs) = 0;
 };
 ```
@@ -309,16 +309,16 @@ Coroutine equivalent:
 
 ```cpp
 class CoroutineNodeManagementService {
-  virtual Awaitable<std::tuple<Status, std::vector<AddNodesResult>>> AddNodes(
+  virtual Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodes(
       std::vector<AddNodesItem> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<StatusCode>>> DeleteNodes(
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodes(
       std::vector<DeleteNodesItem> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<StatusCode>>>
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>>
   AddReferences(std::vector<AddReferencesItem> inputs) = 0;
 
-  virtual Awaitable<std::tuple<Status, std::vector<StatusCode>>>
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>>
   DeleteReferences(std::vector<DeleteReferencesItem> inputs) = 0;
 };
 ```
