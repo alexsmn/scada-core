@@ -10,9 +10,6 @@ Related documents:
   adapters used by the remote layer
 - [../../server/docs/remote_module.md](../../server/docs/remote_module.md) for
   the server-side module wiring that hosts `core/remote`
-- [../../server/docs/coroutine_migration_plan.md](../../server/docs/coroutine_migration_plan.md)
-  for the staged migration of the remote/session path to coroutine-first
-  internals
 
 ## Diagrams
 
