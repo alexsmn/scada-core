@@ -13,6 +13,16 @@
 
 namespace scada {
 
+template <class Callback, class T>
+void CompleteStatusOrCallback(Callback&& callback, StatusOr<T>&& result) {
+  if (result.ok()) {
+    std::forward<Callback>(callback)(Status{StatusCode::Good},
+                                     std::move(*result));
+  } else {
+    std::forward<Callback>(callback)(result.status(), {});
+  }
+}
+
 template <class T, class Start>
 [[nodiscard]] Awaitable<T> AwaitCallbackValue(AnyExecutor executor,
                                               Start&& start) {

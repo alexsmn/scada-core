@@ -1,12 +1,21 @@
 #pragma once
 
+#include "base/any_executor.h"
+#include "base/awaitable.h"
+#include "base/executor_conversions.h"
+#include "scada/callback_awaitable.h"
 #include "scada/expanded_node_id.h"
 #include "scada/node_class.h"
 #include "scada/qualified_name.h"
+#include "scada/service_context.h"
 #include "scada/status.h"
+#include "scada/status_exception.h"
+#include "scada/status_or.h"
 
 #include <functional>
+#include <memory>
 #include <ostream>
+#include <utility>
 #include <vector>
 
 namespace scada {
@@ -89,6 +98,97 @@ class ViewService {
   virtual void TranslateBrowsePaths(
       const std::vector<BrowsePath>& inputs,
       const TranslateBrowsePathsCallback& callback) = 0;
+};
+
+class CoroutineViewService {
+ public:
+  virtual ~CoroutineViewService() = default;
+
+  virtual Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
+      ServiceContext context,
+      std::vector<BrowseDescription> inputs) = 0;
+
+  virtual Awaitable<StatusOr<std::vector<BrowsePathResult>>>
+  TranslateBrowsePaths(std::vector<BrowsePath> inputs) = 0;
+};
+
+class CallbackToCoroutineViewServiceAdapter final
+    : public CoroutineViewService {
+ public:
+  CallbackToCoroutineViewServiceAdapter(AnyExecutor executor,
+                                        ViewService& service)
+      : executor_{std::move(executor)}, service_{service} {}
+  CallbackToCoroutineViewServiceAdapter(std::shared_ptr<Executor> executor,
+                                        ViewService& service)
+      : CallbackToCoroutineViewServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
+
+  Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
+      ServiceContext context,
+      std::vector<BrowseDescription> inputs) override {
+    co_return co_await AwaitStatusOrCallback<std::vector<BrowseResult>>(
+        executor_,
+        [this, context = std::move(context), inputs = std::move(inputs)](
+            auto callback) mutable {
+          service_.Browse(context, inputs, std::move(callback));
+        });
+  }
+
+  Awaitable<StatusOr<std::vector<BrowsePathResult>>>
+  TranslateBrowsePaths(std::vector<BrowsePath> inputs) override {
+    co_return co_await AwaitStatusOrCallback<std::vector<BrowsePathResult>>(
+        executor_, [this, inputs = std::move(inputs)](auto callback) mutable {
+          service_.TranslateBrowsePaths(inputs, std::move(callback));
+        });
+  }
+
+ private:
+  const AnyExecutor executor_;
+  ViewService& service_;
+};
+
+class CoroutineToCallbackViewServiceAdapter final : public ViewService {
+ public:
+  CoroutineToCallbackViewServiceAdapter(AnyExecutor executor,
+                                        CoroutineViewService& service)
+      : executor_{std::move(executor)}, service_{service} {}
+  CoroutineToCallbackViewServiceAdapter(std::shared_ptr<Executor> executor,
+                                        CoroutineViewService& service)
+      : CoroutineToCallbackViewServiceAdapter(
+            MakeAnyExecutor(std::move(executor)), service) {}
+
+  void Browse(const ServiceContext& context,
+              const std::vector<BrowseDescription>& inputs,
+              const BrowseCallback& callback) override {
+    CoSpawn(executor_,
+            [this, context, inputs, callback]() mutable -> Awaitable<void> {
+              try {
+                CompleteStatusOrCallback(
+                    callback, co_await service_.Browse(context, inputs));
+              } catch (...) {
+                callback(GetExceptionStatus(std::current_exception()), {});
+              }
+            });
+  }
+
+  void TranslateBrowsePaths(
+      const std::vector<BrowsePath>& inputs,
+      const TranslateBrowsePathsCallback& callback) override {
+    CoSpawn(executor_,
+            [this, inputs, callback]() mutable -> Awaitable<void> {
+              try {
+                CompleteStatusOrCallback(
+                    callback,
+                    co_await service_.TranslateBrowsePaths(inputs));
+              } catch (...) {
+                callback(GetExceptionStatus(std::current_exception()), {});
+              }
+            });
+  }
+
+ private:
+  const AnyExecutor executor_;
+  CoroutineViewService& service_;
 };
 
 // Callback = void(const BrowseResult);
