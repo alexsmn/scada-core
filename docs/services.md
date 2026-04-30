@@ -434,14 +434,6 @@ view_adapter.Browse(context, inputs,
                     });
 ```
 
-### Exposing A Coroutine Session Implementation As SessionService
-
-```cpp
-CoroutineToSessionServiceAdapter session_adapter{coroutine_session};
-
-co_return co_await session_adapter.Connect(params);
-```
-
 ## Tests
 
 Adapter behavior is covered by:
