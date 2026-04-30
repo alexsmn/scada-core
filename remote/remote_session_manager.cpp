@@ -1,7 +1,6 @@
 #include "remote/remote_session_manager.h"
 
 #include "base/any_executor_dispatch.h"
-#include "base/awaitable_promise.h"
 #include "base/boost_log_adapter.h"
 #include "base/debug_util.h"
 #include "base/executor_conversions.h"
@@ -19,7 +18,6 @@
 #include "remote/session_stub.h"
 #include "scada/service_context.h"
 #include "scada/status_or.h"
-#include "scada/status_promise.h"
 
 #include <algorithm>
 #include <ranges>
@@ -68,14 +66,6 @@ RemoteSessionManager::~RemoteSessionManager() {
     }
     session_map_.clear();
   }
-}
-
-promise<> RemoteSessionManager::Init() {
-  return ToPromise(executor_, InitAsync());
-}
-
-promise<> RemoteSessionManager::Shutdown() {
-  return ToPromise(executor_, ShutdownAsync());
 }
 
 Awaitable<void> RemoteSessionManager::InitAsync() {

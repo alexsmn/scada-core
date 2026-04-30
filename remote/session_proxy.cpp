@@ -1,6 +1,5 @@
 #include "remote/session_proxy.h"
 
-#include "base/awaitable_promise.h"
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
 #include <boost/algorithm/string/classification.hpp>
@@ -20,7 +19,6 @@
 #include "remote/view_service_proxy.h"
 #include "scada/monitored_item.h"
 #include "scada/status_exception.h"
-#include "scada/status_promise.h"
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
@@ -85,11 +83,11 @@ scada::services SessionProxy::services() {
       .session_service = this};
 }
 
-promise<void> SessionProxy::Disconnect() {
+Awaitable<void> SessionProxy::Disconnect() {
   if (!session_created_)
-    return MakeRejectedStatusPromise(scada::StatusCode::Bad_Disconnected);
+    throw scada::status_exception{scada::StatusCode::Bad_Disconnected};
 
-  return ToPromise(executor_, DisconnectAsync());
+  co_await DisconnectAsync();
 }
 
 void SessionProxy::OnTransportOpened() {
@@ -393,8 +391,8 @@ void SessionProxy::Request(protocol::Request& request,
   Send(message);
 }
 
-promise<void> SessionProxy::Connect(const scada::SessionConnectParams& params) {
-  return ToPromise(executor_, ConnectAsync(params));
+Awaitable<void> SessionProxy::Connect(scada::SessionConnectParams params) {
+  co_await ConnectAsync(std::move(params));
 }
 
 Awaitable<void> SessionProxy::ConnectAsync(scada::SessionConnectParams params) {
@@ -587,8 +585,8 @@ std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
   return subscription_->CreateMonitoredItem(read_value_id, params);
 }
 
-promise<void> SessionProxy::Reconnect() {
-  return ToPromise(executor_, ReconnectAsync());
+Awaitable<void> SessionProxy::Reconnect() {
+  co_await ReconnectAsync();
 }
 
 Awaitable<void> SessionProxy::ReconnectAsync() {

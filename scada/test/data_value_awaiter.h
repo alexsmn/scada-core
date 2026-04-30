@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/callback_awaitable.h"
+#include "base/executor_conversions.h"
 #include "scada/client_monitored_item.h"
 #include "scada/monitoring_parameters.h"
 
@@ -10,15 +12,14 @@ struct data_value_awaiter {
     monitored_item_.subscribe_value(
         node, /*params=*/{},
         std::bind_front(&state::handle_data_change, state_));
-    // TODO: Handle subscription failure, when `!monitored_item_.subscribed()`.
   }
 
   template <class T>
-  promise<scada::DataValue> when(T&& matcher) {
+  Awaitable<scada::DataValue> when(T&& matcher) {
     return state_->when(std::forward<T>(matcher));
   }
 
-  promise<scada::DataValue> when_any() {
+  Awaitable<scada::DataValue> when_any() {
     return state_->when(
         [](const scada::DataValue& data_value) { return true; });
   }
@@ -26,15 +27,18 @@ struct data_value_awaiter {
  private:
   struct state {
     template <class T>
-    promise<scada::DataValue> when(T&& matcher) {
+    Awaitable<scada::DataValue> when(T&& matcher) {
       if (current_data_value_.has_value() &&
           matcher(current_data_value_.value())) {
-        return make_resolved_promise(current_data_value_.value());
+        co_return current_data_value_.value();
       }
 
-      return matchers_
-          .emplace_back(std::forward<T>(matcher), promise<scada::DataValue>{})
-          .second;
+      auto [data_value] = co_await CallbackToAwaitable<scada::DataValue>(
+          MakeThreadAnyExecutor(),
+          [this, matcher = std::forward<T>(matcher)](auto callback) mutable {
+            matchers_.emplace_back(std::move(matcher), std::move(callback));
+          });
+      co_return std::move(data_value);
     }
 
     void handle_data_change(const scada::DataValue& data_value) {
@@ -44,8 +48,8 @@ struct data_value_awaiter {
           matchers_, [&data_value](const auto& m) { return !m(data_value); },
           [](const auto& p) { return p.first; });
 
-      for (auto& [m, p] : matching) {
-        p.resolve(data_value);
+      for (auto& [m, callback] : matching) {
+        callback(data_value);
       }
 
       matchers_.erase(matching.begin(), matching.end());
@@ -54,7 +58,8 @@ struct data_value_awaiter {
     std::optional<scada::DataValue> current_data_value_;
 
     using matcher = std::function<bool(const scada::DataValue& data_value)>;
-    std::vector<std::pair<matcher, promise<scada::DataValue>>> matchers_;
+    using callback = std::function<void(scada::DataValue)>;
+    std::vector<std::pair<matcher, callback>> matchers_;
   };
 
   const std::shared_ptr<state> state_ = std::make_shared<state>();

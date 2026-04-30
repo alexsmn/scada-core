@@ -1,6 +1,5 @@
 #include "scada/callback_awaitable.h"
 
-#include "base/awaitable_promise.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "scada/status_callback.h"
@@ -16,27 +15,27 @@ TEST(ScadaCallbackAwaitable, AwaitsDeferredStatusCallback) {
   auto executor = std::make_shared<TestExecutor>();
 
   StatusCallback callback;
-  auto status_promise = ToPromise(
-      MakeTestAnyExecutor(executor),
+  auto status_result = StartAwaitable(
+      executor,
       AwaitStatusCallback(
           MakeTestAnyExecutor(executor),
           [&](StatusCallback done) { callback = std::move(done); }));
 
   Drain(executor);
-  EXPECT_EQ(status_promise.wait_for(0ms), promise_wait_status::timeout);
+  EXPECT_FALSE(status_result->done);
   ASSERT_TRUE(callback);
 
   callback(StatusCode::Bad_Disconnected);
 
-  EXPECT_EQ(WaitPromise(executor, std::move(status_promise)).code(),
+  EXPECT_EQ(WaitResult(executor, status_result).code(),
             StatusCode::Bad_Disconnected);
 }
 
 TEST(ScadaCallbackAwaitable, AwaitsStatusCodesCallback) {
   auto executor = std::make_shared<TestExecutor>();
 
-  auto result_promise = ToPromise(
-      MakeTestAnyExecutor(executor),
+  auto result =
+      WaitAwaitable(executor,
       AwaitStatusCodesCallback(MakeTestAnyExecutor(executor),
                                [](auto done) mutable {
                                  done(Status{StatusCode::Good},
@@ -45,7 +44,6 @@ TEST(ScadaCallbackAwaitable, AwaitsStatusCodesCallback) {
                                           StatusCode::Bad_WrongAttributeId});
                                }));
 
-  auto result = WaitPromise(executor, std::move(result_promise));
   ASSERT_TRUE(result.ok());
   EXPECT_EQ(*result,
             (std::vector<StatusCode>{StatusCode::Good,
@@ -55,12 +53,11 @@ TEST(ScadaCallbackAwaitable, AwaitsStatusCodesCallback) {
 TEST(ScadaCallbackAwaitable, AwaitsSingleCallbackValue) {
   auto executor = std::make_shared<TestExecutor>();
 
-  auto value_promise =
-      ToPromise(MakeTestAnyExecutor(executor),
-                AwaitCallbackValue<int>(MakeTestAnyExecutor(executor),
-                                        [](auto done) mutable { done(42); }));
-
-  EXPECT_EQ(WaitPromise(executor, std::move(value_promise)), 42);
+  EXPECT_EQ(WaitAwaitable(executor,
+                          AwaitCallbackValue<int>(
+                              MakeTestAnyExecutor(executor),
+                              [](auto done) mutable { done(42); })),
+            42);
 }
 
 }  // namespace

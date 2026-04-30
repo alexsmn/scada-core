@@ -1,6 +1,5 @@
 find_package(Boost REQUIRED COMPONENTS system date_time json log log_setup program_options regex)
-find_package(PromiseHpp REQUIRED COMPONENTS system date_time json log log_setup regex)
-
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../third_party/net/cmake")
 add_subdirectory(test)
 
 scada_module(scada_base)
@@ -20,7 +19,6 @@ target_link_libraries(scada_base PUBLIC
   Boost::log_setup
   Boost::program_options
   Boost::system
-  promise.hpp
 )
 
 target_precompile_headers(scada_base PRIVATE

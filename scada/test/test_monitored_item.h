@@ -1,9 +1,11 @@
 #pragma once
 
-#include "base/promise.h"
 #include "scada/data_value.h"
 #include "scada/monitored_item.h"
 #include "scada/status.h"
+
+#include <condition_variable>
+#include <mutex>
 
 namespace scada {
 
@@ -26,12 +28,19 @@ class TestMonitoredItem : public MonitoredItem {
       assert(false);
     }
 
-    subscribed_promise_.resolve();
+    {
+      std::lock_guard lock{mutex_};
+      subscribed_ = true;
+    }
+    subscribed_cv_.notify_all();
   }
 
   bool subscribed() const { return event_handler_ != nullptr; }
 
-  void WaitForSubscription() { subscribed_promise_.get(); }
+  void WaitForSubscription() {
+    std::unique_lock lock{mutex_};
+    subscribed_cv_.wait(lock, [this] { return subscribed_; });
+  }
 
   void NotifyDataChange(const scada::DataValue& data_value) {
     data_value_ = data_value;
@@ -52,7 +61,9 @@ class TestMonitoredItem : public MonitoredItem {
   DataChangeHandler data_change_handler_;
   EventHandler event_handler_;
 
-  promise<void> subscribed_promise_;
+  std::mutex mutex_;
+  std::condition_variable subscribed_cv_;
+  bool subscribed_ = false;
 
   // TODO: Thread-safe.
   scada::DataValue data_value_;

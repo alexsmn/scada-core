@@ -1,20 +1,37 @@
 #pragma once
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/asio_executor.h"
 #include "base/executor_adapter.h"
 #include "base/executor_factory.h"
-#include "base/promise.h"
 #include "net/test/test_net_interceptors.h"
 
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/asio/strand.hpp>
 #include <transport/intercepting_transport_factory.h>
 #include <transport/transport_factory_impl.h>
 
 #include <chrono>
+#include <exception>
+#include <future>
+#include <optional>
+#include <type_traits>
+
+template <class T>
+struct AsioAwaitableResult {
+  std::optional<T> value;
+  std::exception_ptr error;
+  bool done = false;
+};
+
+template <>
+struct AsioAwaitableResult<void> {
+  std::exception_ptr error;
+  bool done = false;
+};
 
 struct AsioTestEnvironment {
   AsioTestEnvironment() {
@@ -22,31 +39,58 @@ struct AsioTestEnvironment {
   }
 
   template <class T>
-  T Wait(promise<T> promise) {
-    using namespace std::chrono_literals;
-    while (promise.wait_for(0ms) == promise_wait_status::timeout) {
-      RunOneReadyOrBlockFor(1ms);
-    }
-    Poll();
-    return promise.get();
+  std::shared_ptr<AsioAwaitableResult<T>> Start(Awaitable<T> awaitable) {
+    auto result = std::make_shared<AsioAwaitableResult<T>>();
+    boost::asio::co_spawn(
+        ExecutorAdapter{executor},
+        [result, awaitable = std::move(awaitable)]() mutable
+            -> Awaitable<void> {
+          try {
+            if constexpr (std::is_void_v<T>) {
+              co_await std::move(awaitable);
+            } else {
+              result->value.emplace(co_await std::move(awaitable));
+            }
+          } catch (...) {
+            result->error = std::current_exception();
+          }
+          result->done = true;
+        },
+        boost::asio::detached);
+    return result;
   }
 
-  void Wait(promise<> promise) {
+  template <class T>
+  T WaitResult(std::shared_ptr<AsioAwaitableResult<T>> result) {
     using namespace std::chrono_literals;
-    while (promise.wait_for(0ms) == promise_wait_status::timeout) {
+    while (!result->done) {
       RunOneReadyOrBlockFor(1ms);
     }
     Poll();
-    promise.get();
+    if (result->error) {
+      std::rethrow_exception(result->error);
+    }
+    return std::move(*result->value);
+  }
+
+  void WaitResult(std::shared_ptr<AsioAwaitableResult<void>> result) {
+    using namespace std::chrono_literals;
+    while (!result->done) {
+      RunOneReadyOrBlockFor(1ms);
+    }
+    Poll();
+    if (result->error) {
+      std::rethrow_exception(result->error);
+    }
   }
 
   template <class T>
   T Wait(Awaitable<T> awaitable) {
-    return Wait(ToPromise(any_executor_factory(), std::move(awaitable)));
+    return WaitResult(Start(std::move(awaitable)));
   }
 
   void Wait(Awaitable<void> awaitable) {
-    Wait(ToPromise(any_executor_factory(), std::move(awaitable)));
+    WaitResult(Start(std::move(awaitable)));
   }
 
   void Poll() {

@@ -13,7 +13,6 @@ normalCheckLevelMaxBranches
 accessMoved:*scada/node.cpp
 accessMoved:*scada\node.cpp
 
-// Lambda parameter: value semantics are intentional for promise chains
 passedByValue:*scada/node.cpp
 passedByValue:*scada\node.cpp
 

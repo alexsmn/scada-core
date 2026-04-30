@@ -8,14 +8,14 @@ namespace scada {
 
 class MockSessionService : public SessionService {
  public:
-  MOCK_METHOD(promise<>,
+  MOCK_METHOD(Awaitable<void>,
               Connect,
-              (const scada::SessionConnectParams& params),
+              (scada::SessionConnectParams params),
               (override));
 
-  MOCK_METHOD(promise<>, Reconnect, (), (override));
+  MOCK_METHOD(Awaitable<void>, Reconnect, (), (override));
 
-  MOCK_METHOD(promise<>, Disconnect, (), (override));
+  MOCK_METHOD(Awaitable<void>, Disconnect, (), (override));
 
   MOCK_METHOD(bool,
               IsConnected,

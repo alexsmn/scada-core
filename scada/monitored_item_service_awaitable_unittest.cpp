@@ -1,6 +1,5 @@
 #include "scada/monitored_item_service_awaitable.h"
 
-#include "base/awaitable_promise.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "scada/monitoring_parameters.h"
@@ -38,8 +37,8 @@ TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
   service.items.emplace(NodeId{2, 1}, second_item);
 
   const std::vector<ReadValueId> inputs{{NodeId{1, 1}}, {NodeId{2, 1}}};
-  auto read_promise = ToPromise(
-      MakeTestAnyExecutor(executor),
+  auto read_result = StartAwaitable(
+      executor,
       ReadInitialValuesAsync(MakeTestAnyExecutor(executor), service, inputs,
                              /*params=*/{}));
 
@@ -50,7 +49,7 @@ TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
   first_item->NotifyDataChange(
       DataValue{Variant{11}, {}, DateTime{}, DateTime{}});
 
-  EXPECT_THAT(WaitPromise(executor, std::move(read_promise)),
+  EXPECT_THAT(WaitResult(executor, read_result),
               ElementsAre(Field(&DataValue::value, Variant{11}),
                           Field(&DataValue::value, Variant{22})));
 }
@@ -59,12 +58,12 @@ TEST(MonitoredItemServiceAwaitable, ReturnsReadErrorForMissingItem) {
   auto executor = std::make_shared<TestExecutor>();
   TestMonitoredItemService service;
 
-  auto read_promise = ToPromise(
-      MakeTestAnyExecutor(executor),
+  auto read_result = StartAwaitable(
+      executor,
       ReadInitialValueAsync(MakeTestAnyExecutor(executor), service,
                             ReadValueId{NodeId{1, 1}}, /*params=*/{}));
 
-  EXPECT_THAT(WaitPromise(executor, std::move(read_promise)),
+  EXPECT_THAT(WaitResult(executor, read_result),
               Field(&DataValue::status_code, StatusCode::Bad_WrongNodeId));
 }
 

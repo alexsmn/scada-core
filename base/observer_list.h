@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace base {
@@ -68,10 +69,28 @@ class ObserverList {
   };
 
   // Range-based for loop support.
+  class RangeIteration {
+   public:
+    explicit RangeIteration(ObserverList& list) : list_{list} {
+      ++list_.iteration_depth_;
+    }
+
+    ~RangeIteration() {
+      if (--list_.iteration_depth_ == 0 && list_.null_count_ > 0) {
+        list_.Compact();
+      }
+    }
+
+   private:
+    ObserverList& list_;
+  };
+
   class RangeIterator {
    public:
-    RangeIterator(ObserverList* list, size_t index)
-        : list_(list), index_(index) {
+    RangeIterator(ObserverList* list,
+                  size_t index,
+                  std::shared_ptr<RangeIteration> iteration = {})
+        : list_(list), index_(index), iteration_{std::move(iteration)} {
       SkipNulls();
     }
 
@@ -103,20 +122,40 @@ class ObserverList {
 
     ObserverList* list_;
     size_t index_;
+    std::shared_ptr<RangeIteration> iteration_;
   };
 
   RangeIterator begin() {
-    ++iteration_depth_;
-    return RangeIterator{this, 0};
+    return RangeIterator{this, 0, std::make_shared<RangeIteration>(*this)};
   }
 
   RangeIterator end() { return RangeIterator{this, observers_.size()}; }
 
   // Const iteration.
+  class ConstRangeIteration {
+   public:
+    explicit ConstRangeIteration(const ObserverList& list)
+        : list_{const_cast<ObserverList&>(list)} {
+      ++list_.iteration_depth_;
+    }
+
+    ~ConstRangeIteration() {
+      if (--list_.iteration_depth_ == 0 && list_.null_count_ > 0) {
+        list_.Compact();
+      }
+    }
+
+   private:
+    ObserverList& list_;
+  };
+
   class ConstRangeIterator {
    public:
-    ConstRangeIterator(const ObserverList* list, size_t index)
-        : list_(list), index_(index) {
+    ConstRangeIterator(
+        const ObserverList* list,
+        size_t index,
+        std::shared_ptr<ConstRangeIteration> iteration = {})
+        : list_(list), index_(index), iteration_{std::move(iteration)} {
       SkipNulls();
     }
 
@@ -148,11 +187,12 @@ class ObserverList {
 
     const ObserverList* list_;
     size_t index_;
+    std::shared_ptr<ConstRangeIteration> iteration_;
   };
 
   ConstRangeIterator begin() const {
-    ++iteration_depth_;
-    return ConstRangeIterator{this, 0};
+    return ConstRangeIterator{
+        this, 0, std::make_shared<ConstRangeIteration>(*this)};
   }
 
   ConstRangeIterator end() const {

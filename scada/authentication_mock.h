@@ -6,8 +6,8 @@
 
 namespace scada {
 
-using MockAuthenticator = testing::MockFunction<promise<AuthenticationResult>(
-    const LocalizedText& user_name,
-    const LocalizedText& password)>;
+using MockAuthenticator = testing::MockFunction<
+    Awaitable<StatusOr<AuthenticationResult>>(LocalizedText user_name,
+                                              LocalizedText password)>;
 
 }

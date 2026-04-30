@@ -1,8 +1,8 @@
 #include "base/thread_executor.h"
 
-#include "base/promise.h"
-
 #include <gmock/gmock.h>
+#include <condition_variable>
+#include <mutex>
 
 using namespace testing;
 
@@ -18,8 +18,17 @@ TEST(ThreadExecutorTest, RunsAllTasksOnDestruction) {
 
 TEST(ThreadExecutorTest, DestroyFromTask) {
   auto executor = std::make_shared<ThreadExecutor>();
-  promise<void> release_promise;
-  executor->PostTask([executor, release_promise] { release_promise.get(); });
+  std::mutex mutex;
+  std::condition_variable cv;
+  bool release = false;
+  executor->PostTask([executor, &mutex, &cv, &release] {
+    std::unique_lock lock{mutex};
+    cv.wait(lock, [&] { return release; });
+  });
   executor = nullptr;
-  release_promise.resolve();
+  {
+    std::lock_guard lock{mutex};
+    release = true;
+  }
+  cv.notify_all();
 }

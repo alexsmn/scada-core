@@ -1,6 +1,5 @@
 #include "base/async_completion.h"
 
-#include "base/awaitable_promise.h"
 #include "base/test/awaitable_test.h"
 
 #include <gtest/gtest.h>
@@ -14,17 +13,17 @@ TEST(AsyncCompletion, WaitersResumeWhenCompleted) {
   auto executor = std::make_shared<TestExecutor>();
   base::AsyncCompletion completion{MakeTestAnyExecutor(executor)};
 
-  auto first = ToPromise(MakeTestAnyExecutor(executor), completion.Wait());
-  auto second = ToPromise(MakeTestAnyExecutor(executor), completion.Wait());
+  auto first = StartAwaitable(executor, completion.Wait());
+  auto second = StartAwaitable(executor, completion.Wait());
 
   Drain(executor);
-  EXPECT_EQ(first.wait_for(0ms), promise_wait_status::timeout);
-  EXPECT_EQ(second.wait_for(0ms), promise_wait_status::timeout);
+  EXPECT_FALSE(first->done);
+  EXPECT_FALSE(second->done);
 
   completion.Complete();
 
-  EXPECT_NO_THROW(WaitPromise(executor, std::move(first)));
-  EXPECT_NO_THROW(WaitPromise(executor, std::move(second)));
+  EXPECT_NO_THROW(WaitResult(executor, first));
+  EXPECT_NO_THROW(WaitResult(executor, second));
 }
 
 TEST(AsyncCompletion, WaitAfterCompleteReturnsImmediately) {
@@ -41,13 +40,13 @@ TEST(AsyncCompletion, CopiesShareCompletionState) {
   base::AsyncCompletion owner{MakeTestAnyExecutor(executor)};
   auto handle = owner;
 
-  auto waiter = ToPromise(MakeTestAnyExecutor(executor), owner.Wait());
+  auto waiter = StartAwaitable(executor, owner.Wait());
   Drain(executor);
-  EXPECT_EQ(waiter.wait_for(0ms), promise_wait_status::timeout);
+  EXPECT_FALSE(waiter->done);
 
   handle.Complete();
 
-  EXPECT_NO_THROW(WaitPromise(executor, std::move(waiter)));
+  EXPECT_NO_THROW(WaitResult(executor, waiter));
   EXPECT_TRUE(owner.completed());
   EXPECT_NO_THROW(WaitAwaitable(executor, handle.Wait()));
 }
@@ -56,13 +55,13 @@ TEST(AsyncCompletion, FailurePropagatesToCurrentAndFutureWaiters) {
   auto executor = std::make_shared<TestExecutor>();
   base::AsyncCompletion completion{MakeTestAnyExecutor(executor)};
 
-  auto waiter = ToPromise(MakeTestAnyExecutor(executor), completion.Wait());
+  auto waiter = StartAwaitable(executor, completion.Wait());
   Drain(executor);
-  EXPECT_EQ(waiter.wait_for(0ms), promise_wait_status::timeout);
+  EXPECT_FALSE(waiter->done);
 
   completion.Fail(std::make_exception_ptr(std::runtime_error{"failed"}));
 
-  EXPECT_THROW(WaitPromise(executor, std::move(waiter)), std::runtime_error);
+  EXPECT_THROW(WaitResult(executor, waiter), std::runtime_error);
   EXPECT_THROW(WaitAwaitable(executor, completion.Wait()), std::runtime_error);
 }
 

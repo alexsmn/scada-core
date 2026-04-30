@@ -13,7 +13,7 @@ A C++ library providing a distributed SCADA (Supervisory Control and Data Acquis
 - OPC UA-compatible hierarchical node-based data model
 - Protocol Buffers-based remote communication with gRPC support
 - Distributed tracing and metrics collection
-- Promise-based async patterns
+- Coroutine-based async patterns
 - Seven core services: Attribute, MonitoredItem, Method, History, View, NodeManagement, Session
 - Cross-platform support
 
@@ -29,7 +29,6 @@ A C++ library providing a distributed SCADA (Supervisory Control and Data Acquis
 - Boost (atomic, context, date_time, filesystem, json, log, program_options, thread)
 - Protobuf 3
 - ChromiumBase
-- promise-hpp
 - Net (networking abstraction)
 
 **Optional:**
@@ -128,21 +127,19 @@ scada::client client(services);
 auto node = client.node(NodeId{1, NS_DEVICES});
 
 // Read attribute
-auto value = node.read_value();
+auto value = co_await node.read_value();
 
 // Write attribute
-node.write_value(Variant{42});
+co_await node.write_value(Variant{42});
 
 // Monitor changes
 auto item = node.create_monitored_item([](const DataValue& dv) {
     // Handle value change
 });
 
-// Async operations with promises
-client.connect(params)
-    .then([&]() { return node.read_value(); })
-    .then([](const DataValue& value) { /* use value */ })
-    .except([](std::exception_ptr e) { /* handle error */ });
+// Async operations with coroutines
+co_await client.connect(params);
+auto connected_value = co_await node.read_value();
 ```
 
 ## Testing

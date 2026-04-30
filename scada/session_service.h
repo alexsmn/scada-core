@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
 #include "scada/privileges.h"
@@ -34,11 +34,11 @@ class SessionService {
  public:
   virtual ~SessionService() = default;
 
-  virtual promise<void> Connect(const SessionConnectParams& params) = 0;
+  virtual Awaitable<void> Connect(SessionConnectParams params) = 0;
 
-  virtual promise<void> Reconnect() = 0;
+  virtual Awaitable<void> Reconnect() = 0;
 
-  virtual promise<void> Disconnect() = 0;
+  virtual Awaitable<void> Disconnect() = 0;
 
   virtual bool IsConnected(base::TimeDelta* ping_delay = nullptr) const = 0;
 

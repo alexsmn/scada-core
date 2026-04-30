@@ -28,7 +28,7 @@
       "cacheVariables": {
         "BUILD_NUMBER": "0",
         "OUTPUT_DIR": "build/${presetName}/bin",
-        "CMAKE_MODULE_PATH": "${sourceDir};$env{THIRD_PARTY}/net;$env{THIRD_PARTY}/chromebase;$env{THIRD_PARTY}/iec60870;$env{THIRD_PARTY}/iec61850pp;$env{THIRD_PARTY}/sql;$env{THIRD_PARTY}/OPCFoundation;$env{THIRD_PARTY}/promise.hpp"
+        "CMAKE_MODULE_PATH": "${sourceDir};$env{THIRD_PARTY}/net;$env{THIRD_PARTY}/chromebase;$env{THIRD_PARTY}/iec60870;$env{THIRD_PARTY}/iec61850pp;$env{THIRD_PARTY}/sql;$env{THIRD_PARTY}/OPCFoundation"
       }
     },
     {

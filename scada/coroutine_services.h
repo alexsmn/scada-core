@@ -2,7 +2,6 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/executor_conversions.h"
 #include "scada/attribute_service.h"
 #include "scada/callback_awaitable.h"
@@ -318,27 +317,23 @@ class CallbackToCoroutineNodeManagementServiceAdapter final
   NodeManagementService& service_;
 };
 
-class PromiseToCoroutineSessionServiceAdapter final
-    : public CoroutineSessionService {
+class SessionToCoroutineSessionServiceAdapter final : public CoroutineSessionService {
  public:
-  PromiseToCoroutineSessionServiceAdapter(AnyExecutor executor,
-                                          SessionService& service)
-      : executor_{std::move(executor)}, service_{service} {}
-  PromiseToCoroutineSessionServiceAdapter(std::shared_ptr<Executor> executor,
-                                          SessionService& service)
-      : PromiseToCoroutineSessionServiceAdapter(
-            MakeAnyExecutor(std::move(executor)), service) {}
+  explicit SessionToCoroutineSessionServiceAdapter(SessionService& service)
+      : service_{service} {}
+  SessionToCoroutineSessionServiceAdapter(AnyExecutor, SessionService& service)
+      : SessionToCoroutineSessionServiceAdapter{service} {}
 
   Awaitable<void> Connect(SessionConnectParams params) override {
-    co_await AwaitPromise(executor_, service_.Connect(std::move(params)));
+    co_await service_.Connect(std::move(params));
   }
 
   Awaitable<void> Reconnect() override {
-    co_await AwaitPromise(executor_, service_.Reconnect());
+    co_await service_.Reconnect();
   }
 
   Awaitable<void> Disconnect() override {
-    co_await AwaitPromise(executor_, service_.Disconnect());
+    co_await service_.Disconnect();
   }
 
   bool IsConnected(base::TimeDelta* ping_delay = nullptr) const override {
@@ -365,7 +360,6 @@ class PromiseToCoroutineSessionServiceAdapter final
   }
 
  private:
-  const AnyExecutor executor_;
   SessionService& service_;
 };
 
@@ -611,22 +605,21 @@ class CoroutineToCallbackNodeManagementServiceAdapter final
   CoroutineNodeManagementService& service_;
 };
 
-class CoroutineToPromiseSessionServiceAdapter final : public SessionService {
+class CoroutineToSessionServiceAdapter final : public SessionService {
  public:
-  CoroutineToPromiseSessionServiceAdapter(std::shared_ptr<Executor> executor,
-                                          CoroutineSessionService& service)
-      : executor_{std::move(executor)}, service_{service} {}
+  explicit CoroutineToSessionServiceAdapter(CoroutineSessionService& service)
+      : service_{service} {}
 
-  promise<void> Connect(const SessionConnectParams& params) override {
-    return ToPromise(NetExecutorAdapter{executor_}, service_.Connect(params));
+  Awaitable<void> Connect(SessionConnectParams params) override {
+    co_await service_.Connect(std::move(params));
   }
 
-  promise<void> Reconnect() override {
-    return ToPromise(NetExecutorAdapter{executor_}, service_.Reconnect());
+  Awaitable<void> Reconnect() override {
+    co_await service_.Reconnect();
   }
 
-  promise<void> Disconnect() override {
-    return ToPromise(NetExecutorAdapter{executor_}, service_.Disconnect());
+  Awaitable<void> Disconnect() override {
+    co_await service_.Disconnect();
   }
 
   bool IsConnected(base::TimeDelta* ping_delay = nullptr) const override {
@@ -653,7 +646,6 @@ class CoroutineToPromiseSessionServiceAdapter final : public SessionService {
   }
 
  private:
-  const std::shared_ptr<Executor> executor_;
   CoroutineSessionService& service_;
 };
 

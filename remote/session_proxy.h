@@ -58,10 +58,9 @@ class SessionProxy : private SessionProxyContext,
   [[nodiscard]] scada::services services();
 
   // scada::SessionService
-  virtual promise<void> Connect(
-      const scada::SessionConnectParams& params) override;
-  virtual promise<void> Reconnect() override;
-  virtual promise<void> Disconnect() override;
+  virtual Awaitable<void> Connect(scada::SessionConnectParams params) override;
+  virtual Awaitable<void> Reconnect() override;
+  virtual Awaitable<void> Disconnect() override;
   virtual bool IsConnected(base::TimeDelta* ping_delay) const override;
   virtual bool HasPrivilege(scada::Privilege privilege) const override;
   virtual bool IsScada() const override { return false; }

@@ -5,7 +5,6 @@
 #include "base/boost_log.h"
 #include "base/nested_logger.h"
 #include "base/observer_list.h"
-#include "base/promise.h"
 #include "scada/authentication.h"
 #include "scada/services.h"
 #include "scada/status_or.h"
@@ -58,9 +57,6 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   explicit RemoteSessionManager(RemoteSessionManagerContext&& context);
   virtual ~RemoteSessionManager();
 
-  // Throws an exception on error.
-  promise<> Init();
-  promise<> Shutdown();
   [[nodiscard]] Awaitable<void> InitAsync();
   [[nodiscard]] Awaitable<void> ShutdownAsync();
 

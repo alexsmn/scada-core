@@ -1,8 +1,7 @@
 # Core Docs
 
 This directory documents the public-facing async service layer in `core/scada`
-and the adapter types used to bridge between callback, promise, and coroutine
-APIs.
+and the adapter types used to bridge between callback and coroutine APIs.
 
 Documents:
 
@@ -20,5 +19,4 @@ Related source headers:
 - `core/scada/node_management_service.h`
 - `core/scada/session_service.h`
 - `core/scada/coroutine_services.h`
-- `core/scada/*_service_promises.h`
 - `core/scada/service_awaitable.h`

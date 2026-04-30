@@ -48,7 +48,7 @@ class TestServer {
   TestServer(AsioTestEnvironment& asio_env,
              const NetworkTestEnvironment& network)
       : asio_env_{asio_env}, network_{network} {
-    asio_env_.Wait(session_manager_.Init());
+    asio_env_.Wait(session_manager_.InitAsync());
   }
 
   AsioTestEnvironment& asio_env_;
@@ -125,17 +125,26 @@ void RemoteServicesTest::TearDown() {
 TEST_F(RemoteServicesTest, Test) {
   const scada::NodeId node_id{1, 1};
 
-  promise<scada::DataValue> promise;
+  bool received = false;
   MockFunction<void(const scada::DataValue& data_value)> data_change_handler;
 
   EXPECT_CALL(data_change_handler, Call(_))
-      .WillOnce(Invoke([promise](const scada::DataValue& data_value) mutable {
-        promise.resolve(data_value);
+      .Times(AtLeast(1))
+      .WillRepeatedly(Invoke([&](const scada::DataValue& data_value) {
+        if (data_value.status_code == scada::StatusCode::Good &&
+            data_value.value == scada::Variant{123}) {
+          received = true;
+        }
       }));
 
   scada::monitored_item monitored_item;
   monitored_item.subscribe_value(client_.node(node_id), /*params=*/{},
                                  data_change_handler.AsStdFunction());
 
-  asio_env_.Wait(promise);
+  for (int i = 0; i < 100 && !received; ++i) {
+    asio_env_.RunOneReadyOrBlockFor(std::chrono::milliseconds{1});
+  }
+  asio_env_.Poll();
+
+  EXPECT_TRUE(received);
 }

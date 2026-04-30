@@ -75,7 +75,7 @@ scada-core/
 
 ### base/ - Core Infrastructure
 Foundation utilities used throughout the codebase:
-- **Async:** `promise.h` - Promise-based async patterns (uses `promise-hpp`)
+- **Async:** `awaitable.h` - Coroutine-based async patterns
 - **Logging:** `boost_log.h`, `console_logger.h`, `nested_logger.h`
 - **Executors:** `executor.h`, `thread_executor.h`, `asio_executor.h`
 - **Data:** `json.h`, `csv_reader.h`, `bytemsg.h`, `bytebuf.h`
@@ -141,15 +141,15 @@ Use `#pragma once` (not traditional include guards)
 Order: Standard library, external deps (Boost, etc.), project headers
 
 ### Async Patterns
-- Use `promise<T>` for async operations (from `promise-hpp`)
-- Return `promise<void>` for operations without results
+- Use `Awaitable<T>` for async operations
+- Return `Awaitable<void>` for operations without results
 - Use `StatusOr<T>` for operations that may fail with status codes
 
 ### Error Handling
 - 40+ status codes defined (Good, Uncertain_*, Bad_*)
 - Use `Status` for error-only returns
 - Use `StatusOr<T>` for value-or-error returns
-- Promises propagate errors via exceptions
+- Coroutines propagate unexpected failures via exceptions
 
 ### Modern C++ Features (C++20)
 - `constexpr` and `noexcept` where appropriate
@@ -186,7 +186,6 @@ scada_module_unittests(module_name source_files)
 - Boost (atomic, context, date_time, filesystem, json, log, program_options, thread)
 - Protobuf 3
 - ChromiumBase
-- promise-hpp
 - Net (networking abstraction)
 
 **Optional:**
@@ -254,13 +253,10 @@ auto item = node.create_monitored_item([](const DataValue& dv) {
 });
 ```
 
-### Promise Usage
+### Coroutine Usage
 ```cpp
-// Chain operations
-client.connect(params)
-    .then([&]() { return node.read_value(); })
-    .then([](const DataValue& value) { /* use value */ })
-    .except([](std::exception_ptr e) { /* handle error */ });
+co_await client.connect(params);
+auto value = co_await node.read_value();
 ```
 
 ## CI/CD
@@ -285,7 +281,7 @@ See [chromium_deps.md](chromium_deps.md) for a detailed analysis of chromium-bas
 | Status codes | `scada/status.h` |
 | Variant type | `scada/variant.h` |
 | Protocol definition | `remote/scada.proto` |
-| Async utilities | `base/promise.h` |
+| Async utilities | `base/awaitable.h` |
 | Metrics API | `metrics/metric_service.h` |
 | Namespace definitions | `model/namespaces.h` |
 
@@ -314,7 +310,7 @@ See [chromium_deps.md](chromium_deps.md) for a detailed analysis of chromium-bas
 
 - Always read existing code before making changes
 - Follow existing naming and formatting conventions
-- Use `promise<T>` for new async APIs
+- Use `Awaitable<T>` for new async APIs
 - Add appropriate `constexpr` and `noexcept` specifiers
 - Prefer `StatusOr<T>` over exceptions for expected failures
 - Keep backward compatibility with Protocol Buffers (don't reuse field numbers)

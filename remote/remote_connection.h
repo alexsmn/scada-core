@@ -3,7 +3,6 @@
 #include "base/boost_log.h"
 #include "remote/connection.h"
 #include "base/awaitable.h"
-#include "base/promise.h"
 #include "scada/node_id.h"
 #include "scada/status.h"
 

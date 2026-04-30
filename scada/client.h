@@ -17,8 +17,8 @@ class client {
   const ServiceContext& context() const { return context_; }
   client with_context(const ServiceContext& context) const;
 
-  promise<void> connect(const SessionConnectParams& params) const;
-  promise<void> disconnect() const;
+  Awaitable<void> connect(SessionConnectParams params) const;
+  Awaitable<void> disconnect() const;
 
   scada::node node(const NodeId& node_id) const {
     assert(!node_id.is_null());
@@ -27,16 +27,16 @@ class client {
 
   scada::node server_node() const { return node(id::Server); }
 
-  promise<std::vector<StatusOr<std::vector<ReferenceDescription>>>> browse(
+  Awaitable<std::vector<StatusOr<std::vector<ReferenceDescription>>>> browse(
       const std::vector<BrowseDescription>& inputs) const;
 
-  promise<scada::node> add_node(const AddNodesItem& item) const;
+  Awaitable<scada::node> add_node(AddNodesItem item) const;
 
-  promise<void> acknowledge_events(std::vector<EventId> event_ids,
-                                   DateTime acknowledge_time) const;
+  Awaitable<void> acknowledge_events(std::vector<EventId> event_ids,
+                                     DateTime acknowledge_time) const;
 
-  promise<void> acknowledge_event(EventId event_id,
-                                  DateTime acknowledge_time) const {
+  Awaitable<void> acknowledge_event(EventId event_id,
+                                    DateTime acknowledge_time) const {
     return acknowledge_events({event_id}, acknowledge_time);
   }
 

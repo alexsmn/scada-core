@@ -1,6 +1,7 @@
 #include "metrics/metric_service_impl.h"
 
 #include "base/any_executor_dispatch.h"
+#include "base/awaitable.h"
 #include "base/executor_util.h"
 #include "metrics/metrics.h"
 
@@ -25,12 +26,13 @@ class MetricServiceImpl::ProviderReporter
 
  private:
   void Report() {
-    // Cycling stops when the promise is rejected.
-    provider_().then(BindExecutor(
-        executor_, [this, ref = shared_from_this()](const Metrics& metrics) {
-          sink_(metrics);
-          Schedule();
-        }));
+    CoSpawn(executor_, [this, ref = shared_from_this()]() -> Awaitable<void> {
+      try {
+        sink_(co_await provider_());
+        Schedule();
+      } catch (...) {
+      }
+    });
   }
 
   const AnyExecutor executor_;

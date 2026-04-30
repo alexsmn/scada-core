@@ -15,15 +15,14 @@ The service set is:
 - `NodeManagementService`
 - `SessionService`
 
-These services are intentionally split across multiple async styles today:
+These services are intentionally split across two async styles today:
 
 - callback-first service interfaces for most request/response services
-- promise-first session APIs
-- coroutine-first free helpers and coroutine adapter interfaces
+- coroutine-first session APIs, free helpers, and adapter interfaces
 
 The new coroutine layer in `core/scada/coroutine_services.h` standardizes a
 coroutine-facing shape for the async core services without breaking the
-existing callback or promise contracts.
+existing callback contracts.
 
 ## Service Locator
 
@@ -77,35 +76,6 @@ service.Call(node_id, method_id, arguments, user_id,
                // Handle method completion.
              });
 ```
-
-### Promise APIs
-
-`SessionService` is already promise-first:
-
-- `Connect`
-- `Reconnect`
-- `Disconnect`
-
-Example:
-
-```cpp
-session_service.Connect(params)
-    .then([] { /* connected */ })
-    .except([](std::exception_ptr e) { /* failure */ });
-```
-
-There are also promise convenience wrappers layered on top of callback
-services:
-
-- `attribute_service_promises.h`
-- `method_service_promises.h`
-- `history_service_promises.h`
-- `view_service_promises.h`
-- `node_management_service_promises.h`
-- `monitored_item_service_promises.h`
-
-These preserve the existing service contracts while offering a promise-based
-call site.
 
 ### Coroutine APIs
 
@@ -336,9 +306,9 @@ Purpose:
 Primary API:
 
 ```cpp
-virtual promise<void> Connect(const SessionConnectParams& params) = 0;
-virtual promise<void> Reconnect() = 0;
-virtual promise<void> Disconnect() = 0;
+virtual Awaitable<void> Connect(const SessionConnectParams& params) = 0;
+virtual Awaitable<void> Reconnect() = 0;
+virtual Awaitable<void> Disconnect() = 0;
 
 virtual bool IsConnected(base::TimeDelta* ping_delay = nullptr) const = 0;
 virtual NodeId GetUserId() const = 0;
@@ -347,16 +317,8 @@ virtual std::string GetHostName() const = 0;
 virtual bool IsScada() const = 0;
 ```
 
-Coroutine equivalent:
-
-```cpp
-class CoroutineSessionService {
-  virtual Awaitable<void> Connect(SessionConnectParams params) = 0;
-  virtual Awaitable<void> Reconnect() = 0;
-  virtual Awaitable<void> Disconnect() = 0;
-  // State/query methods remain synchronous.
-};
-```
+Session lifecycle methods are coroutine-native. State/query methods remain
+synchronous.
 
 ### MonitoredItemService
 
@@ -407,21 +369,6 @@ Behavior:
 - resumes the awaiting coroutine on the provided executor
 - preserves the original callback service as the source of truth
 
-### Promise To Coroutine
-
-Use this when the implementation already returns `promise<T>` and the consumer
-needs an awaitable interface.
-
-Adapter:
-
-- `PromiseToCoroutineSessionServiceAdapter`
-
-Behavior:
-
-- uses `AwaitPromise(...)`
-- converts promise completion into `co_await` suspension/resume
-- leaves all synchronous session query methods unchanged
-
 ### Coroutine To Callback
 
 Use these when the implementation is coroutine-first, but existing call sites
@@ -449,37 +396,19 @@ Exception mapping rules:
   adapter-level failure
 - history result adapters return a result object with bad `status`
 
-### Coroutine To Promise
-
-Use this when the implementation is coroutine-first, but callers still expect
-`promise<T>`.
-
-Adapter:
-
-- `CoroutineToPromiseSessionServiceAdapter`
-
-Behavior:
-
-- uses `ToPromise(...)`
-- `ToPromise(...)` starts the coroutine through the shared `CoSpawn(...)`
-  launch helper
-- keeps `SessionService` API compatibility while allowing coroutine-based
-  implementation internals
-
 ## Choosing An API Style
 
 Recommended default for new internal async logic:
 
 1. implement new async workflows as coroutines
-2. adapt into existing callback or promise interfaces at module boundaries
+2. adapt into existing callback interfaces at module boundaries
 3. keep `scada::services` wiring stable until the caller graph is migrated
 
 Practical rules:
 
 - use callback services when integrating with existing legacy service code
-- use promise wrappers when the caller already composes with `.then()` chains
 - use coroutine services for new orchestration code or migrations away from
-  nested callbacks/promises
+  nested callbacks
 - prefer named adapters from `coroutine_services.h` over ad hoc lambda bridges
 
 ## Minimal Examples
@@ -508,10 +437,9 @@ view_adapter.Browse(context, inputs,
 ### Exposing A Coroutine Session Implementation As SessionService
 
 ```cpp
-CoroutineToPromiseSessionServiceAdapter session_adapter{
-    executor, coroutine_session};
+CoroutineToSessionServiceAdapter session_adapter{coroutine_session};
 
-return session_adapter.Connect(params);
+co_return co_await session_adapter.Connect(params);
 ```
 
 ## Tests
@@ -525,7 +453,6 @@ The unit tests validate:
 - request argument forwarding
 - result forwarding
 - callback-to-coroutine bridging
-- promise-to-coroutine bridging
 - coroutine-to-callback bridging
 - coroutine exception to status conversion
-- coroutine-to-promise bridging for sessions
+- coroutine session forwarding

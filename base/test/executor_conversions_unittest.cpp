@@ -1,12 +1,13 @@
 #include "base/any_executor_dispatch.h"
 #include "base/executor.h"
 #include "base/executor_conversions.h"
-#include "base/test/future_test.h"
 #include "base/test/test_executor.h"
 
 #include <gtest/gtest.h>
 
-#include <future>
+#include <condition_variable>
+#include <mutex>
+#include <optional>
 #include <thread>
 
 namespace {
@@ -44,14 +45,21 @@ TEST(ExecutorConversions, AnyExecutorDispatchesOnWrappedLegacyExecutor) {
 TEST(ExecutorConversions, ThreadAnyExecutorRunsTaskOnWorkerThread) {
   auto executor = MakeThreadAnyExecutor();
 
-  std::promise<std::thread::id> result;
-  auto future = result.get_future();
+  std::mutex mutex;
+  std::condition_variable cv;
+  std::optional<std::thread::id> result;
 
   Dispatch(executor, [&] {
-    result.set_value(std::this_thread::get_id());
+    {
+      std::lock_guard lock{mutex};
+      result = std::this_thread::get_id();
+    }
+    cv.notify_all();
   });
 
-  EXPECT_NE(WaitFuture(future), std::this_thread::get_id());
+  std::unique_lock lock{mutex};
+  cv.wait(lock, [&] { return result.has_value(); });
+  EXPECT_NE(*result, std::this_thread::get_id());
 }
 
 }  // namespace

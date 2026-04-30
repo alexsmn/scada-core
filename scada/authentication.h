@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/awaitable.h"
-#include "base/promise.h"
 #include "base/struct_writer.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
@@ -22,14 +21,12 @@ using AuthenticationCallback =
     std::function<void(const AuthenticationResult& result)>;
 
 // TODO: Merge into `SessionService`.
-using Authenticator = std::function<promise<AuthenticationResult>(
-    const scada::LocalizedText& user_name,
-    const scada::LocalizedText& password)>;
-
-using AsyncAuthenticator = std::function<
+using Authenticator = std::function<
     Awaitable<scada::StatusOr<AuthenticationResult>>(
         scada::LocalizedText user_name,
         scada::LocalizedText password)>;
+
+using AsyncAuthenticator = Authenticator;
 
 class CoroutineAuthenticator {
  public:

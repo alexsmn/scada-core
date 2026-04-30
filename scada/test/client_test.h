@@ -29,7 +29,7 @@ class ClientTest : public testing::Test {
   void ExpectValue(ClientTestMonitoredItem& monitored_value,
                    const Variant& value) const;
 
-  promise<> ExpectValue(const scada::node& node, const Variant& value) const;
+  void ExpectValue(const scada::node& node, const Variant& value) const;
 };
 
 inline std::unique_ptr<ClientTestMonitoredItem> ClientTest::SubscribeValue(
@@ -89,18 +89,15 @@ inline void ClientTest::ExpectValue(ClientTestMonitoredItem& monitored_value,
                          Field(&DataValue::status_code, StatusCode::Good))));
 }
 
-inline promise<> ClientTest::ExpectValue(const scada::node& node,
-                                         const Variant& value) const {
+inline void ClientTest::ExpectValue(const scada::node& node,
+                                    const Variant& value) const {
   using namespace testing;
 
   auto monitored_value = std::make_shared<ClientTestMonitoredItem>();
 
-  promise<> promise;
   EXPECT_CALL(monitored_value->data_change_handler,
               Call(AllOf(Field(&DataValue::value, value),
-                         Field(&DataValue::status_code, StatusCode::Good))))
-      .WillOnce(Invoke([promise]() mutable { promise.resolve(); }));
-  return promise;
+                         Field(&DataValue::status_code, StatusCode::Good))));
 }
 
 }  // namespace scada

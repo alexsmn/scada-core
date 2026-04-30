@@ -2,7 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/cancelation.h"
-#include "net/net_executor_adapter.h"
+#include "base/executor_adapter.h"
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -23,7 +23,7 @@ using Awaitable = boost::asio::awaitable<T>;
 // so coroutine construction stays inside `boost::asio::co_spawn`.
 template <class F>
 inline void CoSpawn(const std::shared_ptr<Executor>& executor, F&& fn) {
-  boost::asio::co_spawn(NetExecutorAdapter{executor}, std::forward<F>(fn),
+  boost::asio::co_spawn(ExecutorAdapter{executor}, std::forward<F>(fn),
                         boost::asio::detached);
 }
 
@@ -39,7 +39,7 @@ inline void CoSpawn(const std::shared_ptr<Executor>& executor,
                     F&& fn) {
   using Fn = std::decay_t<F>;
   boost::asio::co_spawn(
-      NetExecutorAdapter{executor},
+      ExecutorAdapter{executor},
       [cancelation = std::move(cancelation),
        fn = Fn(std::forward<F>(fn))]() mutable -> Awaitable<void> {
         auto locked = cancelation.lock();

@@ -18,24 +18,24 @@ endif()
 
 set_property(TARGET base_unittest PROPERTY FOLDER ${scada_core_folder})
 
-add_executable(base_awaitable_promise_unittests
+add_executable(base_awaitable_unittests
   "async_cache_unittest.cpp"
   "async_completion_unittest.cpp"
   "callback_awaitable_unittest.cpp"
-  "awaitable_promise_unittest.cpp"
   "awaitable_unittest.cpp"
   "executor_conversions_unittest.cpp"
+  "observer_list_unittest.cpp"
   "gtest_main.cpp"
 )
 
-target_link_libraries(base_awaitable_promise_unittests PRIVATE
+target_link_libraries(base_awaitable_unittests PRIVATE
   scada_base
   GTest::gmock
   Transport::transport
 )
 
 include(GoogleTest)
-gtest_discover_tests(base_awaitable_promise_unittests)
+gtest_discover_tests(base_awaitable_unittests)
 
-set_property(TARGET base_awaitable_promise_unittests PROPERTY FOLDER
+set_property(TARGET base_awaitable_unittests PROPERTY FOLDER
   ${scada_core_folder})

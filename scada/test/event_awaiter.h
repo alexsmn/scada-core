@@ -1,7 +1,9 @@
 #pragma once
 
+#include "base/callback_awaitable.h"
+#include "base/executor_conversions.h"
 #include "scada/client.h"
-#include "scada/status_promise.h"
+#include "scada/status_awaitable.h"
 
 namespace scada {
 
@@ -13,34 +15,38 @@ struct event_awaiter {
   }
 
   template <class T>
-  promise<scada::Event> when(T&& matcher) {
+  Awaitable<scada::Event> when(T&& matcher) {
     return state_->when(std::forward<T>(matcher));
   }
 
-  promise<scada::Event> when_node(const scada::NodeId& node_id) {
+  Awaitable<scada::Event> when_node(const scada::NodeId& node_id) {
     return state_->when([node_id](const scada::Event& event) {
       return event.node_id == node_id;
     });
   }
 
-  promise<scada::Event> when_any() {
+  Awaitable<scada::Event> when_any() {
     return state_->when([](const scada::Event& event) { return true; });
   }
 
  private:
   struct state {
     template <class T>
-    promise<scada::Event> when(T&& matcher) {
-      return matchers_
-          .emplace_back(std::forward<T>(matcher), promise<scada::Event>{})
-          .second;
+    Awaitable<scada::Event> when(T&& matcher) {
+      auto [status, event] = co_await CallbackToAwaitable<Status, scada::Event>(
+          MakeThreadAnyExecutor(),
+          [this, matcher = std::forward<T>(matcher)](auto callback) mutable {
+            matchers_.emplace_back(std::move(matcher), std::move(callback));
+          });
+      ThrowIfBad(status);
+      co_return std::move(event);
     }
 
     void handle_system_event(const scada::Status& status,
                              const scada::Event& event) {
       if (!status) {
-        for (auto& [m, p] : matchers_) {
-          scada::RejectStatusPromise(p, status);
+        for (auto& [m, callback] : matchers_) {
+          callback(status, {});
         }
         matchers_.clear();
         return;
@@ -50,15 +56,16 @@ struct event_awaiter {
           matchers_, [&event](const auto& m) { return !m(event); },
           [](const auto& p) { return p.first; });
 
-      for (auto& [m, p] : matching) {
-        p.resolve(event);
+      for (auto& [m, callback] : matching) {
+        callback(StatusCode::Good, event);
       }
 
       matchers_.erase(matching.begin(), matching.end());
     }
 
     using matcher = std::function<bool(const scada::Event& event)>;
-    std::vector<std::pair<matcher, promise<scada::Event>>> matchers_;
+    using callback = std::function<void(scada::Status, scada::Event)>;
+    std::vector<std::pair<matcher, callback>> matchers_;
   };
 
   const std::shared_ptr<state> state_ = std::make_shared<state>();
