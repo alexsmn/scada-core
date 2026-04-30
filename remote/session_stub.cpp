@@ -44,12 +44,6 @@ void SessionStub::Init() {
         executor_, *services_.attribute_service);
   }
 
-  if (services_.method_service) {
-    coroutine_method_service_ = std::make_unique<
-        scada::CallbackToCoroutineMethodServiceAdapter>(
-        executor_, *services_.method_service);
-  }
-
   if (services_.history_service) {
     coroutine_history_service_ = std::make_unique<
         scada::CallbackToCoroutineHistoryServiceAdapter>(
@@ -349,10 +343,10 @@ Awaitable<void> SessionStub::OnCallAsync(
     scada::NodeId method_id,
     std::vector<scada::Variant> arguments) {
   auto status =
-      co_await coroutine_method_service_->Call(std::move(node_id),
-                                               std::move(method_id),
-                                               std::move(arguments),
-                                               service_context_.user_id());
+      co_await services_.method_service->Call(std::move(node_id),
+                                              std::move(method_id),
+                                              std::move(arguments),
+                                              service_context_.user_id());
 
   if (!connection_)
     co_return;

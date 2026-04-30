@@ -557,14 +557,12 @@ void SessionProxy::Write(
   });
 }
 
-void SessionProxy::Call(const scada::NodeId& node_id,
-                        const scada::NodeId& method_id,
-                        const std::vector<scada::Variant>& arguments,
-                        const scada::NodeId& user_id,
-                        const scada::StatusCallback& callback) {
+Awaitable<scada::Status> SessionProxy::Call(scada::NodeId node_id,
+                                            scada::NodeId method_id,
+                                            std::vector<scada::Variant> arguments,
+                                            scada::NodeId user_id) {
   if (!session_created_) {
-    callback(scada::StatusCode::Bad_Disconnected);
-    return;
+    co_return scada::StatusCode::Bad_Disconnected;
   }
 
   protocol::Request request;
@@ -573,10 +571,8 @@ void SessionProxy::Call(const scada::NodeId& node_id,
   Convert(method_id, *command.mutable_method_id());
   Convert(arguments, *command.mutable_argument());
 
-  Request(request, [callback](const protocol::Response& response) {
-    if (callback)
-      callback(ConvertTo<scada::Status>(response.status()));
-  });
+  auto response = co_await RequestAsync(std::move(request));
+  co_return ConvertTo<scada::Status>(response.status());
 }
 
 std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(

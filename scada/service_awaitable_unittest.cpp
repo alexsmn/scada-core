@@ -167,11 +167,9 @@ TEST(ServiceAwaitableTest,
        .target_node_id = ExpandedNodeId{NodeId{23}}}};
   const auto expected_delete_reference = delete_references_inputs[0];
 
-  EXPECT_CALL(method_service, Call(node_id, method_id, arguments, user_id, _))
-      .WillOnce(Invoke([](const NodeId&, const NodeId&,
-                          const std::vector<Variant>&, const NodeId&,
-                          const StatusCallback& callback) {
-        callback(StatusCode::Bad_WrongCallArguments);
+  EXPECT_CALL(method_service, Call(node_id, method_id, arguments, user_id))
+      .WillOnce(Invoke([](NodeId, NodeId, std::vector<Variant>, NodeId) {
+        return MakeMethodCallResult(StatusCode::Bad_WrongCallArguments);
       }));
   EXPECT_CALL(history_service, HistoryReadRaw(_, _))
       .WillOnce(Invoke([&](const HistoryReadRawDetails& actual_details,

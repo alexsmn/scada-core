@@ -8,12 +8,18 @@ namespace scada {
 
 class MockMethodService : public MethodService {
  public:
-  MOCK_METHOD5(Call,
-               void(const NodeId& node_id,
-                    const NodeId& method_id,
-                    const std::vector<Variant>& arguments,
-                    const scada::NodeId& user_id,
-                    const StatusCallback& callback));
+  MOCK_METHOD(Awaitable<Status>,
+              Call,
+              (NodeId node_id,
+               NodeId method_id,
+               std::vector<Variant> arguments,
+               NodeId user_id),
+              (override));
 };
+
+inline Awaitable<Status> MakeMethodCallResult(
+    Status status = StatusCode::Good) {
+  co_return std::move(status);
+}
 
 }  // namespace scada

@@ -71,10 +71,7 @@ service.Read(context, inputs,
                // Handle status and result batch.
              });
 
-service.Call(node_id, method_id, arguments, user_id,
-             [](Status&& status) {
-               // Handle method completion.
-             });
+auto status = co_await service.Call(node_id, method_id, arguments, user_id);
 ```
 
 ### Coroutine APIs
@@ -166,7 +163,7 @@ virtual void Call(const NodeId& node_id,
 Coroutine equivalent:
 
 ```cpp
-class CoroutineMethodService {
+class MethodService {
   virtual Awaitable<Status> Call(NodeId node_id,
                                  NodeId method_id,
                                  std::vector<Variant> arguments,
@@ -351,7 +348,6 @@ consumer wants an awaitable service interface.
 Adapters:
 
 - `CallbackToCoroutineAttributeServiceAdapter`
-- `CallbackToCoroutineMethodServiceAdapter`
 - `CallbackToCoroutineHistoryServiceAdapter`
 - `CallbackToCoroutineViewServiceAdapter`
 - `CallbackToCoroutineNodeManagementServiceAdapter`
@@ -377,7 +373,6 @@ or service registries still expect callback interfaces.
 Adapters:
 
 - `CoroutineToCallbackAttributeServiceAdapter`
-- `CoroutineToCallbackMethodServiceAdapter`
 - `CoroutineToCallbackHistoryServiceAdapter`
 - `CoroutineToCallbackViewServiceAdapter`
 - `CoroutineToCallbackNodeManagementServiceAdapter`

@@ -91,11 +91,10 @@ class SessionProxy : private SessionProxyContext,
       const scada::WriteCallback& callback) override;
 
   // scada::MethodService
-  virtual void Call(const scada::NodeId& node_id,
-                    const scada::NodeId& method_id,
-                    const std::vector<scada::Variant>& arguments,
-                    const scada::NodeId& user_id,
-                    const scada::StatusCallback& callback) override;
+  virtual Awaitable<scada::Status> Call(scada::NodeId node_id,
+                                        scada::NodeId method_id,
+                                        std::vector<scada::Variant> arguments,
+                                        scada::NodeId user_id) override;
 
  private:
   [[nodiscard]] transport::awaitable<void> Connect();

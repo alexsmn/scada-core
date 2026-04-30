@@ -230,14 +230,8 @@ inline Awaitable<Status> CallAsync(AnyExecutor executor,
                                    NodeId method_id,
                                    std::vector<Variant> arguments,
                                    NodeId user_id) {
-  co_return co_await AwaitStatusCallback(
-      std::move(executor),
-      [&service, node_id = std::move(node_id),
-       method_id = std::move(method_id), arguments = std::move(arguments),
-       user_id = std::move(user_id)](auto callback) mutable {
-        service.Call(node_id, method_id, arguments, user_id,
-                     std::move(callback));
-      });
+  co_return co_await service.Call(std::move(node_id), std::move(method_id),
+                                  std::move(arguments), std::move(user_id));
 }
 
 inline Awaitable<HistoryReadRawResult> HistoryReadRawAsync(
