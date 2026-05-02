@@ -12,7 +12,7 @@ using namespace testing;
 
 namespace {
 
-class TestCoroutineViewService final : public scada::CoroutineViewService {
+class TestViewService final : public scada::ViewService {
  public:
   Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>> Browse(
       scada::ServiceContext context,
@@ -45,7 +45,7 @@ class TestCoroutineViewService final : public scada::CoroutineViewService {
 TEST(ViewServiceStubTest, BrowseRoutesToCoroutineServiceFromContext) {
   auto executor = std::make_shared<TestExecutor>();
   auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
-  TestCoroutineViewService service;
+  TestViewService service;
 
   auto stub = std::make_shared<ViewServiceStub>(ViewServiceStubContext{
       .executor_ = executor,

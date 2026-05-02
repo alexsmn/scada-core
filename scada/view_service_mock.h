@@ -6,19 +6,23 @@
 
 namespace scada {
 
+template <class T>
+Awaitable<StatusOr<std::vector<T>>> MakeViewResult(
+    StatusOr<std::vector<T>> result) {
+  co_return std::move(result);
+}
+
 class MockViewService : public ViewService {
  public:
-  MOCK_METHOD(void,
+  MOCK_METHOD((Awaitable<StatusOr<std::vector<BrowseResult>>>),
               Browse,
-              (const scada::ServiceContext& context,
-               const std::vector<BrowseDescription>& inputs,
-               const BrowseCallback& callback),
+              (scada::ServiceContext context,
+               std::vector<BrowseDescription> inputs),
               (override));
 
-  MOCK_METHOD(void,
+  MOCK_METHOD((Awaitable<StatusOr<std::vector<BrowsePathResult>>>),
               TranslateBrowsePaths,
-              (const std::vector<BrowsePath>& browse_paths,
-               const TranslateBrowsePathsCallback& callback),
+              (std::vector<BrowsePath> browse_paths),
               (override));
 };
 

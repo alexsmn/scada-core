@@ -81,28 +81,9 @@ struct BrowsePathResult {
   std::vector<BrowsePathTarget> targets;
 };
 
-using BrowseCallback =
-    std::function<void(Status status, std::vector<BrowseResult> results)>;
-
-using TranslateBrowsePathsCallback =
-    std::function<void(Status status, std::vector<BrowsePathResult> results)>;
-
 class ViewService {
  public:
-  virtual ~ViewService() {}
-
-  virtual void Browse(const ServiceContext& context,
-                      const std::vector<BrowseDescription>& inputs,
-                      const BrowseCallback& callback) = 0;
-
-  virtual void TranslateBrowsePaths(
-      const std::vector<BrowsePath>& inputs,
-      const TranslateBrowsePathsCallback& callback) = 0;
-};
-
-class CoroutineViewService {
- public:
-  virtual ~CoroutineViewService() = default;
+  virtual ~ViewService() = default;
 
   virtual Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
       ServiceContext context,
@@ -112,116 +93,28 @@ class CoroutineViewService {
   TranslateBrowsePaths(std::vector<BrowsePath> inputs) = 0;
 };
 
-class CallbackToCoroutineViewServiceAdapter final
-    : public CoroutineViewService {
- public:
-  CallbackToCoroutineViewServiceAdapter(AnyExecutor executor,
-                                        ViewService& service)
-      : executor_{std::move(executor)}, service_{service} {}
-  CallbackToCoroutineViewServiceAdapter(std::shared_ptr<Executor> executor,
-                                        ViewService& service)
-      : CallbackToCoroutineViewServiceAdapter(
-            MakeAnyExecutor(std::move(executor)), service) {}
-
-  Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
-      ServiceContext context,
-      std::vector<BrowseDescription> inputs) override {
-    co_return co_await AwaitStatusOrCallback<std::vector<BrowseResult>>(
-        executor_,
-        [this, context = std::move(context), inputs = std::move(inputs)](
-            auto callback) mutable {
-          service_.Browse(context, inputs, std::move(callback));
-        });
+inline Awaitable<BrowseResult> Browse(ViewService& view_service,
+                                      scada::ServiceContext context,
+                                      BrowseDescription input) {
+  auto results =
+      co_await view_service.Browse(std::move(context), {std::move(input)});
+  if (!results.ok()) {
+    co_return BrowseResult{.status_code = results.status().code()};
   }
-
-  Awaitable<StatusOr<std::vector<BrowsePathResult>>>
-  TranslateBrowsePaths(std::vector<BrowsePath> inputs) override {
-    co_return co_await AwaitStatusOrCallback<std::vector<BrowsePathResult>>(
-        executor_, [this, inputs = std::move(inputs)](auto callback) mutable {
-          service_.TranslateBrowsePaths(inputs, std::move(callback));
-        });
-  }
-
- private:
-  const AnyExecutor executor_;
-  ViewService& service_;
-};
-
-class CoroutineToCallbackViewServiceAdapter final : public ViewService {
- public:
-  CoroutineToCallbackViewServiceAdapter(AnyExecutor executor,
-                                        CoroutineViewService& service)
-      : executor_{std::move(executor)}, service_{service} {}
-  CoroutineToCallbackViewServiceAdapter(std::shared_ptr<Executor> executor,
-                                        CoroutineViewService& service)
-      : CoroutineToCallbackViewServiceAdapter(
-            MakeAnyExecutor(std::move(executor)), service) {}
-
-  void Browse(const ServiceContext& context,
-              const std::vector<BrowseDescription>& inputs,
-              const BrowseCallback& callback) override {
-    CoSpawn(executor_,
-            [this, context, inputs, callback]() mutable -> Awaitable<void> {
-              try {
-                CompleteStatusOrCallback(
-                    callback, co_await service_.Browse(context, inputs));
-              } catch (...) {
-                callback(GetExceptionStatus(std::current_exception()), {});
-              }
-            });
-  }
-
-  void TranslateBrowsePaths(
-      const std::vector<BrowsePath>& inputs,
-      const TranslateBrowsePathsCallback& callback) override {
-    CoSpawn(executor_,
-            [this, inputs, callback]() mutable -> Awaitable<void> {
-              try {
-                CompleteStatusOrCallback(
-                    callback,
-                    co_await service_.TranslateBrowsePaths(inputs));
-              } catch (...) {
-                callback(GetExceptionStatus(std::current_exception()), {});
-              }
-            });
-  }
-
- private:
-  const AnyExecutor executor_;
-  CoroutineViewService& service_;
-};
-
-// Callback = void(const BrowseResult);
-template <class Callback>
-inline void Browse(ViewService& view_service,
-                   const scada::ServiceContext& context,
-                   const BrowseDescription& input,
-                   Callback&& callback) {
-  view_service.Browse(
-      context, {input},
-      [callback = std::forward<Callback>(callback)](
-          Status status, std::vector<BrowseResult> results) mutable {
-        if (status)
-          callback(std::move(results.front()));
-        else
-          callback({status.code()});
-      });
+  assert(results->size() == 1);
+  co_return std::move(results->front());
 }
 
-// Callback = void(const BrowsePathResult);
-template <class Callback>
-inline void TranslateBrowsePath(ViewService& view_service,
-                                BrowsePath&& browse_path,
-                                Callback&& callback) {
-  view_service.TranslateBrowsePaths(
-      {std::move(browse_path)},
-      [callback = std::forward<Callback>(callback)](
-          Status status, std::vector<BrowsePathResult> results) mutable {
-        if (status)
-          callback(std::move(results.front()));
-        else
-          callback(BrowsePathResult{status.code()});
-      });
+inline Awaitable<BrowsePathResult> TranslateBrowsePath(
+    ViewService& view_service,
+    BrowsePath browse_path) {
+  auto results =
+      co_await view_service.TranslateBrowsePaths({std::move(browse_path)});
+  if (!results.ok()) {
+    co_return BrowsePathResult{.status_code = results.status().code()};
+  }
+  assert(results->size() == 1);
+  co_return std::move(results->front());
 }
 
 std::ostream& operator<<(std::ostream& stream, BrowseDirection v);

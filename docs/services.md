@@ -221,7 +221,7 @@ virtual void TranslateBrowsePaths(
 Coroutine equivalent:
 
 ```cpp
-class CoroutineViewService {
+class ViewService {
   virtual Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
       ServiceContext context,
       std::vector<BrowseDescription> inputs) = 0;
@@ -318,13 +318,12 @@ consumer wants an awaitable service interface.
 Adapters:
 
 - `CallbackToCoroutineAttributeServiceAdapter`
-- `CallbackToCoroutineViewServiceAdapter`
 
 Construction pattern:
 
 ```cpp
 auto executor = std::shared_ptr<Executor>{...};
-CallbackToCoroutineViewServiceAdapter adapter{executor, callback_service};
+CallbackToCoroutineAttributeServiceAdapter adapter{executor, callback_service};
 ```
 
 Behavior:
@@ -342,7 +341,6 @@ Adapters:
 
 - `CoroutineToCallbackAttributeServiceAdapter`
 - `HistoryServiceAdapter_REMOVED`
-- `CoroutineToCallbackViewServiceAdapter`
 
 Behavior:
 
@@ -363,12 +361,12 @@ Exception mapping rules:
 Recommended default for new internal async logic:
 
 1. implement new async workflows as coroutines
-2. adapt into existing callback interfaces at module boundaries
+2. adapt attribute callbacks at module boundaries where required
 3. keep `scada::services` wiring stable until the caller graph is migrated
 
 Practical rules:
 
-- use callback services when integrating with existing legacy service code
+- use callback services only for service interfaces that still expose callbacks
 - use coroutine services for new orchestration code or migrations away from
   nested callbacks
 - prefer named adapters from `coroutine_services.h` over ad hoc lambda bridges
@@ -385,15 +383,16 @@ auto [status, values] =
     co_await async_attribute_service.Read(context, read_inputs);
 ```
 
-### Exposing A Coroutine Service As A Legacy Callback Service
+### Exposing A Coroutine Attribute Service As A Legacy Callback Service
 
 ```cpp
-CoroutineToCallbackViewServiceAdapter view_adapter{executor, coroutine_view};
+CoroutineToCallbackAttributeServiceAdapter attribute_adapter{executor,
+                                                            coroutine_attribute};
 
-view_adapter.Browse(context, inputs,
-                    [](Status status, std::vector<BrowseResult> results) {
-                      // Legacy callback consumer.
-                    });
+attribute_adapter.Read(context, inputs,
+                       [](Status status, std::vector<DataValue> results) {
+                         // Legacy callback consumer.
+                       });
 ```
 
 ## Tests

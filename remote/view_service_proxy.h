@@ -12,13 +12,11 @@ class ViewServiceProxy : public scada::ViewService {
   void OnChannelClosed();
 
   // scada::ViewService
-  virtual void Browse(
-      const scada::ServiceContext& context,
-      const std::vector<scada::BrowseDescription>& nodes,
-      const scada::BrowseCallback& callback) override;
-  virtual void TranslateBrowsePaths(
-      const std::vector<scada::BrowsePath>& browse_paths,
-      const scada::TranslateBrowsePathsCallback& callback) override;
+  [[nodiscard]] Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>>
+  Browse(scada::ServiceContext context,
+         std::vector<scada::BrowseDescription> nodes) override;
+  [[nodiscard]] Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
+  TranslateBrowsePaths(std::vector<scada::BrowsePath> browse_paths) override;
 
  private:
   MessageSender* sender_ = nullptr;

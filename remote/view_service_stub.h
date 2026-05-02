@@ -24,7 +24,7 @@ struct ViewServiceStubContext {
   const std::shared_ptr<Executor> executor_;
   const std::weak_ptr<MessageSender> sender_;
   const scada::ServiceContext service_context_;
-  scada::CoroutineViewService& coroutine_service_;
+  scada::ViewService& service_;
 };
 
 class ViewServiceStub final : private ViewServiceStubContext,
@@ -42,7 +42,7 @@ class ViewServiceStub final : private ViewServiceStubContext,
       scada::ServiceContext context,
       std::vector<scada::BrowseDescription> inputs);
   void OnBrowsePaths(const protocol::Request& request);
- [[nodiscard]] Awaitable<void> OnBrowsePathsAsync(
+  [[nodiscard]] Awaitable<void> OnBrowsePathsAsync(
       unsigned request_id,
       std::vector<scada::BrowsePath> inputs);
 

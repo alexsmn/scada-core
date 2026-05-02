@@ -112,8 +112,6 @@ class SessionStub : public MessageSender,
   std::shared_ptr<HistoryStub> history_stub_;
   std::unique_ptr<scada::CallbackToCoroutineAttributeServiceAdapter>
       coroutine_attribute_service_;
-  std::unique_ptr<scada::CallbackToCoroutineViewServiceAdapter>
-      coroutine_view_service_;
   int next_subscription_id_ = 1;
 
   std::unordered_map<int /*subscription_id*/, std::shared_ptr<SubscriptionStub>>

@@ -193,23 +193,16 @@ inline Awaitable<StatusOr<std::vector<BrowseResult>>> BrowseAsync(
     ViewService& service,
     ServiceContext context,
     std::vector<BrowseDescription> inputs) {
-  co_return co_await AwaitStatusOrCallback<std::vector<BrowseResult>>(
-      std::move(executor),
-      [&service, context = std::move(context),
-       inputs = std::move(inputs)](auto callback) mutable {
-        service.Browse(context, inputs, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.Browse(std::move(context), std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<BrowsePathResult>>>
 TranslateBrowsePathsAsync(AnyExecutor executor,
                           ViewService& service,
                           std::vector<BrowsePath> inputs) {
-  co_return co_await AwaitStatusOrCallback<std::vector<BrowsePathResult>>(
-      std::move(executor),
-      [&service, inputs = std::move(inputs)](auto callback) mutable {
-        service.TranslateBrowsePaths(inputs, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.TranslateBrowsePaths(std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<StatusCode>>> WriteAsync(

@@ -1,5 +1,6 @@
 #include "remote/view_service_proxy.h"
 
+#include "base/callback_awaitable.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
@@ -15,12 +16,11 @@ void ViewServiceProxy::OnChannelClosed() {
   sender_ = nullptr;
 }
 
-void ViewServiceProxy::Browse(
-    const scada::ServiceContext& context,
-    const std::vector<scada::BrowseDescription>& nodes,
-    const scada::BrowseCallback& callback) {
+Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>>
+ViewServiceProxy::Browse(scada::ServiceContext context,
+                         std::vector<scada::BrowseDescription> nodes) {
   if (!sender_)
-    return callback(scada::StatusCode::Bad_Disconnected, {});
+    co_return scada::Status{scada::StatusCode::Bad_Disconnected};
 
   protocol::Request request;
   request.set_trace_id(context.trace_id());
@@ -35,25 +35,51 @@ void ViewServiceProxy::Browse(
       browse_node.set_include_subtypes(true);
   }
 
-  sender_->Request(request, [callback](const protocol::Response& response) {
-    callback(ConvertTo<scada::Status>(response.status()),
-             ConvertTo<std::vector<scada::BrowseResult>>(
-                 response.browse_result().results()));
-  });
+  auto executor = co_await boost::asio::this_coro::executor;
+  auto [response] = co_await CallbackToAwaitable<protocol::Response>(
+      executor, [this, &request](auto callback) mutable {
+        sender_->Request(request,
+                         [callback = std::move(callback)](
+                             const protocol::Response& response) mutable {
+                           callback(response);
+                         });
+      });
+
+  auto status = ConvertTo<scada::Status>(response.status());
+  auto results = ConvertTo<std::vector<scada::BrowseResult>>(
+      response.browse_result().results());
+  co_return status
+                ? scada::StatusOr<std::vector<scada::BrowseResult>>{
+                      std::move(results)}
+                : scada::StatusOr<std::vector<scada::BrowseResult>>{
+                      std::move(status)};
 }
 
-void ViewServiceProxy::TranslateBrowsePaths(
-    const std::vector<scada::BrowsePath>& browse_paths,
-    const scada::TranslateBrowsePathsCallback& callback) {
+Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
+ViewServiceProxy::TranslateBrowsePaths(
+    std::vector<scada::BrowsePath> browse_paths) {
   if (!sender_)
-    return callback(scada::StatusCode::Bad_Disconnected, {});
+    co_return scada::Status{scada::StatusCode::Bad_Disconnected};
 
   protocol::Request request;
   Convert(browse_paths, *request.mutable_browse_path());
 
-  sender_->Request(request, [callback](const protocol::Response& response) {
-    callback(ConvertTo<scada::Status>(response.status()),
-             ConvertTo<std::vector<scada::BrowsePathResult>>(
-                 response.browse_path_result()));
-  });
+  auto executor = co_await boost::asio::this_coro::executor;
+  auto [response] = co_await CallbackToAwaitable<protocol::Response>(
+      executor, [this, &request](auto callback) mutable {
+        sender_->Request(request,
+                         [callback = std::move(callback)](
+                             const protocol::Response& response) mutable {
+                           callback(response);
+                         });
+      });
+
+  auto status = ConvertTo<scada::Status>(response.status());
+  auto results = ConvertTo<std::vector<scada::BrowsePathResult>>(
+      response.browse_path_result());
+  co_return status
+                ? scada::StatusOr<std::vector<scada::BrowsePathResult>>{
+                      std::move(results)}
+                : scada::StatusOr<std::vector<scada::BrowsePathResult>>{
+                      std::move(status)};
 }
