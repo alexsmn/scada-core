@@ -6,33 +6,30 @@
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
-#include "scada/coroutine_services.h"
 #include "scada/history_service.h"
 
 #include "base/debug_util.h"
 
 HistoryStub::HistoryStub(scada::HistoryService& service,
-                         scada::CoroutineHistoryService& coroutine_service,
                          std::weak_ptr<MessageSender> sender,
                          std::shared_ptr<Executor> executor)
     : service_{service},
-      coroutine_service_{coroutine_service},
       sender_{std::move(sender)},
       executor_{std::move(executor)} {}
 
 HistoryStub::~HistoryStub() {
   // Release continuation points.
   if (!continuation_points_.empty()) {
-    const scada::HistoryReadRawCallback callback =
-        [](scada::HistoryReadRawResult&& result) {
-          assert(result.values.empty());
-          assert(result.continuation_point.empty());
-        };
-
     for (auto& [continuation_point, details] : continuation_points_) {
       details.release_continuation_point = true;
       details.continuation_point = std::move(continuation_point);
-      service_.HistoryReadRaw(details, callback);
+      auto& service = service_;
+      CoSpawn(executor_, [&service, details = std::move(details)]() mutable
+                           -> Awaitable<void> {
+        auto result = co_await service.HistoryReadRaw(std::move(details));
+        assert(result.values.empty());
+        assert(result.continuation_point.empty());
+      });
     }
   }
 }
@@ -124,7 +121,7 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
 Awaitable<void> HistoryStub::OnHistoryReadRawAsync(
     unsigned request_id,
     scada::HistoryReadRawDetails details) {
-  auto result = co_await coroutine_service_.HistoryReadRaw(details);
+  auto result = co_await service_.HistoryReadRaw(details);
 
   LOG_INFO(logger_) << "History read raw completed"
                     << LOG_TAG("RequestId", request_id)
@@ -158,7 +155,7 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
     base::Time from,
     base::Time to,
     scada::EventFilter filter) {
-  auto result = co_await coroutine_service_.HistoryReadEvents(
+  auto result = co_await service_.HistoryReadEvents(
       std::move(node_id), from, to, std::move(filter));
 
   LOG_INFO(logger_) << "History read events completed"

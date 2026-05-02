@@ -1,27 +1,27 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "scada/history_service.h"
 
 class MessageSender;
 
 class HistoryProxy : public scada::HistoryService {
  public:
-  HistoryProxy();
+  explicit HistoryProxy(AnyExecutor executor);
 
   void OnChannelOpened(MessageSender& sender);
   void OnChannelClosed();
 
   // scada::HistoryService
-  virtual void HistoryReadRaw(
-      const scada::HistoryReadRawDetails& details,
-      const scada::HistoryReadRawCallback& callback) override;
-  virtual void HistoryReadEvents(
-      const scada::NodeId& node_id,
+  virtual Awaitable<scada::HistoryReadRawResult> HistoryReadRaw(
+      scada::HistoryReadRawDetails details) override;
+  virtual Awaitable<scada::HistoryReadEventsResult> HistoryReadEvents(
+      scada::NodeId node_id,
       base::Time from,
       base::Time to,
-      const scada::EventFilter& filter,
-      const scada::HistoryReadEventsCallback& callback) override;
+      scada::EventFilter filter) override;
 
  private:
+  AnyExecutor executor_;
   MessageSender* sender_ = nullptr;
 };

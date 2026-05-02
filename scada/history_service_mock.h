@@ -10,25 +10,28 @@ class MockHistoryService : public HistoryService {
  public:
   MockHistoryService() {
     using namespace testing;
-    ON_CALL(*this, HistoryReadRaw(_, _))
-        .WillByDefault(InvokeArgument<1>(scada::HistoryReadRawResult{}));
-    ON_CALL(*this, HistoryReadEvents(_, _, _, _, _))
-        .WillByDefault(InvokeArgument<4>(scada::HistoryReadEventsResult{}));
+    ON_CALL(*this, HistoryReadRaw(_))
+        .WillByDefault([](HistoryReadRawDetails) -> Awaitable<HistoryReadRawResult> {
+          co_return HistoryReadRawResult{};
+        });
+    ON_CALL(*this, HistoryReadEvents(_, _, _, _))
+        .WillByDefault([](NodeId, base::Time, base::Time,
+                          EventFilter) -> Awaitable<HistoryReadEventsResult> {
+          co_return HistoryReadEventsResult{};
+        });
   }
 
-  MOCK_METHOD(void,
+  MOCK_METHOD(Awaitable<HistoryReadRawResult>,
               HistoryReadRaw,
-              (const HistoryReadRawDetails& details,
-               const HistoryReadRawCallback& callback),
+              (HistoryReadRawDetails details),
               (override));
 
-  MOCK_METHOD(void,
+  MOCK_METHOD(Awaitable<HistoryReadEventsResult>,
               HistoryReadEvents,
-              (const NodeId& node_id,
+              (NodeId node_id,
                base::Time from,
                base::Time to,
-               const EventFilter& filter,
-               const HistoryReadEventsCallback& callback),
+               EventFilter filter),
               (override));
 };
 

@@ -183,23 +183,7 @@ Purpose:
 Primary API:
 
 ```cpp
-virtual void HistoryReadRaw(const HistoryReadRawDetails& details,
-                            const HistoryReadRawCallback& callback) = 0;
-
-virtual void HistoryReadEvents(const NodeId& node_id,
-                               base::Time from,
-                               base::Time to,
-                               const EventFilter& filter,
-                               const HistoryReadEventsCallback& callback) = 0;
-```
-
-Unlike the batch callback services, history result structs carry the `Status`
-inside the result object.
-
-Coroutine equivalent:
-
-```cpp
-class CoroutineHistoryService {
+class HistoryService {
   virtual Awaitable<HistoryReadRawResult> HistoryReadRaw(
       HistoryReadRawDetails details) = 0;
 
@@ -210,6 +194,8 @@ class CoroutineHistoryService {
       EventFilter filter) = 0;
 };
 ```
+
+History result structs carry the `Status` inside the result object.
 
 ### ViewService
 
@@ -348,7 +334,6 @@ consumer wants an awaitable service interface.
 Adapters:
 
 - `CallbackToCoroutineAttributeServiceAdapter`
-- `CallbackToCoroutineHistoryServiceAdapter`
 - `CallbackToCoroutineViewServiceAdapter`
 - `CallbackToCoroutineNodeManagementServiceAdapter`
 
@@ -373,7 +358,7 @@ or service registries still expect callback interfaces.
 Adapters:
 
 - `CoroutineToCallbackAttributeServiceAdapter`
-- `CoroutineToCallbackHistoryServiceAdapter`
+- `HistoryServiceAdapter_REMOVED`
 - `CoroutineToCallbackViewServiceAdapter`
 - `CoroutineToCallbackNodeManagementServiceAdapter`
 

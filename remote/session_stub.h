@@ -112,8 +112,6 @@ class SessionStub : public MessageSender,
   std::shared_ptr<HistoryStub> history_stub_;
   std::unique_ptr<scada::CallbackToCoroutineAttributeServiceAdapter>
       coroutine_attribute_service_;
-  std::unique_ptr<scada::CallbackToCoroutineHistoryServiceAdapter>
-      coroutine_history_service_;
   std::unique_ptr<scada::CallbackToCoroutineViewServiceAdapter>
       coroutine_view_service_;
   std::unique_ptr<scada::CallbackToCoroutineNodeManagementServiceAdapter>

@@ -238,11 +238,8 @@ inline Awaitable<HistoryReadRawResult> HistoryReadRawAsync(
     AnyExecutor executor,
     HistoryService& service,
     HistoryReadRawDetails details) {
-  co_return co_await AwaitCallbackValue<HistoryReadRawResult>(
-      std::move(executor),
-      [&service, details = std::move(details)](auto callback) mutable {
-        service.HistoryReadRaw(details, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.HistoryReadRaw(std::move(details));
 }
 
 inline Awaitable<HistoryReadEventsResult> HistoryReadEventsAsync(
@@ -252,13 +249,9 @@ inline Awaitable<HistoryReadEventsResult> HistoryReadEventsAsync(
     base::Time from,
     base::Time to,
     EventFilter filter) {
-  co_return co_await AwaitCallbackValue<HistoryReadEventsResult>(
-      std::move(executor),
-      [&service, node_id = std::move(node_id), from, to,
-       filter = std::move(filter)](auto callback) mutable {
-        service.HistoryReadEvents(node_id, from, to, filter,
-                                  std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.HistoryReadEvents(
+      std::move(node_id), from, to, std::move(filter));
 }
 
 inline Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodesAsync(

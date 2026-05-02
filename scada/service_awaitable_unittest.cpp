@@ -171,26 +171,26 @@ TEST(ServiceAwaitableTest,
       .WillOnce(Invoke([](NodeId, NodeId, std::vector<Variant>, NodeId) {
         return MakeMethodCallResult(StatusCode::Bad_WrongCallArguments);
       }));
-  EXPECT_CALL(history_service, HistoryReadRaw(_, _))
-      .WillOnce(Invoke([&](const HistoryReadRawDetails& actual_details,
-                          const HistoryReadRawCallback& callback) {
+  EXPECT_CALL(history_service, HistoryReadRaw(_))
+      .WillOnce(Invoke([&](const HistoryReadRawDetails& actual_details)
+                           -> Awaitable<HistoryReadRawResult> {
         EXPECT_EQ(actual_details.node_id, raw_details.node_id);
         EXPECT_EQ(actual_details.from, raw_details.from);
         EXPECT_EQ(actual_details.to, raw_details.to);
         EXPECT_EQ(actual_details.max_count, raw_details.max_count);
-        callback(HistoryReadRawResult{
+        co_return HistoryReadRawResult{
             .status = StatusCode::Good,
             .values = {DataValue{Variant{12.5}, {}, {}, {}}},
             .continuation_point = {1, 2, 3},
-        });
+        };
       }));
-  EXPECT_CALL(history_service, HistoryReadEvents(node_id, from, to, _, _))
+  EXPECT_CALL(history_service, HistoryReadEvents(node_id, from, to, _))
       .WillOnce(Invoke([&](const NodeId&, base::Time, base::Time,
-                           const EventFilter& actual_filter,
-                           const HistoryReadEventsCallback& callback) {
+                           const EventFilter& actual_filter)
+                           -> Awaitable<HistoryReadEventsResult> {
         EXPECT_EQ(actual_filter, expected_filter);
-        callback(
-            HistoryReadEventsResult{.status = StatusCode::Bad_Disconnected});
+        co_return HistoryReadEventsResult{
+            .status = StatusCode::Bad_Disconnected};
       }));
   EXPECT_CALL(node_management_service, AddNodes(_, _))
       .WillOnce(Invoke([&](const std::vector<AddNodesItem>& actual_inputs,

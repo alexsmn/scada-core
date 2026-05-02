@@ -44,12 +44,6 @@ void SessionStub::Init() {
         executor_, *services_.attribute_service);
   }
 
-  if (services_.history_service) {
-    coroutine_history_service_ = std::make_unique<
-        scada::CallbackToCoroutineHistoryServiceAdapter>(
-        executor_, *services_.history_service);
-  }
-
   if (services_.view_service) {
     coroutine_view_service_ =
         std::make_unique<scada::CallbackToCoroutineViewServiceAdapter>(
@@ -75,9 +69,9 @@ void SessionStub::Init() {
   }
 
   if (services_.history_service) {
-    history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
-                                                  *coroutine_history_service_,
-                                                  sender, executor_);
+    history_stub_ =
+        std::make_shared<HistoryStub>(*services_.history_service, sender,
+                                      executor_);
   }
 }
 

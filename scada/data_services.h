@@ -6,7 +6,7 @@
 
 namespace scada {
 class CoroutineAttributeService;
-class CoroutineHistoryService;
+class HistoryService;
 class MethodService;
 class CoroutineNodeManagementService;
 class CoroutineViewService;
@@ -78,7 +78,6 @@ struct DataServices {
   std::shared_ptr<scada::CoroutineViewService> coroutine_view_service_;
   std::shared_ptr<scada::CoroutineNodeManagementService>
       coroutine_node_management_service_;
-  std::shared_ptr<scada::CoroutineHistoryService> coroutine_history_service_;
   std::shared_ptr<scada::CoroutineAttributeService>
       coroutine_attribute_service_;
 };

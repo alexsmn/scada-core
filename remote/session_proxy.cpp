@@ -54,7 +54,7 @@ SessionProxy::SessionProxy(SessionProxyContext&& context)
       subscription_{std::make_shared<SubscriptionProxy>(SubscriptionParams{})},
       view_service_proxy_{std::make_unique<ViewServiceProxy>()},
       node_management_proxy_{std::make_unique<NodeManagementProxy>()},
-      history_proxy_{std::make_unique<HistoryProxy>()},
+      history_proxy_{std::make_unique<HistoryProxy>(executor_)},
       ping_timer_{executor_},
       connect_completion_{executor_},
       connect_loop_completion_{executor_},
