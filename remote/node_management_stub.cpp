@@ -23,7 +23,7 @@ inline bool ContainsNodeId(const std::vector<scada::DeleteNodesItem>& inputs,
 NodeManagementStub::NodeManagementStub(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<MessageSender> sender,
-    scada::CoroutineNodeManagementService& coroutine_service,
+    scada::NodeManagementService& coroutine_service,
     const scada::ServiceContext& service_context)
     : executor_{std::move(executor)},
       sender_{std::move(sender)},

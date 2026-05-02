@@ -13,16 +13,14 @@ class NodeManagementProxy : public scada::NodeManagementService {
   void OnChannelClosed();
 
   // scada::NodeManagementService
-  virtual void AddNodes(const std::vector<scada::AddNodesItem>& inputs,
-                        const scada::AddNodesCallback& callback) override;
-  virtual void DeleteNodes(const std::vector<scada::DeleteNodesItem>& inputs,
-                           const scada::DeleteNodesCallback& callback) override;
-  virtual void AddReferences(
-      const std::vector<scada::AddReferencesItem>& inputs,
-      const scada::AddReferencesCallback& callback) override;
-  virtual void DeleteReferences(
-      const std::vector<scada::DeleteReferencesItem>& inputs,
-      const scada::DeleteReferencesCallback& callback) override;
+  Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>> AddNodes(
+      std::vector<scada::AddNodesItem> inputs) override;
+  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteNodes(
+      std::vector<scada::DeleteNodesItem> inputs) override;
+  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> AddReferences(
+      std::vector<scada::AddReferencesItem> inputs) override;
+  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteReferences(
+      std::vector<scada::DeleteReferencesItem> inputs) override;
 
  private:
   BoostLogger logger_{LOG_NAME("NodeManagementProxy")};

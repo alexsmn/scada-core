@@ -258,44 +258,32 @@ inline Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodesAsync(
     AnyExecutor executor,
     NodeManagementService& service,
     std::vector<AddNodesItem> inputs) {
-  co_return co_await AwaitStatusOrCallback<std::vector<AddNodesResult>>(
-      std::move(executor),
-      [&service, inputs = std::move(inputs)](auto callback) mutable {
-        service.AddNodes(inputs, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.AddNodes(std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodesAsync(
     AnyExecutor executor,
     NodeManagementService& service,
     std::vector<DeleteNodesItem> inputs) {
-  co_return co_await AwaitStatusOrCallback<std::vector<StatusCode>>(
-      std::move(executor),
-      [&service, inputs = std::move(inputs)](auto callback) mutable {
-        service.DeleteNodes(inputs, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.DeleteNodes(std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<StatusCode>>>
 AddReferencesAsync(AnyExecutor executor,
                    NodeManagementService& service,
                    std::vector<AddReferencesItem> inputs) {
-  co_return co_await AwaitStatusOrCallback<std::vector<StatusCode>>(
-      std::move(executor),
-      [&service, inputs = std::move(inputs)](auto callback) mutable {
-        service.AddReferences(inputs, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.AddReferences(std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<StatusCode>>>
 DeleteReferencesAsync(AnyExecutor executor,
                       NodeManagementService& service,
                       std::vector<DeleteReferencesItem> inputs) {
-  co_return co_await AwaitStatusOrCallback<std::vector<StatusCode>>(
-      std::move(executor),
-      [&service, inputs = std::move(inputs)](auto callback) mutable {
-        service.DeleteReferences(inputs, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.DeleteReferences(std::move(inputs));
 }
 
 }  // namespace scada

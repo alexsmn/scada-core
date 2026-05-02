@@ -242,26 +242,10 @@ Purpose:
 - add references
 - delete references
 
-Primary API:
+API:
 
 ```cpp
-virtual void AddNodes(const std::vector<AddNodesItem>& inputs,
-                      const AddNodesCallback& callback) = 0;
-
-virtual void DeleteNodes(const std::vector<DeleteNodesItem>& inputs,
-                         const DeleteNodesCallback& callback) = 0;
-
-virtual void AddReferences(const std::vector<AddReferencesItem>& inputs,
-                           const AddReferencesCallback& callback) = 0;
-
-virtual void DeleteReferences(const std::vector<DeleteReferencesItem>& inputs,
-                              const DeleteReferencesCallback& callback) = 0;
-```
-
-Coroutine equivalent:
-
-```cpp
-class CoroutineNodeManagementService {
+class NodeManagementService {
   virtual Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodes(
       std::vector<AddNodesItem> inputs) = 0;
 
@@ -335,7 +319,6 @@ Adapters:
 
 - `CallbackToCoroutineAttributeServiceAdapter`
 - `CallbackToCoroutineViewServiceAdapter`
-- `CallbackToCoroutineNodeManagementServiceAdapter`
 
 Construction pattern:
 
@@ -360,7 +343,6 @@ Adapters:
 - `CoroutineToCallbackAttributeServiceAdapter`
 - `HistoryServiceAdapter_REMOVED`
 - `CoroutineToCallbackViewServiceAdapter`
-- `CoroutineToCallbackNodeManagementServiceAdapter`
 
 Behavior:
 

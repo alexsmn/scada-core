@@ -50,12 +50,6 @@ void SessionStub::Init() {
             executor_, *services_.view_service);
   }
 
-  if (services_.node_management_service) {
-    coroutine_node_management_service_ = std::make_unique<
-        scada::CallbackToCoroutineNodeManagementServiceAdapter>(
-        executor_, *services_.node_management_service);
-  }
-
   if (services_.view_service) {
     view_service_stub_ =
         std::make_shared<ViewServiceStub>(ViewServiceStubContext{
@@ -64,7 +58,7 @@ void SessionStub::Init() {
 
   if (services_.node_management_service) {
     node_management_stub_ = std::make_shared<NodeManagementStub>(
-        executor_, sender, *coroutine_node_management_service_,
+        executor_, sender, *services_.node_management_service,
         service_context_);
   }
 

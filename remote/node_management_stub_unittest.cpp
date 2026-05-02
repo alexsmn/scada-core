@@ -11,8 +11,8 @@ using namespace testing;
 
 namespace {
 
-class TestCoroutineNodeManagementService final
-    : public scada::CoroutineNodeManagementService {
+class TestNodeManagementService final
+    : public scada::NodeManagementService {
  public:
   Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>>
   AddNodes(std::vector<scada::AddNodesItem> inputs) override {
@@ -48,7 +48,7 @@ class TestCoroutineNodeManagementService final
 TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
   auto executor = std::make_shared<TestExecutor>();
   auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
-  TestCoroutineNodeManagementService service;
+  TestNodeManagementService service;
 
   auto stub = std::make_shared<NodeManagementStub>(
       executor, sender, service, scada::ServiceContext{}.with_user_id({1, 1}));
@@ -81,7 +81,7 @@ TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
 TEST(NodeManagementStubTest, DeleteNodesPreservesDeleteTargetReferencesFlag) {
   auto executor = std::make_shared<TestExecutor>();
   auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
-  TestCoroutineNodeManagementService service;
+  TestNodeManagementService service;
 
   auto stub = std::make_shared<NodeManagementStub>(
       executor, sender, service, scada::ServiceContext{}.with_user_id({1, 1}));

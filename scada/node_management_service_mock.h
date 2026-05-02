@@ -6,34 +6,33 @@
 
 namespace scada {
 
+template <class T>
+Awaitable<StatusOr<std::vector<T>>> MakeNodeManagementResult(
+    StatusOr<std::vector<T>> result) {
+  co_return std::move(result);
+}
+
 class MockNodeManagementService : public NodeManagementService {
  public:
-  MOCK_METHOD(void,
+  MOCK_METHOD((Awaitable<StatusOr<std::vector<AddNodesResult>>>),
               AddNodes,
-              (const std::vector<AddNodesItem>& inputs,
-               const AddNodesCallback& callback));
+              (std::vector<AddNodesItem> inputs),
+              (override));
 
-  MOCK_METHOD(void,
+  MOCK_METHOD((Awaitable<StatusOr<std::vector<StatusCode>>>),
               DeleteNodes,
-              (const std::vector<DeleteNodesItem>& inputs,
-               const DeleteNodesCallback& callback));
+              (std::vector<DeleteNodesItem> inputs),
+              (override));
 
-  MOCK_METHOD(void,
-              ChangeUserPassword,
-              (const NodeId& user_node_id,
-               const LocalizedText& current_password,
-               const LocalizedText& new_password,
-               const StatusCallback& callback));
-
-  MOCK_METHOD(void,
+  MOCK_METHOD((Awaitable<StatusOr<std::vector<StatusCode>>>),
               AddReferences,
-              (const std::vector<AddReferencesItem>& inputs,
-               const AddReferencesCallback& callback));
+              (std::vector<AddReferencesItem> inputs),
+              (override));
 
-  MOCK_METHOD(void,
+  MOCK_METHOD((Awaitable<StatusOr<std::vector<StatusCode>>>),
               DeleteReferences,
-              (const std::vector<DeleteReferencesItem>& inputs,
-               const DeleteReferencesCallback& callback));
+              (std::vector<DeleteReferencesItem> inputs),
+              (override));
 };
 
 }  // namespace scada
