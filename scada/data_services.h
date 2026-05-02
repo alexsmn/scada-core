@@ -9,7 +9,7 @@ class HistoryService;
 class MethodService;
 class NodeManagementService;
 class ViewService;
-class CoroutineAttributeService;
+class AttributeService;
 }  // namespace scada
 
 // TODO: Move under `scada` namespace.
@@ -74,7 +74,4 @@ struct DataServices {
   std::shared_ptr<scada::AttributeService> attribute_service_;
   std::shared_ptr<scada::MethodService> method_service_;
   std::shared_ptr<scada::MonitoredItemService> monitored_item_service_;
-
-  std::shared_ptr<scada::CoroutineAttributeService>
-      coroutine_attribute_service_;
 };

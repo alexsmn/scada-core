@@ -131,7 +131,7 @@ Notes:
 Coroutine equivalent:
 
 ```cpp
-class CoroutineAttributeService {
+class AttributeService {
   virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
       ServiceContext context,
       std::shared_ptr<const std::vector<ReadValueId>> inputs) = 0;
@@ -306,106 +306,41 @@ virtual std::shared_ptr<MonitoredItem> CreateMonitoredItem(
 This service is not part of the new coroutine adapter layer because its public
 contract is already object/lifetime-oriented rather than callback-based.
 
-## Adapter Reference
+## Attribute Service
 
-Header: `core/scada/coroutine_services.h`
-
-### Callback To Coroutine
-
-Use these when the implementation you already have is callback-based, but the
-consumer wants an awaitable service interface.
-
-Adapters:
-
-- `CallbackToCoroutineAttributeServiceAdapter`
-
-Construction pattern:
-
-```cpp
-auto executor = std::shared_ptr<Executor>{...};
-CallbackToCoroutineAttributeServiceAdapter adapter{executor, callback_service};
-```
-
-Behavior:
-
-- uses `CallbackToAwaitable(...)`
-- resumes the awaiting coroutine on the provided executor
-- preserves the original callback service as the source of truth
-
-### Coroutine To Callback
-
-Use these when the implementation is coroutine-first, but existing call sites
-or service registries still expect callback interfaces.
-
-Adapters:
-
-- `CoroutineToCallbackAttributeServiceAdapter`
-- `HistoryServiceAdapter_REMOVED`
-
-Behavior:
-
-- uses `CoSpawn(...)` on the provided executor
-- invokes the existing callback contract when the coroutine completes
-- translates thrown exceptions into bad-status callback results
-
-Exception mapping rules:
-
-- generic exceptions map through `GetExceptionStatus(...)`
-- `status_exception` preserves its embedded `Status`
-- callback forms that return batched results return an empty result vector on
-  adapter-level failure
-- history result adapters return a result object with bad `status`
+`AttributeService` is coroutine-first. The former callback attribute service
+and callback/coroutine attribute adapters have been removed; call sites should
+`co_await` `Read` and `Write` directly.
 
 ## Choosing An API Style
 
 Recommended default for new internal async logic:
 
 1. implement new async workflows as coroutines
-2. adapt attribute callbacks at module boundaries where required
-3. keep `scada::services` wiring stable until the caller graph is migrated
+2. pass coroutine service pointers through `scada::services`
+3. use focused awaitable helpers for one-off reads and writes
 
 Practical rules:
 
-- use callback services only for service interfaces that still expose callbacks
 - use coroutine services for new orchestration code or migrations away from
   nested callbacks
-- prefer named adapters from `coroutine_services.h` over ad hoc lambda bridges
 
 ## Minimal Examples
 
-### Awaiting A Callback Service Through An Adapter
+### Reading Attributes
 
 ```cpp
-CallbackToCoroutineAttributeServiceAdapter async_attribute_service{
-    executor, attribute_service};
-
-auto [status, values] =
-    co_await async_attribute_service.Read(context, read_inputs);
-```
-
-### Exposing A Coroutine Attribute Service As A Legacy Callback Service
-
-```cpp
-CoroutineToCallbackAttributeServiceAdapter attribute_adapter{executor,
-                                                            coroutine_attribute};
-
-attribute_adapter.Read(context, inputs,
-                       [](Status status, std::vector<DataValue> results) {
-                         // Legacy callback consumer.
-                       });
+auto values = co_await attribute_service.Read(context, read_inputs);
 ```
 
 ## Tests
 
-Adapter behavior is covered by:
+Attribute service helpers are covered by:
 
-- `core/scada/coroutine_services_unittest.cpp`
+- `core/scada/attribute_service_unittest.cpp`
 
 The unit tests validate:
 
 - request argument forwarding
 - result forwarding
-- callback-to-coroutine bridging
-- coroutine-to-callback bridging
-- coroutine exception to status conversion
-- coroutine session forwarding
+- coroutine exception propagation

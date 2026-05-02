@@ -36,14 +36,6 @@ SessionStub::~SessionStub() {
 void SessionStub::Init() {
   const std::weak_ptr<MessageSender> sender = weak_from_this();
 
-  if (services_.attribute_service) {
-    // Bind legacy callback services to coroutine adapters once per session so
-    // request handlers and nested stubs stay coroutine-first internally.
-    coroutine_attribute_service_ = std::make_unique<
-        scada::CallbackToCoroutineAttributeServiceAdapter>(
-        executor_, *services_.attribute_service);
-  }
-
   if (services_.view_service) {
     view_service_stub_ =
         std::make_shared<ViewServiceStub>(ViewServiceStubContext{
@@ -344,8 +336,9 @@ Awaitable<void> SessionStub::OnReadAsync(
     unsigned request_id,
     scada::ServiceContext context,
     std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) {
-  auto result = co_await coroutine_attribute_service_->Read(std::move(context),
-                                                            std::move(inputs));
+  const auto input_count = inputs ? inputs->size() : 0;
+  auto result = co_await services_.attribute_service->Read(std::move(context),
+                                                           std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});
 
@@ -355,7 +348,7 @@ Awaitable<void> SessionStub::OnReadAsync(
   LOG_INFO(logger_) << "Read async completed"
                     << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("Status", ToString(status))
-                    << LOG_TAG("InputCount", inputs ? inputs->size() : 0)
+                    << LOG_TAG("InputCount", input_count)
                     << LOG_TAG("ResultCount", results.size());
 
   protocol::Message message;
@@ -369,8 +362,9 @@ Awaitable<void> SessionStub::OnReadAsync(
 Awaitable<void> SessionStub::OnWriteAsync(
     unsigned request_id,
     std::shared_ptr<const std::vector<scada::WriteValue>> inputs) {
-  auto result = co_await coroutine_attribute_service_->Write(service_context_,
-                                                             std::move(inputs));
+  const auto input_count = inputs ? inputs->size() : 0;
+  auto result = co_await services_.attribute_service->Write(service_context_,
+                                                            std::move(inputs));
   auto status = result.status();
   auto status_codes = std::move(result).value_or({});
 
@@ -380,7 +374,7 @@ Awaitable<void> SessionStub::OnWriteAsync(
   LOG_INFO(logger_) << "Write async completed"
                     << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("Status", ToString(status))
-                    << LOG_TAG("InputCount", inputs ? inputs->size() : 0)
+                    << LOG_TAG("InputCount", input_count)
                     << LOG_TAG("ResultCount", status_codes.size());
 
   protocol::Message message;

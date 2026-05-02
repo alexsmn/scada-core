@@ -4,7 +4,6 @@
 #include "base/awaitable.h"
 #include "base/executor_conversions.h"
 #include "scada/attribute_service.h"
-#include "scada/callback_awaitable.h"
 #include "scada/history_service.h"
 #include "scada/method_service.h"
 #include "scada/node_management_service.h"
@@ -180,12 +179,8 @@ inline Awaitable<StatusOr<std::vector<DataValue>>> ReadAsync(
     AttributeService& service,
     ServiceContext context,
     std::shared_ptr<const std::vector<ReadValueId>> inputs) {
-  co_return co_await AwaitStatusOrCallback<std::vector<DataValue>>(
-      std::move(executor),
-      [&service, context = std::move(context),
-       inputs = std::move(inputs)](auto callback) mutable {
-        service.Read(context, inputs, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.Read(std::move(context), std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<BrowseResult>>> BrowseAsync(
@@ -210,11 +205,8 @@ inline Awaitable<StatusOr<std::vector<StatusCode>>> WriteAsync(
     AttributeService& service,
     const ServiceContext& context,
     std::shared_ptr<const std::vector<WriteValue>> inputs) {
-  co_return co_await AwaitStatusOrCallback<std::vector<StatusCode>>(
-      std::move(executor),
-      [&service, &context, inputs = std::move(inputs)](auto callback) mutable {
-        service.Write(context, inputs, std::move(callback));
-      });
+  (void)executor;
+  co_return co_await service.Write(context, std::move(inputs));
 }
 
 inline Awaitable<Status> CallAsync(AnyExecutor executor,

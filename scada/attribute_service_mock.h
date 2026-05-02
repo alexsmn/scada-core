@@ -6,20 +6,24 @@
 
 namespace scada {
 
+template <class T>
+Awaitable<StatusOr<std::vector<T>>> MakeAttributeResult(
+    StatusOr<std::vector<T>> result) {
+  co_return std::move(result);
+}
+
 class MockAttributeService : public AttributeService {
  public:
-  MOCK_METHOD(void,
+  MOCK_METHOD((Awaitable<StatusOr<std::vector<DataValue>>>),
               Read,
-              (const ServiceContext& context,
-               const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
-               const ReadCallback& callback),
+              (ServiceContext context,
+               std::shared_ptr<const std::vector<ReadValueId>> inputs),
               (override));
 
-  MOCK_METHOD(void,
+  MOCK_METHOD((Awaitable<StatusOr<std::vector<StatusCode>>>),
               Write,
-              (const ServiceContext& context,
-               const std::shared_ptr<const std::vector<WriteValue>>& inputs,
-               const WriteCallback& callback),
+              (ServiceContext context,
+               std::shared_ptr<const std::vector<WriteValue>> inputs),
               (override));
 };
 
@@ -40,24 +44,22 @@ class SimpleMockAttributeService : public AttributeService {
               Write,
               (const ServiceContext& context, const WriteValue& value));
 
-  virtual void Read(
-      const ServiceContext& context,
-      const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
-      const ReadCallback& callback) override {
+  virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
+      ServiceContext context,
+      std::shared_ptr<const std::vector<ReadValueId>> inputs) override {
     std::vector<DataValue> results(inputs->size());
     for (size_t i = 0; i < inputs->size(); ++i)
       results[i] = Read((*inputs)[i]);
-    callback(StatusCode::Good, std::move(results));
+    co_return std::move(results);
   }
 
-  virtual void Write(
-      const ServiceContext& context,
-      const std::shared_ptr<const std::vector<WriteValue>>& inputs,
-      const WriteCallback& callback) override {
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
+      ServiceContext context,
+      std::shared_ptr<const std::vector<WriteValue>> inputs) override {
     std::vector<StatusCode> results(inputs->size());
     for (size_t i = 0; i < inputs->size(); ++i)
       results[i] = Write(context, (*inputs)[i]);
-    callback(StatusCode::Good, std::move(results));
+    co_return std::move(results);
   }
 };
 

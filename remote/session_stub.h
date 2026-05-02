@@ -110,8 +110,6 @@ class SessionStub : public MessageSender,
   std::shared_ptr<ViewServiceStub> view_service_stub_;
   std::shared_ptr<NodeManagementStub> node_management_stub_;
   std::shared_ptr<HistoryStub> history_stub_;
-  std::unique_ptr<scada::CallbackToCoroutineAttributeServiceAdapter>
-      coroutine_attribute_service_;
   int next_subscription_id_ = 1;
 
   std::unordered_map<int /*subscription_id*/, std::shared_ptr<SubscriptionStub>>

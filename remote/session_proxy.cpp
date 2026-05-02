@@ -513,13 +513,11 @@ void SessionProxy::ForwardConnectResult(scada::Status&& status) {
   }
 }
 
-void SessionProxy::Read(
-    const scada::ServiceContext& context,
-    const std::shared_ptr<const std::vector<scada::ReadValueId>>& inputs,
-    const scada::ReadCallback& callback) {
+Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> SessionProxy::Read(
+    scada::ServiceContext context,
+    std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) {
   if (!session_created_) {
-    callback(scada::StatusCode::Bad_Disconnected, {});
-    return;
+    co_return scada::StatusCode::Bad_Disconnected;
   }
 
   protocol::Request request;
@@ -527,34 +525,30 @@ void SessionProxy::Read(
   for (auto& value_id : *inputs)
     Convert(value_id, *read.add_value_id());
 
-  Request(request, [callback](const protocol::Response& response) {
-    if (callback)
-      callback(ConvertTo<scada::Status>(response.status()),
-               ConvertTo<std::vector<scada::DataValue>>(
-                   response.read_result().value()));
-  });
+  auto response = co_await RequestAsync(std::move(request));
+  auto status = ConvertTo<scada::Status>(response.status());
+  if (!status)
+    co_return std::move(status);
+  co_return ConvertTo<std::vector<scada::DataValue>>(
+      response.read_result().value());
 }
 
-void SessionProxy::Write(
-    const scada::ServiceContext& context,
-    const std::shared_ptr<const std::vector<scada::WriteValue>>& inputs,
-    const scada::WriteCallback& callback) {
+Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> SessionProxy::Write(
+    scada::ServiceContext context,
+    std::shared_ptr<const std::vector<scada::WriteValue>> inputs) {
   if (!session_created_) {
-    callback(scada::StatusCode::Bad_Disconnected, {});
-    return;
+    co_return scada::StatusCode::Bad_Disconnected;
   }
 
   protocol::Request request;
   for (auto& value : *inputs)
     Convert(value, *request.add_write());
 
-  Request(request, [callback](const protocol::Response& response) {
-    if (callback) {
-      callback(
-          ConvertTo<scada::Status>(response.status()),
-          ConvertTo<std::vector<scada::StatusCode>>(response.write_result()));
-    }
-  });
+  auto response = co_await RequestAsync(std::move(request));
+  auto status = ConvertTo<scada::Status>(response.status());
+  if (!status)
+    co_return std::move(status);
+  co_return ConvertTo<std::vector<scada::StatusCode>>(response.write_result());
 }
 
 Awaitable<scada::Status> SessionProxy::Call(scada::NodeId node_id,
