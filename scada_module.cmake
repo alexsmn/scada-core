@@ -91,6 +91,12 @@ function(_scada_module_add_sources MODULE_NAME SCOPE SOURCE_DIR)
     list(APPEND sources ${win_sources})
   endif()
 
+  if(MODULE_NAME MATCHES "_qt($|_)")
+    list(FILTER sources EXCLUDE REGEX "_wt(_unittest)?\\.(cpp|h)$")
+  elseif(MODULE_NAME MATCHES "_wt($|_)")
+    list(FILTER sources EXCLUDE REGEX "_qt(_unittest)?\\.(cpp|h)$")
+  endif()
+
   # Separate unittest files and exclude mocks.
   set(ut_sources ${sources})
   list(FILTER ut_sources INCLUDE REGEX "_unittest\\.")
