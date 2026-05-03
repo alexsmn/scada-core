@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/boost_log.h"
 #include "base/awaitable.h"
 #include "scada/coroutine_services.h"
@@ -21,12 +23,11 @@ class NodeManagementService;
 class ServiceContext;
 }
 
-class Executor;
 class MessageSender;
 
 class NodeManagementStub : public std::enable_shared_from_this<NodeManagementStub> {
  public:
-  NodeManagementStub(std::shared_ptr<Executor> executor,
+  NodeManagementStub(AnyExecutor executor,
                      std::weak_ptr<MessageSender> sender,
                      scada::NodeManagementService& coroutine_service,
                      const scada::ServiceContext& service_context);
@@ -60,7 +61,7 @@ class NodeManagementStub : public std::enable_shared_from_this<NodeManagementStu
       unsigned request_id,
       std::vector<scada::DeleteReferencesItem> inputs);
 
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   const std::weak_ptr<MessageSender> sender_;
 
   scada::NodeManagementService& coroutine_service_;

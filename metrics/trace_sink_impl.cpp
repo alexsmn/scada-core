@@ -1,7 +1,7 @@
 #include "trace_sink_impl.h"
 
 #include "base/boost_log.h"
-#include "base/executor_util.h"
+#include "base/any_executor.h"
 #include "metrics/tracing.h"
 
 #include <mutex>

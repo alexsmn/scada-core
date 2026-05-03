@@ -1,7 +1,7 @@
 #include "remote/node_management_stub.h"
 
 #include "base/awaitable.h"
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
@@ -21,7 +21,7 @@ inline bool ContainsNodeId(const std::vector<scada::DeleteNodesItem>& inputs,
 }  // namespace
 
 NodeManagementStub::NodeManagementStub(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<MessageSender> sender,
     scada::NodeManagementService& coroutine_service,
     const scada::ServiceContext& service_context)

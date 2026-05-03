@@ -2,7 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "scada/attribute_service.h"
 #include "scada/history_service.h"
 #include "scada/method_service.h"
@@ -75,104 +75,6 @@ Awaitable<StatusOr<std::vector<StatusCode>>> DeleteReferencesAsync(
     AnyExecutor executor,
     NodeManagementService& service,
     std::vector<DeleteReferencesItem> inputs);
-
-inline Awaitable<StatusOr<std::vector<DataValue>>> ReadAsync(
-    const std::shared_ptr<Executor>& executor,
-    AttributeService& service,
-    ServiceContext context,
-    std::shared_ptr<const std::vector<ReadValueId>> inputs) {
-  co_return co_await ReadAsync(MakeAnyExecutor(executor), service,
-                               std::move(context), std::move(inputs));
-}
-
-inline Awaitable<StatusOr<std::vector<BrowseResult>>> BrowseAsync(
-    const std::shared_ptr<Executor>& executor,
-    ViewService& service,
-    ServiceContext context,
-    std::vector<BrowseDescription> inputs) {
-  co_return co_await BrowseAsync(MakeAnyExecutor(executor), service,
-                                 std::move(context), std::move(inputs));
-}
-
-inline Awaitable<StatusOr<std::vector<BrowsePathResult>>>
-TranslateBrowsePathsAsync(const std::shared_ptr<Executor>& executor,
-                          ViewService& service,
-                          std::vector<BrowsePath> inputs) {
-  co_return co_await TranslateBrowsePathsAsync(MakeAnyExecutor(executor),
-                                               service, std::move(inputs));
-}
-
-inline Awaitable<StatusOr<std::vector<StatusCode>>> WriteAsync(
-    const std::shared_ptr<Executor>& executor,
-    AttributeService& service,
-    const ServiceContext& context,
-    std::shared_ptr<const std::vector<WriteValue>> inputs) {
-  co_return co_await WriteAsync(MakeAnyExecutor(executor), service, context,
-                                std::move(inputs));
-}
-
-inline Awaitable<Status> CallAsync(const std::shared_ptr<Executor>& executor,
-                                   MethodService& service,
-                                   NodeId node_id,
-                                   NodeId method_id,
-                                   std::vector<Variant> arguments,
-                                   NodeId user_id) {
-  co_return co_await CallAsync(MakeAnyExecutor(executor), service,
-                               std::move(node_id), std::move(method_id),
-                               std::move(arguments), std::move(user_id));
-}
-
-inline Awaitable<HistoryReadRawResult> HistoryReadRawAsync(
-    const std::shared_ptr<Executor>& executor,
-    HistoryService& service,
-    HistoryReadRawDetails details) {
-  co_return co_await HistoryReadRawAsync(MakeAnyExecutor(executor), service,
-                                         std::move(details));
-}
-
-inline Awaitable<HistoryReadEventsResult> HistoryReadEventsAsync(
-    const std::shared_ptr<Executor>& executor,
-    HistoryService& service,
-    NodeId node_id,
-    base::Time from,
-    base::Time to,
-    EventFilter filter) {
-  co_return co_await HistoryReadEventsAsync(
-      MakeAnyExecutor(executor), service, std::move(node_id), from, to,
-      std::move(filter));
-}
-
-inline Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodesAsync(
-    const std::shared_ptr<Executor>& executor,
-    NodeManagementService& service,
-    std::vector<AddNodesItem> inputs) {
-  co_return co_await AddNodesAsync(MakeAnyExecutor(executor), service,
-                                   std::move(inputs));
-}
-
-inline Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodesAsync(
-    const std::shared_ptr<Executor>& executor,
-    NodeManagementService& service,
-    std::vector<DeleteNodesItem> inputs) {
-  co_return co_await DeleteNodesAsync(MakeAnyExecutor(executor), service,
-                                      std::move(inputs));
-}
-
-inline Awaitable<StatusOr<std::vector<StatusCode>>>
-AddReferencesAsync(const std::shared_ptr<Executor>& executor,
-                   NodeManagementService& service,
-                   std::vector<AddReferencesItem> inputs) {
-  co_return co_await AddReferencesAsync(MakeAnyExecutor(executor), service,
-                                        std::move(inputs));
-}
-
-inline Awaitable<StatusOr<std::vector<StatusCode>>>
-DeleteReferencesAsync(const std::shared_ptr<Executor>& executor,
-                      NodeManagementService& service,
-                      std::vector<DeleteReferencesItem> inputs) {
-  co_return co_await DeleteReferencesAsync(MakeAnyExecutor(executor), service,
-                                           std::move(inputs));
-}
 
 inline Awaitable<StatusOr<std::vector<DataValue>>> ReadAsync(
     AnyExecutor executor,

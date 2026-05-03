@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/boost_log.h"
 #include "base/awaitable.h"
 #include "scada/coroutine_services.h"
@@ -26,7 +28,6 @@ struct WriteValue;
 }  // namespace scada
 
 class Connection;
-class Executor;
 class EventServiceStub;
 class HistoryStub;
 class NodeManagementStub;
@@ -35,7 +36,7 @@ class SubscriptionStub;
 class ViewServiceStub;
 
 struct SessionContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   // TODO: Use `scada::client`.
   scada::services services_;
   const scada::ServiceContext service_context_;

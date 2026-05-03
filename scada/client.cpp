@@ -1,6 +1,7 @@
 #include "scada/client.h"
 
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
+#include "base/thread_executor.h"
 #include "scada/node_management_service.h"
 #include "scada/service_awaitable.h"
 #include "scada/service_context.h"
@@ -39,7 +40,7 @@ client::browse(const std::vector<scada::BrowseDescription>& inputs) const {
   }
 
   auto results = ValueOrThrow(co_await BrowseAsync(
-      MakeThreadAnyExecutor(), *services_.view_service, context_, inputs));
+      ThreadExecutor{}, *services_.view_service, context_, inputs));
 
   std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>> output;
   output.reserve(results.size());
@@ -59,7 +60,7 @@ Awaitable<scada::node> client::add_node(AddNodesItem item) const {
   }
 
   auto results = ValueOrThrow(co_await AddNodesAsync(
-      MakeThreadAnyExecutor(), *services_.node_management_service,
+      ThreadExecutor{}, *services_.node_management_service,
       {std::move(item)}));
   assert(results.size() == 1);
   const auto& [status_code, node_id] = results[0];

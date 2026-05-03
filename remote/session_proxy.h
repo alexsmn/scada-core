@@ -32,7 +32,6 @@ class HistoryService;
 class ViewService;
 }  // namespace scada
 
-class Executor;
 class NodeManagementProxy;
 class HistoryProxy;
 class SubscriptionProxy;

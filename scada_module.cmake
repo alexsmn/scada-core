@@ -56,10 +56,14 @@ function(scada_module_unittests MODULE_NAME)
       ${CMAKE_SOURCE_DIR}/server)
 
     if(MSVC)
-      # RelWithDebInfo already uses embedded object debug info via the preset,
-      # so disabling linker-generated debug info avoids large test-bin PDB
-      # failures without producing an invalid /PDB:NONE output path.
+      # Debug and RelWithDebInfo already use embedded object debug info via
+      # the preset, so disabling linker-generated debug info avoids large
+      # test-bin PDB failures without producing an invalid /PDB:NONE output
+      # path.
       target_link_options(${MODULE_NAME}_unittests PRIVATE
+        $<$<CONFIG:Debug>:/DEBUG:NONE>
+        $<$<CONFIG:Debug>:/INCREMENTAL:NO>
+        $<$<CONFIG:Debug>:/PDB:NONE>
         $<$<CONFIG:RelWithDebInfo>:/DEBUG:NONE>)
     endif()
   endif()

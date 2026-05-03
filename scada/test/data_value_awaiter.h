@@ -1,7 +1,8 @@
 #pragma once
 
 #include "base/callback_awaitable.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
+#include "base/thread_executor.h"
 #include "scada/client_monitored_item.h"
 #include "scada/monitoring_parameters.h"
 
@@ -34,7 +35,7 @@ struct data_value_awaiter {
       }
 
       auto [data_value] = co_await CallbackToAwaitable<scada::DataValue>(
-          MakeThreadAnyExecutor(),
+          ThreadExecutor{},
           [this, matcher = std::forward<T>(matcher)](auto callback) mutable {
             matchers_.emplace_back(std::move(matcher), std::move(callback));
           });

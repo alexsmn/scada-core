@@ -1,7 +1,9 @@
 #include "base/thread_executor.h"
 
+#include <boost/asio/post.hpp>
 #include <gmock/gmock.h>
 #include <condition_variable>
+#include <future>
 #include <mutex>
 
 using namespace testing;
@@ -31,4 +33,16 @@ TEST(ThreadExecutorTest, DestroyFromTask) {
     release = true;
   }
   cv.notify_all();
+}
+
+TEST(ThreadExecutorTest, CanBeStoredInAnyExecutor) {
+  ThreadExecutor executor;
+  AnyExecutor any_executor = executor;
+
+  std::promise<void> called;
+  auto called_future = called.get_future();
+  boost::asio::post(any_executor, [&] { called.set_value(); });
+
+  EXPECT_EQ(called_future.wait_for(std::chrono::seconds{5}),
+            std::future_status::ready);
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/awaitable.h"
 #include "base/test/test_executor.h"
 
@@ -11,9 +13,9 @@
 
 using namespace std::chrono_literals;
 
-inline void Drain(const std::shared_ptr<TestExecutor>& executor) {
-  while (executor->GetTaskCount() > 0) {
-    executor->Poll();
+inline void Drain(TestExecutor& executor) {
+  while (executor.GetTaskCount() > 0) {
+    executor.Poll();
   }
 }
 
@@ -32,10 +34,10 @@ struct AwaitableResult<void> {
 
 template <class T>
 std::shared_ptr<AwaitableResult<T>> StartAwaitable(
-    std::shared_ptr<TestExecutor> executor,
+    TestExecutor executor,
     Awaitable<T> awaitable) {
   auto result = std::make_shared<AwaitableResult<T>>();
-  CoSpawn(MakeTestAnyExecutor(executor),
+  CoSpawn(executor,
           [result, awaitable = std::move(awaitable)]() mutable
               -> Awaitable<void> {
             try {
@@ -53,7 +55,7 @@ std::shared_ptr<AwaitableResult<T>> StartAwaitable(
 }
 
 template <class T>
-T WaitResult(std::shared_ptr<TestExecutor> executor,
+T WaitResult(TestExecutor executor,
              std::shared_ptr<AwaitableResult<T>> result) {
   while (!result->done) {
     Drain(executor);
@@ -65,7 +67,7 @@ T WaitResult(std::shared_ptr<TestExecutor> executor,
   return std::move(*result->value);
 }
 
-inline void WaitResult(std::shared_ptr<TestExecutor> executor,
+inline void WaitResult(TestExecutor executor,
                        std::shared_ptr<AwaitableResult<void>> result) {
   while (!result->done) {
     Drain(executor);
@@ -77,11 +79,11 @@ inline void WaitResult(std::shared_ptr<TestExecutor> executor,
 }
 
 template <class T>
-T WaitAwaitable(std::shared_ptr<TestExecutor> executor, Awaitable<T> awaitable) {
+T WaitAwaitable(TestExecutor executor, Awaitable<T> awaitable) {
   return WaitResult(executor, StartAwaitable(executor, std::move(awaitable)));
 }
 
-inline void WaitAwaitable(std::shared_ptr<TestExecutor> executor,
+inline void WaitAwaitable(TestExecutor executor,
                           Awaitable<void> awaitable) {
   WaitResult(executor, StartAwaitable(executor, std::move(awaitable)));
 }

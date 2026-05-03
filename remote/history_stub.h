@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/boost_log.h"
 #include "base/awaitable.h"
 #include "scada/history_types.h"
@@ -18,14 +20,13 @@ namespace scada {
 class HistoryService;
 }
 
-class Executor;
 class MessageSender;
 
 class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
  public:
   HistoryStub(scada::HistoryService& service,
               std::weak_ptr<MessageSender> sender,
-              std::shared_ptr<Executor> executor);
+              AnyExecutor executor);
   ~HistoryStub();
 
   void OnRequestReceived(const protocol::Request& request);
@@ -45,7 +46,7 @@ class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
 
   scada::HistoryService& service_;
   const std::weak_ptr<MessageSender> sender_;
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
 
   BoostLogger logger_{LOG_NAME("HistoryStub")};
 

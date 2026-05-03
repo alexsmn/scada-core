@@ -1,7 +1,7 @@
 #include "remote/history_stub.h"
 
 #include "base/awaitable.h"
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
@@ -12,7 +12,7 @@
 
 HistoryStub::HistoryStub(scada::HistoryService& service,
                          std::weak_ptr<MessageSender> sender,
-                         std::shared_ptr<Executor> executor)
+                         AnyExecutor executor)
     : service_{service},
       sender_{std::move(sender)},
       executor_{std::move(executor)} {}

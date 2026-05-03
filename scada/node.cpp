@@ -1,6 +1,7 @@
 #include "scada/node.h"
 
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
+#include "base/thread_executor.h"
 #include "scada/service_awaitable.h"
 #include "scada/service_context.h"
 #include "scada/status_awaitable.h"
@@ -8,14 +9,6 @@
 #include <memory>
 
 namespace scada {
-
-namespace {
-
-AnyExecutor ThreadExecutor() {
-  return MakeThreadAnyExecutor();
-}
-
-}  // namespace
 
 node::node() = default;
 
@@ -32,7 +25,7 @@ Awaitable<DataValue> node::read(AttributeId attribute_id) const {
       std::vector<ReadValueId>{{.node_id = node_id_,
                                 .attribute_id = attribute_id}});
   auto results = ValueOrThrow(co_await ReadAsync(
-      ThreadExecutor(), *services_.attribute_service, context_, inputs));
+      ::ThreadExecutor{}, *services_.attribute_service, context_, inputs));
   assert(results.size() == 1);
   ThrowIfBad(results[0].status_code);
   co_return std::move(results[0]);
@@ -51,7 +44,7 @@ Awaitable<void> node::write(AttributeId attribute_id,
                                .value = value,
                                .flags = flags}});
   auto statuses = ValueOrThrow(co_await WriteAsync(
-      ThreadExecutor(), *services_.attribute_service, context_, inputs));
+      ::ThreadExecutor{}, *services_.attribute_service, context_, inputs));
   assert(statuses.size() == 1);
   ThrowIfBad(statuses[0]);
 }
@@ -63,7 +56,7 @@ Awaitable<std::vector<ReferenceDescription>> node::browse(
   }
 
   auto results = ValueOrThrow(co_await BrowseAsync(
-      ThreadExecutor(), *services_.view_service, context_,
+      ::ThreadExecutor{}, *services_.view_service, context_,
       {{.node_id = node_id_,
         .direction = details.direction,
         .reference_type_id = details.reference_type_id}}));
@@ -87,7 +80,7 @@ Awaitable<std::vector<BrowsePathTarget>> node::translate_browse_path(
   }
 
   auto results = ValueOrThrow(co_await TranslateBrowsePathsAsync(
-      ThreadExecutor(), *services_.view_service,
+      ::ThreadExecutor{}, *services_.view_service,
       {{.node_id = node_id_, .relative_path = relative_path}}));
   assert(results.size() == 1);
   ThrowIfBad(results[0].status_code);
@@ -116,7 +109,7 @@ Awaitable<void> node::call_packed(
     throw status_exception{StatusCode::Bad_Disconnected};
   }
 
-  ThrowIfBad(co_await CallAsync(ThreadExecutor(), *services_.method_service,
+  ThrowIfBad(co_await CallAsync(::ThreadExecutor{}, *services_.method_service,
                                 node_id_, method_id, arguments,
                                 context_.user_id()));
 }
@@ -150,7 +143,7 @@ Awaitable<HistoryReadRawResult> node::read_value_history_chunk(
   auto sanitized_details = details;
   sanitized_details.node_id = node_id_;
   auto result = co_await HistoryReadRawAsync(
-      ThreadExecutor(), *services_.history_service, sanitized_details);
+      ::ThreadExecutor{}, *services_.history_service, sanitized_details);
   ThrowIfBad(result.status);
   co_return result;
 }
@@ -162,7 +155,7 @@ Awaitable<std::vector<Event>> node::read_event_history(
   }
 
   auto result = co_await HistoryReadEventsAsync(
-      ThreadExecutor(), *services_.history_service, node_id_, details.from,
+      ::ThreadExecutor{}, *services_.history_service, node_id_, details.from,
       details.to, details.filter);
   ThrowIfBad(result.status);
   co_return std::move(result.events);

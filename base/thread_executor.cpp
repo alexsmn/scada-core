@@ -29,6 +29,7 @@ struct ThreadExecutor::State : public std::enable_shared_from_this<State> {
 
   mutable std::mutex mutex_;
   std::condition_variable condition_;
+  boost::asio::execution_context context_;
   std::queue<Task> task_queue_;
   std::priority_queue<PendingTask> pending_task_queue_;
   int sequence_ = 0;
@@ -88,7 +89,7 @@ void ThreadExecutor::State::PostDelayedTask(
   condition_.notify_one();
 }
 
-Executor::Task ThreadExecutor::State::GetTask() {
+ThreadExecutor::Task ThreadExecutor::State::GetTask() {
   std::unique_lock lock(mutex_);
 
   while (!stopped_) {
@@ -115,7 +116,7 @@ Executor::Task ThreadExecutor::State::GetTask() {
   return nullptr;
 }
 
-Executor::Task ThreadExecutor::State::GetImmediateTask() {
+ThreadExecutor::Task ThreadExecutor::State::GetImmediateTask() {
   std::unique_lock lock(mutex_);
 
   if (task_queue_.empty()) {
@@ -148,16 +149,33 @@ ThreadExecutor::ThreadExecutor() : state_{std::make_shared<State>()} {
 }
 
 ThreadExecutor::~ThreadExecutor() {
-  state_->Stop();
+  if (state_.use_count() == 2) {
+    state_->Stop();
+  }
 }
 
 void ThreadExecutor::Shutdown() {
   state_->Stop();
 }
 
+boost::asio::execution_context& ThreadExecutor::query(
+    boost::asio::execution::context_t) const noexcept {
+  return state_->context_;
+}
+
+boost::asio::execution_context& ThreadExecutor::context() const noexcept {
+  return state_->context_;
+}
+
+void ThreadExecutor::PostTask(Task task,
+                              const std::source_location& location) const {
+  state_->PostDelayedTask(Duration{}, std::move(task), location);
+}
+
 void ThreadExecutor::PostDelayedTask(Duration delay,
                                      Task task,
-                                     const std::source_location& location) {
+                                     const std::source_location& location)
+    const {
   state_->PostDelayedTask(delay, std::move(task), location);
 }
 

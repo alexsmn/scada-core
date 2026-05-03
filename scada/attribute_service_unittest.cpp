@@ -14,7 +14,7 @@ namespace {
 using testing::Invoke;
 
 TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   testing::StrictMock<MockAttributeService> service;
 
   const auto context = ServiceContext{}.with_request_id(17);
@@ -26,7 +26,9 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
                            std::shared_ptr<const std::vector<ReadValueId>>
                                actual_inputs) -> Awaitable<StatusOr<std::vector<DataValue>>> {
         EXPECT_EQ(actual_context.request_id(), context.request_id());
-        ASSERT_EQ(actual_inputs->size(), 1u);
+        EXPECT_EQ(actual_inputs->size(), 1u);
+        if (actual_inputs->size() != 1u)
+          co_return StatusCode::Bad;
         EXPECT_EQ((*actual_inputs)[0], (*read_inputs)[0]);
         co_return std::vector{DataValue{Variant{42}, {}, {}, {}}};
       }));
@@ -43,7 +45,9 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
                            std::shared_ptr<const std::vector<WriteValue>>
                                actual_inputs) -> Awaitable<StatusOr<std::vector<StatusCode>>> {
         EXPECT_EQ(actual_context.request_id(), context.request_id());
-        ASSERT_EQ(actual_inputs->size(), 1u);
+        EXPECT_EQ(actual_inputs->size(), 1u);
+        if (actual_inputs->size() != 1u)
+          co_return StatusCode::Bad;
         EXPECT_EQ((*actual_inputs)[0], (*write_inputs)[0]);
         co_return std::vector{StatusCode::Good};
       }));
@@ -70,13 +74,18 @@ TEST(AttributeServiceHelpers, PropagatesCoroutineExceptions) {
     }
   };
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   ThrowingAttributeService service;
   auto inputs =
       std::make_shared<std::vector<ReadValueId>>(1, ReadValueId{.node_id = 1});
 
-  EXPECT_THROW(WaitAwaitable(executor, service.Read(ServiceContext{}, inputs)),
-               status_exception);
+  EXPECT_THROW(
+      {
+        auto result = WaitAwaitable(executor,
+                                    service.Read(ServiceContext{}, inputs));
+        (void)result;
+      },
+      status_exception);
 }
 
 }  // namespace

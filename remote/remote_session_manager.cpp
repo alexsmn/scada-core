@@ -3,7 +3,7 @@
 #include "base/any_executor_dispatch.h"
 #include "base/boost_log_adapter.h"
 #include "base/debug_util.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/utf_convert.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
@@ -225,11 +225,11 @@ SessionStub& RemoteSessionManager::CreateNewSession(
                      << LOG_TAG("UserId", NodeIdToScadaString(user_id))
                      << LOG_TAG("UserName", ToString(user_name));
 
-  // `SessionContext` still expects a legacy `std::shared_ptr<Executor>`; the
+  // `SessionContext` still expects a legacy `AnyExecutor`; the
   // surrounding manager has moved to `AnyExecutor`, so adapt here until the
   // session stub is migrated to `AnyExecutor` as well.
   auto session = SessionStub::Create(SessionContext{
-      .executor_ = MakeLegacyExecutor(executor_),
+      .executor_ = executor_,
       .services_ = services_,
       .service_context_ = scada::ServiceContext{}.with_user_id(user_id)});
 

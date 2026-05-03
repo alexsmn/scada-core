@@ -46,7 +46,7 @@ class TestNodeManagementService final
 };
 
 TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
   TestNodeManagementService service;
 
@@ -71,7 +71,7 @@ TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
           *request.mutable_add_node());
 
   stub->OnRequestReceived(request);
-  executor->Poll();
+  executor.Poll();
 
   ASSERT_TRUE(service.add_nodes_called);
   ASSERT_EQ(service.last_add_nodes_inputs.size(), 1u);
@@ -79,7 +79,7 @@ TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
 }
 
 TEST(NodeManagementStubTest, DeleteNodesPreservesDeleteTargetReferencesFlag) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
   TestNodeManagementService service;
 
@@ -101,7 +101,7 @@ TEST(NodeManagementStubTest, DeleteNodesPreservesDeleteTargetReferencesFlag) {
           *request.mutable_delete_node());
 
   stub->OnRequestReceived(request);
-  executor->Poll();
+  executor.Poll();
 
   ASSERT_TRUE(service.delete_nodes_called);
   ASSERT_EQ(service.last_delete_nodes_inputs.size(), 1u);

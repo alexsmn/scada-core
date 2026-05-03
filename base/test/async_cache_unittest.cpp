@@ -7,8 +7,8 @@
 using namespace std::chrono_literals;
 
 TEST(AsyncCache, WaitersShareOneStartedFetch) {
-  auto executor = std::make_shared<TestExecutor>();
-  base::AsyncCache<int, int> cache{MakeTestAnyExecutor(executor)};
+  TestExecutor executor;
+  base::AsyncCache<int, int> cache{executor};
   int starts = 0;
 
   auto first = StartAwaitable(executor, cache.Wait(1, [&](int key) {
@@ -34,8 +34,8 @@ TEST(AsyncCache, WaitersShareOneStartedFetch) {
 }
 
 TEST(AsyncCache, CompletedValueIsReused) {
-  auto executor = std::make_shared<TestExecutor>();
-  base::AsyncCache<int, int> cache{MakeTestAnyExecutor(executor)};
+  TestExecutor executor;
+  base::AsyncCache<int, int> cache{executor};
   int starts = 0;
 
   auto first = StartAwaitable(executor, cache.Wait(1, [&](int key) {
@@ -58,8 +58,8 @@ TEST(AsyncCache, CompletedValueIsReused) {
 }
 
 TEST(AsyncCache, PendingKeysExposeUnstartedWaiters) {
-  auto executor = std::make_shared<TestExecutor>();
-  base::AsyncCache<int, int> cache{MakeTestAnyExecutor(executor)};
+  TestExecutor executor;
+  base::AsyncCache<int, int> cache{executor};
 
   auto first = StartAwaitable(executor, cache.Wait(1, [](int) {}));
   auto second = StartAwaitable(executor, cache.Wait(2, [](int) {}));

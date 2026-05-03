@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "base/boost_log.h"
 #include "remote/subscription.h"
 #include "scada/read_value_id.h"
@@ -15,12 +16,11 @@ struct MonitoringParameters;
 struct ReadValueId;
 }  // namespace scada
 
-class Executor;
 class MessageSender;
 
 class SubscriptionStub : public std::enable_shared_from_this<SubscriptionStub> {
  public:
-  SubscriptionStub(std::shared_ptr<Executor> executor,
+  SubscriptionStub(AnyExecutor executor,
                    std::weak_ptr<MessageSender> sender,
                    scada::MonitoredItemService& monitored_item_service,
                    int subscription_id,
@@ -39,7 +39,7 @@ class SubscriptionStub : public std::enable_shared_from_this<SubscriptionStub> {
                scada::StatusCode status_code,
                const std::any& event);
 
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   const std::weak_ptr<MessageSender> sender_;
   scada::MonitoredItemService& monitored_item_service_;
   const int subscription_id_;

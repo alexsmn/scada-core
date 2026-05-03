@@ -29,7 +29,7 @@ class TestMonitoredItemService : public MonitoredItemService {
 };
 
 TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   TestMonitoredItemService service;
   auto first_item = std::make_shared<TestMonitoredItem>();
   auto second_item = std::make_shared<TestMonitoredItem>();
@@ -39,7 +39,7 @@ TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
   const std::vector<ReadValueId> inputs{{NodeId{1, 1}}, {NodeId{2, 1}}};
   auto read_result = StartAwaitable(
       executor,
-      ReadInitialValuesAsync(MakeTestAnyExecutor(executor), service, inputs,
+      ReadInitialValuesAsync(executor, service, inputs,
                              /*params=*/{}));
 
   Drain(executor);
@@ -55,12 +55,12 @@ TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
 }
 
 TEST(MonitoredItemServiceAwaitable, ReturnsReadErrorForMissingItem) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   TestMonitoredItemService service;
 
   auto read_result = StartAwaitable(
       executor,
-      ReadInitialValueAsync(MakeTestAnyExecutor(executor), service,
+      ReadInitialValueAsync(executor, service,
                             ReadValueId{NodeId{1, 1}}, /*params=*/{}));
 
   EXPECT_THAT(WaitResult(executor, read_result),

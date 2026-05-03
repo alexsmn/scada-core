@@ -12,8 +12,25 @@ using namespace std::chrono_literals;
 
 namespace {
 
+TEST(TestExecutor, CanBeStoredInAnyExecutor) {
+  TestExecutor executor;
+  AnyExecutor any_executor = executor;
+
+  bool called = false;
+  boost::asio::post(any_executor, [&] {
+    EXPECT_TRUE(executor.is_current_executor());
+    called = true;
+  });
+
+  EXPECT_FALSE(called);
+
+  executor.Poll();
+
+  EXPECT_TRUE(called);
+}
+
 TEST(CoSpawn, DefersCoroutineFactoryUntilExecutorRuns) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
 
   bool factory_called = false;
   bool coroutine_started = false;
@@ -21,21 +38,21 @@ TEST(CoSpawn, DefersCoroutineFactoryUntilExecutorRuns) {
   CoSpawn(executor, [&]() -> Awaitable<void> {
     factory_called = true;
     coroutine_started = true;
-    EXPECT_TRUE(executor->is_current_executor());
+    EXPECT_TRUE(executor.is_current_executor());
     co_return;
   });
 
   EXPECT_FALSE(factory_called);
   EXPECT_FALSE(coroutine_started);
 
-  executor->Poll();
+  executor.Poll();
 
   EXPECT_TRUE(factory_called);
   EXPECT_TRUE(coroutine_started);
 }
 
 TEST(CoSpawn, SupportsMoveOnlyCoroutineFactoryCaptures) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto value = std::make_unique<int>(42);
 
   int observed = 0;
@@ -49,14 +66,14 @@ TEST(CoSpawn, SupportsMoveOnlyCoroutineFactoryCaptures) {
   EXPECT_EQ(value, nullptr);
   EXPECT_EQ(observed, 0);
 
-  executor->Poll();
+  executor.Poll();
 
   EXPECT_EQ(observed, 42);
 }
 
 TEST(CoSpawn, DefersCoroutineFactoryUntilAnyExecutorRuns) {
-  auto executor = std::make_shared<TestExecutor>();
-  auto any_executor = MakeTestAnyExecutor(executor);
+  TestExecutor executor;
+  auto any_executor = executor;
 
   bool factory_called = false;
   bool coroutine_started = false;
@@ -64,22 +81,22 @@ TEST(CoSpawn, DefersCoroutineFactoryUntilAnyExecutorRuns) {
   CoSpawn(any_executor, [&]() -> Awaitable<void> {
     factory_called = true;
     coroutine_started = true;
-    EXPECT_TRUE(executor->is_current_executor());
+    EXPECT_TRUE(executor.is_current_executor());
     co_return;
   });
 
   EXPECT_FALSE(factory_called);
   EXPECT_FALSE(coroutine_started);
 
-  executor->Poll();
+  executor.Poll();
 
   EXPECT_TRUE(factory_called);
   EXPECT_TRUE(coroutine_started);
 }
 
 TEST(CoSpawn, SupportsMoveOnlyCoroutineFactoryCapturesWithAnyExecutor) {
-  auto executor = std::make_shared<TestExecutor>();
-  auto any_executor = MakeTestAnyExecutor(executor);
+  TestExecutor executor;
+  auto any_executor = executor;
   auto value = std::make_unique<int>(42);
 
   int observed = 0;
@@ -93,13 +110,13 @@ TEST(CoSpawn, SupportsMoveOnlyCoroutineFactoryCapturesWithAnyExecutor) {
   EXPECT_EQ(value, nullptr);
   EXPECT_EQ(observed, 0);
 
-  executor->Poll();
+  executor.Poll();
 
   EXPECT_EQ(observed, 42);
 }
 
 TEST(CoSpawn, WeakPtrFactoryReceivesLockedSharedPtrWhenAlive) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto alive = std::make_shared<int>(42);
 
   bool factory_called = false;
@@ -115,14 +132,14 @@ TEST(CoSpawn, WeakPtrFactoryReceivesLockedSharedPtrWhenAlive) {
   EXPECT_FALSE(factory_called);
   EXPECT_EQ(observed, 0);
 
-  executor->Poll();
+  executor.Poll();
 
   EXPECT_TRUE(factory_called);
   EXPECT_EQ(observed, 42);
 }
 
 TEST(CoSpawn, WeakPtrFactoryDoesNotRunAfterCancelationExpires) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto alive = std::make_shared<int>(42);
 
   bool factory_called = false;
@@ -133,13 +150,13 @@ TEST(CoSpawn, WeakPtrFactoryDoesNotRunAfterCancelationExpires) {
   });
 
   alive.reset();
-  executor->Poll();
+  executor.Poll();
 
   EXPECT_FALSE(factory_called);
 }
 
 TEST(CoSpawn, CancelationFactoryDoesNotRunAfterCancelationCancels) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   Cancelation cancelation;
 
   bool factory_called = false;
@@ -150,7 +167,7 @@ TEST(CoSpawn, CancelationFactoryDoesNotRunAfterCancelationCancels) {
   });
 
   cancelation.Cancel();
-  executor->Poll();
+  executor.Poll();
 
   EXPECT_FALSE(factory_called);
 }

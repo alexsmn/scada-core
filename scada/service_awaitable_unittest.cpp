@@ -16,7 +16,7 @@ namespace scada {
 namespace {
 
 TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<MockAttributeService> attribute_service;
   StrictMock<MockViewService> view_service;
 
@@ -43,53 +43,52 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
                           .target_name = {"Leaf", 7}}}}};
   const auto expected_translate_input = translate_inputs[0];
 
-  EXPECT_CALL(attribute_service, Read(_, _, _))
-      .WillOnce(Invoke([&](const ServiceContext& actual_context,
-                           const std::shared_ptr<const std::vector<ReadValueId>>& actual_inputs,
-                           const ReadCallback& callback) {
+  EXPECT_CALL(attribute_service, Read(_, _))
+      .WillOnce(Invoke([&](ServiceContext actual_context,
+                           std::shared_ptr<const std::vector<ReadValueId>>
+                               actual_inputs)
+                           -> Awaitable<StatusOr<std::vector<DataValue>>> {
         EXPECT_EQ(actual_context.user_id(), user_id);
         EXPECT_EQ(actual_context.request_id(), 17u);
         EXPECT_EQ(actual_inputs, read_inputs);
-        callback(StatusCode::Good,
-                 {DataValue{LocalizedText{u"Pump"}, {}, {}, {}}});
+        co_return std::vector{DataValue{LocalizedText{u"Pump"}, {}, {}, {}}};
       }));
-  EXPECT_CALL(attribute_service, Write(_, _, _))
-      .WillOnce(Invoke([&](const ServiceContext& actual_context,
-                           const std::shared_ptr<const std::vector<WriteValue>>& actual_inputs,
-                           const WriteCallback& callback) {
+  EXPECT_CALL(attribute_service, Write(_, _))
+      .WillOnce(Invoke([&](ServiceContext actual_context,
+                           std::shared_ptr<const std::vector<WriteValue>>
+                               actual_inputs)
+                           -> Awaitable<StatusOr<std::vector<StatusCode>>> {
         EXPECT_EQ(actual_context.user_id(), user_id);
         EXPECT_EQ(actual_context.request_id(), 17u);
         EXPECT_EQ(actual_inputs, write_inputs);
-        callback(StatusCode::Good, {StatusCode::Good});
+        co_return std::vector{StatusCode::Good};
       }));
-  EXPECT_CALL(view_service, Browse(_, _, _))
-      .WillOnce(Invoke([&](const ServiceContext& actual_context,
-                           const std::vector<BrowseDescription>& actual_inputs,
-                           const BrowseCallback& callback) {
+  EXPECT_CALL(view_service, Browse(_, _))
+      .WillOnce(Invoke([&](ServiceContext actual_context,
+                           std::vector<BrowseDescription> actual_inputs)
+                           -> Awaitable<StatusOr<std::vector<BrowseResult>>> {
         EXPECT_EQ(actual_context.user_id(), user_id);
         EXPECT_EQ(actual_context.request_id(), 17u);
         EXPECT_THAT(actual_inputs, ElementsAre(expected_browse_input));
-        callback(StatusCode::Good,
-                 {BrowseResult{
-                     .status_code = StatusCode::Good,
-                     .references = {{.reference_type_id = NodeId{7},
-                                     .forward = true,
-                                     .node_id = NodeId{8}}}}});
+        co_return std::vector{BrowseResult{
+            .status_code = StatusCode::Good,
+            .references = {{.reference_type_id = NodeId{7},
+                            .forward = true,
+                            .node_id = NodeId{8}}}}};
       }));
-  EXPECT_CALL(view_service, TranslateBrowsePaths(_, _))
-      .WillOnce(Invoke([&](const std::vector<BrowsePath>& actual_inputs,
-                           const TranslateBrowsePathsCallback& callback) {
+  EXPECT_CALL(view_service, TranslateBrowsePaths(_))
+      .WillOnce(Invoke([&](std::vector<BrowsePath> actual_inputs)
+                           -> Awaitable<StatusOr<std::vector<BrowsePathResult>>> {
         EXPECT_THAT(actual_inputs, ElementsAre(expected_translate_input));
-        callback(StatusCode::Good,
-                 {BrowsePathResult{
-                     .status_code = StatusCode::Good,
-                     .targets = {{.target_id = ExpandedNodeId{NodeId{9}},
-                                  .remaining_path_index = 0}}}});
+        co_return std::vector{BrowsePathResult{
+            .status_code = StatusCode::Good,
+            .targets = {{.target_id = ExpandedNodeId{NodeId{9}},
+                         .remaining_path_index = 0}}}};
       }));
 
   auto read_result = WaitAwaitable(
       executor,
-      ReadAsync(MakeTestAnyExecutor(executor), attribute_service, context,
+      ReadAsync(executor, attribute_service, context,
                 read_inputs));
   ASSERT_TRUE(read_result.ok());
   const auto& read_results = *read_result;
@@ -98,14 +97,14 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
 
   auto write_result = WaitAwaitable(
       executor,
-      WriteAsync(MakeTestAnyExecutor(executor), attribute_service, context,
+      WriteAsync(executor, attribute_service, context,
                  write_inputs));
   ASSERT_TRUE(write_result.ok());
   EXPECT_THAT(*write_result, ElementsAre(StatusCode::Good));
 
   auto browse_result = WaitAwaitable(
       executor,
-      BrowseAsync(MakeTestAnyExecutor(executor), view_service, context,
+      BrowseAsync(executor, view_service, context,
                   std::move(browse_inputs)));
   ASSERT_TRUE(browse_result.ok());
   const auto& browse_results = *browse_result;
@@ -118,7 +117,7 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
 
   auto translate_result =
       WaitAwaitable(executor,
-                    TranslateBrowsePathsAsync(MakeTestAnyExecutor(executor),
+                    TranslateBrowsePathsAsync(executor,
                                               view_service,
                                               std::move(translate_inputs)));
   ASSERT_TRUE(translate_result.ok());
@@ -131,7 +130,7 @@ TEST(ServiceAwaitableTest, AnyExecutorReadWriteBrowseAndTranslateForwardInputs) 
 
 TEST(ServiceAwaitableTest,
      LegacyExecutorCallHistoryAndNodeManagementForwardInputs) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<MockMethodService> method_service;
   StrictMock<MockHistoryService> history_service;
   StrictMock<MockNodeManagementService> node_management_service;
@@ -195,7 +194,9 @@ TEST(ServiceAwaitableTest,
   EXPECT_CALL(node_management_service, AddNodes(_))
       .WillOnce(Invoke([&](std::vector<AddNodesItem> actual_inputs)
                            -> Awaitable<StatusOr<std::vector<AddNodesResult>>> {
-        ASSERT_EQ(actual_inputs.size(), 1u);
+        EXPECT_EQ(actual_inputs.size(), 1u);
+        if (actual_inputs.size() != 1u)
+          co_return StatusCode::Bad;
         EXPECT_EQ(actual_inputs[0].requested_id,
                   expected_add_node.requested_id);
         EXPECT_EQ(actual_inputs[0].parent_id, expected_add_node.parent_id);
@@ -208,7 +209,9 @@ TEST(ServiceAwaitableTest,
       .WillOnce(Invoke(
           [&](std::vector<DeleteNodesItem> actual_inputs)
               -> Awaitable<StatusOr<std::vector<StatusCode>>> {
-        ASSERT_EQ(actual_inputs.size(), 1u);
+        EXPECT_EQ(actual_inputs.size(), 1u);
+        if (actual_inputs.size() != 1u)
+          co_return StatusCode::Bad;
         EXPECT_EQ(actual_inputs[0].node_id, expected_delete_node.node_id);
         EXPECT_EQ(actual_inputs[0].delete_target_references,
                   expected_delete_node.delete_target_references);
@@ -218,7 +221,9 @@ TEST(ServiceAwaitableTest,
       .WillOnce(Invoke(
           [&](std::vector<AddReferencesItem> actual_inputs)
               -> Awaitable<StatusOr<std::vector<StatusCode>>> {
-        ASSERT_EQ(actual_inputs.size(), 1u);
+        EXPECT_EQ(actual_inputs.size(), 1u);
+        if (actual_inputs.size() != 1u)
+          co_return StatusCode::Bad;
         EXPECT_EQ(actual_inputs[0].source_node_id,
                   expected_add_reference.source_node_id);
         EXPECT_EQ(actual_inputs[0].reference_type_id,
@@ -231,7 +236,9 @@ TEST(ServiceAwaitableTest,
       .WillOnce(Invoke(
           [&](std::vector<DeleteReferencesItem> actual_inputs)
               -> Awaitable<StatusOr<std::vector<StatusCode>>> {
-        ASSERT_EQ(actual_inputs.size(), 1u);
+        EXPECT_EQ(actual_inputs.size(), 1u);
+        if (actual_inputs.size() != 1u)
+          co_return StatusCode::Bad;
         EXPECT_EQ(actual_inputs[0].source_node_id,
                   expected_delete_reference.source_node_id);
         EXPECT_EQ(actual_inputs[0].reference_type_id,

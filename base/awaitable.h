@@ -2,7 +2,6 @@
 
 #include "base/any_executor.h"
 #include "base/cancelation.h"
-#include "base/executor_adapter.h"
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -22,41 +21,9 @@ using Awaitable = boost::asio::awaitable<T>;
 // production request handlers. Keep this helper forwarding the callable itself
 // so coroutine construction stays inside `boost::asio::co_spawn`.
 template <class F>
-inline void CoSpawn(const std::shared_ptr<Executor>& executor, F&& fn) {
-  boost::asio::co_spawn(ExecutorAdapter{executor}, std::forward<F>(fn),
-                        boost::asio::detached);
-}
-
-template <class F>
 inline void CoSpawn(AnyExecutor executor, F&& fn) {
   boost::asio::co_spawn(std::move(executor), std::forward<F>(fn),
                         boost::asio::detached);
-}
-
-template <class C, class F>
-inline void CoSpawn(const std::shared_ptr<Executor>& executor,
-                    std::weak_ptr<C> cancelation,
-                    F&& fn) {
-  using Fn = std::decay_t<F>;
-  boost::asio::co_spawn(
-      ExecutorAdapter{executor},
-      [cancelation = std::move(cancelation),
-       fn = Fn(std::forward<F>(fn))]() mutable -> Awaitable<void> {
-        auto locked = cancelation.lock();
-        if (!locked) {
-          co_return;
-        }
-
-        if constexpr (std::is_invocable_v<Fn, std::shared_ptr<C>>) {
-          co_await std::invoke(std::move(fn), std::move(locked));
-        } else {
-          static_assert(std::is_invocable_v<Fn>,
-                        "CoSpawn(cancelation, fn) requires a nullary "
-                        "coroutine factory or one that accepts shared_ptr<C>.");
-          co_await std::invoke(std::move(fn));
-        }
-      },
-      boost::asio::detached);
 }
 
 template <class C, class F>
@@ -84,18 +51,12 @@ inline void CoSpawn(AnyExecutor executor, std::weak_ptr<C> cancelation, F&& fn) 
 }
 
 template <class F>
-inline void CoSpawn(const std::shared_ptr<Executor>& executor,
-                    const Cancelation& cancelation,
-                    F&& fn) {
-  CoSpawn(executor, cancelation.weak_ptr(), std::forward<F>(fn));
-}
-
-template <class F>
 inline void CoSpawn(AnyExecutor executor,
                     const Cancelation& cancelation,
                     F&& fn) {
   CoSpawn(std::move(executor), cancelation.weak_ptr(), std::forward<F>(fn));
 }
+
 
 template <class ExecutionContext, class F>
 auto RunAwaitable(ExecutionContext& context, F&& fn) {

@@ -12,13 +12,13 @@ namespace scada {
 namespace {
 
 TEST(ScadaCallbackAwaitable, AwaitsDeferredStatusCallback) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
 
   StatusCallback callback;
   auto status_result = StartAwaitable(
       executor,
       AwaitStatusCallback(
-          MakeTestAnyExecutor(executor),
+          executor,
           [&](StatusCallback done) { callback = std::move(done); }));
 
   Drain(executor);
@@ -32,11 +32,11 @@ TEST(ScadaCallbackAwaitable, AwaitsDeferredStatusCallback) {
 }
 
 TEST(ScadaCallbackAwaitable, AwaitsStatusCodesCallback) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
 
   auto result =
       WaitAwaitable(executor,
-      AwaitStatusCodesCallback(MakeTestAnyExecutor(executor),
+      AwaitStatusCodesCallback(executor,
                                [](auto done) mutable {
                                  done(Status{StatusCode::Good},
                                       std::vector<StatusCode>{
@@ -51,11 +51,11 @@ TEST(ScadaCallbackAwaitable, AwaitsStatusCodesCallback) {
 }
 
 TEST(ScadaCallbackAwaitable, AwaitsSingleCallbackValue) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
 
   EXPECT_EQ(WaitAwaitable(executor,
                           AwaitCallbackValue<int>(
-                              MakeTestAnyExecutor(executor),
+                              executor,
                               [](auto done) mutable { done(42); })),
             42);
 }

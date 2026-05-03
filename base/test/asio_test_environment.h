@@ -1,9 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
-#include "base/asio_executor.h"
-#include "base/executor_adapter.h"
-#include "base/executor_factory.h"
+#include "base/any_executor.h"
 #include "net/test/test_net_interceptors.h"
 
 #include <boost/asio/co_spawn.hpp>
@@ -42,7 +40,7 @@ struct AsioTestEnvironment {
   std::shared_ptr<AsioAwaitableResult<T>> Start(Awaitable<T> awaitable) {
     auto result = std::make_shared<AsioAwaitableResult<T>>();
     boost::asio::co_spawn(
-        ExecutorAdapter{executor},
+        executor,
         [result, awaitable = std::move(awaitable)]() mutable
             -> Awaitable<void> {
           try {
@@ -129,12 +127,9 @@ struct AsioTestEnvironment {
   transport::InterceptingTransportFactory transport_factory{
       transport_factory_impl};
 
-  const std::shared_ptr<Executor> executor = std::make_shared<AsioExecutor>(
-      boost::asio::make_strand(io_context.get_executor()));
+  const AnyExecutor executor = boost::asio::make_strand(io_context.get_executor());
 
-  const ExecutorFactory executor_factory = MakeSingleExecutorFactory(executor);
+  const AnyExecutorFactory executor_factory = MakeSingleExecutorFactory(executor);
 
-  const AnyExecutorFactory any_executor_factory = [this]() -> AnyExecutor {
-    return AnyExecutor{ExecutorAdapter{executor}};
-  };
+  const AnyExecutorFactory any_executor_factory = executor_factory;
 };

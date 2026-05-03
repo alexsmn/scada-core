@@ -7,30 +7,32 @@
 #include <thread>
 
 TEST(CallbackToAwaitable, CompletesWithCallbackValues) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
 
   EXPECT_EQ(
       WaitAwaitable(executor, [executor]() -> Awaitable<int> {
         auto [value] = co_await CallbackToAwaitable<int>(
-            executor, [](auto callback) mutable { callback(42); });
+            executor,
+            [](auto callback) mutable { callback(42); });
         co_return value;
       }()),
       42);
 }
 
 TEST(CallbackToAwaitable, PreservesFailureLikeResults) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
 
   EXPECT_EQ(
       WaitAwaitable(executor, [executor]() -> Awaitable<std::tuple<bool, int>> {
         co_return co_await CallbackToAwaitable<bool, int>(
-            executor, [](auto callback) mutable { callback(false, 7); });
+            executor,
+            [](auto callback) mutable { callback(false, 7); });
       }()),
       std::make_tuple(false, 7));
 }
 
 TEST(CallbackToAwaitable, ResumesOnBoundExecutorWhenCallbackRunsOffExecutor) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
 
   EXPECT_NO_THROW(WaitAwaitable(executor, [executor]() -> Awaitable<void> {
         auto [value] = co_await CallbackToAwaitable<int>(
@@ -42,13 +44,13 @@ TEST(CallbackToAwaitable, ResumesOnBoundExecutorWhenCallbackRunsOffExecutor) {
             });
 
         EXPECT_EQ(value, 42);
-        EXPECT_TRUE(executor->is_current_executor());
+        EXPECT_TRUE(executor.is_current_executor());
       }()));
 }
 
 TEST(CallbackToAwaitable, CompletesWithCallbackValuesOnAnyExecutor) {
-  auto executor = std::make_shared<TestExecutor>();
-  auto any_executor = MakeTestAnyExecutor(executor);
+  TestExecutor executor;
+  auto any_executor = executor;
 
   EXPECT_EQ(
       WaitAwaitable(executor, [any_executor]() mutable -> Awaitable<int> {
@@ -62,8 +64,8 @@ TEST(CallbackToAwaitable, CompletesWithCallbackValuesOnAnyExecutor) {
 
 TEST(CallbackToAwaitable,
      ResumesOnBoundAnyExecutorWhenCallbackRunsOffExecutor) {
-  auto executor = std::make_shared<TestExecutor>();
-  auto any_executor = MakeTestAnyExecutor(executor);
+  TestExecutor executor;
+  auto any_executor = executor;
 
   EXPECT_NO_THROW(WaitAwaitable(
       executor, [executor, any_executor]() mutable -> Awaitable<void> {
@@ -77,6 +79,6 @@ TEST(CallbackToAwaitable,
             });
 
         EXPECT_EQ(value, 42);
-        EXPECT_TRUE(executor->is_current_executor());
+        EXPECT_TRUE(executor.is_current_executor());
       }()));
 }

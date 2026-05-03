@@ -28,7 +28,6 @@ class Request;
 class Response;
 }  // namespace protocol
 
-class Executor;
 class RemoteListener;
 class ServerConnection;
 class SessionStub;

@@ -23,7 +23,6 @@ add_executable(base_awaitable_unittests
   "async_completion_unittest.cpp"
   "callback_awaitable_unittest.cpp"
   "awaitable_unittest.cpp"
-  "executor_conversions_unittest.cpp"
   "observer_list_unittest.cpp"
   "gtest_main.cpp"
 )

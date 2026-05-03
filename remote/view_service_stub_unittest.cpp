@@ -43,7 +43,7 @@ class TestViewService final : public scada::ViewService {
 // With the duplicate member removed, the stub resolves `coroutine_service_`
 // through the base class and the Browse call reaches the real service.
 TEST(ViewServiceStubTest, BrowseRoutesToCoroutineServiceFromContext) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
   TestViewService service;
 
@@ -51,7 +51,7 @@ TEST(ViewServiceStubTest, BrowseRoutesToCoroutineServiceFromContext) {
       .executor_ = executor,
       .sender_ = sender,
       .service_context_ = scada::ServiceContext{}.with_user_id({1, 1}),
-      .coroutine_service_ = service,
+      .service_ = service,
   });
 
   EXPECT_CALL(*sender, Send(_)).WillOnce(Invoke([](protocol::Message& message) {
@@ -68,7 +68,7 @@ TEST(ViewServiceStubTest, BrowseRoutesToCoroutineServiceFromContext) {
   Convert(scada::NodeId{2, 3}, *browse_proto_node->mutable_node_id());
 
   stub->OnRequestReceived(request);
-  executor->Poll();
+  executor.Poll();
 
   ASSERT_TRUE(service.browse_called);
   ASSERT_EQ(service.last_browse_inputs.size(), 1u);

@@ -1,22 +1,26 @@
 #pragma once
 
-#include "base/executor.h"
-#include "base/executor_util.h"
+#include "base/any_executor.h"
+#include "base/common_types.h"
 
-class AsioExecutor : public Executor {
+#include <functional>
+#include <source_location>
+
+class AsioExecutor {
  public:
-  explicit AsioExecutor(const boost::asio::any_io_executor& executor)
-      : executor_{executor} {}
+  using Task = std::function<void()>;
 
-  virtual void PostDelayedTask(Duration delay,
-                               Task task,
-                               const std::source_location& location =
-                                   std::source_location::current()) override {
+  explicit AsioExecutor(AnyExecutor executor) : executor_{std::move(executor)} {}
+
+  void PostDelayedTask(Duration delay,
+                       Task task,
+                       const std::source_location& location =
+                           std::source_location::current()) {
     ::PostDelayedTask(executor_, delay, std::move(task), location);
   }
 
-  virtual size_t GetTaskCount() const override { return 0; }
+  size_t GetTaskCount() const { return 0; }
 
  private:
-  boost::asio::any_io_executor executor_;
+  AnyExecutor executor_;
 };

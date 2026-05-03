@@ -1,6 +1,6 @@
 #include "remote/subscription_stub.h"
 
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
@@ -12,7 +12,7 @@
 #include "base/debug_util.h"
 
 SubscriptionStub::SubscriptionStub(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<MessageSender> sender,
     scada::MonitoredItemService& monitored_item_service,
     int subscription_id,

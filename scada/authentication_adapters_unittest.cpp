@@ -25,10 +25,10 @@ class StubCoroutineAuthenticator final : public CoroutineAuthenticator {
 };
 
 TEST(AuthenticationAdaptersTest, AuthenticatorIsCoroutineFunction) {
-  auto executor = std::make_shared<TestExecutor>(true);
+  TestExecutor executor{true};
 
   auto authenticator =
-      MakeAuthenticator(MakeTestAnyExecutor(executor),
+      MakeAuthenticator(executor,
                         [](LocalizedText user_name, LocalizedText password)
                             -> Awaitable<StatusOr<AuthenticationResult>> {
                           EXPECT_EQ(user_name, LocalizedText{u"user"});
@@ -48,10 +48,10 @@ TEST(AuthenticationAdaptersTest, AuthenticatorIsCoroutineFunction) {
 }
 
 TEST(AuthenticationAdaptersTest, AuthenticatorPreservesBadStatusResult) {
-  auto executor = std::make_shared<TestExecutor>(true);
+  TestExecutor executor{true};
 
   auto authenticator =
-      MakeAuthenticator(MakeTestAnyExecutor(executor),
+      MakeAuthenticator(executor,
                         [](LocalizedText, LocalizedText)
                             -> Awaitable<StatusOr<AuthenticationResult>> {
                           co_return StatusCode::Bad_WrongLoginCredentials;
@@ -65,12 +65,12 @@ TEST(AuthenticationAdaptersTest, AuthenticatorPreservesBadStatusResult) {
 
 TEST(AuthenticationAdaptersTest,
      MakeAuthenticatorAdaptsCoroutineAuthenticatorInterface) {
-  auto executor = std::make_shared<TestExecutor>(true);
+  TestExecutor executor{true};
   StubCoroutineAuthenticator authenticator{AuthenticationResult{
       .user_id = NodeId{5, 6}, .user_rights = 11, .multi_sessions = true}};
 
   auto function_authenticator =
-      MakeAuthenticator(MakeTestAnyExecutor(executor), authenticator);
+      MakeAuthenticator(executor, authenticator);
 
   auto result =
       WaitAwaitable(executor, function_authenticator(u"user", u"password"));
@@ -82,9 +82,9 @@ TEST(AuthenticationAdaptersTest,
 }
 
 TEST(AuthenticationAdaptersTest, MakeCoroutineAuthenticatorWrapsFunction) {
-  auto executor = std::make_shared<TestExecutor>(true);
+  TestExecutor executor{true};
   auto coroutine_authenticator = MakeCoroutineAuthenticator(
-      MakeTestAnyExecutor(executor),
+      executor,
       [](LocalizedText, LocalizedText)
           -> Awaitable<StatusOr<AuthenticationResult>> {
         co_return AuthenticationResult{

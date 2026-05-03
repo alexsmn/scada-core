@@ -3,7 +3,6 @@
 #include "base/any_executor.h"
 #include "base/common_types.h"
 #include "base/debug_holder.h"
-#include "base/executor_util.h"
 
 #include <functional>
 #include <memory>

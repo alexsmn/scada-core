@@ -88,7 +88,7 @@ awaitable wrappers such as:
 
 Those helpers remain useful for direct adaptation of existing callback
 services. They now centralize both executor entrypoints on one implementation
-path: the legacy `std::shared_ptr<Executor>` overloads forward to the
+path: the legacy `AnyExecutor` overloads forward to the
 `AnyExecutor` overloads, so coroutine consumers in `common/` and `server/`
 reuse the same callback-to-awaitable bridge instead of maintaining local
 copies.

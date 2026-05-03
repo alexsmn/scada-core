@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "scada/data_services.h"
 #include "scada/logging.h"
 
@@ -13,12 +14,11 @@ namespace transport {
 class TransportFactory;
 }
 
-class Executor;
 class Logger;
 
 struct DataServicesContext {
   const std::shared_ptr<Logger> logger;
-  const std::shared_ptr<Executor> executor;
+  const AnyExecutor executor;
   transport::TransportFactory& transport_factory;
   scada::ServiceLogParams service_log_params;
 };

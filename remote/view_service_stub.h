@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/boost_log.h"
 #include "base/awaitable.h"
 #include "scada/coroutine_services.h"
@@ -17,11 +19,10 @@ namespace protocol {
 class Request;
 }  // namespace protocol
 
-class Executor;
 class MessageSender;
 
 struct ViewServiceStubContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   const std::weak_ptr<MessageSender> sender_;
   const scada::ServiceContext service_context_;
   scada::ViewService& service_;

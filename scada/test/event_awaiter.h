@@ -1,7 +1,8 @@
 #pragma once
 
 #include "base/callback_awaitable.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
+#include "base/thread_executor.h"
 #include "scada/client.h"
 #include "scada/status_awaitable.h"
 
@@ -34,7 +35,7 @@ struct event_awaiter {
     template <class T>
     Awaitable<scada::Event> when(T&& matcher) {
       auto [status, event] = co_await CallbackToAwaitable<Status, scada::Event>(
-          MakeThreadAnyExecutor(),
+          ThreadExecutor{},
           [this, matcher = std::forward<T>(matcher)](auto callback) mutable {
             matchers_.emplace_back(std::move(matcher), std::move(callback));
           });

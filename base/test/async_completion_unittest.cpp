@@ -10,8 +10,8 @@
 using namespace std::chrono_literals;
 
 TEST(AsyncCompletion, WaitersResumeWhenCompleted) {
-  auto executor = std::make_shared<TestExecutor>();
-  base::AsyncCompletion completion{MakeTestAnyExecutor(executor)};
+  TestExecutor executor;
+  base::AsyncCompletion completion{executor};
 
   auto first = StartAwaitable(executor, completion.Wait());
   auto second = StartAwaitable(executor, completion.Wait());
@@ -27,8 +27,8 @@ TEST(AsyncCompletion, WaitersResumeWhenCompleted) {
 }
 
 TEST(AsyncCompletion, WaitAfterCompleteReturnsImmediately) {
-  auto executor = std::make_shared<TestExecutor>();
-  base::AsyncCompletion completion{MakeTestAnyExecutor(executor)};
+  TestExecutor executor;
+  base::AsyncCompletion completion{executor};
 
   completion.Complete();
 
@@ -36,8 +36,8 @@ TEST(AsyncCompletion, WaitAfterCompleteReturnsImmediately) {
 }
 
 TEST(AsyncCompletion, CopiesShareCompletionState) {
-  auto executor = std::make_shared<TestExecutor>();
-  base::AsyncCompletion owner{MakeTestAnyExecutor(executor)};
+  TestExecutor executor;
+  base::AsyncCompletion owner{executor};
   auto handle = owner;
 
   auto waiter = StartAwaitable(executor, owner.Wait());
@@ -52,8 +52,8 @@ TEST(AsyncCompletion, CopiesShareCompletionState) {
 }
 
 TEST(AsyncCompletion, FailurePropagatesToCurrentAndFutureWaiters) {
-  auto executor = std::make_shared<TestExecutor>();
-  base::AsyncCompletion completion{MakeTestAnyExecutor(executor)};
+  TestExecutor executor;
+  base::AsyncCompletion completion{executor};
 
   auto waiter = StartAwaitable(executor, completion.Wait());
   Drain(executor);
@@ -66,9 +66,9 @@ TEST(AsyncCompletion, FailurePropagatesToCurrentAndFutureWaiters) {
 }
 
 TEST(AsyncCompletion, PrecreatedWaitDoesNotDependOnOwnerLifetime) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto completion =
-      std::make_unique<base::AsyncCompletion>(MakeTestAnyExecutor(executor));
+      std::make_unique<base::AsyncCompletion>(executor);
 
   auto waiter = completion->Wait();
   completion->Complete();
