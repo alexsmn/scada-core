@@ -39,6 +39,7 @@ struct ReferenceDescription {
   NodeId reference_type_id;
   bool forward = true;
   NodeId node_id;
+  NodeClass node_class = NodeClass::Unspecified;
 };
 
 using ReferenceDescriptions = std::vector<ReferenceDescription>;

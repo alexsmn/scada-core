@@ -7,6 +7,7 @@
 namespace scada {
 
 enum class NodeClass {
+  Unspecified = 0,
   Object = 1,
   Variable = 2,
   Method = 4,
@@ -19,6 +20,8 @@ enum class NodeClass {
 
 inline bool IsTypeDefinition(NodeClass node_class) {
   switch (node_class) {
+    case NodeClass::Unspecified:
+      return false;
     case NodeClass::DataType:
     case NodeClass::ObjectType:
     case NodeClass::VariableType:
@@ -31,6 +34,8 @@ inline bool IsTypeDefinition(NodeClass node_class) {
 
 inline bool IsInstance(NodeClass node_class) {
   switch (node_class) {
+    case NodeClass::Unspecified:
+      return false;
     case NodeClass::Object:
     case NodeClass::Variable:
       return true;
@@ -43,6 +48,8 @@ inline bool IsInstance(NodeClass node_class) {
 
 inline std::string ToString(scada::NodeClass node_class) {
   switch (node_class) {
+    case scada::NodeClass::Unspecified:
+      return "Unspecified";
     case scada::NodeClass::Object:
       return "Object";
     case scada::NodeClass::Variable:
