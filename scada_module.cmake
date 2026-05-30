@@ -53,7 +53,8 @@ function(scada_module_unittests MODULE_NAME)
     target_link_libraries(${MODULE_NAME}_unittests PRIVATE ${MODULE_NAME} base_unittest)
     target_include_directories(${MODULE_NAME}_unittests PRIVATE
       ${CMAKE_SOURCE_DIR}
-      ${CMAKE_SOURCE_DIR}/server)
+      ${CMAKE_SOURCE_DIR}/server
+      ${CMAKE_SOURCE_DIR}/server/modules)
 
     if(MSVC)
       # Debug and RelWithDebInfo already use embedded object debug info via
