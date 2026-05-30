@@ -136,6 +136,8 @@ bool Variant::get(Double& value) const {
     case DOUBLE:
       value = as_double();
       return true;
+    default:
+      break;
   }
 
   Int64 int64_value;

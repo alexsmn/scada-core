@@ -180,8 +180,10 @@ template <typename TargetRepeatedField, typename Container>
 inline void ConvertToRepeated(const Container& source,
                               TargetRepeatedField& target) {
   target.Reserve(target.size() + source.size());
-  for (auto&& s : source)
-    Convert(s, *target.Add());
+  for (auto&& s : source) {
+    typename Container::value_type value = s;
+    Convert(value, *target.Add());
+  }
 }
 
 // vector <-> RepeatedField

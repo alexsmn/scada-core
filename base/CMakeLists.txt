@@ -6,7 +6,9 @@ scada_module(scada_base)
 scada_module_sources(scada_base PRIVATE "metrics")
 scada_module_sources(scada_base PRIVATE "time")
 
-if(NOT WIN32)
+if(APPLE)
+  target_link_libraries(scada_base PUBLIC pthread)
+elseif(NOT WIN32)
   target_link_libraries(scada_base PUBLIC stdc++fs pthread)
 endif()
 
@@ -65,6 +67,6 @@ if(WIN32)
       /wd4189 # local variable is initialized but not referenced
     >
   )
-else()
+elseif(NOT APPLE)
   target_compile_options(scada_base PUBLIC -Werror)
 endif(WIN32)

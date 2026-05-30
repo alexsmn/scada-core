@@ -3,7 +3,10 @@
 #if defined(NDEBUG)
 
 template <class T>
-[[msvc::no_unique_address]] class DebugHolder {
+#if defined(_MSC_VER)
+[[msvc::no_unique_address]]
+#endif
+class DebugHolder {
  public:
   explicit DebugHolder(const T&) {}
 

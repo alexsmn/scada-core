@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 class Metrics {
@@ -13,6 +14,12 @@ class Metrics {
   bool empty() const { return values_.empty(); }
 
   void Set(const std::string& name, const MetricValue& value) {
+    values_.insert_or_assign(name, ToMetricValue(value));
+  }
+
+  template <class T>
+    requires(!std::is_same_v<std::decay_t<T>, MetricValue>)
+  void Set(const std::string& name, const T& value) {
     values_.insert_or_assign(name, ToMetricValue(value));
   }
 
