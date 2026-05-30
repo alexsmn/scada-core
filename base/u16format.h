@@ -12,9 +12,26 @@
 
 namespace u16format_detail {
 
+inline std::wstring ToWide(std::u16string_view value) {
+  std::wstring result;
+  result.reserve(value.size());
+  for (const char16_t ch : value) {
+    result.push_back(static_cast<wchar_t>(ch));
+  }
+  return result;
+}
+
+inline std::u16string FromWide(std::wstring_view value) {
+  std::u16string result;
+  result.reserve(value.size());
+  for (const wchar_t ch : value) {
+    result.push_back(static_cast<char16_t>(ch));
+  }
+  return result;
+}
+
 // Convert args to wchar_t-compatible types for std::format:
-// - u16string/u16string_view -> wstring_view (reinterpret, same size on Windows)
-// - char16_t* -> wchar_t*
+// - u16string/u16string_view/char16_t* -> wstring
 // - std::string -> std::wstring (widen)
 // - Scoped enums/plain enums -> underlying type
 // - Everything else -> pass through
@@ -22,14 +39,12 @@ template <typename T>
 auto to_wide_arg(T&& arg) {
   using D = std::decay_t<T>;
   if constexpr (std::is_same_v<D, std::u16string>) {
-    return std::wstring_view{
-        reinterpret_cast<const wchar_t*>(arg.data()), arg.size()};
+    return ToWide(arg);
   } else if constexpr (std::is_same_v<D, std::u16string_view>) {
-    return std::wstring_view{
-        reinterpret_cast<const wchar_t*>(arg.data()), arg.size()};
+    return ToWide(arg);
   } else if constexpr (std::is_same_v<D, const char16_t*> ||
                         std::is_same_v<D, char16_t*>) {
-    return reinterpret_cast<const wchar_t*>(arg);
+    return ToWide(std::u16string_view{arg});
   } else if constexpr (std::is_same_v<D, std::string>) {
     return std::wstring(arg.begin(), arg.end());
   } else if constexpr (std::is_same_v<D, std::string_view>) {
@@ -52,7 +67,7 @@ std::u16string u16format(std::wstring_view fmt, Args&&... args) {
       [&](auto&... wide_args) {
         std::wstring wide =
             std::vformat(fmt, std::make_wformat_args(wide_args...));
-        return std::u16string{wide.begin(), wide.end()};
+        return u16format_detail::FromWide(wide);
       },
       converted);
 }

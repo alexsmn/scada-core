@@ -90,6 +90,9 @@ function(_scada_module_add_sources MODULE_NAME SCOPE SOURCE_DIR)
       "${SOURCE_DIR}/win/*.cpp"
       "${SOURCE_DIR}/win/*.h")
     list(APPEND sources ${win_sources})
+    list(FILTER sources EXCLUDE REGEX "_posix\\.(cpp|h)$")
+  else()
+    list(FILTER sources EXCLUDE REGEX "_win\\.(cpp|h)$")
   endif()
 
   if(MODULE_NAME MATCHES "_qt($|_)")

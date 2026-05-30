@@ -1,5 +1,6 @@
 #include "base/string_util.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <numeric>
@@ -115,6 +116,45 @@ bool DoIsStringASCII(const Char* characters, size_t length) {
 
 bool IsStringASCII(std::string_view str) {
   return DoIsStringASCII(str.data(), str.length());
+}
+
+template <class StringView>
+bool IEqualsAsciiT(StringView left, StringView right) {
+  if (left.size() != right.size())
+    return false;
+
+  for (size_t i = 0; i < left.size(); ++i) {
+    if (ToLowerAscii(left[i]) != ToLowerAscii(right[i]))
+      return false;
+  }
+
+  return true;
+}
+
+bool IEqualsAscii(std::string_view left, std::string_view right) {
+  return IEqualsAsciiT(left, right);
+}
+
+bool IEqualsAscii(std::u16string_view left, std::u16string_view right) {
+  return IEqualsAsciiT(left, right);
+}
+
+template <class String>
+void TrimAsciiWhitespaceT(String& str) {
+  auto is_space = [](auto ch) {
+    return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
+  };
+  str.erase(str.begin(), std::find_if_not(str.begin(), str.end(), is_space));
+  str.erase(std::find_if_not(str.rbegin(), str.rend(), is_space).base(),
+            str.end());
+}
+
+void TrimAsciiWhitespace(std::string& str) {
+  TrimAsciiWhitespaceT(str);
+}
+
+void TrimAsciiWhitespace(std::u16string& str) {
+  TrimAsciiWhitespaceT(str);
 }
 
 // ReplaceSubstringsAfterOffset implementations.

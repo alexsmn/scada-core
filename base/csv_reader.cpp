@@ -15,6 +15,9 @@ bool CsvReader::NextRow() {
     return false;
 
   line_ = UtfConvert<char16_t>(raw_line_);
+  if (!line_.empty() && line_.back() == u'\r') {
+    line_.pop_back();
+  }
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.

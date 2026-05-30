@@ -30,7 +30,7 @@ class node {
   Awaitable<DataValue> read_value() const { return read(AttributeId::Value); }
 
   Awaitable<void> write(AttributeId attribute_id,
-                        const Variant& value,
+                        Variant value,
                         scada::WriteFlags flags = {}) const;
 
   Awaitable<void> write_value(const Variant& value,
@@ -72,8 +72,8 @@ class node {
   Awaitable<NodeId> child_id(scada::QualifiedName browse_name) const;
   Awaitable<node> child_node(scada::QualifiedName browse_name) const;
 
-  Awaitable<void> call_packed(const NodeId& method_id,
-                              const std::vector<Variant>& arguments) const;
+  Awaitable<void> call_packed(NodeId method_id,
+                              std::vector<Variant> arguments) const;
 
   template <class... Args>
   Awaitable<void> call(const NodeId& method_id, Args&&... args) const {

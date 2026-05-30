@@ -25,6 +25,24 @@ std::string JoinStrings(std::span<const std::string_view> strings,
 // contents (timing-safe).
 bool IsStringASCII(std::string_view str);
 
+template <class Char>
+constexpr Char ToLowerAscii(Char ch) {
+  return ch >= static_cast<Char>('A') && ch <= static_cast<Char>('Z')
+      ? static_cast<Char>(ch - static_cast<Char>('A') + static_cast<Char>('a'))
+      : ch;
+}
+
+bool IEqualsAscii(std::string_view left, std::string_view right);
+bool IEqualsAscii(std::u16string_view left, std::u16string_view right);
+
+void TrimAsciiWhitespace(std::string& str);
+void TrimAsciiWhitespace(std::u16string& str);
+
+inline bool IsAsciiCaseInsensitiveEqual(std::u16string_view left,
+                                        std::u16string_view right) {
+  return IEqualsAscii(left, right);
+}
+
 // ReplaceSubstringsAfterOffset: starting at |start_offset|, replace all
 // instances of |find_this| with |replace_with|. Modifies |str| in place.
 void ReplaceSubstringsAfterOffset(std::u16string* str,

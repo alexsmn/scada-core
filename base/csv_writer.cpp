@@ -40,7 +40,7 @@ void CsvWriter::StartRow() {
   if (skip)
     return;
 
-  stream_ << std::endl;
+  stream_ << "\r\n";
   if (!stream_)
     throw std::runtime_error("Write error");
 

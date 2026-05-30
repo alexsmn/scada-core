@@ -6,9 +6,50 @@
 #include "scada/service_context.h"
 #include "scada/status_awaitable.h"
 
+#include <boost/asio/this_coro.hpp>
 #include <memory>
 
 namespace scada {
+namespace {
+
+Awaitable<void> WriteNodeAsync(services services,
+                               NodeId node_id,
+                               ServiceContext context,
+                               AttributeId attribute_id,
+                               Variant value,
+                               scada::WriteFlags flags) {
+  if (!services.attribute_service) {
+    throw status_exception{StatusCode::Bad};
+  }
+
+  auto inputs = std::make_shared<const std::vector<WriteValue>>(
+      std::vector<WriteValue>{{.node_id = std::move(node_id),
+                               .attribute_id = attribute_id,
+                               .value = std::move(value),
+                               .flags = flags}});
+  auto executor = co_await boost::asio::this_coro::executor;
+  auto statuses = ValueOrThrow(co_await WriteAsync(
+      executor, *services.attribute_service, context, inputs));
+  assert(statuses.size() == 1);
+  ThrowIfBad(statuses[0]);
+}
+
+Awaitable<void> CallNodeAsync(services services,
+                              NodeId node_id,
+                              ServiceContext context,
+                              NodeId method_id,
+                              std::vector<Variant> arguments) {
+  if (!services.method_service) {
+    throw status_exception{StatusCode::Bad_Disconnected};
+  }
+
+  auto executor = co_await boost::asio::this_coro::executor;
+  ThrowIfBad(co_await CallAsync(executor, *services.method_service,
+                                std::move(node_id), std::move(method_id),
+                                std::move(arguments), context.user_id()));
+}
+
+}  // namespace
 
 node::node() = default;
 
@@ -32,21 +73,10 @@ Awaitable<DataValue> node::read(AttributeId attribute_id) const {
 }
 
 Awaitable<void> node::write(AttributeId attribute_id,
-                            const Variant& value,
+                            Variant value,
                             scada::WriteFlags flags) const {
-  if (!services_.attribute_service) {
-    throw status_exception{StatusCode::Bad};
-  }
-
-  auto inputs = std::make_shared<const std::vector<WriteValue>>(
-      std::vector<WriteValue>{{.node_id = node_id_,
-                               .attribute_id = attribute_id,
-                               .value = value,
-                               .flags = flags}});
-  auto statuses = ValueOrThrow(co_await WriteAsync(
-      ::ThreadExecutor{}, *services_.attribute_service, context_, inputs));
-  assert(statuses.size() == 1);
-  ThrowIfBad(statuses[0]);
+  return WriteNodeAsync(services_, node_id_, context_, attribute_id,
+                        std::move(value), flags);
 }
 
 Awaitable<std::vector<ReferenceDescription>> node::browse(
@@ -103,15 +133,10 @@ Awaitable<node> node::child_node(scada::QualifiedName browse_name) const {
 }
 
 Awaitable<void> node::call_packed(
-    const NodeId& method_id,
-    const std::vector<Variant>& arguments) const {
-  if (!services_.method_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
-  }
-
-  ThrowIfBad(co_await CallAsync(::ThreadExecutor{}, *services_.method_service,
-                                node_id_, method_id, arguments,
-                                context_.user_id()));
+    NodeId method_id,
+    std::vector<Variant> arguments) const {
+  return CallNodeAsync(services_, node_id_, context_, std::move(method_id),
+                       std::move(arguments));
 }
 
 Awaitable<std::vector<scada::DataValue>> node::read_value_history(
