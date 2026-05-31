@@ -1,11 +1,12 @@
 #include "scada/client.h"
 
 #include "base/any_executor.h"
-#include "base/thread_executor.h"
 #include "scada/node_management_service.h"
 #include "scada/service_awaitable.h"
 #include "scada/service_context.h"
 #include "scada/status_awaitable.h"
+
+#include <boost/asio/this_coro.hpp>
 
 namespace scada {
 
@@ -39,8 +40,9 @@ client::browse(const std::vector<scada::BrowseDescription>& inputs) const {
     throw status_exception{StatusCode::Bad_Disconnected};
   }
 
+  auto executor = co_await boost::asio::this_coro::executor;
   auto results = ValueOrThrow(co_await BrowseAsync(
-      ThreadExecutor{}, *services_.view_service, context_, inputs));
+      executor, *services_.view_service, context_, inputs));
 
   std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>> output;
   output.reserve(results.size());
@@ -59,8 +61,9 @@ Awaitable<scada::node> client::add_node(AddNodesItem item) const {
     throw status_exception{StatusCode::Bad_Disconnected};
   }
 
+  auto executor = co_await boost::asio::this_coro::executor;
   auto results = ValueOrThrow(co_await AddNodesAsync(
-      ThreadExecutor{}, *services_.node_management_service,
+      executor, *services_.node_management_service,
       {std::move(item)}));
   assert(results.size() == 1);
   const auto& [status_code, node_id] = results[0];
