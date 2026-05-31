@@ -17,8 +17,8 @@ class client {
   const ServiceContext& context() const { return context_; }
   client with_context(const ServiceContext& context) const;
 
-  Awaitable<void> connect(SessionConnectParams params) const;
-  Awaitable<void> disconnect() const;
+  Awaitable<Status> connect(SessionConnectParams params) const;
+  Awaitable<Status> disconnect() const;
 
   scada::node node(const NodeId& node_id) const {
     assert(!node_id.is_null());
@@ -27,16 +27,17 @@ class client {
 
   scada::node server_node() const { return node(id::Server); }
 
-  Awaitable<std::vector<StatusOr<std::vector<ReferenceDescription>>>> browse(
+  Awaitable<StatusOr<std::vector<StatusOr<std::vector<ReferenceDescription>>>>>
+  browse(
       const std::vector<BrowseDescription>& inputs) const;
 
-  Awaitable<scada::node> add_node(AddNodesItem item) const;
+  Awaitable<StatusOr<scada::node>> add_node(AddNodesItem item) const;
 
-  Awaitable<void> acknowledge_events(std::vector<EventId> event_ids,
-                                     DateTime acknowledge_time) const;
+  Awaitable<Status> acknowledge_events(std::vector<EventId> event_ids,
+                                       DateTime acknowledge_time) const;
 
-  Awaitable<void> acknowledge_event(EventId event_id,
-                                    DateTime acknowledge_time) const {
+  Awaitable<Status> acknowledge_event(EventId event_id,
+                                      DateTime acknowledge_time) const {
     return acknowledge_events({event_id}, acknowledge_time);
   }
 

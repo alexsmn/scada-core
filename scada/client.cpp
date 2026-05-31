@@ -4,7 +4,6 @@
 #include "scada/node_management_service.h"
 #include "scada/service_awaitable.h"
 #include "scada/service_context.h"
-#include "scada/status_awaitable.h"
 
 #include <boost/asio/this_coro.hpp>
 
@@ -18,35 +17,41 @@ client client::with_context(const ServiceContext& context) const {
   return client{services_, context};
 }
 
-Awaitable<void> client::connect(SessionConnectParams params) const {
+Awaitable<Status> client::connect(SessionConnectParams params) const {
   if (!services_.session_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   co_await services_.session_service->Connect(std::move(params));
+  co_return OkStatus();
 }
 
-Awaitable<void> client::disconnect() const {
+Awaitable<Status> client::disconnect() const {
   if (!services_.session_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   co_await services_.session_service->Disconnect();
+  co_return OkStatus();
 }
 
-Awaitable<std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>
+Awaitable<StatusOr<
+    std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>>
 client::browse(const std::vector<scada::BrowseDescription>& inputs) const {
   if (!services_.view_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
-  auto results = ValueOrThrow(co_await BrowseAsync(
-      executor, *services_.view_service, context_, inputs));
+  auto results =
+      co_await BrowseAsync(executor, *services_.view_service, context_, inputs);
+  if (!results.ok()) {
+    co_return results.status();
+  }
 
   std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>> output;
-  output.reserve(results.size());
-  for (auto& result : results) {
+  output.reserve(results->size());
+  for (auto& result : *results) {
     output.emplace_back(IsGood(result.status_code)
                             ? StatusOr<std::vector<ReferenceDescription>>{
                                   std::move(result.references)}
@@ -56,26 +61,31 @@ client::browse(const std::vector<scada::BrowseDescription>& inputs) const {
   co_return output;
 }
 
-Awaitable<scada::node> client::add_node(AddNodesItem item) const {
+Awaitable<StatusOr<scada::node>> client::add_node(AddNodesItem item) const {
   if (!services_.node_management_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
-  auto results = ValueOrThrow(co_await AddNodesAsync(
+  auto results = co_await AddNodesAsync(
       executor, *services_.node_management_service,
-      {std::move(item)}));
-  assert(results.size() == 1);
-  const auto& [status_code, node_id] = results[0];
-  ThrowIfBad(status_code);
+      {std::move(item)});
+  if (!results.ok()) {
+    co_return results.status();
+  }
+  assert(results->size() == 1);
+  const auto& [status_code, node_id] = (*results)[0];
+  if (!IsGood(status_code)) {
+    co_return status_code;
+  }
   assert(!node_id.is_null());
   co_return node(node_id);
 }
 
-Awaitable<void> client::acknowledge_events(std::vector<EventId> event_ids,
-                                           DateTime acknowledge_time) const {
+Awaitable<Status> client::acknowledge_events(std::vector<EventId> event_ids,
+                                             DateTime acknowledge_time) const {
   assert(!event_ids.empty());
-  co_await server_node().call(
+  co_return co_await server_node().call(
       scada::id::AcknowledgeableConditionType_Acknowledge,
       std::move(event_ids), acknowledge_time);
 }

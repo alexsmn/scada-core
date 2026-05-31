@@ -6,6 +6,7 @@
 #include "scada/monitored_item_service.h"
 #include "scada/service_context.h"
 #include "scada/services.h"
+#include "scada/status_or.h"
 #include "scada/view_service.h"
 #include "scada/write_flags.h"
 
@@ -25,16 +26,18 @@ class node {
   const scada::NodeId& id() const { return node_id_; }
   const ServiceContext& context() const { return context_; }
 
-  Awaitable<DataValue> read(AttributeId attribute_id) const;
+  Awaitable<StatusOr<DataValue>> read(AttributeId attribute_id) const;
 
-  Awaitable<DataValue> read_value() const { return read(AttributeId::Value); }
+  Awaitable<StatusOr<DataValue>> read_value() const {
+    return read(AttributeId::Value);
+  }
 
-  Awaitable<void> write(AttributeId attribute_id,
-                        Variant value,
-                        scada::WriteFlags flags = {}) const;
+  Awaitable<Status> write(AttributeId attribute_id,
+                          Variant value,
+                          scada::WriteFlags flags = {}) const;
 
-  Awaitable<void> write_value(const Variant& value,
-                              scada::WriteFlags flags = {}) const {
+  Awaitable<Status> write_value(const Variant& value,
+                                scada::WriteFlags flags = {}) const {
     return write(AttributeId::Value, value, flags);
   }
 
@@ -43,50 +46,50 @@ class node {
     BrowseDirection direction = BrowseDirection::Both;
   };
 
-  Awaitable<std::vector<ReferenceDescription>> browse(
+  Awaitable<StatusOr<std::vector<ReferenceDescription>>> browse(
       const browse_details& details = browse_details{
           .reference_type_id = id::References,
           .direction = BrowseDirection::Both}) const;
 
-  Awaitable<scada::node> browse_node(
+  Awaitable<StatusOr<scada::node>> browse_node(
       const browse_details& details = browse_details{
           .reference_type_id = id::References,
           .direction = BrowseDirection::Both}) const;
 
-  Awaitable<scada::node> parent() const {
+  Awaitable<StatusOr<scada::node>> parent() const {
     return browse_node({.reference_type_id = id::HierarchicalReferences,
                         .direction = BrowseDirection::Inverse});
   }
 
-  Awaitable<scada::node> type_definition() const {
+  Awaitable<StatusOr<scada::node>> type_definition() const {
     return browse_node({.reference_type_id = id::HasTypeDefinition,
                         .direction = BrowseDirection::Forward});
   }
 
   // Takes vector instead of span as a parameter to simplify invocation.
   // Requires `ViewService`.
-  Awaitable<std::vector<BrowsePathTarget>> translate_browse_path(
+  Awaitable<StatusOr<std::vector<BrowsePathTarget>>> translate_browse_path(
       const RelativePath& relative_path) const;
 
   // Requires `ViewService`.
-  Awaitable<NodeId> child_id(scada::QualifiedName browse_name) const;
-  Awaitable<node> child_node(scada::QualifiedName browse_name) const;
+  Awaitable<StatusOr<NodeId>> child_id(scada::QualifiedName browse_name) const;
+  Awaitable<StatusOr<node>> child_node(scada::QualifiedName browse_name) const;
 
-  Awaitable<void> call_packed(NodeId method_id,
-                              std::vector<Variant> arguments) const;
+  Awaitable<Status> call_packed(NodeId method_id,
+                                std::vector<Variant> arguments) const;
 
   template <class... Args>
-  Awaitable<void> call(const NodeId& method_id, Args&&... args) const {
+  Awaitable<Status> call(const NodeId& method_id, Args&&... args) const {
     return call_packed(method_id, {std::forward<Args>(args)...});
   }
 
   // `details.node_id` is overridden by the node ID and doesn't have
   // to be set.
-  Awaitable<std::vector<scada::DataValue>> read_value_history(
+  Awaitable<StatusOr<std::vector<scada::DataValue>>> read_value_history(
       const HistoryReadRawDetails& details) const;
 
   // `details.node_id` is overridden by the node ID and doesn't have
-  // to be set. Throws on bad `HistoryReadRawResult.status`.
+  // to be set.
   Awaitable<HistoryReadRawResult> read_value_history_chunk(
       const HistoryReadRawDetails& details) const;
 
@@ -96,7 +99,7 @@ class node {
     EventFilter filter;
   };
 
-  Awaitable<std::vector<Event>> read_event_history(
+  Awaitable<StatusOr<std::vector<Event>>> read_event_history(
       const event_history_details& details = {}) const;
 
  private:

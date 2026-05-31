@@ -316,11 +316,23 @@ Awaitable<void> SessionStub::OnCallAsync(
     scada::NodeId node_id,
     scada::NodeId method_id,
     std::vector<scada::Variant> arguments) {
-  auto status =
-      co_await services_.method_service->Call(std::move(node_id),
-                                              std::move(method_id),
-                                              std::move(arguments),
-                                              service_context_.user_id());
+  scada::Status status{scada::StatusCode::Good};
+  try {
+    status =
+        co_await services_.method_service->Call(std::move(node_id),
+                                                std::move(method_id),
+                                                std::move(arguments),
+                                                service_context_.user_id());
+  } catch (const std::exception& e) {
+    LOG_ERROR(logger_) << "Call async failed"
+                       << LOG_TAG("RequestId", request_id)
+                       << LOG_TAG("Error", e.what());
+    status = scada::StatusCode::Bad;
+  } catch (...) {
+    LOG_ERROR(logger_) << "Call async failed with unknown error"
+                       << LOG_TAG("RequestId", request_id);
+    status = scada::StatusCode::Bad;
+  }
 
   if (!connection_)
     co_return;
@@ -337,10 +349,25 @@ Awaitable<void> SessionStub::OnReadAsync(
     scada::ServiceContext context,
     std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) {
   const auto input_count = inputs ? inputs->size() : 0;
-  auto result = co_await services_.attribute_service->Read(std::move(context),
-                                                           std::move(inputs));
-  auto status = result.status();
-  auto results = std::move(result).value_or({});
+  scada::Status status{scada::StatusCode::Good};
+  std::vector<scada::DataValue> results;
+  try {
+    auto result = co_await services_.attribute_service->Read(std::move(context),
+                                                             std::move(inputs));
+    status = result.status();
+    results = std::move(result).value_or({});
+  } catch (const std::exception& e) {
+    LOG_ERROR(logger_) << "Read async failed"
+                       << LOG_TAG("RequestId", request_id)
+                       << LOG_TAG("InputCount", input_count)
+                       << LOG_TAG("Error", e.what());
+    status = scada::StatusCode::Bad;
+  } catch (...) {
+    LOG_ERROR(logger_) << "Read async failed with unknown error"
+                       << LOG_TAG("RequestId", request_id)
+                       << LOG_TAG("InputCount", input_count);
+    status = scada::StatusCode::Bad;
+  }
 
   if (!connection_)
     co_return;
@@ -363,10 +390,25 @@ Awaitable<void> SessionStub::OnWriteAsync(
     unsigned request_id,
     std::shared_ptr<const std::vector<scada::WriteValue>> inputs) {
   const auto input_count = inputs ? inputs->size() : 0;
-  auto result = co_await services_.attribute_service->Write(service_context_,
-                                                            std::move(inputs));
-  auto status = result.status();
-  auto status_codes = std::move(result).value_or({});
+  scada::Status status{scada::StatusCode::Good};
+  std::vector<scada::StatusCode> status_codes;
+  try {
+    auto result = co_await services_.attribute_service->Write(service_context_,
+                                                              std::move(inputs));
+    status = result.status();
+    status_codes = std::move(result).value_or({});
+  } catch (const std::exception& e) {
+    LOG_ERROR(logger_) << "Write async failed"
+                       << LOG_TAG("RequestId", request_id)
+                       << LOG_TAG("InputCount", input_count)
+                       << LOG_TAG("Error", e.what());
+    status = scada::StatusCode::Bad;
+  } catch (...) {
+    LOG_ERROR(logger_) << "Write async failed with unknown error"
+                       << LOG_TAG("RequestId", request_id)
+                       << LOG_TAG("InputCount", input_count);
+    status = scada::StatusCode::Bad;
+  }
 
   if (!connection_)
     co_return;

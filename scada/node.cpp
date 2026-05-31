@@ -3,7 +3,6 @@
 #include "base/any_executor.h"
 #include "scada/service_awaitable.h"
 #include "scada/service_context.h"
-#include "scada/status_awaitable.h"
 
 #include <boost/asio/this_coro.hpp>
 #include <memory>
@@ -11,14 +10,14 @@
 namespace scada {
 namespace {
 
-Awaitable<void> WriteNodeAsync(services services,
-                               NodeId node_id,
-                               ServiceContext context,
-                               AttributeId attribute_id,
-                               Variant value,
-                               scada::WriteFlags flags) {
+Awaitable<Status> WriteNodeAsync(services services,
+                                 NodeId node_id,
+                                 ServiceContext context,
+                                 AttributeId attribute_id,
+                                 Variant value,
+                                 scada::WriteFlags flags) {
   if (!services.attribute_service) {
-    throw status_exception{StatusCode::Bad};
+    co_return StatusCode::Bad;
   }
 
   auto inputs = std::make_shared<const std::vector<WriteValue>>(
@@ -27,44 +26,52 @@ Awaitable<void> WriteNodeAsync(services services,
                                .value = std::move(value),
                                .flags = flags}});
   auto executor = co_await boost::asio::this_coro::executor;
-  auto statuses = ValueOrThrow(co_await WriteAsync(
-      executor, *services.attribute_service, context, inputs));
-  assert(statuses.size() == 1);
-  ThrowIfBad(statuses[0]);
+  auto statuses = co_await WriteAsync(
+      executor, *services.attribute_service, context, inputs);
+  if (!statuses.ok()) {
+    co_return statuses.status();
+  }
+  assert(statuses->size() == 1);
+  co_return (*statuses)[0];
 }
 
-Awaitable<void> CallNodeAsync(services services,
-                              NodeId node_id,
-                              ServiceContext context,
-                              NodeId method_id,
-                              std::vector<Variant> arguments) {
+Awaitable<Status> CallNodeAsync(services services,
+                                NodeId node_id,
+                                ServiceContext context,
+                                NodeId method_id,
+                                std::vector<Variant> arguments) {
   if (!services.method_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
-  ThrowIfBad(co_await CallAsync(executor, *services.method_service,
-                                std::move(node_id), std::move(method_id),
-                                std::move(arguments), context.user_id()));
+  co_return co_await CallAsync(executor, *services.method_service,
+                               std::move(node_id), std::move(method_id),
+                               std::move(arguments), context.user_id());
 }
 
-Awaitable<DataValue> ReadNodeAsync(services services,
-                                   NodeId node_id,
-                                   ServiceContext context,
-                                   AttributeId attribute_id) {
+Awaitable<StatusOr<DataValue>> ReadNodeAsync(services services,
+                                             NodeId node_id,
+                                             ServiceContext context,
+                                             AttributeId attribute_id) {
   if (!services.attribute_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   auto inputs = std::make_shared<const std::vector<ReadValueId>>(
       std::vector<ReadValueId>{{.node_id = std::move(node_id),
                                 .attribute_id = attribute_id}});
   auto executor = co_await boost::asio::this_coro::executor;
-  auto results = ValueOrThrow(co_await ReadAsync(
-      executor, *services.attribute_service, context, inputs));
-  assert(results.size() == 1);
-  ThrowIfBad(results[0].status_code);
-  co_return std::move(results[0]);
+  auto results = co_await ReadAsync(
+      executor, *services.attribute_service, context, inputs);
+  if (!results.ok()) {
+    co_return results.status();
+  }
+  assert(results->size() == 1);
+  if (!IsGood((*results)[0].status_code)) {
+    co_return (*results)[0].status_code;
+  }
+  co_return std::move((*results)[0]);
 }
 
 }  // namespace
@@ -75,80 +82,102 @@ node node::with_context(const ServiceContext& context) const {
   return node{services_, node_id_, context};
 }
 
-Awaitable<DataValue> node::read(AttributeId attribute_id) const {
+Awaitable<StatusOr<DataValue>> node::read(AttributeId attribute_id) const {
   return ReadNodeAsync(services_, node_id_, context_, attribute_id);
 }
 
-Awaitable<void> node::write(AttributeId attribute_id,
-                            Variant value,
-                            scada::WriteFlags flags) const {
+Awaitable<Status> node::write(AttributeId attribute_id,
+                              Variant value,
+                              scada::WriteFlags flags) const {
   return WriteNodeAsync(services_, node_id_, context_, attribute_id,
                         std::move(value), flags);
 }
 
-Awaitable<std::vector<ReferenceDescription>> node::browse(
+Awaitable<StatusOr<std::vector<ReferenceDescription>>> node::browse(
     const browse_details& details) const {
   if (!services_.view_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
-  auto results = ValueOrThrow(co_await BrowseAsync(
+  auto results = co_await BrowseAsync(
       executor, *services_.view_service, context_,
       {{.node_id = node_id_,
         .direction = details.direction,
-        .reference_type_id = details.reference_type_id}}));
-  assert(results.size() == 1);
-  ThrowIfBad(results[0].status_code);
-  co_return std::move(results[0].references);
-}
-
-Awaitable<scada::node> node::browse_node(const browse_details& details) const {
-  auto results = co_await browse(details);
-  if (results.size() != 1) {
-    throw status_exception{StatusCode::Bad};
+        .reference_type_id = details.reference_type_id}});
+  if (!results.ok()) {
+    co_return results.status();
   }
-  co_return scada::node{services_, results[0].node_id, context_};
+  assert(results->size() == 1);
+  if (!IsGood((*results)[0].status_code)) {
+    co_return (*results)[0].status_code;
+  }
+  co_return std::move((*results)[0].references);
 }
 
-Awaitable<std::vector<BrowsePathTarget>> node::translate_browse_path(
+Awaitable<StatusOr<scada::node>> node::browse_node(
+    const browse_details& details) const {
+  auto results = co_await browse(details);
+  if (!results.ok()) {
+    co_return results.status();
+  }
+  if (results->size() != 1) {
+    co_return StatusCode::Bad;
+  }
+  co_return scada::node{services_, (*results)[0].node_id, context_};
+}
+
+Awaitable<StatusOr<std::vector<BrowsePathTarget>>> node::translate_browse_path(
     const RelativePath& relative_path) const {
   if (!services_.view_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
-  auto results = ValueOrThrow(co_await TranslateBrowsePathsAsync(
+  auto results = co_await TranslateBrowsePathsAsync(
       executor, *services_.view_service,
-      {{.node_id = node_id_, .relative_path = relative_path}}));
-  assert(results.size() == 1);
-  ThrowIfBad(results[0].status_code);
-  co_return std::move(results[0].targets);
+      {{.node_id = node_id_, .relative_path = relative_path}});
+  if (!results.ok()) {
+    co_return results.status();
+  }
+  assert(results->size() == 1);
+  if (!IsGood((*results)[0].status_code)) {
+    co_return (*results)[0].status_code;
+  }
+  co_return std::move((*results)[0].targets);
 }
 
-Awaitable<NodeId> node::child_id(scada::QualifiedName browse_name) const {
+Awaitable<StatusOr<NodeId>> node::child_id(
+    scada::QualifiedName browse_name) const {
   auto targets =
       co_await translate_browse_path({{.reference_type_id = id::HasChild,
                                        .target_name = std::move(browse_name)}});
-  if (targets.size() != 1) {
-    throw status_exception{StatusCode::Bad_BrowseNameInvalid};
+  if (!targets.ok()) {
+    co_return targets.status();
   }
-  co_return targets[0].target_id.node_id();
+  if (targets->size() != 1) {
+    co_return StatusCode::Bad_BrowseNameInvalid;
+  }
+  co_return (*targets)[0].target_id.node_id();
 }
 
-Awaitable<node> node::child_node(scada::QualifiedName browse_name) const {
-  co_return scada::node{services_, co_await child_id(std::move(browse_name)),
-                        context_};
+Awaitable<StatusOr<node>> node::child_node(
+    scada::QualifiedName browse_name) const {
+  auto id = co_await child_id(std::move(browse_name));
+  if (!id.ok()) {
+    co_return id.status();
+  }
+  co_return scada::node{services_, *id, context_};
 }
 
-Awaitable<void> node::call_packed(
+Awaitable<Status> node::call_packed(
     NodeId method_id,
     std::vector<Variant> arguments) const {
   return CallNodeAsync(services_, node_id_, context_, std::move(method_id),
                        std::move(arguments));
 }
 
-Awaitable<std::vector<scada::DataValue>> node::read_value_history(
+Awaitable<StatusOr<std::vector<scada::DataValue>>> node::read_value_history(
     const HistoryReadRawDetails& details) const {
   assert(details.node_id.is_null());
   assert(details.continuation_point.empty());
@@ -158,6 +187,9 @@ Awaitable<std::vector<scada::DataValue>> node::read_value_history(
 
   for (;;) {
     auto result = co_await read_value_history_chunk(next_details);
+    if (!result.status) {
+      co_return result.status;
+    }
     values.insert(values.end(), result.values.begin(), result.values.end());
     if (result.continuation_point.empty()) {
       co_return values;
@@ -171,7 +203,7 @@ Awaitable<HistoryReadRawResult> node::read_value_history_chunk(
   assert(details.node_id.is_null());
 
   if (!services_.history_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return HistoryReadRawResult{.status = StatusCode::Bad_Disconnected};
   }
 
   auto sanitized_details = details;
@@ -179,21 +211,22 @@ Awaitable<HistoryReadRawResult> node::read_value_history_chunk(
   auto executor = co_await boost::asio::this_coro::executor;
   auto result = co_await HistoryReadRawAsync(
       executor, *services_.history_service, sanitized_details);
-  ThrowIfBad(result.status);
   co_return result;
 }
 
-Awaitable<std::vector<Event>> node::read_event_history(
+Awaitable<StatusOr<std::vector<Event>>> node::read_event_history(
     const event_history_details& details) const {
   if (!services_.history_service) {
-    throw status_exception{StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
   auto result = co_await HistoryReadEventsAsync(
       executor, *services_.history_service, node_id_, details.from,
       details.to, details.filter);
-  ThrowIfBad(result.status);
+  if (!result.status) {
+    co_return result.status;
+  }
   co_return std::move(result.events);
 }
 
