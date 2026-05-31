@@ -61,5 +61,5 @@ scada.history.data_collector.write_value_count
 scada.history.data_collector.write_value_duration_us
 ```
 
-DataCollector meters include `database_node_id` as a default attribute, so the
+DataCollector meters include `node_id` as a default attribute, so the
 collector output can be filtered by historical database node ID.

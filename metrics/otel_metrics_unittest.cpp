@@ -13,7 +13,7 @@ TEST(OpenTelemetryMetricsTest, MeterRecordsValues) {
       .endpoint = "localhost:4317"}};
 
   Meter meter{"scada.test"};
-  MetricAttributes attributes{{"database_node_id", "ns=1;i=2"}};
+  MetricAttributes attributes{{"node_id", "ns=1;i=2"}};
   meter.AddCounter("scada.test.counter", 1, attributes);
   meter.AddUpDownCounter("scada.test.gauge", 1, attributes);
   meter.RecordHistogram("scada.test.duration_ms", 1.5, attributes);
@@ -26,7 +26,7 @@ TEST(OpenTelemetryMetricsTest, MeterRecordsValuesWithDefaultAttributes) {
       .export_timeout = std::chrono::milliseconds{1},
       .endpoint = "localhost:4317"}};
 
-  Meter meter{"scada.test", {{"database_node_id", "ns=1;i=2"}}};
+  Meter meter{"scada.test", {{"node_id", "ns=1;i=2"}}};
   meter.AddCounter("scada.test.counter", 1);
   meter.AddUpDownCounter("scada.test.gauge", 1);
   meter.RecordHistogram("scada.test.duration_ms", 1.5);
