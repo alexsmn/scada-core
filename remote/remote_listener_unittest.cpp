@@ -92,11 +92,11 @@ TEST(RemoteListenerTest, InitAsyncCompletesWhenAcceptorOpens) {
   EXPECT_NO_THROW(env.Wait(listener->ShutdownAsync()));
 }
 
-TEST(RemoteListenerTest, InitAsyncThrowsWhenAcceptorOpenFails) {
+TEST(RemoteListenerTest, InitAsyncReturnsBadWhenAcceptorOpenFails) {
   AsioTestEnvironment env;
   auto listener = CreateListener(
       env, std::make_unique<FailingOpenTransport>(env.any_executor_factory()));
 
-  EXPECT_THROW(env.Wait(listener->InitAsync()), std::runtime_error);
+  EXPECT_EQ(env.Wait(listener->InitAsync()).code(), scada::StatusCode::Bad);
   EXPECT_NO_THROW(env.Wait(listener->ShutdownAsync()));
 }

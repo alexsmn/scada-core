@@ -18,13 +18,11 @@
 #include "remote/subscription_proxy.h"
 #include "remote/view_service_proxy.h"
 #include "scada/monitored_item.h"
-#include "scada/status_exception.h"
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <transport/transport_factory.h>
 #include <transport/transport_string.h>
-#include <stdexcept>
 
 using namespace std::chrono_literals;
 
@@ -84,10 +82,7 @@ scada::services SessionProxy::services() {
 }
 
 Awaitable<void> SessionProxy::Disconnect() {
-  if (!session_created_)
-    throw scada::status_exception{scada::StatusCode::Bad_Disconnected};
-
-  co_await DisconnectAsync();
+  (void)co_await DisconnectAsync();
 }
 
 void SessionProxy::OnTransportOpened() {
@@ -147,7 +142,9 @@ void SessionProxy::OnSessionError(const scada::Status& status) {
 void SessionProxy::OnTransportMessageReceived(std::span<const char> data) {
   protocol::Message message;
   if (!message.ParseFromArray(data.data(), data.size())) {
-    throw std::runtime_error("Can't parse message");
+    LOG_ERROR(*logger_) << "Cannot parse transport message";
+    OnSessionError(scada::StatusCode::Bad);
+    return;
   }
 
   OnMessageReceived(message);
@@ -250,15 +247,15 @@ Awaitable<void> SessionProxy::AwaitCreateSessionAsync() {
   OnSessionCreated();
 }
 
-Awaitable<void> SessionProxy::DisconnectAsync() {
+Awaitable<scada::Status> SessionProxy::DisconnectAsync() {
+  if (!session_created_)
+    co_return scada::StatusCode::Bad_Disconnected;
+
   protocol::Request request;
   request.mutable_delete_session();
 
   auto response = co_await RequestAsync(std::move(request));
   auto status = ConvertTo<scada::Status>(response.status());
-  if (!status) {
-    throw scada::status_exception(status);
-  }
 
   if (status) {
     OnSessionDeleted();
@@ -269,6 +266,7 @@ Awaitable<void> SessionProxy::DisconnectAsync() {
 
   co_await connect_loop_completion_.Wait();
   co_await ping_completion_.Wait();
+  co_return status;
 }
 
 void SessionProxy::Send(protocol::Message& message) {
@@ -288,7 +286,9 @@ void SessionProxy::Send(protocol::Message& message) {
 
   std::string string;
   if (!message.AppendToString(&string)) {
-    throw std::runtime_error("Can't serialize message");
+    LOG_ERROR(*logger_) << "Cannot serialize protocol message";
+    OnSessionError(scada::StatusCode::Bad);
+    return;
   }
 
   // TODO: Handle write result.
@@ -392,14 +392,20 @@ void SessionProxy::Request(protocol::Request& request,
 }
 
 Awaitable<void> SessionProxy::Connect(scada::SessionConnectParams params) {
-  co_await ConnectAsync(std::move(params));
+  (void)co_await ConnectStatus(std::move(params));
 }
 
-Awaitable<void> SessionProxy::ConnectAsync(scada::SessionConnectParams params) {
+Awaitable<scada::Status> SessionProxy::ConnectStatus(
+    scada::SessionConnectParams params) {
+  co_return co_await ConnectAsync(std::move(params));
+}
+
+Awaitable<scada::Status> SessionProxy::ConnectAsync(
+    scada::SessionConnectParams params) {
   assert(!transport_);
 
   if (session_created_) {
-    throw scada::status_exception{scada::StatusCode::Bad};
+    co_return scada::StatusCode::Bad;
   }
 
   user_name_ = params.user_name;
@@ -413,6 +419,7 @@ Awaitable<void> SessionProxy::ConnectAsync(scada::SessionConnectParams params) {
   allow_remote_logoff_ = params.allow_remote_logoff;
 
   co_await ReconnectAsync();
+  co_return connect_status_;
 }
 
 transport::awaitable<void> SessionProxy::Connect() {
@@ -505,12 +512,8 @@ void SessionProxy::ForwardConnectResult(scada::Status&& status) {
     return;
   }
 
-  if (status) {
-    connect_completion_.Complete();
-  } else {
-    connect_completion_.Fail(
-        std::make_exception_ptr(scada::status_exception{std::move(status)}));
-  }
+  connect_status_ = std::move(status);
+  connect_completion_.Complete();
 }
 
 Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> SessionProxy::Read(
@@ -595,6 +598,7 @@ Awaitable<void> SessionProxy::ReconnectAsync() {
   connect_completion_ = base::AsyncCompletion{executor_};
   connect_loop_completion_ = base::AsyncCompletion{executor_};
   pending_connect_result_.reset();
+  connect_status_ = scada::StatusCode::Good;
 
   auto lifetime = std::weak_ptr<void>{lifetime_};
   boost::asio::co_spawn(

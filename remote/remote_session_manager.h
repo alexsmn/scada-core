@@ -56,7 +56,7 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   explicit RemoteSessionManager(RemoteSessionManagerContext&& context);
   virtual ~RemoteSessionManager();
 
-  [[nodiscard]] Awaitable<void> InitAsync();
+  [[nodiscard]] Awaitable<scada::Status> InitAsync();
   [[nodiscard]] Awaitable<void> ShutdownAsync();
 
   void CloseUserSessions(const scada::NodeId& user_id);

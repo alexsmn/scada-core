@@ -13,6 +13,11 @@ class MockSessionService : public SessionService {
               (scada::SessionConnectParams params),
               (override));
 
+  MOCK_METHOD(Awaitable<Status>,
+              ConnectStatus,
+              (scada::SessionConnectParams params),
+              (override));
+
   MOCK_METHOD(Awaitable<void>, Reconnect, (), (override));
 
   MOCK_METHOD(Awaitable<void>, Disconnect, (), (override));

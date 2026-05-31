@@ -58,6 +58,8 @@ class SessionProxy : private SessionProxyContext,
 
   // scada::SessionService
   virtual Awaitable<void> Connect(scada::SessionConnectParams params) override;
+  virtual Awaitable<scada::Status> ConnectStatus(
+      scada::SessionConnectParams params) override;
   virtual Awaitable<void> Reconnect() override;
   virtual Awaitable<void> Disconnect() override;
   virtual bool IsConnected(base::TimeDelta* ping_delay) const override;
@@ -95,7 +97,8 @@ class SessionProxy : private SessionProxyContext,
 
  private:
   [[nodiscard]] transport::awaitable<void> Connect();
-  [[nodiscard]] Awaitable<void> ConnectAsync(scada::SessionConnectParams params);
+  [[nodiscard]] Awaitable<scada::Status> ConnectAsync(
+      scada::SessionConnectParams params);
   [[nodiscard]] Awaitable<void> ReconnectAsync();
 
   void OnSessionError(const scada::Status& status);
@@ -106,7 +109,7 @@ class SessionProxy : private SessionProxyContext,
   void OnMessageReceived(const protocol::Message& message);
 
   [[nodiscard]] Awaitable<void> AwaitCreateSessionAsync();
-  [[nodiscard]] Awaitable<void> DisconnectAsync();
+  [[nodiscard]] Awaitable<scada::Status> DisconnectAsync();
   [[nodiscard]] Awaitable<void> PingAsync();
   [[nodiscard]] Awaitable<protocol::Response> RequestAsync(
       protocol::Request request);
@@ -155,6 +158,7 @@ class SessionProxy : private SessionProxyContext,
   base::AsyncCompletion connect_loop_completion_;
   base::AsyncCompletion ping_completion_;
   std::optional<scada::Status> pending_connect_result_;
+  scada::Status connect_status_ = scada::StatusCode::Good;
 
   int next_request_id_ = 1;
 

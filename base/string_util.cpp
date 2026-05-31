@@ -48,7 +48,7 @@ std::string JoinStrings(std::span<const std::string_view> strings,
     result.append(strings[i].data(), strings[i].size());
   }
 
-  assert(result.capacity() == result_size);
+  assert(result.size() == result_size);
   return result;
 }
 

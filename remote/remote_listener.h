@@ -3,11 +3,11 @@
 #include "base/async_completion.h"
 #include "base/awaitable.h"
 #include "base/boost_log.h"
+#include "scada/status.h"
 
 #include <exception>
 #include <functional>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <transport/any_transport.h>
 #include <transport/expected.h>
@@ -39,7 +39,7 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
         open_completion_{acceptor_.get_executor()},
         close_completion_{acceptor_.get_executor()} {}
 
-  [[nodiscard]] Awaitable<void> InitAsync() {
+  [[nodiscard]] Awaitable<scada::Status> InitAsync() {
     LOG_INFO(*logger_) << "Listening..." << LOG_TAG("Listener", listener_name_);
 
     auto self = shared_from_this();
@@ -53,6 +53,7 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
     });
 
     co_await open_completion_.Wait();
+    co_return open_status_;
   }
 
   [[nodiscard]] Awaitable<void> ShutdownAsync() {
@@ -92,8 +93,8 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
                           << LOG_TAG("ErrorString",
                                      transport::ErrorToString(error));
 
-      open_completion_.Fail(std::make_exception_ptr(
-          std::runtime_error{transport::ErrorToString(error)}));
+      open_status_ = scada::StatusCode::Bad;
+      open_completion_.Complete();
       return;
     }
 
@@ -116,7 +117,8 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
     }
 
     if (!opened_) {
-      open_completion_.Fail(std::move(error));
+      open_status_ = scada::StatusCode::Bad;
+      open_completion_.Complete();
     }
   }
 
@@ -128,4 +130,5 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
   base::AsyncCompletion open_completion_;
   base::AsyncCompletion close_completion_;
   bool opened_ = false;
+  scada::Status open_status_ = scada::StatusCode::Good;
 };

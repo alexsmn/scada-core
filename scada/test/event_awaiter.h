@@ -4,7 +4,6 @@
 #include "base/any_executor.h"
 #include "base/thread_executor.h"
 #include "scada/client.h"
-#include "scada/status_awaitable.h"
 
 namespace scada {
 
@@ -39,7 +38,8 @@ struct event_awaiter {
           [this, matcher = std::forward<T>(matcher)](auto callback) mutable {
             matchers_.emplace_back(std::move(matcher), std::move(callback));
           });
-      ThrowIfBad(status);
+      if (!status)
+        co_return scada::Event{};
       co_return std::move(event);
     }
 

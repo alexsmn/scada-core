@@ -171,7 +171,7 @@ TEST(ServiceAwaitableTest,
         return MakeMethodCallResult(StatusCode::Bad_WrongCallArguments);
       }));
   EXPECT_CALL(history_service, HistoryReadRaw(_))
-      .WillOnce(Invoke([&](const HistoryReadRawDetails& actual_details)
+      .WillOnce(Invoke([&](HistoryReadRawDetails actual_details)
                            -> Awaitable<HistoryReadRawResult> {
         EXPECT_EQ(actual_details.node_id, raw_details.node_id);
         EXPECT_EQ(actual_details.from, raw_details.from);
@@ -184,8 +184,8 @@ TEST(ServiceAwaitableTest,
         };
       }));
   EXPECT_CALL(history_service, HistoryReadEvents(node_id, from, to, _))
-      .WillOnce(Invoke([&](const NodeId&, base::Time, base::Time,
-                           const EventFilter& actual_filter)
+      .WillOnce(Invoke([&](NodeId, base::Time, base::Time,
+                           EventFilter actual_filter)
                            -> Awaitable<HistoryReadEventsResult> {
         EXPECT_EQ(actual_filter, expected_filter);
         co_return HistoryReadEventsResult{

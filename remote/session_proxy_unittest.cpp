@@ -86,14 +86,14 @@ TEST_F(SessionProxyTest, ConnectAndDisconnectAreAwaitable) {
   EXPECT_FALSE(session.IsConnected(nullptr));
 }
 
-TEST_F(SessionProxyTest, ConnectThrowsOnBadCredentials) {
+TEST_F(SessionProxyTest, ConnectStatusReturnsBadCredentials) {
   auth_failure_status_ = scada::StatusCode::Bad_WrongLoginCredentials;
 
   SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
-  EXPECT_THROW(asio_env_.Wait(session.Connect(GetConnectParams())),
-               scada::status_exception);
+  auto status = asio_env_.Wait(session.ConnectStatus(GetConnectParams()));
+  EXPECT_EQ(status.code(), scada::StatusCode::Bad_WrongLoginCredentials);
 }
 
 TEST_F(SessionProxyTest, ReconnectIsAwaitable) {

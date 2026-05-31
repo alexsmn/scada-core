@@ -1,5 +1,6 @@
 #include "scada/node_id.h"
 
+#include "base/base64.h"
 #include "base/format.h"
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -27,7 +28,6 @@ std::size_t hash<scada::NodeId>::operator()(
       boost::hash_combine(seed, node_id.opaque_id());
       break;
     default:
-      assert(false);
       break;
   }
   return seed;
@@ -89,10 +89,15 @@ String NodeId::ToString() const {
     case NodeIdType::String:
       result += std::format("s={}", string_id());
       break;
-    case NodeIdType::Opaque:
-      // TODO:
+    case NodeIdType::Opaque: {
+      std::string encoded;
+      base::Base64Encode(
+          std::string_view{opaque_id().data(), opaque_id().size()}, &encoded);
+      result += std::format("b={}", encoded);
+      break;
+    }
     default:
-      assert(false);
+      result += "<invalid>";
   }
 
   return result;

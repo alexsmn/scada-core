@@ -27,11 +27,12 @@ class MetricServiceImpl::ProviderReporter
  private:
   void Report() {
     CoSpawn(executor_, [this, ref = shared_from_this()]() -> Awaitable<void> {
-      try {
-        sink_(co_await provider_());
-        Schedule();
-      } catch (...) {
-      }
+      auto metrics = co_await provider_();
+      if (!metrics.ok())
+        co_return;
+
+      sink_(*metrics);
+      Schedule();
     });
   }
 

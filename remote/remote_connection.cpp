@@ -6,7 +6,6 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <stdexcept>
 
 std::shared_ptr<ServerConnection> ServerConnection::Create(
     ServerConnectionContext&& context) {
@@ -148,7 +147,9 @@ void ServerConnection::Send(protocol::Message& message) {
 
   std::string string;
   if (!message.AppendToString(&string)) {
-    throw std::runtime_error("Can't serialize the message");
+    LOG_ERROR(*logger_) << "Cannot serialize protocol message";
+    Close();
+    return;
   }
 
   auto self = shared_from_this();
@@ -266,10 +267,7 @@ Awaitable<void> ServerConnection::OnDeleteSessionAsync(protocol::Request request
     response.set_request_id(request.request_id());
     Convert(status, *response.mutable_status());
 
-    try {
-      Send(message);
-    } catch (const std::exception&) {
-    }
+    Send(message);
   }
 
   co_return;

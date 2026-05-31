@@ -9,7 +9,6 @@
 #include "scada/qualified_name.h"
 #include "scada/service_context.h"
 #include "scada/status.h"
-#include "scada/status_exception.h"
 #include "scada/status_or.h"
 
 #include <functional>

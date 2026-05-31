@@ -22,10 +22,16 @@ TEST(ThreadExecutorTest, DestroyFromTask) {
   auto executor = std::make_shared<ThreadExecutor>();
   std::mutex mutex;
   std::condition_variable cv;
+  std::promise<void> finished;
+  auto finished_future = finished.get_future();
   bool release = false;
-  executor->PostTask([executor, &mutex, &cv, &release] {
+  executor->PostTask([executor, &mutex, &cv, &release,
+                      &finished]() mutable {
     std::unique_lock lock{mutex};
     cv.wait(lock, [&] { return release; });
+    lock.unlock();
+    executor = nullptr;
+    finished.set_value();
   });
   executor = nullptr;
   {
@@ -33,6 +39,8 @@ TEST(ThreadExecutorTest, DestroyFromTask) {
     release = true;
   }
   cv.notify_all();
+  EXPECT_EQ(finished_future.wait_for(std::chrono::seconds{5}),
+            std::future_status::ready);
 }
 
 TEST(ThreadExecutorTest, CanBeStoredInAnyExecutor) {

@@ -32,3 +32,17 @@ TEST(NodeId, Move) {
   EXPECT_TRUE(a.is_null());
   EXPECT_EQ(b, scada::NodeId("string_id", 123));
 }
+
+TEST(NodeId, ToString_OpaqueId) {
+  scada::ByteString opaque_id{'a', 'b', 'c'};
+  const scada::NodeId node_id{opaque_id, 0};
+
+  EXPECT_EQ(node_id.ToString(), "b=YWJj");
+}
+
+TEST(NodeId, ToString_OpaqueIdWithNamespace) {
+  scada::ByteString opaque_id{'\x01', '\x02', '\x03'};
+  const scada::NodeId node_id{opaque_id, 2};
+
+  EXPECT_EQ(node_id.ToString(), "ns=2;b=AQID");
+}

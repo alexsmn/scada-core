@@ -68,7 +68,7 @@ RemoteSessionManager::~RemoteSessionManager() {
   }
 }
 
-Awaitable<void> RemoteSessionManager::InitAsync() {
+Awaitable<scada::Status> RemoteSessionManager::InitAsync() {
   transport::log_source transport_logger{
       std::make_shared<NetBoostLoggerAdapter>(logger_)};
 
@@ -89,7 +89,7 @@ Awaitable<void> RemoteSessionManager::InitAsync() {
       LOG_ERROR(*logger_) << "Cannot create listener transport"
                           << LOG_TAG("Error", transport::ErrorToShortString(
                                                   acceptor.error()));
-      throw std::runtime_error{transport::ErrorToShortString(acceptor.error())};
+      co_return scada::StatusCode::Bad;
     }
 
     auto listener_name = acceptor->name();
@@ -99,8 +99,12 @@ Awaitable<void> RemoteSessionManager::InitAsync() {
                                std::move(listener_name), accept_handler);
     listeners_.emplace_back(listener);
 
-    co_await listener->InitAsync();
+    auto status = co_await listener->InitAsync();
+    if (!status)
+      co_return status;
   }
+
+  co_return scada::StatusCode::Good;
 }
 
 Awaitable<void> RemoteSessionManager::ShutdownAsync() {
@@ -156,44 +160,33 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
     co_return MakeCreateSessionResult(auth_result.status());
   }
 
-  try {
-    auto& user_id = auth_result->user_id;
-    LOG_INFO(*logger_) << "Authorization succeeded"
-                       << LOG_TAG("UserId", NodeIdToScadaString(user_id))
-                       << LOG_TAG("UserName", ToString(user_name))
-                       << LOG_TAG("AuthorizationResult",
-                                  ToString(*auth_result));
+  auto& user_id = auth_result->user_id;
+  LOG_INFO(*logger_) << "Authorization succeeded"
+                     << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                     << LOG_TAG("UserName", ToString(user_name))
+                     << LOG_TAG("AuthorizationResult", ToString(*auth_result));
 
-    if (!auth_result->multi_sessions &&
-        !CheckExistingSession(user_id, user_name, delete_existing)) {
-      LOG_WARNING(*logger_) << "Session is already opened"
-                            << LOG_TAG("UserId", NodeIdToScadaString(user_id))
-                            << LOG_TAG("UserName", ToString(user_name));
-      co_return MakeCreateSessionResult(
-          scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
-    }
-
-    auto& session = CreateNewSession(user_id, user_name);
-
-    LOG_INFO(*logger_) << "CreateSessionAsync returning success"
-                       << LOG_TAG("UserId", NodeIdToScadaString(user_id));
-
-    co_return CreateSessionResult{
-        .status = scada::StatusCode::Good,
-        .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
-        .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR,
-        .user_id = user_id,
-        .user_rights = auth_result->user_rights,
-        .session = &session};
-  } catch (...) {
-    auto status = scada::GetExceptionStatus(std::current_exception());
-
-    LOG_ERROR(*logger_) << "Create-session error"
-                        << LOG_TAG("UserName", ToString(user_name))
-                        << LOG_TAG("ErrorString", ToString(status));
-
-    co_return MakeCreateSessionResult(status);
+  if (!auth_result->multi_sessions &&
+      !CheckExistingSession(user_id, user_name, delete_existing)) {
+    LOG_WARNING(*logger_) << "Session is already opened"
+                          << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                          << LOG_TAG("UserName", ToString(user_name));
+    co_return MakeCreateSessionResult(
+        scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
   }
+
+  auto& session = CreateNewSession(user_id, user_name);
+
+  LOG_INFO(*logger_) << "CreateSessionAsync returning success"
+                     << LOG_TAG("UserId", NodeIdToScadaString(user_id));
+
+  co_return CreateSessionResult{
+      .status = scada::StatusCode::Good,
+      .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
+      .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR,
+      .user_id = user_id,
+      .user_rights = auth_result->user_rights,
+      .session = &session};
 }
 
 bool RemoteSessionManager::CheckExistingSession(

@@ -5,10 +5,8 @@
 #include "scada/node_id.h"
 #include "scada/privileges.h"
 #include "scada/status.h"
-#include "scada/status_exception.h"
 
 #include <boost/signals2/connection.hpp>
-#include <exception>
 #include <functional>
 #include <string>
 #include <utility>
@@ -41,12 +39,8 @@ class SessionService {
   virtual Awaitable<void> Connect(SessionConnectParams params) = 0;
 
   virtual Awaitable<Status> ConnectStatus(SessionConnectParams params) {
-    try {
-      co_await Connect(std::move(params));
-      co_return StatusCode::Good;
-    } catch (...) {
-      co_return GetExceptionStatus(std::current_exception());
-    }
+    co_await Connect(std::move(params));
+    co_return StatusCode::Good;
   }
 
   virtual Awaitable<void> Reconnect() = 0;

@@ -110,6 +110,13 @@ class TestExecutor {
     return state_->pending_tasks.size();
   }
 
+  bool HasReadyTasks() const {
+    std::lock_guard lock{state_->mutex};
+    return std::ranges::any_of(state_->pending_tasks, [](const PendingTask& task) {
+      return task.delay <= Duration{};
+    });
+  }
+
   void Poll() { Advance({}); }
 
   void Advance(Duration delta) {

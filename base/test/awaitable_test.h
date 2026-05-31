@@ -14,7 +14,7 @@
 using namespace std::chrono_literals;
 
 inline void Drain(TestExecutor& executor) {
-  while (executor.GetTaskCount() > 0) {
+  while (executor.HasReadyTasks()) {
     executor.Poll();
   }
 }
