@@ -2,8 +2,9 @@
 
 #include "base/callback_awaitable.h"
 #include "base/any_executor.h"
-#include "base/thread_executor.h"
 #include "scada/client.h"
+
+#include <boost/asio/this_coro.hpp>
 
 namespace scada {
 
@@ -15,8 +16,8 @@ struct event_awaiter {
   }
 
   template <class T>
-  Awaitable<scada::Event> when(T&& matcher) {
-    return state_->when(std::forward<T>(matcher));
+  Awaitable<scada::Event> when(T matcher) {
+    return state_->when(std::move(matcher));
   }
 
   Awaitable<scada::Event> when_node(const scada::NodeId& node_id) {
@@ -32,10 +33,11 @@ struct event_awaiter {
  private:
   struct state {
     template <class T>
-    Awaitable<scada::Event> when(T&& matcher) {
+    Awaitable<scada::Event> when(T matcher) {
+      auto executor = co_await boost::asio::this_coro::executor;
       auto [status, event] = co_await CallbackToAwaitable<Status, scada::Event>(
-          ThreadExecutor{},
-          [this, matcher = std::forward<T>(matcher)](auto callback) mutable {
+          executor,
+          [this, matcher = std::move(matcher)](auto callback) mutable {
             matchers_.emplace_back(std::move(matcher), std::move(callback));
           });
       if (!status)
@@ -46,22 +48,27 @@ struct event_awaiter {
     void handle_system_event(const scada::Status& status,
                              const scada::Event& event) {
       if (!status) {
-        for (auto& [m, callback] : matchers_) {
+        auto matchers = std::move(matchers_);
+        matchers_.clear();
+        for (auto& [m, callback] : matchers) {
           callback(status, {});
         }
-        matchers_.clear();
         return;
       }
 
-      auto matching = std::ranges::partition(
-          matchers_, [&event](const auto& m) { return !m(event); },
-          [](const auto& p) { return p.first; });
-
-      for (auto& [m, callback] : matching) {
-        callback(StatusCode::Good, event);
+      std::vector<callback> matching_callbacks;
+      for (auto it = matchers_.begin(); it != matchers_.end();) {
+        if (it->first(event)) {
+          matching_callbacks.emplace_back(std::move(it->second));
+          it = matchers_.erase(it);
+        } else {
+          ++it;
+        }
       }
 
-      matchers_.erase(matching.begin(), matching.end());
+      for (auto& callback : matching_callbacks) {
+        callback(StatusCode::Good, event);
+      }
     }
 
     using matcher = std::function<bool(const scada::Event& event)>;

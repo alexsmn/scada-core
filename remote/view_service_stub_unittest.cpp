@@ -6,6 +6,9 @@
 #include "remote/protocol_utils.h"
 #include "scada/coroutine_services.h"
 
+#include <boost/asio/post.hpp>
+#include <boost/asio/this_coro.hpp>
+
 #include <gmock/gmock.h>
 
 using namespace testing;
@@ -17,7 +20,10 @@ class TestViewService final : public scada::ViewService {
   Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>> Browse(
       scada::ServiceContext context,
       std::vector<scada::BrowseDescription> inputs) override {
+    co_await boost::asio::post(co_await boost::asio::this_coro::executor,
+                               boost::asio::use_awaitable);
     browse_called = true;
+    last_user_id = context.user_id();
     last_browse_inputs = std::move(inputs);
     co_return std::vector<scada::BrowseResult>{
         {.status_code = scada::StatusCode::Good}};
@@ -29,6 +35,7 @@ class TestViewService final : public scada::ViewService {
   }
 
   bool browse_called = false;
+  scada::NodeId last_user_id;
   std::vector<scada::BrowseDescription> last_browse_inputs;
 };
 
@@ -68,9 +75,12 @@ TEST(ViewServiceStubTest, BrowseRoutesToCoroutineServiceFromContext) {
   Convert(scada::NodeId{2, 3}, *browse_proto_node->mutable_node_id());
 
   stub->OnRequestReceived(request);
-  executor.Poll();
+  while (executor.GetTaskCount() != 0) {
+    executor.Poll();
+  }
 
   ASSERT_TRUE(service.browse_called);
+  EXPECT_EQ(service.last_user_id, scada::NodeId(1, 1));
   ASSERT_EQ(service.last_browse_inputs.size(), 1u);
   EXPECT_EQ(service.last_browse_inputs[0].node_id, scada::NodeId(2, 3));
 }

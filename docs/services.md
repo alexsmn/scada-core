@@ -293,18 +293,33 @@ Header: `core/scada/monitored_item_service.h`
 
 Purpose:
 
-- create a subscription object for value monitoring
+- create a subscription stream for monitored values and events
+- add or remove many monitored items through one subscription
+- deliver updates as coroutine-read batches with explicit per-item status
 
 API:
 
 ```cpp
-virtual std::shared_ptr<MonitoredItem> CreateMonitoredItem(
-    const ReadValueId& value_id,
-    const MonitoringParameters& params) = 0;
+virtual StatusOr<std::unique_ptr<MonitoredItemSubscription>>
+CreateSubscription(ServiceContext context,
+                   MonitoredItemSubscriptionOptions options);
+
+class MonitoredItemSubscription {
+ public:
+  virtual Awaitable<std::vector<MonitoredItemCreateResult>> AddItems(
+      std::vector<MonitoredItemCreateRequest> requests) = 0;
+  virtual Awaitable<std::vector<Status>> RemoveItems(
+      std::span<const MonitoredItemId> item_ids) = 0;
+  virtual Awaitable<StatusOr<std::vector<MonitoredItemNotification>>> ReadNext(
+      size_t max_count) = 0;
+  virtual void Close(Status status) = 0;
+};
 ```
 
-This service is not part of the new coroutine adapter layer because its public
-contract is already object/lifetime-oriented rather than callback-based.
+Subscriptions are single-owner objects returned as `std::unique_ptr`. The
+compatibility `CreateMonitoredItem` API remains during migration, and the
+default subscription implementation adapts existing per-item services to the
+new stream API.
 
 ## Attribute Service
 

@@ -2,9 +2,10 @@
 
 #include "base/callback_awaitable.h"
 #include "base/any_executor.h"
-#include "base/thread_executor.h"
 #include "scada/client_monitored_item.h"
 #include "scada/monitoring_parameters.h"
+
+#include <boost/asio/this_coro.hpp>
 
 namespace scada {
 
@@ -16,8 +17,8 @@ struct data_value_awaiter {
   }
 
   template <class T>
-  Awaitable<scada::DataValue> when(T&& matcher) {
-    return state_->when(std::forward<T>(matcher));
+  Awaitable<scada::DataValue> when(T matcher) {
+    return state_->when(std::move(matcher));
   }
 
   Awaitable<scada::DataValue> when_any() {
@@ -28,15 +29,16 @@ struct data_value_awaiter {
  private:
   struct state {
     template <class T>
-    Awaitable<scada::DataValue> when(T&& matcher) {
+    Awaitable<scada::DataValue> when(T matcher) {
       if (current_data_value_.has_value() &&
           matcher(current_data_value_.value())) {
         co_return current_data_value_.value();
       }
 
+      auto executor = co_await boost::asio::this_coro::executor;
       auto [data_value] = co_await CallbackToAwaitable<scada::DataValue>(
-          ThreadExecutor{},
-          [this, matcher = std::forward<T>(matcher)](auto callback) mutable {
+          executor,
+          [this, matcher = std::move(matcher)](auto callback) mutable {
             matchers_.emplace_back(std::move(matcher), std::move(callback));
           });
       co_return std::move(data_value);
