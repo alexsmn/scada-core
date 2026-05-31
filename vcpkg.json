@@ -8,6 +8,12 @@
     "boost-log",
     "boost-system",
     "gtest",
-    "nspr"
+    "nspr",
+    {
+      "name": "opentelemetry-cpp",
+      "features": [
+        "otlp-grpc"
+      ]
+    }
   ]
 }

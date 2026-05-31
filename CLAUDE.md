@@ -282,7 +282,7 @@ See [chromium_deps.md](chromium_deps.md) for a detailed analysis of chromium-bas
 | Variant type | `scada/variant.h` |
 | Protocol definition | `remote/scada.proto` |
 | Async utilities | `base/awaitable.h` |
-| Metrics API | `metrics/metric_service.h` |
+| Metrics API | `metrics/otel_metrics.h` |
 | Namespace definitions | `model/namespaces.h` |
 
 ## Common Tasks for AI Assistants
