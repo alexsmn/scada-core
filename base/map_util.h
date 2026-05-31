@@ -1,6 +1,10 @@
 #pragma once
 
+#include <boost/optional.hpp>
+
+#include <cstddef>
 #include <ranges>
+#include <type_traits>
 #include <vector>
 
 namespace internal {
@@ -11,18 +15,50 @@ using KeyType = typename Map::key_type;
 template <typename Map>
 using MappedType = typename Map::mapped_type;
 
+template <typename Map>
+concept NullableMappedType =
+    std::is_copy_constructible_v<MappedType<Map>> &&
+    std::is_constructible_v<MappedType<Map>, std::nullptr_t>;
+
 }  // namespace internal
 
 template <typename Map, typename Key>
+  requires internal::NullableMappedType<Map>
+// Returns the mapped pointer-like value for `key`, or null when absent.
 constexpr internal::MappedType<Map> FindOrNull(const Map& map, const Key& key) {
   auto it = map.find(key);
   return it != map.end() ? it->second : nullptr;
 }
 
 template <typename Map, typename Key>
+  requires internal::NullableMappedType<Map>
+// Returns the mapped pointer-like value for `key`, or null when absent.
 constexpr internal::MappedType<Map> FindOrNull(Map& map, const Key& key) {
   auto it = map.find(key);
   return it != map.end() ? it->second : nullptr;
+}
+
+template <typename Map, typename Key>
+// Returns a reference to the mapped value for `key`, or empty when absent.
+constexpr boost::optional<const internal::MappedType<Map>&> Find(
+    const Map& map,
+    const Key& key) {
+  auto it = map.find(key);
+  if (it == map.end()) {
+    return boost::none;
+  }
+  return it->second;
+}
+
+template <typename Map, typename Key>
+// Returns a reference to the mapped value for `key`, or empty when absent.
+constexpr boost::optional<internal::MappedType<Map>&> Find(Map& map,
+                                                           const Key& key) {
+  auto it = map.find(key);
+  if (it == map.end()) {
+    return boost::none;
+  }
+  return it->second;
 }
 
 template <typename Map, typename Key>
