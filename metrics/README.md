@@ -4,27 +4,16 @@
 
 ## Endpoint
 
-By default, metrics are sent to:
+The endpoint is provided by the process runtime through
+`OpenTelemetryMetricsOptions::endpoint`. The exporter accepts values with or
+without `http://` or `https://`; the scheme is stripped before configuring the
+gRPC exporter.
+
+For local development, use:
 
 ```sh
 localhost:4317
 ```
-
-Override the endpoint with either environment variable:
-
-```sh
-export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=localhost:4317
-```
-
-or:
-
-```sh
-export OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
-```
-
-`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` takes precedence. The exporter accepts
-values with or without `http://` or `https://`; the scheme is stripped before
-configuring the gRPC exporter.
 
 ## View Metrics Locally
 

@@ -2,54 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include <cstdlib>
-#include <optional>
-
 namespace metrics {
 namespace {
-
-class ScopedEnv {
- public:
-  explicit ScopedEnv(const char* name) : name_{name} {
-    const char* value = std::getenv(name_);
-    if (value) {
-      original_ = value;
-    }
-  }
-
-  ~ScopedEnv() {
-    if (original_) {
-      setenv(name_, original_->c_str(), /*overwrite=*/1);
-    } else {
-      unsetenv(name_);
-    }
-  }
-
-  void Set(const char* value) { setenv(name_, value, /*overwrite=*/1); }
-  void Unset() { unsetenv(name_); }
-
- private:
-  const char* name_;
-  std::optional<std::string> original_;
-};
-
-TEST(OpenTelemetryMetricsTest, ResolveEndpointUsesDefaultWhenEnvIsUnset) {
-  ScopedEnv metrics_endpoint{"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"};
-  ScopedEnv endpoint{"OTEL_EXPORTER_OTLP_ENDPOINT"};
-  metrics_endpoint.Unset();
-  endpoint.Unset();
-
-  EXPECT_EQ(OpenTelemetryMetrics::ResolveEndpoint(), "localhost:4317");
-}
-
-TEST(OpenTelemetryMetricsTest, ResolveEndpointPrefersMetricsEndpoint) {
-  ScopedEnv metrics_endpoint{"OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"};
-  ScopedEnv endpoint{"OTEL_EXPORTER_OTLP_ENDPOINT"};
-  metrics_endpoint.Set("metrics:4317");
-  endpoint.Set("generic:4317");
-
-  EXPECT_EQ(OpenTelemetryMetrics::ResolveEndpoint(), "metrics:4317");
-}
 
 TEST(OpenTelemetryMetricsTest, MeterRecordsValues) {
   OpenTelemetryMetrics runtime{OpenTelemetryMetricsOptions{

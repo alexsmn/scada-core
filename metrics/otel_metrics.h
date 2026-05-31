@@ -28,8 +28,6 @@ class OpenTelemetryMetrics {
   OpenTelemetryMetrics(const OpenTelemetryMetrics&) = delete;
   OpenTelemetryMetrics& operator=(const OpenTelemetryMetrics&) = delete;
 
-  static std::string ResolveEndpoint();
-
  private:
   class Impl;
   std::unique_ptr<Impl> impl_;

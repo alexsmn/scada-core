@@ -10,7 +10,6 @@
 #include <opentelemetry/sdk/metrics/view/view_registry_factory.h>
 #include <opentelemetry/sdk/resource/resource.h>
 
-#include <cstdlib>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -23,13 +22,6 @@ namespace metrics_api = opentelemetry::metrics;
 namespace metrics_sdk = opentelemetry::sdk::metrics;
 namespace otlp = opentelemetry::exporter::otlp;
 namespace resource = opentelemetry::sdk::resource;
-
-constexpr char kDefaultEndpoint[] = "localhost:4317";
-
-std::string ReadEnv(const char* name) {
-  const char* value = std::getenv(name);
-  return value ? value : "";
-}
 
 std::string NormalizeGrpcEndpoint(std::string endpoint) {
   constexpr std::string_view kHttpPrefix = "http://";
@@ -100,9 +92,7 @@ class OpenTelemetryMetrics::Impl {
  public:
   explicit Impl(OpenTelemetryMetricsOptions options) {
     otlp::OtlpGrpcMetricExporterOptions exporter_options;
-    exporter_options.endpoint =
-        NormalizeGrpcEndpoint(options.endpoint.empty() ? ResolveEndpoint()
-                                                       : options.endpoint);
+    exporter_options.endpoint = NormalizeGrpcEndpoint(options.endpoint);
     exporter_options.use_ssl_credentials = false;
 
     auto exporter =
@@ -143,16 +133,6 @@ OpenTelemetryMetrics::OpenTelemetryMetrics(OpenTelemetryMetricsOptions options)
     : impl_{std::make_unique<Impl>(std::move(options))} {}
 
 OpenTelemetryMetrics::~OpenTelemetryMetrics() = default;
-
-std::string OpenTelemetryMetrics::ResolveEndpoint() {
-  std::string endpoint = ReadEnv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT");
-  if (!endpoint.empty()) {
-    return endpoint;
-  }
-
-  endpoint = ReadEnv("OTEL_EXPORTER_OTLP_ENDPOINT");
-  return endpoint.empty() ? kDefaultEndpoint : endpoint;
-}
 
 class Meter::Impl {
  public:
