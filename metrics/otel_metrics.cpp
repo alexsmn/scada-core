@@ -94,6 +94,7 @@ class OpenTelemetryMetrics::Impl {
     otlp::OtlpGrpcMetricExporterOptions exporter_options;
     exporter_options.endpoint = NormalizeGrpcEndpoint(options.endpoint);
     exporter_options.use_ssl_credentials = false;
+    exporter_options.timeout = options.export_timeout;
 
     auto exporter =
         otlp::OtlpGrpcMetricExporterFactory::Create(exporter_options);
@@ -112,21 +113,20 @@ class OpenTelemetryMetrics::Impl {
         resource::Resource::Create(resource_attributes));
     context->AddMetricReader(std::move(reader));
 
-    auto provider = metrics_sdk::MeterProviderFactory::Create(std::move(context));
-    provider_ =
-        opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
-            provider.release());
+    auto provider =
+        metrics_sdk::MeterProviderFactory::Create(std::move(context));
+    provider_ = opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
+        provider.release());
     previous_provider_ = metrics_api::Provider::GetMeterProvider();
     metrics_api::Provider::SetMeterProvider(provider_);
   }
 
-  ~Impl() {
-    metrics_api::Provider::SetMeterProvider(previous_provider_);
-  }
+  ~Impl() { metrics_api::Provider::SetMeterProvider(previous_provider_); }
 
  private:
   opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider> provider_;
-  opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider> previous_provider_;
+  opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>
+      previous_provider_;
 };
 
 OpenTelemetryMetrics::OpenTelemetryMetrics(OpenTelemetryMetricsOptions options)
@@ -137,8 +137,8 @@ OpenTelemetryMetrics::~OpenTelemetryMetrics() = default;
 class Meter::Impl {
  public:
   Impl(std::string meter_name, MetricAttributes attributes)
-      : meter_{metrics_api::Provider::GetMeterProvider()->GetMeter(
-            meter_name, "1.0.0")},
+      : meter_{metrics_api::Provider::GetMeterProvider()->GetMeter(meter_name,
+                                                                   "1.0.0")},
         attributes_{std::move(attributes)} {}
 
   void AddCounter(std::string_view metric_name,
@@ -193,8 +193,7 @@ class Meter::Impl {
       histograms_;
 };
 
-Meter::Meter(std::string meter_name)
-    : Meter{std::move(meter_name), {}} {}
+Meter::Meter(std::string meter_name) : Meter{std::move(meter_name), {}} {}
 
 Meter::Meter(std::string meter_name, MetricAttributes attributes)
     : impl_{std::make_unique<Impl>(std::move(meter_name),
