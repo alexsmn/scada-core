@@ -1,15 +1,27 @@
 #pragma once
 
+#include <boost/signals2/connection.hpp>
+
 #include <chrono>
-#include <cstdint>
-#include <map>
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
+#include "metrics/meter.h"
+#include "metrics/metric_value.h"
+
 namespace metrics {
 
-using MetricAttributes = std::map<std::string, std::string>;
+struct MetricPoint {
+  std::string scope_name;
+  std::string metric_name;
+  MetricAttributes attributes;
+  MetricValue value;
+};
+
+using MetricValueObserver = std::function<void(const MetricPoint& point)>;
 
 // Defines OpenTelemetry metric exporter and resource settings for the process.
 struct OpenTelemetryMetricsOptions {
@@ -28,30 +40,13 @@ class OpenTelemetryMetrics {
   OpenTelemetryMetrics(const OpenTelemetryMetrics&) = delete;
   OpenTelemetryMetrics& operator=(const OpenTelemetryMetrics&) = delete;
 
- private:
-  class Impl;
-  std::unique_ptr<Impl> impl_;
-};
+  std::optional<MetricValue> GetMetricValue(std::string_view scope_name,
+                                            std::string_view metric_name,
+                                            std::string_view attribute_name,
+                                            std::string_view attribute_value);
 
-// Records measurements through an OpenTelemetry meter and caches instruments.
-class Meter {
- public:
-  explicit Meter(std::string meter_name);
-  Meter(std::string meter_name, MetricAttributes attributes);
-  ~Meter();
-
-  Meter(const Meter&) = delete;
-  Meter& operator=(const Meter&) = delete;
-
-  void AddCounter(std::string_view metric_name,
-                  std::uint64_t value,
-                  const MetricAttributes& attributes = {});
-  void AddUpDownCounter(std::string_view metric_name,
-                        std::int64_t delta,
-                        const MetricAttributes& attributes = {});
-  void RecordHistogram(std::string_view metric_name,
-                       double value,
-                       const MetricAttributes& attributes = {});
+  boost::signals2::connection AddMetricValueObserver(
+      MetricValueObserver observer);
 
  private:
   class Impl;

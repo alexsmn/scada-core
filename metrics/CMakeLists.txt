@@ -9,6 +9,7 @@ target_link_libraries(scada_metrics PUBLIC
   opentelemetry-cpp::api
   opentelemetry-cpp::sdk
   opentelemetry-cpp::metrics
+  opentelemetry-cpp::in_memory_metric_exporter
   opentelemetry-cpp::otlp_grpc_metrics_exporter
 )
 
