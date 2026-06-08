@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstring>
 #include <string>
 
 // SplitString tests

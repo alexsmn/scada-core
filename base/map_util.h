@@ -2,6 +2,7 @@
 
 #include <boost/optional.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <ranges>
 #include <type_traits>
