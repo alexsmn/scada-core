@@ -69,7 +69,9 @@ class NodeManagementService {
 
 inline Awaitable<AddNodesResult> AddNode(NodeManagementService& service,
                                          AddNodesItem input) {
-  auto results = co_await service.AddNodes({std::move(input)});
+  std::vector<AddNodesItem> inputs;
+  inputs.emplace_back(std::move(input));
+  auto results = co_await service.AddNodes(std::move(inputs));
   if (!results.ok()) {
     co_return AddNodesResult{.status_code = results.status().code()};
   }
@@ -79,7 +81,9 @@ inline Awaitable<AddNodesResult> AddNode(NodeManagementService& service,
 
 inline Awaitable<Status> DeleteNode(NodeManagementService& service,
                                     DeleteNodesItem input) {
-  auto results = co_await service.DeleteNodes({std::move(input)});
+  std::vector<DeleteNodesItem> inputs;
+  inputs.emplace_back(std::move(input));
+  auto results = co_await service.DeleteNodes(std::move(inputs));
   if (!results.ok()) {
     co_return results.status();
   }

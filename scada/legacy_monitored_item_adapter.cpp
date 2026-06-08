@@ -164,11 +164,13 @@ void LegacyMonitoredItemAdapter::AddItem(
               pump = state->pump.get();
             }
 
+            std::vector<MonitoredItemCreateRequest> requests;
+            requests.emplace_back(MonitoredItemCreateRequest{
+                .item_to_monitor = item_state->value_id,
+                .parameters = item_state->params,
+                .client_handle = client_handle});
             std::vector<MonitoredItemCreateResult> results =
-                co_await pump->AddItems({MonitoredItemCreateRequest{
-                    .item_to_monitor = item_state->value_id,
-                    .parameters = item_state->params,
-                    .client_handle = client_handle}});
+                co_await pump->AddItems(std::move(requests));
             const Status result_status = results.empty()
                                              ? Status{StatusCode::Bad}
                                              : results.front().status;

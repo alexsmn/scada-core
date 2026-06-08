@@ -96,8 +96,10 @@ class ViewService {
 inline Awaitable<BrowseResult> Browse(ViewService& view_service,
                                       scada::ServiceContext context,
                                       BrowseDescription input) {
-  auto results =
-      co_await view_service.Browse(std::move(context), {std::move(input)});
+  std::vector<BrowseDescription> inputs;
+  inputs.emplace_back(std::move(input));
+  auto results = co_await view_service.Browse(std::move(context),
+                                              std::move(inputs));
   if (!results.ok()) {
     co_return BrowseResult{.status_code = results.status().code()};
   }
@@ -108,8 +110,9 @@ inline Awaitable<BrowseResult> Browse(ViewService& view_service,
 inline Awaitable<BrowsePathResult> TranslateBrowsePath(
     ViewService& view_service,
     BrowsePath browse_path) {
-  auto results =
-      co_await view_service.TranslateBrowsePaths({std::move(browse_path)});
+  std::vector<BrowsePath> inputs;
+  inputs.emplace_back(std::move(browse_path));
+  auto results = co_await view_service.TranslateBrowsePaths(std::move(inputs));
   if (!results.ok()) {
     co_return BrowsePathResult{.status_code = results.status().code()};
   }

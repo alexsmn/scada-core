@@ -67,9 +67,10 @@ Awaitable<StatusOr<scada::node>> client::add_node(AddNodesItem item) const {
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
+  std::vector<AddNodesItem> inputs;
+  inputs.emplace_back(std::move(item));
   auto results = co_await AddNodesAsync(
-      executor, *services_.node_management_service,
-      {std::move(item)});
+      executor, *services_.node_management_service, std::move(inputs));
   if (!results.ok()) {
     co_return results.status();
   }

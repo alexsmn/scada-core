@@ -20,11 +20,13 @@ Awaitable<Status> WriteNodeAsync(services services,
     co_return StatusCode::Bad;
   }
 
+  std::vector<WriteValue> write_values{
+      {.node_id = std::move(node_id),
+       .attribute_id = attribute_id,
+       .value = std::move(value),
+       .flags = flags}};
   auto inputs = std::make_shared<const std::vector<WriteValue>>(
-      std::vector<WriteValue>{{.node_id = std::move(node_id),
-                               .attribute_id = attribute_id,
-                               .value = std::move(value),
-                               .flags = flags}});
+      std::move(write_values));
   auto executor = co_await boost::asio::this_coro::executor;
   auto statuses = co_await WriteAsync(
       executor, *services.attribute_service, context, inputs);
@@ -58,9 +60,10 @@ Awaitable<StatusOr<DataValue>> ReadNodeAsync(services services,
     co_return StatusCode::Bad_Disconnected;
   }
 
+  std::vector<ReadValueId> read_values{
+      {.node_id = std::move(node_id), .attribute_id = attribute_id}};
   auto inputs = std::make_shared<const std::vector<ReadValueId>>(
-      std::vector<ReadValueId>{{.node_id = std::move(node_id),
-                                .attribute_id = attribute_id}});
+      std::move(read_values));
   auto executor = co_await boost::asio::this_coro::executor;
   auto results = co_await ReadAsync(
       executor, *services.attribute_service, context, inputs);
@@ -100,11 +103,12 @@ Awaitable<StatusOr<std::vector<ReferenceDescription>>> node::browse(
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
-  auto results = co_await BrowseAsync(
-      executor, *services_.view_service, context_,
-      {{.node_id = node_id_,
-        .direction = details.direction,
-        .reference_type_id = details.reference_type_id}});
+  std::vector<BrowseDescription> nodes{
+      {.node_id = node_id_,
+       .direction = details.direction,
+       .reference_type_id = details.reference_type_id}};
+  auto results = co_await BrowseAsync(executor, *services_.view_service,
+                                      context_, nodes);
   if (!results.ok()) {
     co_return results.status();
   }
@@ -134,9 +138,10 @@ Awaitable<StatusOr<std::vector<BrowsePathTarget>>> node::translate_browse_path(
   }
 
   auto executor = co_await boost::asio::this_coro::executor;
+  std::vector<BrowsePath> paths{
+      {.node_id = node_id_, .relative_path = relative_path}};
   auto results = co_await TranslateBrowsePathsAsync(
-      executor, *services_.view_service,
-      {{.node_id = node_id_, .relative_path = relative_path}});
+      executor, *services_.view_service, paths);
   if (!results.ok()) {
     co_return results.status();
   }
@@ -149,9 +154,9 @@ Awaitable<StatusOr<std::vector<BrowsePathTarget>>> node::translate_browse_path(
 
 Awaitable<StatusOr<NodeId>> node::child_id(
     scada::QualifiedName browse_name) const {
-  auto targets =
-      co_await translate_browse_path({{.reference_type_id = id::HasChild,
-                                       .target_name = std::move(browse_name)}});
+  RelativePath path{{.reference_type_id = id::HasChild,
+                     .target_name = std::move(browse_name)}};
+  auto targets = co_await translate_browse_path(path);
   if (!targets.ok()) {
     co_return targets.status();
   }
