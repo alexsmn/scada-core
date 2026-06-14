@@ -30,9 +30,7 @@ class SessionManagerObserver final : public RemoteSessionManager::Observer {
 
 class SessionProxyTest : public Test {
  public:
-  void SetUp() override {
-    CreateSessionManager();
-  }
+  void SetUp() override { CreateSessionManager(); }
 
   void TearDown() override {
     session_manager_.reset();
@@ -41,8 +39,8 @@ class SessionProxyTest : public Test {
 
  protected:
   void CreateSessionManager() {
-    session_manager_ = std::make_unique<RemoteSessionManager>(
-        RemoteSessionManagerContext{
+    session_manager_ =
+        std::make_unique<RemoteSessionManager>(RemoteSessionManagerContext{
             .executor_ = asio_env_.any_executor_factory(),
             .authenticator_ = scada::MakeCoroutineAuthenticator(
                 [this](scada::LocalizedText, scada::LocalizedText)
@@ -84,6 +82,22 @@ TEST_F(SessionProxyTest, ConnectAndDisconnectAreAwaitable) {
 
   asio_env_.Wait(session.Disconnect());
   EXPECT_FALSE(session.IsConnected(nullptr));
+}
+
+TEST_F(SessionProxyTest, DestroyConnectedSessionClosesChildChannels) {
+  {
+    SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                          .transport_factory_ = asio_env_.transport_factory}};
+
+    asio_env_.Wait(session.Connect(GetConnectParams()));
+    EXPECT_TRUE(session.IsConnected(nullptr));
+
+    // Let the subscription proxy finish opening so destruction covers the
+    // same child-channel state used by a live client shutdown.
+    asio_env_.PumpFor(std::chrono::milliseconds{100});
+  }
+
+  asio_env_.Poll();
 }
 
 TEST_F(SessionProxyTest, ConnectStatusReturnsBadCredentials) {

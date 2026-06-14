@@ -66,6 +66,7 @@ SessionProxy::~SessionProxy() {
   cancelation_.Cancel();
   lifetime_.reset();
   ping_timer_.Stop();
+  OnSessionDeleted();
   write_queue_.reset();
   transport_.reset();
 }
@@ -88,9 +89,8 @@ Awaitable<void> SessionProxy::Disconnect() {
 void SessionProxy::OnTransportOpened() {
   LOG_INFO(*logger_) << "Transport opened";
 
-  CoSpawn(executor_, [this]() -> Awaitable<void> {
-    co_await AwaitCreateSessionAsync();
-  });
+  CoSpawn(executor_,
+          [this]() -> Awaitable<void> { co_await AwaitCreateSessionAsync(); });
 }
 
 void SessionProxy::OnSessionCreated() {
@@ -167,7 +167,8 @@ void SessionProxy::OnSessionDeleted() {
     }
 
     debugger_->NotifyRequestEvent(
-        {.request_id = static_cast<scada::SessionDebugger::RequestId>(request_id),
+        {.request_id =
+             static_cast<scada::SessionDebugger::RequestId>(request_id),
          .phase = scada::SessionDebugger::RequestPhase::Failed});
   }
 
@@ -193,16 +194,13 @@ bool SessionProxy::HasPrivilege(scada::Privilege privilege) const {
 
 Awaitable<protocol::Response> SessionProxy::RequestAsync(
     protocol::Request request) {
-  auto [response] =
-      co_await CallbackToAwaitable<protocol::Response>(
-          executor_, [this, request = std::move(request)](auto callback) mutable {
-            Request(
-                request,
-                [callback = std::move(callback)](
-                    const protocol::Response& response) mutable {
-                  callback(response);
-                });
-          });
+  auto [response] = co_await CallbackToAwaitable<protocol::Response>(
+      executor_, [this, request = std::move(request)](auto callback) mutable {
+        Request(request, [callback = std::move(callback)](
+                             const protocol::Response& response) mutable {
+          callback(response);
+        });
+      });
   co_return response;
 }
 
@@ -310,8 +308,8 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
       LOG_INFO(*logger_) << "Notifying response debugger event"
                          << LOG_TAG("RequestId", response.request_id());
       scada::SessionDebugger::RequestEvent event;
-      event.request_id = static_cast<scada::SessionDebugger::RequestId>(
-          response.request_id());
+      event.request_id =
+          static_cast<scada::SessionDebugger::RequestId>(response.request_id());
       event.phase = scada::SessionDebugger::RequestPhase::Succeeded;
       event.title = response.GetTypeName();
       event.response_body = response.DebugString();
@@ -432,7 +430,8 @@ transport::awaitable<void> SessionProxy::Connect() {
 
     auto transport = transport_factory_.CreateTransport(
         transport::TransportString{connection_string_}, executor,
-        transport::log_source{std::make_shared<NetBoostLoggerAdapter>(logger_)});
+        transport::log_source{
+            std::make_shared<NetBoostLoggerAdapter>(logger_)});
 
     if (!transport.ok()) {
       LOG_WARNING(*logger_) << "Cannot create raw transport";
@@ -475,7 +474,8 @@ transport::awaitable<void> SessionProxy::Connect() {
 
       LOG_INFO(*logger_) << "Read loop iteration completed"
                          << LOG_TAG("Ok", bytes_read.ok())
-                         << LOG_TAG("BytesRead", bytes_read.ok() ? *bytes_read : 0);
+                         << LOG_TAG("BytesRead",
+                                    bytes_read.ok() ? *bytes_read : 0);
 
       if (!bytes_read.ok()) {
         OnTransportClosed(bytes_read.error());
@@ -554,10 +554,11 @@ Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> SessionProxy::Write(
   co_return ConvertTo<std::vector<scada::StatusCode>>(response.write_result());
 }
 
-Awaitable<scada::Status> SessionProxy::Call(scada::NodeId node_id,
-                                            scada::NodeId method_id,
-                                            std::vector<scada::Variant> arguments,
-                                            scada::NodeId user_id) {
+Awaitable<scada::Status> SessionProxy::Call(
+    scada::NodeId node_id,
+    scada::NodeId method_id,
+    std::vector<scada::Variant> arguments,
+    scada::NodeId user_id) {
   if (!session_created_) {
     co_return scada::StatusCode::Bad_Disconnected;
   }
@@ -610,8 +611,8 @@ Awaitable<void> SessionProxy::ReconnectAsync() {
             try {
               std::rethrow_exception(e);
             } catch (const std::exception& ex) {
-              LOG_ERROR(*logger) << "Connect loop failed"
-                                 << LOG_TAG("Error", ex.what());
+              LOG_ERROR(*logger)
+                  << "Connect loop failed" << LOG_TAG("Error", ex.what());
             } catch (...) {
               LOG_ERROR(*logger) << "Connect loop failed with unknown error";
             }
@@ -659,14 +660,14 @@ void SessionProxy::Ping() {
   auto lifetime = std::weak_ptr<void>{lifetime_};
   boost::asio::co_spawn(
       executor_, PingAsync(),
-      [lifetime, logger = logger_, ping_done = ping_completion_](
-          std::exception_ptr e) mutable {
+      [lifetime, logger = logger_,
+       ping_done = ping_completion_](std::exception_ptr e) mutable {
         if (e && lifetime.lock()) {
           try {
             std::rethrow_exception(e);
           } catch (const std::exception& ex) {
-            LOG_ERROR(*logger) << "Ping loop failed"
-                               << LOG_TAG("Error", ex.what());
+            LOG_ERROR(*logger)
+                << "Ping loop failed" << LOG_TAG("Error", ex.what());
           } catch (...) {
             LOG_ERROR(*logger) << "Ping loop failed with unknown error";
           }
