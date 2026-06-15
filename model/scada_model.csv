@@ -174,5 +174,10 @@ Users,29
 RootUser,234
 UserType_AccessRights,170
 UserType,16
+UserType_ChangePassword,334
+UserType_MultiSessions,345
+UserType_ProfileJson,346
+UserType_ProfileRevision,347
+UserType_SaveProfile,348
 HasDevice,328
 NextId,330

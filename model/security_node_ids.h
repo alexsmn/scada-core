@@ -19,6 +19,9 @@ const scada::NodeId UserType_AccessRights{170, NamespaceIndexes::SCADA};
 const scada::NodeId UserType{16, NamespaceIndexes::SCADA};
 const scada::NodeId UserType_ChangePassword{334, NamespaceIndexes::SCADA};
 const scada::NodeId UserType_MultiSessions{345, NamespaceIndexes::SCADA};
+const scada::NodeId UserType_ProfileJson{346, NamespaceIndexes::SCADA};
+const scada::NodeId UserType_ProfileRevision{347, NamespaceIndexes::SCADA};
+const scada::NodeId UserType_SaveProfile{348, NamespaceIndexes::SCADA};
 
 }  // namespace id
 
