@@ -6,12 +6,15 @@
 #include <vector>
 
 #ifdef _WIN32
-#include <Windows.h>
 #include <ShlObj.h>
+#include <Windows.h>
 #pragma comment(lib, "shell32.lib")
+#elif defined(__APPLE__)
+#include <limits.h>
+#include <mach-o/dyld.h>
 #else
-#include <unistd.h>
 #include <climits>
+#include <unistd.h>
 #endif
 
 namespace base {
@@ -58,6 +61,12 @@ bool PathService::GetBuiltin(int key, std::filesystem::path* result) {
       if (len == 0 || len >= MAX_PATH)
         return false;
       *result = std::filesystem::path{path};
+#elif defined(__APPLE__)
+      char path[PATH_MAX];
+      uint32_t len = sizeof(path);
+      if (_NSGetExecutablePath(path, &len) != 0)
+        return false;
+      *result = std::filesystem::weakly_canonical(std::filesystem::path{path});
 #else
       char path[PATH_MAX];
       ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
@@ -98,7 +107,7 @@ bool PathService::GetBuiltin(int key, std::filesystem::path* result) {
     case DIR_COMMON_APP_DATA: {
       wchar_t path[MAX_PATH];
       if (FAILED(SHGetFolderPathW(nullptr, CSIDL_COMMON_APPDATA, nullptr, 0,
-                                   path)))
+                                  path)))
         return false;
       *result = std::filesystem::path{path};
       return true;

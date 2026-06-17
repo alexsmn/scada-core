@@ -30,6 +30,94 @@ namespace {
 
 const auto kPingDelay = 1s;
 
+std::string SafeDebugString(const google::protobuf::Message& /*message*/) {
+  return "<protobuf debug string unavailable>";
+}
+
+std::string RequestTitle(const protocol::Request& request) {
+  if (request.has_create_session())
+    return "CreateSession";
+  if (request.has_delete_session())
+    return "DeleteSession";
+  if (request.has_ping())
+    return "Ping";
+  if (request.has_read())
+    return "Read";
+  if (!request.write().empty())
+    return "Write";
+  if (request.has_call())
+    return "Call";
+  if (request.has_create_subscription())
+    return "CreateSubscription";
+  if (request.has_delete_subscription())
+    return "DeleteSubscription";
+  if (request.has_create_monitored_item())
+    return "CreateMonitoredItem";
+  if (request.has_delete_monitored_item())
+    return "DeleteMonitoredItem";
+  if (request.has_history_read_raw())
+    return "HistoryReadRaw";
+  if (request.has_history_read_events())
+    return "HistoryReadEvents";
+  if (!request.add_node().empty())
+    return "AddNode";
+  if (!request.delete_node().empty())
+    return "DeleteNode";
+  if (!request.add_reference().empty())
+    return "AddReference";
+  if (!request.delete_reference().empty())
+    return "DeleteReference";
+  if (request.has_browse())
+    return "Browse";
+  if (!request.browse_path().empty())
+    return "BrowsePath";
+  return "Request";
+}
+
+std::string ResponseTitle(const protocol::Response& response) {
+  if (response.has_create_session_result())
+    return "CreateSessionResult";
+  if (response.has_read_result())
+    return "ReadResult";
+  if (!response.write_result().empty())
+    return "WriteResult";
+  if (response.has_create_subscription_result())
+    return "CreateSubscriptionResult";
+  if (response.has_create_monitored_item_result())
+    return "CreateMonitoredItemResult";
+  if (response.has_history_read_raw_result())
+    return "HistoryReadRawResult";
+  if (response.has_history_read_events_result())
+    return "HistoryReadEventsResult";
+  if (!response.add_node_result().empty())
+    return "AddNodeResult";
+  if (!response.delete_node_result().empty())
+    return "DeleteNodeResult";
+  if (!response.add_reference_result().empty())
+    return "AddReferenceResult";
+  if (!response.delete_reference_result().empty())
+    return "DeleteReferenceResult";
+  if (response.has_browse_result())
+    return "BrowseResult";
+  if (!response.browse_path_result().empty())
+    return "BrowsePathResult";
+  return "Response";
+}
+
+std::string NotificationTitle(const protocol::Notification& notification) {
+  if (notification.has_session_deleted())
+    return "SessionDeleted";
+  if (!notification.data_changes().empty())
+    return "DataChange";
+  if (!notification.model_change().empty())
+    return "ModelChange";
+  if (!notification.semantics_changed_node_id().empty())
+    return "SemanticChange";
+  if (!notification.events().empty())
+    return "Event";
+  return "Notification";
+}
+
 std::string MakeConnectionString(std::string_view host_name) {
   std::vector<std::string> parts;
   boost::split(parts, host_name, boost::is_any_of(":"));
@@ -279,7 +367,7 @@ void SessionProxy::Send(protocol::Message& message) {
 
   if (IsMessageLogged(message)) {
     LOG_INFO(*logger_) << "Send message"
-                       << LOG_TAG("Message", message.DebugString());
+                       << LOG_TAG("Message", SafeDebugString(message));
   }
 
   std::string string;
@@ -296,7 +384,7 @@ void SessionProxy::Send(protocol::Message& message) {
 void SessionProxy::OnMessageReceived(const protocol::Message& message) {
   if (IsMessageLogged(message)) {
     LOG_INFO(*logger_) << "Message received"
-                       << LOG_TAG("Message", message.DebugString());
+                       << LOG_TAG("Message", SafeDebugString(message));
   }
 
   for (auto& response : message.responses()) {
@@ -311,8 +399,8 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
       event.request_id =
           static_cast<scada::SessionDebugger::RequestId>(response.request_id());
       event.phase = scada::SessionDebugger::RequestPhase::Succeeded;
-      event.title = response.GetTypeName();
-      event.response_body = response.DebugString();
+      event.title = ResponseTitle(response);
+      event.response_body = SafeDebugString(response);
       debugger_->NotifyRequestEvent(event);
       LOG_INFO(*logger_) << "Invoking response handler"
                          << LOG_TAG("RequestId", response.request_id());
@@ -324,8 +412,8 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
   for (auto& notification : message.notifications()) {
     scada::SessionDebugger::RequestEvent request_event;
     request_event.phase = scada::SessionDebugger::RequestPhase::Succeeded;
-    request_event.title = notification.GetTypeName();
-    request_event.body = notification.DebugString();
+    request_event.title = NotificationTitle(notification);
+    request_event.body = SafeDebugString(notification);
     debugger_->NotifyRequestEvent(request_event);
 
     auto status_code =
@@ -377,8 +465,8 @@ void SessionProxy::Request(protocol::Request& request,
   scada::SessionDebugger::RequestEvent event;
   event.request_id = request_id;
   event.phase = scada::SessionDebugger::RequestPhase::Running;
-  event.title = request.GetTypeName();
-  event.body = request.DebugString();
+  event.title = RequestTitle(request);
+  event.body = SafeDebugString(request);
   debugger_->NotifyRequestEvent(event);
 
   request.set_request_id(request_id);
