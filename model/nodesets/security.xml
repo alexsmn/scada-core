@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AddressSpace format="scada-node-state-v1">
+  <Node id="SCADA.16" class="ObjectType" parent="NS0.58" parentReference="NS0.45" supertype="NS0.58" browseName="UserType" displayName="Пользователь">
+    <Property id="SCADA.170" type="Int32">0</Property>
+    <Property id="SCADA.345" type="Bool">false</Property>
+    <Property id="SCADA.346" type="String"></Property>
+    <Property id="SCADA.347" type="UInt64">0</Property>
+  </Node>
+  <Node id="SCADA.170" class="Variable" typeDefinition="NS0.68" parent="SCADA.16" parentReference="NS0.46" browseName="AccessRights" displayName="Права" dataType="NS0.6">
+    <AttributeValue type="Int32">0</AttributeValue>
+    <Reference type="NS0.40" forward="true" target="NS0.68" targetClass="VariableType" />
+    <Reference type="NS0.37" forward="true" target="NS0.78" targetClass="Object" />
+  </Node>
+  <Node id="SCADA.29" class="Object" typeDefinition="NS0.61" parent="NS0.85" parentReference="NS0.35" browseName="Users" displayName="Пользователи">
+    <Reference type="NS0.40" forward="true" target="NS0.61" targetClass="ObjectType" />
+    <Reference type="SCADA.297" forward="true" target="SCADA.16" targetClass="ObjectType" />
+  </Node>
+  <Node id="SCADA.345" class="Variable" typeDefinition="NS0.68" parent="SCADA.16" parentReference="NS0.46" browseName="MultiSessions" displayName="Множество сессий" dataType="NS0.1">
+    <AttributeValue type="Bool">false</AttributeValue>
+    <Reference type="NS0.40" forward="true" target="NS0.68" targetClass="VariableType" />
+    <Reference type="NS0.37" forward="true" target="NS0.78" targetClass="Object" />
+  </Node>
+  <Node id="SCADA.346" class="Variable" typeDefinition="NS0.68" parent="SCADA.16" parentReference="NS0.46" browseName="ProfileJson" displayName="Профиль" dataType="NS0.12">
+    <AttributeValue type="String"></AttributeValue>
+    <Reference type="NS0.40" forward="true" target="NS0.68" targetClass="VariableType" />
+    <Reference type="NS0.37" forward="true" target="NS0.78" targetClass="Object" />
+  </Node>
+  <Node id="SCADA.347" class="Variable" typeDefinition="NS0.68" parent="SCADA.16" parentReference="NS0.46" browseName="ProfileRevision" displayName="Версия профиля" dataType="NS0.9">
+    <AttributeValue type="UInt64">0</AttributeValue>
+    <Reference type="NS0.40" forward="true" target="NS0.68" targetClass="VariableType" />
+    <Reference type="NS0.37" forward="true" target="NS0.78" targetClass="Object" />
+  </Node>
+  <Node id="SCADA.348" class="Method" parent="SCADA.16" parentReference="NS0.47" browseName="SaveProfile" displayName="Сохранить профиль">
+    <Reference type="NS0.37" forward="true" target="NS0.78" targetClass="Object" />
+  </Node>
+</AddressSpace>
