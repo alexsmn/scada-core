@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 #include "base/boost_log.h"
 #include "remote/subscription.h"
+#include "scada/legacy_monitored_item_adapter.h"
 #include "scada/read_value_id.h"
 
 #include <memory>
@@ -42,6 +43,10 @@ class SubscriptionStub : public std::enable_shared_from_this<SubscriptionStub> {
   const AnyExecutor executor_;
   const std::weak_ptr<MessageSender> sender_;
   scada::MonitoredItemService& monitored_item_service_;
+  // Bridges the service's subscription API to the single-item API this stub
+  // exposes to remote clients.
+  scada::LegacyMonitoredItemAdapter monitored_item_adapter_{
+      executor_, monitored_item_service_};
   const int subscription_id_;
 
   BoostLogger logger_{LOG_NAME("SubscriptionStub")};

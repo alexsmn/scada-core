@@ -17,6 +17,7 @@
 #include "remote/session_proxy_debuger.h"
 #include "remote/subscription_proxy.h"
 #include "remote/view_service_proxy.h"
+#include "scada/item_factory_subscription.h"
 #include "scada/monitored_item.h"
 
 #include <boost/asio/co_spawn.hpp>
@@ -661,10 +662,16 @@ Awaitable<scada::Status> SessionProxy::Call(
   co_return ConvertTo<scada::Status>(response.status());
 }
 
-std::shared_ptr<scada::MonitoredItem> SessionProxy::CreateMonitoredItem(
-    const scada::ReadValueId& read_value_id,
-    const scada::MonitoringParameters& params) {
-  return subscription_->CreateMonitoredItem(read_value_id, params);
+scada::StatusOr<std::unique_ptr<scada::MonitoredItemSubscription>>
+SessionProxy::CreateSubscription(
+    scada::ServiceContext /*context*/,
+    scada::MonitoredItemSubscriptionOptions options) {
+  return scada::MakeItemFactorySubscription(
+      [this](const scada::ReadValueId& read_value_id,
+             const scada::MonitoringParameters& params) {
+        return subscription_->CreateMonitoredItem(read_value_id, params);
+      },
+      options);
 }
 
 Awaitable<void> SessionProxy::Reconnect() {

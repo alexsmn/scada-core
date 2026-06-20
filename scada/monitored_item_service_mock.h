@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scada/item_factory_subscription.h"
 #include "scada/monitored_item_mock.h"
 #include "scada/monitored_item_service.h"
 
@@ -22,10 +23,24 @@ class MockMonitoredItemService : public MonitoredItemService {
         .WillByDefault(Return(default_monitored_item));
   }
 
+  // Mockable single-item factory. `CreateSubscription` below drives this
+  // through a `LegacyMonitoredItemSubscription`, so existing tests can keep
+  // setting expectations on `CreateMonitoredItem`.
   MOCK_METHOD(std::shared_ptr<MonitoredItem>,
               CreateMonitoredItem,
-              (const ReadValueId& value_id, const MonitoringParameters& params),
-              (override));
+              (const ReadValueId& value_id,
+               const MonitoringParameters& params));
+
+  StatusOr<std::unique_ptr<MonitoredItemSubscription>> CreateSubscription(
+      ServiceContext /*context*/,
+      MonitoredItemSubscriptionOptions options) override {
+    return MakeItemFactorySubscription(
+        [this](const ReadValueId& value_id,
+               const MonitoringParameters& params) {
+          return CreateMonitoredItem(value_id, params);
+        },
+        options);
+  }
 
   const std::shared_ptr<MockMonitoredItem> default_monitored_item =
       std::make_shared<testing::NiceMock<MockMonitoredItem>>();

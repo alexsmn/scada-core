@@ -1,6 +1,7 @@
 #include "scada/legacy_monitored_item_adapter.h"
 
 #include "base/awaitable.h"
+#include "scada/date_time.h"
 #include "scada/monitored_item_subscription_pump.h"
 
 #include <array>
@@ -19,6 +20,7 @@ struct LegacyMonitoredItemAdapter::ItemState {
   MonitoringParameters params;
   std::mutex mutex;
   DataChangeHandler data_change_handler;
+  EventHandler event_handler;
   MonitoredItemId item_id = 0;
   std::uint32_t client_handle = 0;
   bool add_requested = false;
@@ -57,14 +59,17 @@ class LegacyMonitoredItemAdapter::SubscriptionBackedMonitoredItem final
   ~SubscriptionBackedMonitoredItem() override { Close(); }
 
   void Subscribe(MonitoredItemHandler handler) override {
-    auto* data_change_handler = std::get_if<DataChangeHandler>(&handler);
-    if (!data_change_handler)
-      return;
-
     bool add_item = false;
     {
       std::lock_guard lock{item_state_->mutex};
-      item_state_->data_change_handler = std::move(*data_change_handler);
+      if (auto* data_change_handler =
+              std::get_if<DataChangeHandler>(&handler)) {
+        item_state_->data_change_handler = std::move(*data_change_handler);
+      } else if (auto* event_handler = std::get_if<EventHandler>(&handler)) {
+        item_state_->event_handler = std::move(*event_handler);
+      } else {
+        return;
+      }
       add_item = !item_state_->closed && !item_state_->add_requested;
     }
 
@@ -176,6 +181,23 @@ void LegacyMonitoredItemAdapter::AddItem(
                                              : results.front().status;
             if (!result_status) {
               EraseItemMapping(state, client_handle);
+              // Surface the add failure to the subscriber (e.g.
+              // Bad_WrongNodeId) before closing, matching the legacy
+              // synchronous behavior.
+              DataChangeHandler data_change_handler;
+              EventHandler event_handler;
+              {
+                std::lock_guard item_lock{item_state->mutex};
+                if (!item_state->closed) {
+                  data_change_handler = item_state->data_change_handler;
+                  event_handler = item_state->event_handler;
+                }
+              }
+              if (data_change_handler)
+                data_change_handler(
+                    DataValue{result_status.code(), DateTime::Now()});
+              else if (event_handler)
+                event_handler(result_status, {});
               CloseItem(item_state);
               co_return;
             }
@@ -204,34 +226,65 @@ void LegacyMonitoredItemAdapter::OnNotifications(
   if (!state)
     return;
 
+  auto resolve_item =
+      [&state](std::uint32_t client_handle) -> std::shared_ptr<ItemState> {
+    std::lock_guard lock{state->mutex};
+    auto it = state->items_by_client_handle.find(client_handle);
+    if (it == state->items_by_client_handle.end())
+      return nullptr;
+    return it->second.lock();
+  };
+
   for (const auto& notification : notifications) {
-    const auto* data_change =
-        std::get_if<DataChangeNotification>(&notification);
-    if (!data_change)
-      continue;
-
-    std::shared_ptr<ItemState> item_state;
-    {
-      std::lock_guard lock{state->mutex};
-      auto it = state->items_by_client_handle.find(data_change->client_handle);
-      if (it == state->items_by_client_handle.end())
+    if (const auto* data_change =
+            std::get_if<DataChangeNotification>(&notification)) {
+      auto item_state = resolve_item(data_change->client_handle);
+      if (!item_state)
         continue;
-      item_state = it->second.lock();
-    }
-
-    if (!item_state)
-      continue;
-
-    DataChangeHandler handler;
-    {
-      std::lock_guard item_lock{item_state->mutex};
-      if (item_state->closed)
+      DataChangeHandler handler;
+      {
+        std::lock_guard item_lock{item_state->mutex};
+        if (item_state->closed)
+          continue;
+        handler = item_state->data_change_handler;
+      }
+      if (handler)
+        handler(data_change->value);
+    } else if (const auto* event =
+                   std::get_if<EventNotification>(&notification)) {
+      auto item_state = resolve_item(event->client_handle);
+      if (!item_state)
         continue;
-      handler = item_state->data_change_handler;
+      EventHandler handler;
+      {
+        std::lock_guard item_lock{item_state->mutex};
+        if (item_state->closed)
+          continue;
+        handler = item_state->event_handler;
+      }
+      if (handler)
+        handler(event->status, event->event);
+    } else if (const auto* item_status =
+                   std::get_if<ItemStatusNotification>(&notification)) {
+      auto item_state = resolve_item(item_status->client_handle);
+      if (!item_state)
+        continue;
+      DataChangeHandler data_change_handler;
+      EventHandler event_handler;
+      {
+        std::lock_guard item_lock{item_state->mutex};
+        if (item_state->closed)
+          continue;
+        data_change_handler = item_state->data_change_handler;
+        event_handler = item_state->event_handler;
+      }
+      if (data_change_handler)
+        data_change_handler(
+            DataValue{item_status->status.code(), DateTime::Now()});
+      else if (event_handler)
+        event_handler(item_status->status, {});
     }
-
-    if (handler)
-      handler(data_change->value);
+    // OverflowNotification carries no item id; nothing to deliver.
   }
 }
 

@@ -120,12 +120,6 @@ class FakeMonitoredItemService final : public MonitoredItemService {
       std::shared_ptr<FakeMonitoredItemSubscription::State> subscription_state)
       : subscription_state_{std::move(subscription_state)} {}
 
-  std::shared_ptr<MonitoredItem> CreateMonitoredItem(
-      const ReadValueId&,
-      const MonitoringParameters&) override {
-    return nullptr;
-  }
-
   StatusOr<std::unique_ptr<MonitoredItemSubscription>> CreateSubscription(
       ServiceContext context,
       MonitoredItemSubscriptionOptions options) override {

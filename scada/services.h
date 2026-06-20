@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 namespace scada {
 
 class AttributeService;
@@ -19,6 +21,12 @@ struct services {
   ViewService* view_service = nullptr;
   NodeManagementService* node_management_service = nullptr;
   SessionService* session_service = nullptr;
+
+  // Executor used by the client-side `monitored_item` helper to drive the
+  // subscription that backs single monitored items (via
+  // `LegacyMonitoredItemAdapter`). Only required on `services` that flow into
+  // the client `monitored_item::subscribe` path.
+  AnyExecutor monitored_item_executor = {};
 };
 
 }  // namespace scada

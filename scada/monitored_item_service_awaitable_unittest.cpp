@@ -2,14 +2,15 @@
 
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "scada/item_factory_subscription.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
 #include "scada/status_or.h"
 #include "scada/test/test_monitored_item.h"
 
+#include <deque>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <deque>
 #include <map>
 
 namespace scada {
@@ -21,10 +22,21 @@ class TestMonitoredItemService : public MonitoredItemService {
  public:
   std::shared_ptr<MonitoredItem> CreateMonitoredItem(
       const ReadValueId& value_id,
-      const MonitoringParameters& params) override {
+      const MonitoringParameters& params) {
     (void)params;
     auto i = items.find(value_id.node_id);
     return i == items.end() ? nullptr : i->second;
+  }
+
+  StatusOr<std::unique_ptr<MonitoredItemSubscription>> CreateSubscription(
+      ServiceContext /*context*/,
+      MonitoredItemSubscriptionOptions options) override {
+    return MakeItemFactorySubscription(
+        [this](const ReadValueId& value_id,
+               const MonitoringParameters& params) {
+          return CreateMonitoredItem(value_id, params);
+        },
+        options);
   }
 
   std::map<NodeId, std::shared_ptr<TestMonitoredItem>> items;
@@ -81,12 +93,6 @@ class FakeSubscriptionService : public MonitoredItemService {
       StatusOr<std::unique_ptr<MonitoredItemSubscription>> subscription_result)
       : subscription_result{std::move(subscription_result)} {}
 
-  std::shared_ptr<MonitoredItem> CreateMonitoredItem(
-      const ReadValueId&,
-      const MonitoringParameters&) override {
-    return nullptr;
-  }
-
   StatusOr<std::unique_ptr<MonitoredItemSubscription>> CreateSubscription(
       ServiceContext context,
       MonitoredItemSubscriptionOptions options) override {
@@ -109,10 +115,9 @@ TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
   service.items.emplace(NodeId{2, 1}, second_item);
 
   const std::vector<ReadValueId> inputs{{NodeId{1, 1}}, {NodeId{2, 1}}};
-  auto read_result = StartAwaitable(
-      executor,
-      ReadInitialValuesAsync(executor, service, inputs,
-                             /*params=*/{}));
+  auto read_result =
+      StartAwaitable(executor, ReadInitialValuesAsync(executor, service, inputs,
+                                                      /*params=*/{}));
 
   Drain(executor);
   second_item->NotifyDataChange(
@@ -132,10 +137,10 @@ TEST(MonitoredItemServiceAwaitable, ReadInitialValueReturnsFirstDataChange) {
   auto item = std::make_shared<TestMonitoredItem>();
   service.items.emplace(NodeId{1, 1}, item);
 
-  auto read_result = StartAwaitable(
-      executor,
-      ReadInitialValueAsync(executor, service,
-                            ReadValueId{NodeId{1, 1}}, /*params=*/{}));
+  auto read_result =
+      StartAwaitable(executor, ReadInitialValueAsync(executor, service,
+                                                     ReadValueId{NodeId{1, 1}},
+                                                     /*params=*/{}));
 
   Drain(executor);
   EXPECT_FALSE(read_result->done);
@@ -152,10 +157,10 @@ TEST(MonitoredItemServiceAwaitable,
   TestExecutor executor;
   TestMonitoredItemService service;
 
-  auto read_result = StartAwaitable(
-      executor,
-      ReadInitialValueAsync(executor, service,
-                            ReadValueId{NodeId{1, 1}}, /*params=*/{}));
+  auto read_result =
+      StartAwaitable(executor, ReadInitialValueAsync(executor, service,
+                                                     ReadValueId{NodeId{1, 1}},
+                                                     /*params=*/{}));
 
   auto data_value = WaitResult(executor, read_result);
   EXPECT_EQ(data_value.status_code, StatusCode::Bad_WrongNodeId);
@@ -168,10 +173,10 @@ TEST(MonitoredItemServiceAwaitable,
       StatusOr<std::unique_ptr<MonitoredItemSubscription>>{
           StatusCode::Bad_Disconnected}};
 
-  auto data_value = WaitAwaitable(
-      executor,
-      ReadInitialValueAsync(executor, service,
-                            ReadValueId{NodeId{1, 1}}, /*params=*/{}));
+  auto data_value =
+      WaitAwaitable(executor, ReadInitialValueAsync(executor, service,
+                                                    ReadValueId{NodeId{1, 1}},
+                                                    /*params=*/{}));
 
   EXPECT_EQ(data_value.status_code, StatusCode::Bad_Disconnected);
 }
@@ -183,14 +188,13 @@ TEST(MonitoredItemServiceAwaitable,
       std::make_shared<FakeMonitoredItemSubscription::State>();
   auto subscription =
       std::make_unique<FakeMonitoredItemSubscription>(subscription_state);
-  subscription_state->add_results.push_back({
-      .item_id = 1, .client_handle = 0, .status = StatusCode::Good});
+  subscription_state->add_results.push_back(
+      {.item_id = 1, .client_handle = 0, .status = StatusCode::Good});
   subscription_state->read_results.emplace_back(
       std::vector<MonitoredItemNotification>{
-          ItemStatusNotification{
-              .item_id = 1,
-              .client_handle = 0,
-              .status = StatusCode::Bad_WrongAttributeId}});
+          ItemStatusNotification{.item_id = 1,
+                                 .client_handle = 0,
+                                 .status = StatusCode::Bad_WrongAttributeId}});
   FakeSubscriptionService service{
       StatusOr<std::unique_ptr<MonitoredItemSubscription>>{
           std::move(subscription)}};
@@ -220,11 +224,11 @@ TEST(MonitoredItemSubscription, LegacyAdapterAddsAndReadsDataChanges) {
   ASSERT_TRUE(subscription.ok()) << subscription.status();
 
   std::vector<MonitoredItemCreateRequest> requests;
-  requests.push_back({.item_to_monitor =
-                          ReadValueId{NodeId{1, 1}, AttributeId::Value},
-                      .client_handle = 42});
-  auto add_results = WaitAwaitable(
-      executor, (*subscription)->AddItems(std::move(requests)));
+  requests.push_back(
+      {.item_to_monitor = ReadValueId{NodeId{1, 1}, AttributeId::Value},
+       .client_handle = 42});
+  auto add_results =
+      WaitAwaitable(executor, (*subscription)->AddItems(std::move(requests)));
   ASSERT_THAT(add_results, SizeIs(1));
   EXPECT_EQ(add_results[0].status.code(), StatusCode::Good);
   EXPECT_EQ(add_results[0].item_id, 1u);
@@ -254,10 +258,10 @@ TEST(MonitoredItemSubscription, LegacyAdapterReadNextWaitsForNotification) {
   ASSERT_TRUE(subscription.ok()) << subscription.status();
 
   std::vector<MonitoredItemCreateRequest> requests;
-  requests.push_back({.item_to_monitor =
-                          ReadValueId{NodeId{1, 1}, AttributeId::Value}});
-  auto add_results = WaitAwaitable(
-      executor, (*subscription)->AddItems(std::move(requests)));
+  requests.push_back(
+      {.item_to_monitor = ReadValueId{NodeId{1, 1}, AttributeId::Value}});
+  auto add_results =
+      WaitAwaitable(executor, (*subscription)->AddItems(std::move(requests)));
   ASSERT_THAT(add_results, SizeIs(1));
 
   auto read_result =
@@ -284,11 +288,11 @@ TEST(MonitoredItemSubscription, LegacyAdapterReportsMissingItemsPerRequest) {
   ASSERT_TRUE(subscription.ok()) << subscription.status();
 
   std::vector<MonitoredItemCreateRequest> requests;
-  requests.push_back({.item_to_monitor =
-                          ReadValueId{NodeId{1, 1}, AttributeId::Value},
-                      .client_handle = 7});
-  auto add_results = WaitAwaitable(
-      executor, (*subscription)->AddItems(std::move(requests)));
+  requests.push_back(
+      {.item_to_monitor = ReadValueId{NodeId{1, 1}, AttributeId::Value},
+       .client_handle = 7});
+  auto add_results =
+      WaitAwaitable(executor, (*subscription)->AddItems(std::move(requests)));
 
   ASSERT_THAT(add_results, SizeIs(1));
   EXPECT_EQ(add_results[0].item_id, 0u);
@@ -304,11 +308,11 @@ TEST(MonitoredItemSubscription, LegacyAdapterReportsBadAttributePerRequest) {
   ASSERT_TRUE(subscription.ok()) << subscription.status();
 
   std::vector<MonitoredItemCreateRequest> requests;
-  requests.push_back({.item_to_monitor =
-                          ReadValueId{NodeId{1, 1}, AttributeId::BrowseName},
-                      .client_handle = 8});
-  auto add_results = WaitAwaitable(
-      executor, (*subscription)->AddItems(std::move(requests)));
+  requests.push_back(
+      {.item_to_monitor = ReadValueId{NodeId{1, 1}, AttributeId::BrowseName},
+       .client_handle = 8});
+  auto add_results =
+      WaitAwaitable(executor, (*subscription)->AddItems(std::move(requests)));
 
   ASSERT_THAT(add_results, SizeIs(1));
   EXPECT_EQ(add_results[0].item_id, 0u);
@@ -325,10 +329,10 @@ TEST(MonitoredItemSubscription, LegacyAdapterRemovesItems) {
   ASSERT_TRUE(subscription.ok()) << subscription.status();
 
   std::vector<MonitoredItemCreateRequest> requests;
-  requests.push_back({.item_to_monitor =
-                          ReadValueId{NodeId{1, 1}, AttributeId::Value}});
-  auto add_results = WaitAwaitable(
-      executor, (*subscription)->AddItems(std::move(requests)));
+  requests.push_back(
+      {.item_to_monitor = ReadValueId{NodeId{1, 1}, AttributeId::Value}});
+  auto add_results =
+      WaitAwaitable(executor, (*subscription)->AddItems(std::move(requests)));
   ASSERT_THAT(add_results, SizeIs(1));
 
   const MonitoredItemId item_id = add_results[0].item_id;

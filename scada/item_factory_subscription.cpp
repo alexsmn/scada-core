@@ -1,4 +1,4 @@
-#include "scada/monitored_item_service.h"
+#include "scada/item_factory_subscription.h"
 
 #include "scada/attribute_ids.h"
 
@@ -9,19 +9,21 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <deque>
 #include <mutex>
+#include <utility>
 
 namespace scada {
 namespace {
 
-class LegacyMonitoredItemSubscription final : public MonitoredItemSubscription {
+// Subscription that creates each monitored item through a `MonitoredItemFactory`
+// and fans the items' callbacks into a single notification stream consumed via
+// `ReadNext`.
+class ItemFactorySubscription final : public MonitoredItemSubscription {
  public:
-  LegacyMonitoredItemSubscription(MonitoredItemService& service,
-                                  MonitoredItemSubscriptionOptions options)
-      : state_{std::make_shared<State>(service, options)} {}
+  ItemFactorySubscription(MonitoredItemFactory factory,
+                          MonitoredItemSubscriptionOptions options)
+      : state_{std::make_shared<State>(std::move(factory), options)} {}
 
-  ~LegacyMonitoredItemSubscription() override {
-    Close(StatusCode::Bad_Disconnected);
-  }
+  ~ItemFactorySubscription() override { Close(StatusCode::Bad_Disconnected); }
 
   Awaitable<std::vector<MonitoredItemCreateResult>> AddItems(
       std::vector<MonitoredItemCreateRequest> requests) override {
@@ -136,11 +138,11 @@ class LegacyMonitoredItemSubscription final : public MonitoredItemSubscription {
   };
 
   struct State {
-    State(MonitoredItemService& service,
+    State(MonitoredItemFactory factory,
           MonitoredItemSubscriptionOptions options)
-        : service{service}, options{options} {}
+        : factory{std::move(factory)}, options{options} {}
 
-    MonitoredItemService& service;
+    MonitoredItemFactory factory;
     MonitoredItemSubscriptionOptions options;
     std::mutex mutex;
     std::vector<Item> items;
@@ -188,8 +190,8 @@ class LegacyMonitoredItemSubscription final : public MonitoredItemSubscription {
       }
     }
 
-    auto monitored_item = state_->service.CreateMonitoredItem(
-        request.item_to_monitor, request.parameters);
+    auto monitored_item =
+        state_->factory(request.item_to_monitor, request.parameters);
     if (!monitored_item) {
       const auto status =
           request.item_to_monitor.attribute_id == AttributeId::Value ||
@@ -197,8 +199,7 @@ class LegacyMonitoredItemSubscription final : public MonitoredItemSubscription {
                       AttributeId::EventNotifier
               ? StatusCode::Bad_WrongNodeId
               : StatusCode::Bad_WrongAttributeId;
-      return {.client_handle = request.client_handle,
-              .status = status};
+      return {.client_handle = request.client_handle, .status = status};
     }
 
     MonitoredItemId item_id = 0;
@@ -243,12 +244,11 @@ class LegacyMonitoredItemSubscription final : public MonitoredItemSubscription {
 
 }  // namespace
 
-StatusOr<std::unique_ptr<MonitoredItemSubscription>>
-MonitoredItemService::CreateSubscription(
-    ServiceContext /*context*/,
+StatusOr<std::unique_ptr<MonitoredItemSubscription>> MakeItemFactorySubscription(
+    MonitoredItemFactory factory,
     MonitoredItemSubscriptionOptions options) {
   return std::unique_ptr<MonitoredItemSubscription>{
-      std::make_unique<LegacyMonitoredItemSubscription>(*this, options)};
+      std::make_unique<ItemFactorySubscription>(std::move(factory), options)};
 }
 
 }  // namespace scada

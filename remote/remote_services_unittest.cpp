@@ -8,6 +8,7 @@
 #include "scada/client.h"
 #include "scada/client_monitored_item.h"
 #include "scada/data_services_factory.h"
+#include "scada/item_factory_subscription.h"
 #include "scada/monitored_item.h"
 #include "scada/monitored_item_service.h"
 #include "scada/monitoring_parameters.h"
@@ -32,8 +33,19 @@ class FakeMonitoredItemService final : public scada::MonitoredItemService {
  public:
   std::shared_ptr<scada::MonitoredItem> CreateMonitoredItem(
       const scada::ReadValueId&,
-      const scada::MonitoringParameters&) override {
+      const scada::MonitoringParameters&) {
     return monitored_item_;
+  }
+
+  scada::StatusOr<std::unique_ptr<scada::MonitoredItemSubscription>>
+  CreateSubscription(scada::ServiceContext /*context*/,
+                     scada::MonitoredItemSubscriptionOptions options) override {
+    return scada::MakeItemFactorySubscription(
+        [this](const scada::ReadValueId& value_id,
+               const scada::MonitoringParameters& params) {
+          return CreateMonitoredItem(value_id, params);
+        },
+        options);
   }
 
  private:
@@ -69,7 +81,8 @@ class TestServer {
              co_return scada::AuthenticationResult{.user_id = {1, 1}};
            }),
        .transport_factory_ = asio_env_.transport_factory,
-       .endpoints_ = {transport::TransportString{network_.server_transport_string}}}};
+       .endpoints_ = {
+           transport::TransportString{network_.server_transport_string}}}};
 };
 
 class RemoteServicesTest : public Test {
@@ -100,7 +113,8 @@ void RemoteServicesTest::SetUp() {
 
   client_ = scada::client{
       {.monitored_item_service = data_services_.monitored_item_service_.get(),
-       .session_service = data_services_.session_service_.get()}};
+       .session_service = data_services_.session_service_.get(),
+       .monitored_item_executor = asio_env_.executor}};
 
   asio_env_.Wait(client_.connect(
       {.connection_string = network_env_.client_transport_string,

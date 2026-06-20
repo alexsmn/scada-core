@@ -66,12 +66,6 @@ class FakeMonitoredItemService final : public MonitoredItemService {
       StatusOr<std::unique_ptr<MonitoredItemSubscription>> subscription_result)
       : subscription_result{std::move(subscription_result)} {}
 
-  std::shared_ptr<MonitoredItem> CreateMonitoredItem(
-      const ReadValueId&,
-      const MonitoringParameters&) override {
-    return nullptr;
-  }
-
   StatusOr<std::unique_ptr<MonitoredItemSubscription>> CreateSubscription(
       ServiceContext context,
       MonitoredItemSubscriptionOptions options) override {
@@ -94,7 +88,9 @@ TEST(MonitoredItemSubscriptionPump, StartReturnsSubscriptionFailure) {
   std::vector<Status> errors;
 
   MonitoredItemSubscriptionPump pump{
-      executor, service, {},
+      executor,
+      service,
+      {},
       [&](std::vector<MonitoredItemNotification> notifications) {
         notification_batches.emplace_back(std::move(notifications));
       },
@@ -113,14 +109,14 @@ TEST(MonitoredItemSubscriptionPump, AddItemsBeforeStartFailsPerItem) {
       StatusOr<std::unique_ptr<MonitoredItemSubscription>>{
           StatusCode::Bad_Disconnected}};
   MonitoredItemSubscriptionPump pump{
-      executor, service, {},
+      executor,
+      service,
+      {},
       [](std::vector<MonitoredItemNotification>) {},
       [](Status) {}};
   std::vector<MonitoredItemCreateRequest> requests{
-      {.item_to_monitor = {.node_id = NodeId{1, 1}},
-       .client_handle = 11},
-      {.item_to_monitor = {.node_id = NodeId{2, 1}},
-       .client_handle = 22}};
+      {.item_to_monitor = {.node_id = NodeId{1, 1}}, .client_handle = 11},
+      {.item_to_monitor = {.node_id = NodeId{2, 1}}, .client_handle = 22}};
 
   std::vector<MonitoredItemCreateResult> results =
       WaitAwaitable(executor, pump.AddItems(std::move(requests)));
@@ -138,7 +134,9 @@ TEST(MonitoredItemSubscriptionPump, RemoveItemsBeforeStartFailsPerItem) {
       StatusOr<std::unique_ptr<MonitoredItemSubscription>>{
           StatusCode::Bad_Disconnected}};
   MonitoredItemSubscriptionPump pump{
-      executor, service, {},
+      executor,
+      service,
+      {},
       [](std::vector<MonitoredItemNotification>) {},
       [](Status) {}};
   const std::array<MonitoredItemId, 2> item_ids{10, 20};
@@ -146,9 +144,8 @@ TEST(MonitoredItemSubscriptionPump, RemoveItemsBeforeStartFailsPerItem) {
   std::vector<Status> results =
       WaitAwaitable(executor, pump.RemoveItems(item_ids));
 
-  EXPECT_THAT(results,
-              ElementsAre(Status{StatusCode::Bad_Disconnected},
-                          Status{StatusCode::Bad_Disconnected}));
+  EXPECT_THAT(results, ElementsAre(Status{StatusCode::Bad_Disconnected},
+                                   Status{StatusCode::Bad_Disconnected}));
 }
 
 TEST(MonitoredItemSubscriptionPump, ForwardsAddAndRemoveItems) {
@@ -167,14 +164,15 @@ TEST(MonitoredItemSubscriptionPump, ForwardsAddAndRemoveItems) {
       StatusOr<std::unique_ptr<MonitoredItemSubscription>>{
           std::move(subscription)}};
   MonitoredItemSubscriptionPump pump{
-      executor, service, {},
+      executor,
+      service,
+      {},
       [](std::vector<MonitoredItemNotification>) {},
       [](Status) {}};
 
   ASSERT_TRUE(pump.Start());
   std::vector<MonitoredItemCreateRequest> requests{
-      {.item_to_monitor = {.node_id = NodeId{1, 1}},
-       .client_handle = 42}};
+      {.item_to_monitor = {.node_id = NodeId{1, 1}}, .client_handle = 42}};
   std::vector<MonitoredItemCreateResult> add_results =
       WaitAwaitable(executor, pump.AddItems(std::move(requests)));
   const std::array<MonitoredItemId, 1> item_ids{7};
@@ -185,8 +183,8 @@ TEST(MonitoredItemSubscriptionPump, ForwardsAddAndRemoveItems) {
   EXPECT_EQ(subscription_state->add_requests[0].client_handle, 42u);
   EXPECT_EQ(subscription_state->add_requests[0].item_to_monitor.node_id,
             (NodeId{1, 1}));
-  EXPECT_THAT(add_results, ElementsAre(Field(
-                               &MonitoredItemCreateResult::item_id, 7u)));
+  EXPECT_THAT(add_results,
+              ElementsAre(Field(&MonitoredItemCreateResult::item_id, 7u)));
   EXPECT_THAT(subscription_state->remove_item_ids, ElementsAre(7u));
   EXPECT_THAT(remove_results, ElementsAre(Status{StatusCode::Good}));
 }
@@ -208,7 +206,9 @@ TEST(MonitoredItemSubscriptionPump, DeliversNotificationsAndReadError) {
   std::vector<std::vector<MonitoredItemNotification>> notification_batches;
   std::vector<Status> errors;
   MonitoredItemSubscriptionPump pump{
-      executor, service, {.max_batch_size = 5},
+      executor,
+      service,
+      {.max_batch_size = 5},
       [&](std::vector<MonitoredItemNotification> notifications) {
         notification_batches.emplace_back(std::move(notifications));
       },
@@ -242,7 +242,9 @@ TEST(MonitoredItemSubscriptionPump, CloseSuppressesPendingReadError) {
           std::move(subscription)}};
   std::vector<Status> errors;
   MonitoredItemSubscriptionPump pump{
-      executor, service, {},
+      executor,
+      service,
+      {},
       [](std::vector<MonitoredItemNotification>) {},
       [&](Status status) { errors.emplace_back(std::move(status)); }};
 

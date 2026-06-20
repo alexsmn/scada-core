@@ -12,13 +12,15 @@ class MonitoredItemService {
  public:
   virtual ~MonitoredItemService() {}
 
-  virtual std::shared_ptr<MonitoredItem> CreateMonitoredItem(
-      const ReadValueId& value_id,
-      const MonitoringParameters& params) = 0;
-
+  // Creates a subscription stream that adds and removes monitored items and
+  // delivers their data-change and event notifications as coroutine-read
+  // batches. Implementations that retain single-item creation logic can build a
+  // subscription with `MakeItemFactorySubscription`
+  // (item_factory_subscription.h) and expose single items to callers through
+  // `LegacyMonitoredItemAdapter`.
   virtual StatusOr<std::unique_ptr<MonitoredItemSubscription>>
   CreateSubscription(ServiceContext context,
-                     MonitoredItemSubscriptionOptions options);
+                     MonitoredItemSubscriptionOptions options) = 0;
 };
 
 }  // namespace scada

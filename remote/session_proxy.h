@@ -3,8 +3,8 @@
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
 #include "base/async_completion.h"
-#include "base/boost_log.h"
 #include "base/awaitable.h"
+#include "base/boost_log.h"
 #include "base/cancelation.h"
 #include "remote/message_sender.h"
 #include "scada/attribute_service.h"
@@ -17,9 +17,9 @@
 #include "scada/status.h"
 
 #include <boost/signals2/signal.hpp>
+#include <optional>
 #include <transport/any_transport.h>
 #include <transport/write_queue.h>
-#include <optional>
 #include <unordered_map>
 
 namespace transport {
@@ -77,15 +77,17 @@ class SessionProxy : private SessionProxyContext,
                        ResponseHandler response_handler) override;
 
   // scada::MonitoredItemService
-  virtual std::shared_ptr<scada::MonitoredItem> CreateMonitoredItem(
-      const scada::ReadValueId& read_value_id,
-      const scada::MonitoringParameters& params) override;
+  scada::StatusOr<std::unique_ptr<scada::MonitoredItemSubscription>>
+  CreateSubscription(scada::ServiceContext context,
+                     scada::MonitoredItemSubscriptionOptions options) override;
 
   // scada::AttributeService
-  [[nodiscard]] virtual Awaitable<scada::StatusOr<std::vector<scada::DataValue>>>
+  [[nodiscard]] virtual Awaitable<
+      scada::StatusOr<std::vector<scada::DataValue>>>
   Read(scada::ServiceContext context,
        std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) override;
-  [[nodiscard]] virtual Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+  [[nodiscard]] virtual Awaitable<
+      scada::StatusOr<std::vector<scada::StatusCode>>>
   Write(scada::ServiceContext context,
         std::shared_ptr<const std::vector<scada::WriteValue>> inputs) override;
 

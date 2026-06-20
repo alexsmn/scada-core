@@ -37,7 +37,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
                                ToString(read_value_id.attribute_id));
 
   auto monitored_item =
-      monitored_item_service_.CreateMonitoredItem(read_value_id, params);
+      monitored_item_adapter_.CreateMonitoredItem(read_value_id, params);
   if (!monitored_item) {
     LOG_WARNING(logger_) << "Can't create monitored item"
                          << LOG_TAG("RequestId", request_id)

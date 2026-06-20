@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scada/attribute_service.h"
+#include "scada/legacy_monitored_item_adapter.h"
 #include "scada/monitored_item.h"
 #include "scada/node.h"
 
@@ -69,9 +70,14 @@ class monitored_item {
 
  private:
   struct state {
-    explicit state(std::shared_ptr<MonitoredItem> monitored_item);
+    state(std::shared_ptr<LegacyMonitoredItemAdapter> adapter,
+          std::shared_ptr<MonitoredItem> monitored_item);
 
     void handle_status(scada::StatusCode status_code);
+
+    // Owns the subscription that backs the single monitored item below; kept
+    // alive for as long as the item is subscribed.
+    std::shared_ptr<LegacyMonitoredItemAdapter> adapter_;
 
     // Monitored item is reset only once when bad status code is received. It's
     // safe to keep it outside of mutex.
@@ -84,8 +90,10 @@ class monitored_item {
 // monitored_item::state
 
 inline monitored_item::state::state(
+    std::shared_ptr<LegacyMonitoredItemAdapter> adapter,
     std::shared_ptr<MonitoredItem> monitored_item)
-    : monitored_item_{std::move(monitored_item)} {}
+    : adapter_{std::move(adapter)},
+      monitored_item_{std::move(monitored_item)} {}
 
 inline void monitored_item::state::handle_status(
     scada::StatusCode status_code) {
@@ -111,18 +119,16 @@ inline void monitored_item::subscribe(const node& node,
     return;
   }
 
-  auto item = node.services_.monitored_item_service->CreateMonitoredItem(
+  auto adapter = std::make_shared<LegacyMonitoredItemAdapter>(
+      node.services_.monitored_item_executor,
+      *node.services_.monitored_item_service);
+  auto item = adapter->CreateMonitoredItem(
       {.node_id = node.node_id_, .attribute_id = attribute_id}, params);
-
-  if (!item) {
-    data_change_handler(MakeReadError(StatusCode::Bad_WrongNodeId));
-    return;
-  }
 
   assert(!state_);
   assert(item);
 
-  state_ = std::make_shared<state>(item);
+  state_ = std::make_shared<state>(std::move(adapter), item);
 
   item->Subscribe(
       [weak_state = std::weak_ptr{state_},
@@ -148,20 +154,17 @@ inline void monitored_item::subscribe_events(const node& node,
     return;
   }
 
-  auto item = node.services_.monitored_item_service->CreateMonitoredItem(
+  auto adapter = std::make_shared<LegacyMonitoredItemAdapter>(
+      node.services_.monitored_item_executor,
+      *node.services_.monitored_item_service);
+  auto item = adapter->CreateMonitoredItem(
       {.node_id = node.node_id_, .attribute_id = AttributeId::EventNotifier},
       params);
-
-  if (!item) {
-    // Must specify `std::any` to avoid ambiguity when using `BindExecutor`.
-    event_handler(StatusCode::Bad_WrongNodeId, std::any{});
-    return;
-  }
 
   assert(!state_);
   assert(item);
 
-  state_ = std::make_shared<state>(item);
+  state_ = std::make_shared<state>(std::move(adapter), item);
 
   item->Subscribe([weak_state = std::weak_ptr{state_},
                    event_handler = std::forward<Handler>(event_handler)](
