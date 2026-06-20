@@ -79,6 +79,9 @@ enum class StatusCode : unsigned {
   Bad_WrongTargetId = Bad | 36,
   Bad_MonitoredItemIdInvalid = Bad | 37,
   Bad_MessageNotAvailable = Bad | 38,
+  // The ActivateSession clientSignature did not verify against the client
+  // application instance certificate (OPC UA Part 4 §5.6.3).
+  Bad_ApplicationSignatureInvalid = Bad | 39,
 };
 
 enum class StatusLimit {

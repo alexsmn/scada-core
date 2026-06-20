@@ -99,6 +99,9 @@ const Entry kEntries[] = {
      "Bad_MonitoredItemIdInvalid", L"Неправильный номер элемента мониторинга"},
     {scada::StatusCode::Bad_MessageNotAvailable, "Bad_MessageNotAvailable",
      L"Запрошенное сообщение больше недоступно"},
+    {scada::StatusCode::Bad_ApplicationSignatureInvalid,
+     "Bad_ApplicationSignatureInvalid",
+     L"Неверная подпись приложения клиента"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
