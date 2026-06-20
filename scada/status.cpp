@@ -102,6 +102,10 @@ const Entry kEntries[] = {
     {scada::StatusCode::Bad_ApplicationSignatureInvalid,
      "Bad_ApplicationSignatureInvalid",
      L"Неверная подпись приложения клиента"},
+    {scada::StatusCode::Bad_TooManyOperations, "Bad_TooManyOperations",
+     L"Слишком много операций в запросе"},
+    {scada::StatusCode::Bad_TooManyMonitoredItems, "Bad_TooManyMonitoredItems",
+     L"Слишком много элементов мониторинга в запросе"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {

@@ -82,6 +82,11 @@ enum class StatusCode : unsigned {
   // The ActivateSession clientSignature did not verify against the client
   // application instance certificate (OPC UA Part 4 §5.6.3).
   Bad_ApplicationSignatureInvalid = Bad | 39,
+  // The request contained more operations than the server permits (the
+  // OperationLimits exposed in the address space, OPC UA Part 4 §5.10).
+  Bad_TooManyOperations = Bad | 40,
+  // CreateMonitoredItems requested more items than MaxMonitoredItemsPerCall.
+  Bad_TooManyMonitoredItems = Bad | 41,
 };
 
 enum class StatusLimit {
