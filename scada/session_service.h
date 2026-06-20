@@ -20,6 +20,30 @@ namespace scada {
 class SessionDebugger;
 class Status;
 
+// Endpoint security selection for a session. Transport-neutral so the generic
+// SessionService contract stays backend-agnostic; the OPC UA backend maps it to
+// concrete SecurityPolicy / MessageSecurityMode choices. The defaults
+// (mode=None, empty paths) preserve the legacy direct-connect behaviour with no
+// discovery, so non-OPC-UA backends and existing callers are unaffected.
+struct SessionSecuritySettings {
+  enum class Mode {
+    // No discovery; connect directly with no security (legacy behaviour).
+    None,
+    // Run discovery (GetEndpoints) and pick the most secure endpoint the
+    // client supports.
+    Auto,
+    // Run discovery and require an encrypted (SignAndEncrypt) endpoint.
+    SignAndEncrypt,
+  };
+  Mode mode = Mode::None;
+  // Optional explicit SecurityPolicy URI to require, narrowing Auto selection.
+  std::string required_policy_uri;
+  // PEM file paths for the client application instance certificate and its
+  // private key. Required when `mode` selects a secured endpoint.
+  std::string client_certificate_path;
+  std::string client_private_key_path;
+};
+
 struct SessionConnectParams {
   // The host name can be followed by a colon and a port number. If empty, then
   // the `connection_string` is used.
@@ -30,6 +54,8 @@ struct SessionConnectParams {
   LocalizedText user_name;
   LocalizedText password;
   bool allow_remote_logoff = false;
+  // How to negotiate endpoint security. Defaults to the legacy unsecured path.
+  SessionSecuritySettings security;
 };
 
 class SessionService {

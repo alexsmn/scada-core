@@ -50,6 +50,10 @@ constexpr NumericId TypesFolder = 86;
 constexpr NumericId Server = 2253;
 constexpr NumericId Server_ServerArray = 2254;
 constexpr NumericId Server_NamespaceArray = 2255;
+constexpr NumericId Server_ServerStatus = 2256;
+constexpr NumericId Server_ServerStatus_CurrentTime = 2258;
+constexpr NumericId Server_ServerStatus_State = 2259;
+constexpr NumericId Server_ServiceLevel = 2267;
 
 constexpr NumericId ModellingRules = 87;
 constexpr NumericId ModellingRule_Mandatory = 78;
