@@ -108,6 +108,8 @@ const Entry kEntries[] = {
      L"Слишком много элементов мониторинга в запросе"},
     {scada::StatusCode::Bad_SequenceNumberUnknown, "Bad_SequenceNumberUnknown",
      L"Неизвестный порядковый номер сообщения"},
+    {scada::StatusCode::Bad_NoContinuationPoints, "Bad_NoContinuationPoints",
+     L"Исчерпан лимит точек продолжения просмотра"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
