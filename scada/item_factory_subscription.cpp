@@ -14,9 +14,9 @@
 namespace scada {
 namespace {
 
-// Subscription that creates each monitored item through a `MonitoredItemFactory`
-// and fans the items' callbacks into a single notification stream consumed via
-// `ReadNext`.
+// Subscription that creates each monitored item through a
+// `MonitoredItemFactory` and fans the items' callbacks into a single
+// notification stream consumed via `ReadNext`.
 class ItemFactorySubscription final : public MonitoredItemSubscription {
  public:
   ItemFactorySubscription(MonitoredItemFactory factory,
@@ -63,27 +63,32 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
       co_return std::vector<MonitoredItemNotification>{};
     }
 
+    // Keep the shared state alive for the duration of this coroutine: it
+    // suspends on the timer below and may be resumed after the owning
+    // subscription (and thus the `state_` member) has been destroyed.
+    const auto state = state_;
+
     for (;;) {
       std::vector<MonitoredItemNotification> result;
 
       {
-        std::lock_guard lock{state_->mutex};
-        if (state_->closed) {
-          co_return state_->close_status;
+        std::lock_guard lock{state->mutex};
+        if (state->closed) {
+          co_return state->close_status;
         }
 
         const std::size_t count = std::min(
-            {max_count, state_->options.max_batch_size, state_->pending.size()});
+            {max_count, state->options.max_batch_size, state->pending.size()});
         if (count != 0) {
           result.reserve(count);
           for (std::size_t i = 0; i < count; ++i) {
-            result.emplace_back(std::move(state_->pending.front()));
-            state_->pending.pop_front();
+            result.emplace_back(std::move(state->pending.front()));
+            state->pending.pop_front();
           }
           co_return result;
         }
 
-        if (state_->read_waiter) {
+        if (state->read_waiter) {
           co_return Status{StatusCode::Bad_ObjectIsBusy};
         }
       }
@@ -92,14 +97,14 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
       auto timer = std::make_shared<boost::asio::steady_timer>(executor);
       timer->expires_at((boost::asio::steady_timer::time_point::max)());
       {
-        std::lock_guard lock{state_->mutex};
-        if (state_->closed) {
-          co_return state_->close_status;
+        std::lock_guard lock{state->mutex};
+        if (state->closed) {
+          co_return state->close_status;
         }
-        if (!state_->pending.empty()) {
+        if (!state->pending.empty()) {
           continue;
         }
-        state_->read_waiter = timer;
+        state->read_waiter = timer;
       }
 
       boost::system::error_code error;
@@ -107,9 +112,9 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
           boost::asio::redirect_error(boost::asio::use_awaitable, error));
 
       {
-        std::lock_guard lock{state_->mutex};
-        if (state_->read_waiter == timer) {
-          state_->read_waiter.reset();
+        std::lock_guard lock{state->mutex};
+        if (state->read_waiter == timer) {
+          state->read_waiter.reset();
         }
       }
     }
@@ -213,24 +218,22 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
     const auto client_handle = request.client_handle;
     std::weak_ptr<State> weak_state = state_;
     if (request.item_to_monitor.attribute_id == AttributeId::EventNotifier) {
-      monitored_item->Subscribe(EventHandler{
-          [weak_state, item_id, client_handle](const Status& status,
-                                               const std::any& event) {
-            PushNotification(
-                weak_state,
-                EventNotification{.item_id = item_id,
-                                  .client_handle = client_handle,
-                                  .status = status,
-                                  .event = event});
+      monitored_item->Subscribe(
+          EventHandler{[weak_state, item_id, client_handle](
+                           const Status& status, const std::any& event) {
+            PushNotification(weak_state,
+                             EventNotification{.item_id = item_id,
+                                               .client_handle = client_handle,
+                                               .status = status,
+                                               .event = event});
           }});
     } else {
       monitored_item->Subscribe(DataChangeHandler{
           [weak_state, item_id, client_handle](const DataValue& value) {
-            PushNotification(
-                weak_state,
-                DataChangeNotification{.item_id = item_id,
-                                       .client_handle = client_handle,
-                                       .value = value});
+            PushNotification(weak_state, DataChangeNotification{
+                                             .item_id = item_id,
+                                             .client_handle = client_handle,
+                                             .value = value});
           }});
     }
 
@@ -244,9 +247,9 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
 
 }  // namespace
 
-StatusOr<std::unique_ptr<MonitoredItemSubscription>> MakeItemFactorySubscription(
-    MonitoredItemFactory factory,
-    MonitoredItemSubscriptionOptions options) {
+StatusOr<std::unique_ptr<MonitoredItemSubscription>>
+MakeItemFactorySubscription(MonitoredItemFactory factory,
+                            MonitoredItemSubscriptionOptions options) {
   return std::unique_ptr<MonitoredItemSubscription>{
       std::make_unique<ItemFactorySubscription>(std::move(factory), options)};
 }
