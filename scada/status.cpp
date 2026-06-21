@@ -110,6 +110,9 @@ const Entry kEntries[] = {
      L"Неизвестный порядковый номер сообщения"},
     {scada::StatusCode::Bad_NoContinuationPoints, "Bad_NoContinuationPoints",
      L"Исчерпан лимит точек продолжения просмотра"},
+    {scada::StatusCode::Bad_TimestampsToReturnInvalid,
+     "Bad_TimestampsToReturnInvalid",
+     L"Неправильное значение TimestampsToReturn"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
