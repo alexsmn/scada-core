@@ -115,6 +115,9 @@ const Entry kEntries[] = {
      L"Неправильное значение TimestampsToReturn"},
     {scada::StatusCode::Bad_ViewIdUnknown, "Bad_ViewIdUnknown",
      L"Неизвестный идентификатор представления"},
+    {scada::StatusCode::Bad_HistoryOperationInvalid,
+     "Bad_HistoryOperationInvalid",
+     L"Недопустимые параметры запроса истории"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
