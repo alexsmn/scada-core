@@ -42,6 +42,25 @@ struct HistoryReadEventsResult {
   std::vector<Event> events;
 };
 
+// How a HistoryUpdate applies the supplied values.
+// OPC UA Part 11 §6.8.3 PerformUpdateType,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.3
+enum class PerformUpdateType {
+  Insert = 1,   // Insert; error if a value already exists at the timestamp.
+  Replace = 2,  // Replace; error if no value exists at the timestamp.
+  Update = 3,   // Insert or replace.
+  Remove = 4,
+};
+
+// Insert/replace historical data values for a node.
+// OPC UA Part 11 §6.8.2 UpdateDataDetails,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.2
+struct UpdateDataDetails {
+  NodeId node_id;
+  PerformUpdateType perform_insert_replace = PerformUpdateType::Update;
+  std::vector<DataValue> values;
+};
+
 using AcknowledgeCallback =
     std::function<void(Status status, std::vector<StatusCode> results)>;
 
