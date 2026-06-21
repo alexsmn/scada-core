@@ -99,6 +99,10 @@ enum class StatusCode : unsigned {
   // OPC UA Part 4 §7.40 TimestampsToReturn,
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.40
   Bad_TimestampsToReturnInvalid = Bad | 44,
+  // The Browse view (ViewDescription.viewId) is not known to the server —
+  // OPC UA Part 4 §5.8.2 Browse,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.2
+  Bad_ViewIdUnknown = Bad | 45,
 };
 
 enum class StatusLimit {

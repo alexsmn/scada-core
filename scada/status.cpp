@@ -113,6 +113,8 @@ const Entry kEntries[] = {
     {scada::StatusCode::Bad_TimestampsToReturnInvalid,
      "Bad_TimestampsToReturnInvalid",
      L"Неправильное значение TimestampsToReturn"},
+    {scada::StatusCode::Bad_ViewIdUnknown, "Bad_ViewIdUnknown",
+     L"Неизвестный идентификатор представления"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
