@@ -1,9 +1,12 @@
 #pragma once
 
+#include "base/struct_format.h"
+#include "base/struct_writer.h"
 #include "scada/data_value.h"
 #include "scada/standard_node_ids.h"
 
 #include <string>
+#include <string_view>
 
 namespace scada {
 
@@ -122,7 +125,38 @@ inline bool Event::is_valid() const {
 }
 
 std::ostream& operator<<(std::ostream& stream, const Event& event);
-std::ostream& operator<<(std::ostream& stream, const ModelChangeEvent& e);
-std::ostream& operator<<(std::ostream& stream, const SemanticChangeEvent& e);
 
 }  // namespace scada
+
+// Event still renders through operator<< + StructWriter, bridged into
+// std::format by OStreamFormatter (see base/struct_writer.h); its value fields
+// (DateTime, Variant, ...) are not yet std::format-native.
+template <>
+struct std::formatter<scada::Event> : OStreamFormatter {};
+
+// ModelChangeEvent / SemanticChangeEvent are std::format-native: they render
+// directly via StructFormatter with no std::ostream in the path. All of their
+// fields are formattable leaves (NodeId, bitmask), so no operator<< is needed.
+template <>
+struct std::formatter<scada::ModelChangeEvent> : EmptyFormatSpec {
+  template <class FormatContext>
+  auto format(const scada::ModelChangeEvent& e, FormatContext& ctx) const {
+    static constexpr std::string_view kVerbBitStrings[] = {
+        "NodeAdded",        "NodeDeleted",     "ReferenceAdded",
+        "ReferenceDeleted", "DataTypeChanged",
+    };
+    return StructFormatter{ctx.out()}
+        .AddField("node_id", e.node_id)
+        .AddField("type_definition_id", e.type_definition_id)
+        .AddBitMaskField("verb", e.verb, kVerbBitStrings)
+        .Finish();
+  }
+};
+
+template <>
+struct std::formatter<scada::SemanticChangeEvent> : EmptyFormatSpec {
+  template <class FormatContext>
+  auto format(const scada::SemanticChangeEvent& e, FormatContext& ctx) const {
+    return StructFormatter{ctx.out()}.AddField("node_id", e.node_id).Finish();
+  }
+};

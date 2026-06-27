@@ -2,6 +2,8 @@
 
 #include "scada/event.h"
 
+#include <format>
+
 class ViewEventQueue {
  public:
   using Event =
@@ -54,16 +56,25 @@ inline std::vector<ViewEventQueue::Event> ViewEventQueue::GetEvents() {
   return queue;
 }
 
+namespace scada {
+
+// Defined in namespace scada so argument-dependent lookup finds it (the
+// variant's alternatives live in scada) regardless of include order — e.g.
+// when debug_util.h's PrintList template streams a vector of these. The
+// alternatives are std::format-native (no operator<<), so this bridges to
+// their std::formatter.
 inline std::ostream& operator<<(std::ostream& stream,
-                                const ViewEventQueue::Event& event) {
+                                const ::ViewEventQueue::Event& event) {
   if (auto* model_change = std::get_if<scada::ModelChangeEvent>(&event)) {
-    stream << *model_change;
+    stream << std::format("{}", *model_change);
   } else if (auto* semantic_change =
                  std::get_if<scada::SemanticChangeEvent>(&event)) {
-    stream << *semantic_change;
+    stream << std::format("{}", *semantic_change);
   } else {
     assert(false);
   }
 
   return stream;
 }
+
+}  // namespace scada

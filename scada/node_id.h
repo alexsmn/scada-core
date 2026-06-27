@@ -5,6 +5,7 @@
 #include "scada/string.h"
 
 #include <cassert>
+#include <format>
 #include <memory>
 #include <ostream>
 #include <string_view>
@@ -118,6 +119,27 @@ namespace std {
 template <>
 struct hash<scada::NodeId> {
   std::size_t operator()(const scada::NodeId& node_id) const noexcept;
+};
+
+// Renders a NodeId for std::format / std::print as its quoted string form
+// (e.g. "ns=2;i=33"), matching operator<<. Unlike the operator<< path, this is
+// a std::format-native formatter — it builds directly from NodeId::ToString()
+// with no std::ostream — so std::format-based renderers, including
+// StructFormatter, can embed a NodeId without going through iostreams.
+template <>
+struct formatter<scada::NodeId> {
+  constexpr format_parse_context::iterator parse(
+      format_parse_context& ctx) const {
+    const format_parse_context::iterator it = ctx.begin();
+    if (it != ctx.end() && *it != '}')
+      throw format_error{"NodeId takes no format spec"};
+    return it;
+  }
+
+  template <class FormatContext>
+  auto format(const scada::NodeId& node_id, FormatContext& ctx) const {
+    return std::format_to(ctx.out(), "\"{}\"", node_id.ToString());
+  }
 };
 
 }  // namespace std

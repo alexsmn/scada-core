@@ -1,6 +1,5 @@
 #include "scada/event.h"
 
-#include "base/debug_util.h"
 #include "base/struct_writer.h"
 
 namespace scada {
@@ -18,24 +17,6 @@ std::ostream& operator<<(std::ostream& stream, const Event& event) {
       .AddField("acked", event.acked)
       .AddField("acknowledged_user_id", event.acknowledged_user_id)
       .AddField("acknowledged_time", event.acknowledged_time);
-  return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, const ModelChangeEvent& e) {
-  constexpr std::string_view kVerbBitStrings[] = {
-      "NodeAdded",        "NodeDeleted",     "ReferenceAdded",
-      "ReferenceDeleted", "DataTypeChanged",
-  };
-
-  StructWriter{stream}
-      .AddField("node_id", e.node_id)
-      .AddField("type_definition_id", e.type_definition_id)
-      .AddBitMaskField("verb", e.verb, kVerbBitStrings);
-  return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, const SemanticChangeEvent& e) {
-  StructWriter{stream}.AddField("node_id", e.node_id);
   return stream;
 }
 
