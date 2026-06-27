@@ -1,13 +1,12 @@
 #include "scada/item_factory_subscription.h"
 
+#include "base/callback_awaitable.h"
 #include "scada/attribute_ids.h"
 
 #include <algorithm>
-#include <boost/asio/redirect_error.hpp>
-#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <deque>
+#include <functional>
 #include <mutex>
 #include <utility>
 
@@ -64,13 +63,12 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
     }
 
     // Keep the shared state alive for the duration of this coroutine: it
-    // suspends on the timer below and may be resumed after the owning
-    // subscription (and thus the `state_` member) has been destroyed.
+    // suspends below and may be resumed after the owning subscription (and
+    // thus the `state_` member) has been destroyed.
     const auto state = state_;
+    const AnyExecutor executor = co_await boost::asio::this_coro::executor;
 
     for (;;) {
-      std::vector<MonitoredItemNotification> result;
-
       {
         std::lock_guard lock{state->mutex};
         if (state->closed) {
@@ -80,6 +78,7 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
         const std::size_t count = std::min(
             {max_count, state->options.max_batch_size, state->pending.size()});
         if (count != 0) {
+          std::vector<MonitoredItemNotification> result;
           result.reserve(count);
           for (std::size_t i = 0; i < count; ++i) {
             result.emplace_back(std::move(state->pending.front()));
@@ -93,46 +92,46 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
         }
       }
 
-      auto executor = co_await boost::asio::this_coro::executor;
-      auto timer = std::make_shared<boost::asio::steady_timer>(executor);
-      timer->expires_at((boost::asio::steady_timer::time_point::max)());
-      {
+      // Park until a notification is pushed or the subscription is closed.
+      // The wake is delivered through the executor rather than a
+      // steady_timer cancellation, so this resumes deterministically on any
+      // executor — including test executors that have no timer reactor.
+      co_await CallbackToAwaitable<>(executor, [&state](auto wake) {
         std::lock_guard lock{state->mutex};
-        if (state->closed) {
-          co_return state->close_status;
+        if (state->closed || !state->pending.empty()) {
+          // Data (or closure) is already available: wake immediately to
+          // re-check instead of parking.
+          wake();
+          return;
         }
-        if (!state->pending.empty()) {
-          continue;
-        }
-        state->read_waiter = timer;
-      }
-
-      boost::system::error_code error;
-      co_await timer->async_wait(
-          boost::asio::redirect_error(boost::asio::use_awaitable, error));
+        state->read_waiter = [wake = std::move(wake)]() mutable { wake(); };
+      });
 
       {
         std::lock_guard lock{state->mutex};
-        if (state->read_waiter == timer) {
-          state->read_waiter.reset();
-        }
+        state->read_waiter = nullptr;
       }
     }
   }
 
   void Close(Status status) override {
-    std::lock_guard lock{state_->mutex};
-    if (state_->closed) {
-      return;
+    std::function<void()> wake;
+    {
+      std::lock_guard lock{state_->mutex};
+      if (state_->closed) {
+        return;
+      }
+
+      state_->closed = true;
+      state_->close_status = std::move(status);
+      state_->items.clear();
+      state_->pending.clear();
+      wake = std::move(state_->read_waiter);
+      state_->read_waiter = nullptr;
     }
 
-    state_->closed = true;
-    state_->close_status = std::move(status);
-    state_->items.clear();
-    state_->pending.clear();
-    if (state_->read_waiter) {
-      state_->read_waiter->cancel();
-      state_->read_waiter.reset();
+    if (wake) {
+      wake();
     }
   }
 
@@ -152,7 +151,10 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
     std::mutex mutex;
     std::vector<Item> items;
     std::deque<MonitoredItemNotification> pending;
-    std::shared_ptr<boost::asio::steady_timer> read_waiter;
+    // Wake callback for a `ReadNext` coroutine parked waiting for data. The
+    // callback resumes that coroutine through its executor, so no timer
+    // reactor is required (works on deterministic test executors too).
+    std::function<void()> read_waiter;
     bool overflow_reported = false;
     bool closed = false;
     Status close_status = StatusCode::Bad_Disconnected;
@@ -165,24 +167,29 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
       return;
     }
 
-    std::lock_guard lock{state->mutex};
-    if (state->closed) {
-      return;
-    }
-
-    if (state->pending.size() >= state->options.max_pending_notifications) {
-      if (!state->overflow_reported) {
-        state->overflow_reported = true;
-        state->pending.emplace_back(
-            OverflowNotification{StatusCode::Bad_ObjectIsBusy});
+    std::function<void()> wake;
+    {
+      std::lock_guard lock{state->mutex};
+      if (state->closed) {
+        return;
       }
-      return;
+
+      if (state->pending.size() >= state->options.max_pending_notifications) {
+        if (!state->overflow_reported) {
+          state->overflow_reported = true;
+          state->pending.emplace_back(
+              OverflowNotification{StatusCode::Bad_ObjectIsBusy});
+        }
+        return;
+      }
+
+      state->pending.emplace_back(std::move(notification));
+      wake = std::move(state->read_waiter);
+      state->read_waiter = nullptr;
     }
 
-    state->pending.emplace_back(std::move(notification));
-    if (state->read_waiter) {
-      state->read_waiter->cancel();
-      state->read_waiter.reset();
+    if (wake) {
+      wake();
     }
   }
 
