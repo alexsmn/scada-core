@@ -43,7 +43,7 @@ target_precompile_headers(scada_base PRIVATE
 )
 
 # std::format
-target_compile_features(scada_base PRIVATE cxx_std_20)
+target_compile_features(scada_base PRIVATE cxx_std_23)
 
 if(WIN32)
   target_link_libraries(scada_base PUBLIC shell32)
