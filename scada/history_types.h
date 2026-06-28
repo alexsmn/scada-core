@@ -61,6 +61,15 @@ struct UpdateDataDetails {
   std::vector<DataValue> values;
 };
 
+// Insert historical events for a node.
+// OPC UA Part 11 §6.8.4 UpdateEventDetails,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.4
+struct UpdateEventDetails {
+  NodeId node_id;
+  PerformUpdateType perform_insert_replace = PerformUpdateType::Insert;
+  std::vector<Event> events;
+};
+
 using AcknowledgeCallback =
     std::function<void(Status status, std::vector<StatusCode> results)>;
 

@@ -25,6 +25,13 @@ class HistoryUpdateService {
   // reported via the StatusOr status.
   virtual Awaitable<StatusOr<std::vector<StatusCode>>> HistoryUpdateData(
       UpdateDataDetails details) = 0;
+
+  // Inserts historical events for a node (UpdateEventDetails). Returns one
+  // StatusCode per supplied event; an operation-level failure is reported via the
+  // StatusOr status. OPC UA Part 11 §6.8.4 UpdateEventDetails,
+  // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.4
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> HistoryUpdateEvent(
+      UpdateEventDetails details) = 0;
 };
 
 }  // namespace scada
