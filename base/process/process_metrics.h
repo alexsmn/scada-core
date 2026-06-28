@@ -9,6 +9,7 @@
 #include <psapi.h>
 #pragma comment(lib, "psapi.lib")
 #else
+#include <sys/resource.h>
 #include <unistd.h>
 #include <fstream>
 #include <string>
@@ -89,7 +90,30 @@ class ProcessMetrics {
     last_cpu_time_value_ = cpu_time;
     return cpu_usage;
 #else
-    return 0.0;
+    // POSIX (Linux, macOS): cumulative user+system CPU time from getrusage,
+    // expressed as a percentage of wall-clock elapsed since the previous call.
+    struct rusage usage;
+    if (getrusage(RUSAGE_SELF, &usage) != 0) {
+      return 0.0;
+    }
+    const int64_t cpu_time =
+        (static_cast<int64_t>(usage.ru_utime.tv_sec) +
+         static_cast<int64_t>(usage.ru_stime.tv_sec)) *
+            1000000 +
+        usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
+    const auto now = TimeTicks::Now();
+
+    double cpu_usage = 0.0;
+    if (!last_cpu_time_.is_null()) {
+      const int64_t cpu_time_delta = cpu_time - last_cpu_time_value_;
+      const int64_t time_delta = (now - last_cpu_time_).InMicroseconds();
+      if (time_delta > 0)
+        cpu_usage = cpu_time_delta * 100.0 / time_delta;
+    }
+
+    last_cpu_time_ = now;
+    last_cpu_time_value_ = cpu_time;
+    return cpu_usage;
 #endif
   }
 
