@@ -120,6 +120,8 @@ const Entry kEntries[] = {
      L"Недопустимые параметры запроса истории"},
     {scada::StatusCode::Bad_NoSubscription, "Bad_NoSubscription",
      L"Для сессии нет подписок"},
+    {scada::StatusCode::Bad_UserAccessDenied, "Bad_UserAccessDenied",
+     L"Недостаточно прав для выполнения операции"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {

@@ -110,6 +110,10 @@ enum class StatusCode : unsigned {
   // There is no subscription available for this session — OPC UA Part 4 §5.13.5
   // Publish, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.5
   Bad_NoSubscription = Bad | 47,
+  // The user identity was authenticated but is not authorized for the requested
+  // operation — OPC UA Part 4 §5.7.3 ActivateSession / access control,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.3
+  Bad_UserAccessDenied = Bad | 48,
 };
 
 enum class StatusLimit {
