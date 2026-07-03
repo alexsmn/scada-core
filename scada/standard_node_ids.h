@@ -81,6 +81,16 @@ constexpr NumericId SystemEventType = 2130;
 constexpr NumericId GeneralModelChangeEventType = 2133;
 constexpr NumericId SemanticChangeEventType = 2738;
 
+// Audit event types (OPC UA Part 5 §6.4). Emitted for security-relevant actions
+// per the auditability objective (Part 2 §4.14),
+// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4
+constexpr NumericId AuditEventType = 2052;
+constexpr NumericId AuditSecurityEventType = 2058;
+constexpr NumericId AuditSessionEventType = 2069;
+constexpr NumericId AuditCreateSessionEventType = 2071;
+constexpr NumericId AuditActivateSessionEventType = 2075;
+constexpr NumericId AuditWriteUpdateEventType = 2100;
+
 constexpr NumericId AggregateFunction_Average = 2342;
 constexpr NumericId AggregateFunction_Total = 2344;
 constexpr NumericId AggregateFunction_Minimum = 2346;
