@@ -76,7 +76,8 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
                             const scada::LocalizedText& user_name,
                             bool delete_existing);
   SessionStub& CreateNewSession(const scada::NodeId& user_id,
-                                const scada::LocalizedText& user_name);
+                                const scada::LocalizedText& user_name,
+                                unsigned user_rights);
 
   SessionStub* FindUserSession(const scada::NodeId& user_id) const;
 

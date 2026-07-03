@@ -9,6 +9,7 @@ namespace scada {
 
 struct ServiceContext::Rep {
   NodeId user_id;
+  uint32_t user_rights = 0;
   std::vector<std::string> locale_ids;
   uint64_t request_id = 0;
   TraceId trace_id;
@@ -25,6 +26,14 @@ const scada::NodeId& ServiceContext::user_id() const {
   return rep_->user_id;
 }
 
+uint32_t ServiceContext::user_rights() const {
+  return rep_->user_rights;
+}
+
+bool ServiceContext::is_anonymous() const {
+  return rep_->user_id.is_null();
+}
+
 uint64_t ServiceContext::request_id() const {
   return rep_->request_id;
 }
@@ -37,6 +46,12 @@ ServiceContext ServiceContext::with_user_id(
     const scada::NodeId& user_id) const {
   Rep rep = *rep_;
   rep.user_id = user_id;
+  return ServiceContext{std::make_shared<Rep>(std::move(rep))};
+}
+
+ServiceContext ServiceContext::with_user_rights(uint32_t user_rights) const {
+  Rep rep = *rep_;
+  rep.user_rights = user_rights;
   return ServiceContext{std::make_shared<Rep>(std::move(rep))};
 }
 
