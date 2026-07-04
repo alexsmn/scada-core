@@ -5,6 +5,7 @@
 #include "base/struct_writer.h"
 #include "scada/node_attributes.h"
 #include "scada/node_class.h"
+#include "scada/service_context.h"
 #include "scada/status.h"
 #include "scada/status_or.h"
 
@@ -52,26 +53,34 @@ class NodeManagementService {
  public:
   virtual ~NodeManagementService() = default;
 
+  // `context` carries the caller identity and rights for authorization
+  // (OPC UA Part 4 §5.7 NodeManagement).
   virtual Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodes(
+      ServiceContext context,
       std::vector<AddNodesItem> inputs) = 0;
 
   // Delete record from table. If |return_dependencies| is true and deletion
   // fails, it gets list of related records, which must be deleted before.
   virtual Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodes(
+      ServiceContext context,
       std::vector<DeleteNodesItem> inputs) = 0;
 
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>>
-  AddReferences(std::vector<AddReferencesItem> inputs) = 0;
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> AddReferences(
+      ServiceContext context,
+      std::vector<AddReferencesItem> inputs) = 0;
 
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>>
-  DeleteReferences(std::vector<DeleteReferencesItem> inputs) = 0;
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> DeleteReferences(
+      ServiceContext context,
+      std::vector<DeleteReferencesItem> inputs) = 0;
 };
 
+// The single-item convenience helpers are client-side (the server session
+// authorizes), so they pass an empty context.
 inline Awaitable<AddNodesResult> AddNode(NodeManagementService& service,
                                          AddNodesItem input) {
   std::vector<AddNodesItem> inputs;
   inputs.emplace_back(std::move(input));
-  auto results = co_await service.AddNodes(std::move(inputs));
+  auto results = co_await service.AddNodes(ServiceContext{}, std::move(inputs));
   if (!results.ok()) {
     co_return AddNodesResult{.status_code = results.status().code()};
   }
@@ -83,7 +92,8 @@ inline Awaitable<Status> DeleteNode(NodeManagementService& service,
                                     DeleteNodesItem input) {
   std::vector<DeleteNodesItem> inputs;
   inputs.emplace_back(std::move(input));
-  auto results = co_await service.DeleteNodes(std::move(inputs));
+  auto results =
+      co_await service.DeleteNodes(ServiceContext{}, std::move(inputs));
   if (!results.ok()) {
     co_return results.status();
   }

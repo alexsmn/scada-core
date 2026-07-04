@@ -193,8 +193,9 @@ TEST(ServiceAwaitableTest,
         co_return HistoryReadEventsResult{
             .status = StatusCode::Bad_Disconnected};
       }));
-  EXPECT_CALL(node_management_service, AddNodes(_))
-      .WillOnce(Invoke([&](std::vector<AddNodesItem> actual_inputs)
+  EXPECT_CALL(node_management_service, AddNodes(_, _))
+      .WillOnce(Invoke([&](ServiceContext, std::vector<AddNodesItem>
+                                               actual_inputs)
                            -> Awaitable<StatusOr<std::vector<AddNodesResult>>> {
         EXPECT_EQ(actual_inputs.size(), 1u);
         if (actual_inputs.size() != 1u)
@@ -207,9 +208,9 @@ TEST(ServiceAwaitableTest,
         co_return std::vector{AddNodesResult{
             .status_code = StatusCode::Good, .added_node_id = NodeId{24}}};
       }));
-  EXPECT_CALL(node_management_service, DeleteNodes(_))
+  EXPECT_CALL(node_management_service, DeleteNodes(_, _))
       .WillOnce(Invoke(
-          [&](std::vector<DeleteNodesItem> actual_inputs)
+          [&](ServiceContext, std::vector<DeleteNodesItem> actual_inputs)
               -> Awaitable<StatusOr<std::vector<StatusCode>>> {
         EXPECT_EQ(actual_inputs.size(), 1u);
         if (actual_inputs.size() != 1u)
@@ -219,9 +220,9 @@ TEST(ServiceAwaitableTest,
                   expected_delete_node.delete_target_references);
         co_return std::vector{StatusCode::Bad_WrongNodeId};
       }));
-  EXPECT_CALL(node_management_service, AddReferences(_))
+  EXPECT_CALL(node_management_service, AddReferences(_, _))
       .WillOnce(Invoke(
-          [&](std::vector<AddReferencesItem> actual_inputs)
+          [&](ServiceContext, std::vector<AddReferencesItem> actual_inputs)
               -> Awaitable<StatusOr<std::vector<StatusCode>>> {
         EXPECT_EQ(actual_inputs.size(), 1u);
         if (actual_inputs.size() != 1u)
@@ -234,9 +235,9 @@ TEST(ServiceAwaitableTest,
                   expected_add_reference.target_node_id);
         co_return std::vector{StatusCode::Bad_WrongTargetId};
       }));
-  EXPECT_CALL(node_management_service, DeleteReferences(_))
+  EXPECT_CALL(node_management_service, DeleteReferences(_, _))
       .WillOnce(Invoke(
-          [&](std::vector<DeleteReferencesItem> actual_inputs)
+          [&](ServiceContext, std::vector<DeleteReferencesItem> actual_inputs)
               -> Awaitable<StatusOr<std::vector<StatusCode>>> {
         EXPECT_EQ(actual_inputs.size(), 1u);
         if (actual_inputs.size() != 1u)

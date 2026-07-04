@@ -119,7 +119,8 @@ void NodeManagementStub::OnDeleteReferences(
 Awaitable<void> NodeManagementStub::OnDeleteNodesAsync(
     unsigned request_id,
     std::vector<scada::DeleteNodesItem> inputs) {
-  auto result = co_await coroutine_service_.DeleteNodes(std::move(inputs));
+  auto result =
+      co_await coroutine_service_.DeleteNodes(service_context_, std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});
 
@@ -138,7 +139,8 @@ Awaitable<void> NodeManagementStub::OnDeleteNodesAsync(
 Awaitable<void> NodeManagementStub::OnAddNodesAsync(
     unsigned request_id,
     std::vector<scada::AddNodesItem> inputs) {
-  auto result = co_await coroutine_service_.AddNodes(std::move(inputs));
+  auto result =
+      co_await coroutine_service_.AddNodes(service_context_, std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});
 
@@ -158,7 +160,8 @@ Awaitable<void> NodeManagementStub::OnAddReferencesAsync(
     unsigned request_id,
     std::vector<scada::AddReferencesItem> inputs) {
   const auto count = inputs.size();
-  auto result = co_await coroutine_service_.AddReferences(std::move(inputs));
+  auto result = co_await coroutine_service_.AddReferences(service_context_,
+                                                          std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});
 
@@ -181,7 +184,8 @@ Awaitable<void> NodeManagementStub::OnDeleteReferencesAsync(
     unsigned request_id,
     std::vector<scada::DeleteReferencesItem> inputs) {
   const auto count = inputs.size();
-  auto result = co_await coroutine_service_.DeleteReferences(std::move(inputs));
+  auto result = co_await coroutine_service_.DeleteReferences(service_context_,
+                                                             std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});
 

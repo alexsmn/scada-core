@@ -15,7 +15,8 @@ void NodeManagementProxy::OnChannelClosed() {
 }
 
 Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>>
-NodeManagementProxy::AddNodes(std::vector<scada::AddNodesItem> inputs) {
+NodeManagementProxy::AddNodes(scada::ServiceContext /*context*/,
+                              std::vector<scada::AddNodesItem> inputs) {
   LOG_INFO(logger_) << "AddNodes request" << LOG_TAG("Count", inputs.size());
 
   if (!sender_) {
@@ -50,7 +51,8 @@ NodeManagementProxy::AddNodes(std::vector<scada::AddNodesItem> inputs) {
 }
 
 Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
-NodeManagementProxy::DeleteNodes(std::vector<scada::DeleteNodesItem> inputs) {
+NodeManagementProxy::DeleteNodes(scada::ServiceContext /*context*/,
+                                 std::vector<scada::DeleteNodesItem> inputs) {
   LOG_INFO(logger_) << "DeleteNodes request" << LOG_TAG("Count", inputs.size());
 
   if (!sender_) {
@@ -86,6 +88,7 @@ NodeManagementProxy::DeleteNodes(std::vector<scada::DeleteNodesItem> inputs) {
 
 Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
 NodeManagementProxy::AddReferences(
+    scada::ServiceContext /*context*/,
     std::vector<scada::AddReferencesItem> inputs) {
   LOG_INFO(logger_) << "AddReferences request"
                     << LOG_TAG("Count", inputs.size());
@@ -123,6 +126,7 @@ NodeManagementProxy::AddReferences(
 
 Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
 NodeManagementProxy::DeleteReferences(
+    scada::ServiceContext /*context*/,
     std::vector<scada::DeleteReferencesItem> inputs) {
   LOG_INFO(logger_) << "DeleteReferences request"
                     << LOG_TAG("Count", inputs.size());

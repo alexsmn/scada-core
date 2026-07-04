@@ -69,4 +69,17 @@ if(WIN32)
   )
 elseif(NOT APPLE)
   target_compile_options(scada_base PUBLIC -Werror)
+  # GCC 13/14 emit false-positive hardening diagnostics inside Boost/libstdc++
+  # (e.g. boost::log's record_ostream operator<<(char), std::string copies) that
+  # would otherwise trip -Werror. Exempt just those from -Werror on GCC; Clang
+  # does not raise them.
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(scada_base PUBLIC
+      -Wno-error=stringop-overread
+      -Wno-error=stringop-overflow
+      -Wno-error=array-bounds
+      -Wno-error=restrict
+      -Wno-error=maybe-uninitialized
+      -Wno-error=dangling-reference)
+  endif()
 endif(WIN32)

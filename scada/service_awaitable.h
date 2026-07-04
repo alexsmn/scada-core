@@ -146,7 +146,7 @@ inline Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodesAsync(
     NodeManagementService& service,
     std::vector<AddNodesItem> inputs) {
   (void)executor;
-  co_return co_await service.AddNodes(std::move(inputs));
+  co_return co_await service.AddNodes(ServiceContext{}, std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodesAsync(
@@ -154,7 +154,7 @@ inline Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodesAsync(
     NodeManagementService& service,
     std::vector<DeleteNodesItem> inputs) {
   (void)executor;
-  co_return co_await service.DeleteNodes(std::move(inputs));
+  co_return co_await service.DeleteNodes(ServiceContext{}, std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<StatusCode>>>
@@ -162,7 +162,7 @@ AddReferencesAsync(AnyExecutor executor,
                    NodeManagementService& service,
                    std::vector<AddReferencesItem> inputs) {
   (void)executor;
-  co_return co_await service.AddReferences(std::move(inputs));
+  co_return co_await service.AddReferences(ServiceContext{}, std::move(inputs));
 }
 
 inline Awaitable<StatusOr<std::vector<StatusCode>>>
@@ -170,7 +170,8 @@ DeleteReferencesAsync(AnyExecutor executor,
                       NodeManagementService& service,
                       std::vector<DeleteReferencesItem> inputs) {
   (void)executor;
-  co_return co_await service.DeleteReferences(std::move(inputs));
+  co_return co_await service.DeleteReferences(ServiceContext{},
+                                              std::move(inputs));
 }
 
 }  // namespace scada

@@ -14,12 +14,16 @@ class NodeManagementProxy : public scada::NodeManagementService {
 
   // scada::NodeManagementService
   Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>> AddNodes(
+      scada::ServiceContext context,
       std::vector<scada::AddNodesItem> inputs) override;
   Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteNodes(
+      scada::ServiceContext context,
       std::vector<scada::DeleteNodesItem> inputs) override;
   Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> AddReferences(
+      scada::ServiceContext context,
       std::vector<scada::AddReferencesItem> inputs) override;
   Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteReferences(
+      scada::ServiceContext context,
       std::vector<scada::DeleteReferencesItem> inputs) override;
 
  private:

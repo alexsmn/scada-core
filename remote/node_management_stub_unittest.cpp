@@ -15,7 +15,8 @@ class TestNodeManagementService final
     : public scada::NodeManagementService {
  public:
   Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>>
-  AddNodes(std::vector<scada::AddNodesItem> inputs) override {
+  AddNodes(scada::ServiceContext /*context*/,
+           std::vector<scada::AddNodesItem> inputs) override {
     add_nodes_called = true;
     last_add_nodes_inputs = std::move(inputs);
     co_return std::vector<scada::AddNodesResult>{
@@ -23,19 +24,22 @@ class TestNodeManagementService final
   }
 
   Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
-  DeleteNodes(std::vector<scada::DeleteNodesItem> inputs) override {
+  DeleteNodes(scada::ServiceContext /*context*/,
+              std::vector<scada::DeleteNodesItem> inputs) override {
     delete_nodes_called = true;
     last_delete_nodes_inputs = std::move(inputs);
     co_return std::vector<scada::StatusCode>{};
   }
 
   Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
-  AddReferences(std::vector<scada::AddReferencesItem>) override {
+  AddReferences(scada::ServiceContext /*context*/,
+                std::vector<scada::AddReferencesItem>) override {
     co_return std::vector<scada::StatusCode>{};
   }
 
   Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
-  DeleteReferences(std::vector<scada::DeleteReferencesItem>) override {
+  DeleteReferences(scada::ServiceContext /*context*/,
+                   std::vector<scada::DeleteReferencesItem>) override {
     co_return std::vector<scada::StatusCode>{};
   }
 
