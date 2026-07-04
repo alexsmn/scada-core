@@ -122,6 +122,8 @@ const Entry kEntries[] = {
      L"Для сессии нет подписок"},
     {scada::StatusCode::Bad_UserAccessDenied, "Bad_UserAccessDenied",
      L"Недостаточно прав для выполнения операции"},
+    {scada::StatusCode::Bad_NotSupported, "Bad_NotSupported",
+     L"Операция не поддерживается"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {

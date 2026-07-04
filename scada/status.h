@@ -114,6 +114,11 @@ enum class StatusCode : unsigned {
   // operation — OPC UA Part 4 §5.7.3 ActivateSession / access control,
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.3
   Bad_UserAccessDenied = Bad | 48,
+  // The requested operation is not supported by this implementation (e.g. a
+  // local-storage operation invoked on a remote-configuration tier). Maps to
+  // the OPC UA Bad_NotSupported concept — OPC UA Part 4 §7.39 Common
+  // StatusCodes, https://reference.opcfoundation.org/Core/Part4/v105/docs/7.39
+  Bad_NotSupported = Bad | 49,
 };
 
 enum class StatusLimit {
