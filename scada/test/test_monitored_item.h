@@ -50,11 +50,11 @@ class TestMonitoredItem : public MonitoredItem {
     }
   }
 
-  void NotifyEvent(const std::any& event) {
+  void NotifyEvent(const std::any& event, Status status = StatusCode::Good) {
     if (!event_handler_)
       return;
 
-    event_handler_(StatusCode::Good, event);
+    event_handler_(status, event);
   }
 
  private:

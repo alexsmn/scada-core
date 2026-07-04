@@ -1,10 +1,9 @@
 #include "scada/node.h"
 
-#include "base/any_executor.h"
-#include "scada/service_awaitable.h"
+#include "scada/attribute_service.h"
+#include "scada/method_service.h"
 #include "scada/service_context.h"
 
-#include <boost/asio/this_coro.hpp>
 #include <memory>
 
 namespace scada {
@@ -27,9 +26,8 @@ Awaitable<Status> WriteNodeAsync(services services,
        .flags = flags}};
   auto inputs = std::make_shared<const std::vector<WriteValue>>(
       std::move(write_values));
-  auto executor = co_await boost::asio::this_coro::executor;
-  auto statuses = co_await WriteAsync(
-      executor, *services.attribute_service, context, inputs);
+  auto statuses = co_await services.attribute_service->Write(
+      context, std::move(inputs));
   if (!statuses.ok()) {
     co_return statuses.status();
   }
@@ -46,10 +44,9 @@ Awaitable<Status> CallNodeAsync(services services,
     co_return StatusCode::Bad_Disconnected;
   }
 
-  auto executor = co_await boost::asio::this_coro::executor;
-  co_return co_await CallAsync(executor, *services.method_service,
-                               std::move(node_id), std::move(method_id),
-                               std::move(arguments), std::move(context));
+  co_return co_await services.method_service->Call(
+      std::move(node_id), std::move(method_id), std::move(arguments),
+      std::move(context));
 }
 
 Awaitable<StatusOr<DataValue>> ReadNodeAsync(services services,
@@ -64,9 +61,8 @@ Awaitable<StatusOr<DataValue>> ReadNodeAsync(services services,
       {.node_id = std::move(node_id), .attribute_id = attribute_id}};
   auto inputs = std::make_shared<const std::vector<ReadValueId>>(
       std::move(read_values));
-  auto executor = co_await boost::asio::this_coro::executor;
-  auto results = co_await ReadAsync(
-      executor, *services.attribute_service, context, inputs);
+  auto results = co_await services.attribute_service->Read(
+      std::move(context), std::move(inputs));
   if (!results.ok()) {
     co_return results.status();
   }
@@ -102,13 +98,12 @@ Awaitable<StatusOr<std::vector<ReferenceDescription>>> node::browse(
     co_return StatusCode::Bad_Disconnected;
   }
 
-  auto executor = co_await boost::asio::this_coro::executor;
   std::vector<BrowseDescription> nodes{
       {.node_id = node_id_,
        .direction = details.direction,
        .reference_type_id = details.reference_type_id}};
-  auto results = co_await BrowseAsync(executor, *services_.view_service,
-                                      context_, nodes);
+  auto results =
+      co_await services_.view_service->Browse(context_, std::move(nodes));
   if (!results.ok()) {
     co_return results.status();
   }
@@ -137,11 +132,10 @@ Awaitable<StatusOr<std::vector<BrowsePathTarget>>> node::translate_browse_path(
     co_return StatusCode::Bad_Disconnected;
   }
 
-  auto executor = co_await boost::asio::this_coro::executor;
   std::vector<BrowsePath> paths{
       {.node_id = node_id_, .relative_path = relative_path}};
-  auto results = co_await TranslateBrowsePathsAsync(
-      executor, *services_.view_service, paths);
+  auto results = co_await services_.view_service->TranslateBrowsePaths(
+      std::move(paths));
   if (!results.ok()) {
     co_return results.status();
   }
@@ -213,10 +207,8 @@ Awaitable<HistoryReadRawResult> node::read_value_history_chunk(
 
   auto sanitized_details = details;
   sanitized_details.node_id = node_id_;
-  auto executor = co_await boost::asio::this_coro::executor;
-  auto result = co_await HistoryReadRawAsync(
-      executor, *services_.history_service, sanitized_details);
-  co_return result;
+  co_return co_await services_.history_service->HistoryReadRaw(
+      std::move(sanitized_details));
 }
 
 Awaitable<StatusOr<std::vector<Event>>> node::read_event_history(
@@ -225,10 +217,8 @@ Awaitable<StatusOr<std::vector<Event>>> node::read_event_history(
     co_return StatusCode::Bad_Disconnected;
   }
 
-  auto executor = co_await boost::asio::this_coro::executor;
-  auto result = co_await HistoryReadEventsAsync(
-      executor, *services_.history_service, node_id_, details.from,
-      details.to, details.filter);
+  auto result = co_await services_.history_service->HistoryReadEvents(
+      node_id_, details.from, details.to, details.filter);
   if (!result.status) {
     co_return result.status;
   }

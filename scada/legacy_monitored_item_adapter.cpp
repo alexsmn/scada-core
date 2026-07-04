@@ -131,7 +131,13 @@ void LegacyMonitoredItemAdapter::AddItem(
     item_state->add_requested = true;
   }
 
-  CoSpawn(state->executor,
+  // Read the executor before moving `state` into the lambda: the evaluation
+  // order of a call's arguments is unspecified, so `CoSpawn(state->executor,
+  // [state = std::move(state), ...])` can move `state` out first and then
+  // dereference the null pointer (a crash seen on GCC, which evaluates the
+  // lambda argument before `state->executor`).
+  AnyExecutor executor = state->executor;
+  CoSpawn(std::move(executor),
           [state = std::move(state),
            item_state = std::move(item_state)]() -> Awaitable<void> {
             MonitoredItemSubscriptionPump* pump = nullptr;
@@ -298,7 +304,10 @@ void LegacyMonitoredItemAdapter::RemoveItem(std::shared_ptr<State> state,
       return;
   }
 
-  CoSpawn(state->executor,
+  // See AddItem: read the executor before moving `state` into the lambda so the
+  // call does not depend on argument evaluation order.
+  AnyExecutor executor = state->executor;
+  CoSpawn(std::move(executor),
           [state = std::move(state), item_id]() -> Awaitable<void> {
             MonitoredItemSubscriptionPump* pump = nullptr;
             {

@@ -262,6 +262,38 @@ TEST(LegacyMonitoredItemAdapter, FailedAddDoesNotDeliverStaleNotifications) {
   EXPECT_THAT(service.RemoveItemIds(), IsEmpty());
 }
 
+// Regression: AddItem/RemoveItem previously called
+// `CoSpawn(state->executor, [state = std::move(state), ...])`. The evaluation
+// order of a call's arguments is unspecified, so a compiler that builds the
+// lambda argument first (GCC) moved `state` out and then dereferenced the null
+// pointer to read `state->executor`, crashing on startup. The spawned work must
+// still run on the adapter's executor — driving it must add, then remove, the
+// item on the underlying subscription — regardless of argument evaluation order.
+TEST(LegacyMonitoredItemAdapter, SpawnedAddAndRemoveRunOnAdapterExecutor) {
+  TestExecutor executor;
+  auto subscription_state =
+      std::make_shared<FakeMonitoredItemSubscription::State>();
+  FakeMonitoredItemService service{subscription_state};
+  LegacyMonitoredItemAdapter pump{executor, service};
+  auto item = pump.CreateMonitoredItem(
+      {.node_id = NodeId{1, 1}, .attribute_id = AttributeId::Value}, {});
+
+  // Subscribe posts the add coroutine to the executor but does not run it yet.
+  item->Subscribe(DataChangeHandler{[](const DataValue&) {}});
+  EXPECT_THAT(service.AddRequests(), IsEmpty());
+
+  // Draining the adapter's executor runs the spawned add.
+  Drain(executor);
+  ASSERT_THAT(service.AddRequests(), SizeIs(1));
+  EXPECT_EQ(service.AddRequests()[0].item_to_monitor.node_id, (NodeId{1, 1}));
+
+  // Destroying the item posts the remove coroutine, which likewise runs on the
+  // adapter's executor.
+  item.reset();
+  Drain(executor);
+  EXPECT_THAT(service.RemoveItemIds(), ElementsAre(100u));
+}
+
 TEST(LegacyMonitoredItemAdapter, CloseClosesUnderlyingSubscription) {
   TestExecutor executor;
   auto subscription_state =
