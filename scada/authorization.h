@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scada/node_id.h"
 #include "scada/privileges.h"
 
 #include <cstdint>
@@ -111,5 +112,32 @@ bool IsPermitted(std::uint32_t access_rights,
 std::uint8_t UserAccessLevel(std::uint8_t access_level,
                              std::uint32_t access_rights,
                              bool is_anonymous);
+
+// One (role, permissions) entry of a node's RolePermissions /
+// UserRolePermissions attribute (OPC UA Part 3 §8.56 RolePermissionType).
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.56
+struct RolePermissionType {
+  NodeId role_id;
+  Permission permissions = Permission::kNone;
+
+  friend bool operator==(const RolePermissionType&,
+                         const RolePermissionType&) = default;
+};
+
+// The namespace-0 well-known Role NodeId for `role` (OPC UA Part 3 §4.9;
+// standard NodeIds, e.g. WellKnownRole_Operator = i=15680).
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9
+NodeId WellKnownRoleId(WellKnownRole role);
+
+// The default RolePermissions a node publishes: every well-known role paired
+// with its default permission set. This is the admin-visible RolePermissions
+// attribute (OPC UA Part 3 §5.2.9), independent of the caller.
+std::vector<RolePermissionType> DefaultRolePermissions();
+
+// The caller's UserRolePermissions: the roles the caller currently holds, each
+// paired with its effective permissions (OPC UA Part 3 §5.2.10). This is the
+// per-session narrowing of RolePermissions.
+std::vector<RolePermissionType> UserRolePermissions(std::uint32_t access_rights,
+                                                    bool is_anonymous);
 
 }  // namespace scada

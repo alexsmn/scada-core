@@ -103,6 +103,50 @@ TEST(AuthorizationTest, UserAccessLevelPreservesSemanticChange) {
             access_level::kSemanticChange);
 }
 
+TEST(AuthorizationTest, WellKnownRoleIdsAreNamespaceZero) {
+  EXPECT_EQ(WellKnownRoleId(WellKnownRole::kOperator), (NodeId{15680, 0}));
+  EXPECT_EQ(WellKnownRoleId(WellKnownRole::kSecurityAdmin), (NodeId{15692, 0}));
+  EXPECT_EQ(WellKnownRoleId(WellKnownRole::kAnonymous), (NodeId{15644, 0}));
+}
+
+TEST(AuthorizationTest, DefaultRolePermissionsCoversAllRoles) {
+  const auto entries = DefaultRolePermissions();
+  ASSERT_EQ(entries.size(), 8u);
+
+  // Anonymous is read-only; the security admin has write-role-permissions.
+  const auto find = [&](WellKnownRole role) {
+    const NodeId id = WellKnownRoleId(role);
+    for (const auto& entry : entries) {
+      if (entry.role_id == id)
+        return entry.permissions;
+    }
+    return Permission::kNone;
+  };
+  EXPECT_TRUE(Contains(find(WellKnownRole::kAnonymous), Permission::kRead));
+  EXPECT_FALSE(Contains(find(WellKnownRole::kAnonymous), Permission::kWrite));
+  EXPECT_TRUE(Contains(find(WellKnownRole::kOperator), Permission::kWrite));
+  EXPECT_TRUE(Contains(find(WellKnownRole::kSecurityAdmin),
+                       Permission::kWriteRolePermissions));
+}
+
+TEST(AuthorizationTest, UserRolePermissionsReflectsCallerRoles) {
+  // An anonymous caller holds only the Anonymous role.
+  const auto anon = UserRolePermissions(0, /*is_anonymous=*/true);
+  ASSERT_EQ(anon.size(), 1u);
+  EXPECT_EQ(anon.front().role_id, WellKnownRoleId(WellKnownRole::kAnonymous));
+
+  // An operator (Control) holds AuthenticatedUser, Observer and Operator, and
+  // its Operator entry carries the write/call permissions.
+  const auto op = UserRolePermissions(kControl, /*is_anonymous=*/false);
+  EXPECT_EQ(op.size(), 3u);
+  const auto has_operator_with_write =
+      std::any_of(op.begin(), op.end(), [](const RolePermissionType& entry) {
+        return entry.role_id == WellKnownRoleId(WellKnownRole::kOperator) &&
+               Contains(entry.permissions, Permission::kWrite);
+      });
+  EXPECT_TRUE(has_operator_with_write);
+}
+
 TEST(AuthorizationTest, PermissionBitwiseHelpers) {
   const Permission combined = Permission::kRead | Permission::kWrite;
   EXPECT_TRUE(Contains(combined, Permission::kRead));

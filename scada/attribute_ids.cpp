@@ -13,7 +13,8 @@ std::string ToString(scada::AttributeId attribute_id) {
       "ArrayDimensions", "AccessLevel",
       "UserAccessLevel", "MinimumSamplingInterval",
       "Historizing",     "Executable",
-      "UserExecutable",
+      "UserExecutable",  "DataTypeDefinition",
+      "RolePermissions", "UserRolePermissions",
   };
   static_assert(std::size(kStrings) ==
                 static_cast<size_t>(scada::AttributeId::Count));

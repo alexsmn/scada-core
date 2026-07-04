@@ -28,6 +28,9 @@ enum class AttributeId {
   Historizing = 20,
   Executable = 21,
   UserExecutable = 22,
+  DataTypeDefinition = 23,
+  RolePermissions = 24,
+  UserRolePermissions = 25,
   Count,
 };
 

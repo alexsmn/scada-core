@@ -113,4 +113,57 @@ std::uint8_t UserAccessLevel(std::uint8_t access_level,
   return user;
 }
 
+NodeId WellKnownRoleId(WellKnownRole role) {
+  // Namespace-0 numeric ids of the standard Role objects (OPC UA Part 3 §4.9).
+  constexpr NamespaceIndex kNs0 = 0;
+  switch (role) {
+    case WellKnownRole::kAnonymous:
+      return NodeId{15644, kNs0};
+    case WellKnownRole::kAuthenticatedUser:
+      return NodeId{15656, kNs0};
+    case WellKnownRole::kObserver:
+      return NodeId{15668, kNs0};
+    case WellKnownRole::kOperator:
+      return NodeId{15680, kNs0};
+    case WellKnownRole::kEngineer:
+      return NodeId{15716, kNs0};
+    case WellKnownRole::kSupervisor:
+      return NodeId{15728, kNs0};
+    case WellKnownRole::kConfigureAdmin:
+      return NodeId{15704, kNs0};
+    case WellKnownRole::kSecurityAdmin:
+      return NodeId{15692, kNs0};
+  }
+  return NodeId{};
+}
+
+namespace {
+
+std::vector<RolePermissionType> RolePermissionsFor(
+    const std::vector<WellKnownRole>& roles) {
+  std::vector<RolePermissionType> result;
+  result.reserve(roles.size());
+  for (const WellKnownRole role : roles) {
+    result.push_back({.role_id = WellKnownRoleId(role),
+                      .permissions = DefaultPermissionsForRole(role)});
+  }
+  return result;
+}
+
+}  // namespace
+
+std::vector<RolePermissionType> DefaultRolePermissions() {
+  static constexpr WellKnownRole kAllRoles[] = {
+      WellKnownRole::kAnonymous,      WellKnownRole::kAuthenticatedUser,
+      WellKnownRole::kObserver,       WellKnownRole::kOperator,
+      WellKnownRole::kEngineer,       WellKnownRole::kSupervisor,
+      WellKnownRole::kConfigureAdmin, WellKnownRole::kSecurityAdmin};
+  return RolePermissionsFor({std::begin(kAllRoles), std::end(kAllRoles)});
+}
+
+std::vector<RolePermissionType> UserRolePermissions(std::uint32_t access_rights,
+                                                    bool is_anonymous) {
+  return RolePermissionsFor(RolesForUser(access_rights, is_anonymous));
+}
+
 }  // namespace scada
