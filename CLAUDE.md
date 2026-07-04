@@ -150,6 +150,10 @@ Order: Standard library, external deps (Boost, etc.), project headers
 - Use `Status` for error-only returns
 - Use `StatusOr<T>` for value-or-error returns
 - Coroutines propagate unexpected failures via exceptions
+- Internal invariants: `base::Check(cond, "message")` / `base::NotReached()`
+  from `base/check.h` — always-on in every build type, fail-stop via
+  `base::Panic`. Never bare `assert()`; no debug-only checks. External input
+  (wire data, config) never panics — validate, log, return `Status`/`StatusOr`
 
 ### Modern C++ Features (C++20)
 - `constexpr` and `noexcept` where appropriate

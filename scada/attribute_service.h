@@ -34,11 +34,11 @@ class AttributeService {
 
   virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
       ServiceContext context,
-      std::shared_ptr<const std::vector<ReadValueId>> inputs) = 0;
+      std::vector<ReadValueId> inputs) = 0;
 
   virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
       ServiceContext context,
-      std::shared_ptr<const std::vector<WriteValue>> inputs) = 0;
+      std::vector<WriteValue> inputs) = 0;
 };
 
 template <class T>
@@ -60,9 +60,8 @@ inline DataValue MakeReadError(StatusCode status_code) {
 inline Awaitable<DataValue> Read(AttributeService& attribute_service,
                                  scada::ServiceContext context,
                                  ReadValueId input) {
-  auto inputs = std::make_shared<std::vector<ReadValueId>>(1, std::move(input));
-  auto results =
-      co_await attribute_service.Read(std::move(context), std::move(inputs));
+  auto results = co_await attribute_service.Read(
+      std::move(context), std::vector<ReadValueId>(1, std::move(input)));
   if (!results.ok())
     co_return MakeReadError(results.status().code());
   assert(results->size() == 1);
@@ -72,9 +71,8 @@ inline Awaitable<DataValue> Read(AttributeService& attribute_service,
 inline Awaitable<Status> Write(AttributeService& attribute_service,
                                scada::ServiceContext context,
                                WriteValue input) {
-  auto inputs = std::make_shared<std::vector<WriteValue>>(1, std::move(input));
-  auto results =
-      co_await attribute_service.Write(std::move(context), std::move(inputs));
+  auto results = co_await attribute_service.Write(
+      std::move(context), std::vector<WriteValue>(1, std::move(input)));
   if (!results.ok())
     co_return results.status();
   assert(results->size() == 1);

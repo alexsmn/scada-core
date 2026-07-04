@@ -85,11 +85,11 @@ class SessionProxy : private SessionProxyContext,
   [[nodiscard]] virtual Awaitable<
       scada::StatusOr<std::vector<scada::DataValue>>>
   Read(scada::ServiceContext context,
-       std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) override;
+       std::vector<scada::ReadValueId> inputs) override;
   [[nodiscard]] virtual Awaitable<
       scada::StatusOr<std::vector<scada::StatusCode>>>
   Write(scada::ServiceContext context,
-        std::shared_ptr<const std::vector<scada::WriteValue>> inputs) override;
+        std::vector<scada::WriteValue> inputs) override;
 
   // scada::MethodService
   virtual Awaitable<scada::Status> Call(scada::NodeId node_id,

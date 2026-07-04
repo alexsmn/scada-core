@@ -46,11 +46,11 @@ std::string NormalizeGrpcEndpoint(std::string endpoint) {
 std::optional<std::string> ReadStringAttribute(
     const metrics_sdk::PointAttributes& attributes,
     std::string_view attribute_name) {
-  auto value = Find(attributes, std::string{attribute_name});
+  const auto* value = FindPtr(attributes, std::string{attribute_name});
   if (!value)
     return std::nullopt;
 
-  const auto* string_value = opentelemetry::nostd::get_if<std::string>(&*value);
+  const auto* string_value = opentelemetry::nostd::get_if<std::string>(value);
   if (!string_value)
     return std::nullopt;
 

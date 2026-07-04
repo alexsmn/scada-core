@@ -1,7 +1,7 @@
 #include "remote/session_stub.h"
 
-#include "base/awaitable.h"
 #include "base/any_executor_dispatch.h"
+#include "base/awaitable.h"
 #include "base/range_util.h"
 #include "model/node_id_util.h"
 #include "remote/connection.h"
@@ -12,7 +12,6 @@
 #include "remote/subscription_stub.h"
 #include "remote/view_service_stub.h"
 #include "scada/attribute_service.h"
-#include "scada/coroutine_services.h"
 #include "scada/method_service.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/service_context.h"
@@ -49,9 +48,8 @@ void SessionStub::Init() {
   }
 
   if (services_.history_service) {
-    history_stub_ =
-        std::make_shared<HistoryStub>(*services_.history_service, sender,
-                                      executor_);
+    history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
+                                                  sender, executor_);
   }
 }
 
@@ -77,22 +75,18 @@ void SessionStub::ProcessMessage(const protocol::Message& message) {
 }
 
 void SessionStub::ProcessRequest(const protocol::Request& request) {
-  LOG_INFO(logger_) << "Process request"
-                    << LOG_TAG("RequestId", request.request_id())
-                    << LOG_TAG("HasPing", request.has_ping())
-                    << LOG_TAG("HasRead", request.has_read())
-                    << LOG_TAG("WriteCount", request.write_size())
-                    << LOG_TAG("HasCall", request.has_call())
-                    << LOG_TAG("HasCreateSubscription",
-                               request.has_create_subscription())
-                    << LOG_TAG("HasDeleteSubscription",
-                               request.has_delete_subscription())
-                    << LOG_TAG("HasCreateMonitoredItem",
-                               request.has_create_monitored_item())
-                    << LOG_TAG("HasDeleteMonitoredItem",
-                               request.has_delete_monitored_item())
-                    << LOG_TAG("HasBrowse", request.has_browse())
-                    << LOG_TAG("BrowsePathCount", request.browse_path_size());
+  LOG_INFO(logger_)
+      << "Process request" << LOG_TAG("RequestId", request.request_id())
+      << LOG_TAG("HasPing", request.has_ping())
+      << LOG_TAG("HasRead", request.has_read())
+      << LOG_TAG("WriteCount", request.write_size())
+      << LOG_TAG("HasCall", request.has_call())
+      << LOG_TAG("HasCreateSubscription", request.has_create_subscription())
+      << LOG_TAG("HasDeleteSubscription", request.has_delete_subscription())
+      << LOG_TAG("HasCreateMonitoredItem", request.has_create_monitored_item())
+      << LOG_TAG("HasDeleteMonitoredItem", request.has_delete_monitored_item())
+      << LOG_TAG("HasBrowse", request.has_browse())
+      << LOG_TAG("BrowsePathCount", request.browse_path_size());
 
   if (request.has_ping()) {
     protocol::Response response;
@@ -249,16 +243,14 @@ void SessionStub::OnCall(unsigned request_id,
   if (!services_.method_service) {
     protocol::Response response;
     response.set_request_id(request_id);
-    Convert(scada::Status{scada::StatusCode::Bad},
-            *response.mutable_status());
+    Convert(scada::Status{scada::StatusCode::Bad}, *response.mutable_status());
     SendResponse(response);
     return;
   }
   auto self = shared_from_this();
   CoSpawn(
       executor_,
-      [self, request_id, node_id, method_id,
-       arguments]() -> Awaitable<void> {
+      [self, request_id, node_id, method_id, arguments]() -> Awaitable<void> {
         co_await self->OnCallAsync(request_id, node_id, method_id, arguments);
       });
 }
@@ -269,23 +261,23 @@ void SessionStub::OnRead(const protocol::Request& request) {
   if (!services_.attribute_service) {
     protocol::Response response;
     response.set_request_id(request.request_id());
-    Convert(scada::Status{scada::StatusCode::Bad},
-            *response.mutable_status());
+    Convert(scada::Status{scada::StatusCode::Bad}, *response.mutable_status());
     SendResponse(response);
     return;
   }
 
-  const auto inputs = std::make_shared<const std::vector<scada::ReadValueId>>(
-      ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id()));
+  auto inputs =
+      ConvertTo<std::vector<scada::ReadValueId>>(request.read().value_id());
   scada::ServiceContext context =
       service_context_.with_trace_id(request.trace_id());
   auto self = shared_from_this();
-  CoSpawn(
-      executor_,
-      [self, request_id = request.request_id(), context = std::move(context),
-       inputs]() mutable -> Awaitable<void> {
-        co_await self->OnReadAsync(request_id, std::move(context), inputs);
-      });
+  CoSpawn(executor_,
+          [self, request_id = request.request_id(),
+           context = std::move(context),
+           inputs = std::move(inputs)]() mutable -> Awaitable<void> {
+            co_await self->OnReadAsync(request_id, std::move(context),
+                                       std::move(inputs));
+          });
 }
 
 void SessionStub::OnWrite(const protocol::Request& request) {
@@ -294,21 +286,19 @@ void SessionStub::OnWrite(const protocol::Request& request) {
   if (!services_.attribute_service) {
     protocol::Response response;
     response.set_request_id(request.request_id());
-    Convert(scada::Status{scada::StatusCode::Bad},
-            *response.mutable_status());
+    Convert(scada::Status{scada::StatusCode::Bad}, *response.mutable_status());
     SendResponse(response);
     return;
   }
 
   const auto request_id = request.request_id();
-  const auto inputs = std::make_shared<const std::vector<scada::WriteValue>>(
-      ConvertTo<std::vector<scada::WriteValue>>(request.write()));
+  auto inputs = ConvertTo<std::vector<scada::WriteValue>>(request.write());
   auto self = shared_from_this();
-  CoSpawn(
-      executor_,
-      [self, request_id, inputs]() -> Awaitable<void> {
-        co_await self->OnWriteAsync(request_id, inputs);
-      });
+  CoSpawn(executor_,
+          [self, request_id,
+           inputs = std::move(inputs)]() mutable -> Awaitable<void> {
+            co_await self->OnWriteAsync(request_id, std::move(inputs));
+          });
 }
 
 Awaitable<void> SessionStub::OnCallAsync(
@@ -316,11 +306,9 @@ Awaitable<void> SessionStub::OnCallAsync(
     scada::NodeId node_id,
     scada::NodeId method_id,
     std::vector<scada::Variant> arguments) {
-  auto status =
-      co_await services_.method_service->Call(std::move(node_id),
-                                              std::move(method_id),
-                                              std::move(arguments),
-                                              service_context_);
+  auto status = co_await services_.method_service->Call(
+      std::move(node_id), std::move(method_id), std::move(arguments),
+      service_context_);
 
   if (!connection_)
     co_return;
@@ -332,11 +320,10 @@ Awaitable<void> SessionStub::OnCallAsync(
   Send(message);
 }
 
-Awaitable<void> SessionStub::OnReadAsync(
-    unsigned request_id,
-    scada::ServiceContext context,
-    std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) {
-  const auto input_count = inputs ? inputs->size() : 0;
+Awaitable<void> SessionStub::OnReadAsync(unsigned request_id,
+                                         scada::ServiceContext context,
+                                         std::vector<scada::ReadValueId> inputs) {
+  const auto input_count = inputs.size();
   auto result = co_await services_.attribute_service->Read(std::move(context),
                                                            std::move(inputs));
   auto status = result.status();
@@ -361,8 +348,8 @@ Awaitable<void> SessionStub::OnReadAsync(
 
 Awaitable<void> SessionStub::OnWriteAsync(
     unsigned request_id,
-    std::shared_ptr<const std::vector<scada::WriteValue>> inputs) {
-  const auto input_count = inputs ? inputs->size() : 0;
+    std::vector<scada::WriteValue> inputs) {
+  const auto input_count = inputs.size();
   auto result = co_await services_.attribute_service->Write(service_context_,
                                                             std::move(inputs));
   auto status = result.status();

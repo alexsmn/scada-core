@@ -4,8 +4,7 @@
 #include "remote/message_sender_mock.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
-#include "scada/coroutine_services.h"
-
+#include "scada/view_service.h"
 #include <boost/asio/post.hpp>
 #include <boost/asio/this_coro.hpp>
 

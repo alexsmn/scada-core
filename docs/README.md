@@ -18,5 +18,3 @@ Related source headers:
 - `core/scada/view_service.h`
 - `core/scada/node_management_service.h`
 - `core/scada/session_service.h`
-- `core/scada/coroutine_services.h`
-- `core/scada/service_awaitable.h`

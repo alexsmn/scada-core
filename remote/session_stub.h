@@ -2,10 +2,10 @@
 
 #include "base/any_executor.h"
 
-#include "base/boost_log.h"
 #include "base/awaitable.h"
-#include "scada/coroutine_services.h"
+#include "base/boost_log.h"
 #include "remote/message_sender.h"
+#include "scada/attribute_service.h"
 #include "scada/service_context.h"
 #include "scada/services.h"
 
@@ -82,11 +82,11 @@ class SessionStub : public MessageSender,
   [[nodiscard]] Awaitable<void> OnReadAsync(
       unsigned request_id,
       scada::ServiceContext context,
-      std::shared_ptr<const std::vector<scada::ReadValueId>> inputs);
+      std::vector<scada::ReadValueId> inputs);
   void OnWrite(const protocol::Request& request);
   [[nodiscard]] Awaitable<void> OnWriteAsync(
       unsigned request_id,
-      std::shared_ptr<const std::vector<scada::WriteValue>> inputs);
+      std::vector<scada::WriteValue> inputs);
   void OnCall(unsigned request_id,
               const scada::NodeId& node_id,
               const scada::NodeId& method_id,

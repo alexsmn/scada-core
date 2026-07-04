@@ -2,9 +2,8 @@
 
 #include "base/any_executor.h"
 
-#include "base/boost_log.h"
 #include "base/awaitable.h"
-#include "scada/coroutine_services.h"
+#include "base/boost_log.h"
 #include "scada/service_context.h"
 #include "scada/view_service.h"
 
@@ -28,8 +27,9 @@ struct ViewServiceStubContext {
   scada::ViewService& service_;
 };
 
-class ViewServiceStub final : private ViewServiceStubContext,
-                              public std::enable_shared_from_this<ViewServiceStub> {
+class ViewServiceStub final
+    : private ViewServiceStubContext,
+      public std::enable_shared_from_this<ViewServiceStub> {
  public:
   explicit ViewServiceStub(ViewServiceStubContext&& context);
   ~ViewServiceStub();

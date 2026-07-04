@@ -7,7 +7,6 @@
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
-#include "scada/coroutine_services.h"
 #include "scada/status.h"
 #include "scada/view_service.h"
 
@@ -63,20 +62,18 @@ void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
       ConvertTo<std::vector<scada::BrowsePath>>(request.browse_path());
 
   auto self = shared_from_this();
-  CoSpawn(
-      executor_,
-      [self, request_id = request.request_id(),
-       inputs = std::move(inputs)]() mutable -> Awaitable<void> {
-        co_await self->OnBrowsePathsAsync(request_id, std::move(inputs));
-      });
+  CoSpawn(executor_,
+          [self, request_id = request.request_id(),
+           inputs = std::move(inputs)]() mutable -> Awaitable<void> {
+            co_await self->OnBrowsePathsAsync(request_id, std::move(inputs));
+          });
 }
 
 Awaitable<void> ViewServiceStub::OnBrowseAsync(
     unsigned request_id,
     scada::ServiceContext context,
     std::vector<scada::BrowseDescription> inputs) {
-  auto result =
-      co_await service_.Browse(std::move(context), std::move(inputs));
+  auto result = co_await service_.Browse(std::move(context), std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});
 
@@ -102,8 +99,7 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
 Awaitable<void> ViewServiceStub::OnBrowsePathsAsync(
     unsigned request_id,
     std::vector<scada::BrowsePath> inputs) {
-  auto result =
-      co_await service_.TranslateBrowsePaths(std::move(inputs));
+  auto result = co_await service_.TranslateBrowsePaths(std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});
 

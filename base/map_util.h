@@ -1,7 +1,5 @@
 #pragma once
 
-#include <boost/optional.hpp>
-
 #include <algorithm>
 #include <cstddef>
 #include <ranges>
@@ -40,29 +38,7 @@ constexpr internal::MappedType<Map> FindOrNull(Map& map, const Key& key) {
 }
 
 template <typename Map, typename Key>
-// Returns a reference to the mapped value for `key`, or empty when absent.
-constexpr boost::optional<const internal::MappedType<Map>&> Find(
-    const Map& map,
-    const Key& key) {
-  auto it = map.find(key);
-  if (it == map.end()) {
-    return boost::none;
-  }
-  return it->second;
-}
-
-template <typename Map, typename Key>
-// Returns a reference to the mapped value for `key`, or empty when absent.
-constexpr boost::optional<internal::MappedType<Map>&> Find(Map& map,
-                                                           const Key& key) {
-  auto it = map.find(key);
-  if (it == map.end()) {
-    return boost::none;
-  }
-  return it->second;
-}
-
-template <typename Map, typename Key>
+// Returns a pointer to the mapped value for `key`, or null when absent.
 constexpr const internal::MappedType<Map>* FindPtr(const Map& map,
                                                    const Key& key) {
   auto it = map.find(key);
@@ -70,6 +46,7 @@ constexpr const internal::MappedType<Map>* FindPtr(const Map& map,
 }
 
 template <typename Map, typename Key>
+// Returns a pointer to the mapped value for `key`, or null when absent.
 constexpr internal::MappedType<Map>* FindPtr(Map& map, const Key& key) {
   auto it = map.find(key);
   return it != map.end() ? &it->second : nullptr;

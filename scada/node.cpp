@@ -24,10 +24,8 @@ Awaitable<Status> WriteNodeAsync(services services,
        .attribute_id = attribute_id,
        .value = std::move(value),
        .flags = flags}};
-  auto inputs = std::make_shared<const std::vector<WriteValue>>(
-      std::move(write_values));
   auto statuses = co_await services.attribute_service->Write(
-      context, std::move(inputs));
+      context, std::move(write_values));
   if (!statuses.ok()) {
     co_return statuses.status();
   }
@@ -59,10 +57,8 @@ Awaitable<StatusOr<DataValue>> ReadNodeAsync(services services,
 
   std::vector<ReadValueId> read_values{
       {.node_id = std::move(node_id), .attribute_id = attribute_id}};
-  auto inputs = std::make_shared<const std::vector<ReadValueId>>(
-      std::move(read_values));
   auto results = co_await services.attribute_service->Read(
-      std::move(context), std::move(inputs));
+      std::move(context), std::move(read_values));
   if (!results.ok()) {
     co_return results.status();
   }

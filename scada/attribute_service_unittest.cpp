@@ -17,18 +17,17 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
   testing::StrictMock<MockAttributeService> service;
 
   const auto context = ServiceContext{}.with_request_id(17);
-  auto read_inputs =
-      std::make_shared<std::vector<ReadValueId>>(1, ReadValueId{.node_id = 1});
+  const std::vector<ReadValueId> read_inputs(1, ReadValueId{.node_id = 1});
 
   EXPECT_CALL(service, Read(testing::_, testing::_))
       .WillOnce(Invoke([&](ServiceContext actual_context,
-                           std::shared_ptr<const std::vector<ReadValueId>>
-                               actual_inputs) -> Awaitable<StatusOr<std::vector<DataValue>>> {
+                           std::vector<ReadValueId> actual_inputs)
+                           -> Awaitable<StatusOr<std::vector<DataValue>>> {
         EXPECT_EQ(actual_context.request_id(), context.request_id());
-        EXPECT_EQ(actual_inputs->size(), 1u);
-        if (actual_inputs->size() != 1u)
+        EXPECT_EQ(actual_inputs.size(), 1u);
+        if (actual_inputs.size() != 1u)
           co_return StatusCode::Bad;
-        EXPECT_EQ((*actual_inputs)[0], (*read_inputs)[0]);
+        EXPECT_EQ(actual_inputs[0], read_inputs[0]);
         co_return std::vector{DataValue{Variant{42}, {}, {}, {}}};
       }));
 
@@ -37,17 +36,17 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
   ASSERT_EQ(read_result->size(), 1u);
   EXPECT_EQ((*read_result)[0], DataValue(Variant{42}, {}, {}, {}));
 
-  auto write_inputs = std::make_shared<std::vector<WriteValue>>(
+  const std::vector<WriteValue> write_inputs(
       1, WriteValue{.node_id = 2, .value = Variant{11}});
   EXPECT_CALL(service, Write(testing::_, testing::_))
       .WillOnce(Invoke([&](ServiceContext actual_context,
-                           std::shared_ptr<const std::vector<WriteValue>>
-                               actual_inputs) -> Awaitable<StatusOr<std::vector<StatusCode>>> {
+                           std::vector<WriteValue> actual_inputs)
+                           -> Awaitable<StatusOr<std::vector<StatusCode>>> {
         EXPECT_EQ(actual_context.request_id(), context.request_id());
-        EXPECT_EQ(actual_inputs->size(), 1u);
-        if (actual_inputs->size() != 1u)
+        EXPECT_EQ(actual_inputs.size(), 1u);
+        if (actual_inputs.size() != 1u)
           co_return StatusCode::Bad;
-        EXPECT_EQ((*actual_inputs)[0], (*write_inputs)[0]);
+        EXPECT_EQ(actual_inputs[0], write_inputs[0]);
         co_return std::vector{StatusCode::Good};
       }));
 

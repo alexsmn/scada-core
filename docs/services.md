@@ -20,9 +20,9 @@ These services are intentionally split across two async styles today:
 - callback-first service interfaces for most request/response services
 - coroutine-first session APIs, free helpers, and adapter interfaces
 
-The new coroutine layer in `core/scada/coroutine_services.h` standardizes a
-coroutine-facing shape for the async core services without breaking the
-existing callback contracts.
+Each service header (`core/scada/attribute_service.h`,
+`core/scada/view_service.h`, etc.) declares the coroutine-facing shape for its
+service directly, without breaking the existing callback contracts.
 
 ## Service Locator
 
@@ -76,26 +76,16 @@ auto status = co_await service.Call(node_id, method_id, arguments, user_id);
 
 ### Coroutine APIs
 
-Before the adapter layer, `core/scada/service_awaitable.h` exposed free
-awaitable wrappers such as:
+The service interfaces are coroutine-native: methods such as
+`AttributeService::Read`, `AttributeService::Write`, `MethodService::Call`,
+`ViewService::Browse`, `HistoryService::HistoryReadRaw`, and
+`NodeManagementService::AddNodes` return `Awaitable<...>` directly, so
+consumers `co_await` the service methods without an adapter layer. (The
+historical `core/scada/service_awaitable.h` free-function wrappers —
+`ReadAsync`, `WriteAsync`, `CallAsync`, and friends — have been removed.)
 
-- `ReadAsync`
-- `WriteAsync`
-- `CallAsync`
-- `HistoryReadRawAsync`
-- `BrowseAsync`
-- `AddNodesAsync`
-
-Those helpers remain useful for direct adaptation of existing callback
-services. They now centralize both executor entrypoints on one implementation
-path: the legacy `AnyExecutor` overloads forward to the
-`AnyExecutor` overloads, so coroutine consumers in `common/` and `server/`
-reuse the same callback-to-awaitable bridge instead of maintaining local
-copies.
-
-`core/scada/coroutine_services.h` adds coroutine-native service interfaces and
-named adapters so coroutine-based implementations can participate in the same
-service graph.
+The per-service headers declare these coroutine-native interfaces directly, so
+coroutine-based implementations participate in the same service graph.
 
 ## Core Service APIs
 
@@ -111,36 +101,24 @@ Purpose:
 Primary API:
 
 ```cpp
-virtual void Read(
-    const ServiceContext& context,
-    const std::shared_ptr<const std::vector<ReadValueId>>& inputs,
-    const ReadCallback& callback) = 0;
+class AttributeService {
+  virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
+      ServiceContext context,
+      std::vector<ReadValueId> inputs) = 0;
 
-virtual void Write(
-    const ServiceContext& context,
-    const std::shared_ptr<const std::vector<WriteValue>>& inputs,
-    const WriteCallback& callback) = 0;
+  virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
+      ServiceContext context,
+      std::vector<WriteValue> inputs) = 0;
+};
 ```
 
 Notes:
 
 - batching is part of the contract
+- inputs are passed by value, matching the other batch services
+  (`ViewService::Browse`, `NodeManagementService::AddNodes`); the callee's
+  coroutine frame owns them across suspension points
 - single-item inline helpers `Read(...)` and `Write(...)` are also provided
-- `WriteCallback` is `MultiStatusCallback`
-
-Coroutine equivalent:
-
-```cpp
-class AttributeService {
-  virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
-      ServiceContext context,
-      std::shared_ptr<const std::vector<ReadValueId>> inputs) = 0;
-
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
-      ServiceContext context,
-      std::shared_ptr<const std::vector<WriteValue>> inputs) = 0;
-};
-```
 
 ### MethodService
 

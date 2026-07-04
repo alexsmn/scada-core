@@ -16,14 +16,12 @@ class MockAttributeService : public AttributeService {
  public:
   MOCK_METHOD((Awaitable<StatusOr<std::vector<DataValue>>>),
               Read,
-              (ServiceContext context,
-               std::shared_ptr<const std::vector<ReadValueId>> inputs),
+              (ServiceContext context, std::vector<ReadValueId> inputs),
               (override));
 
   MOCK_METHOD((Awaitable<StatusOr<std::vector<StatusCode>>>),
               Write,
-              (ServiceContext context,
-               std::shared_ptr<const std::vector<WriteValue>> inputs),
+              (ServiceContext context, std::vector<WriteValue> inputs),
               (override));
 };
 
@@ -46,19 +44,19 @@ class SimpleMockAttributeService : public AttributeService {
 
   virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
       ServiceContext context,
-      std::shared_ptr<const std::vector<ReadValueId>> inputs) override {
-    std::vector<DataValue> results(inputs->size());
-    for (size_t i = 0; i < inputs->size(); ++i)
-      results[i] = Read((*inputs)[i]);
+      std::vector<ReadValueId> inputs) override {
+    std::vector<DataValue> results(inputs.size());
+    for (size_t i = 0; i < inputs.size(); ++i)
+      results[i] = Read(inputs[i]);
     co_return std::move(results);
   }
 
   virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
       ServiceContext context,
-      std::shared_ptr<const std::vector<WriteValue>> inputs) override {
-    std::vector<StatusCode> results(inputs->size());
-    for (size_t i = 0; i < inputs->size(); ++i)
-      results[i] = Write(context, (*inputs)[i]);
+      std::vector<WriteValue> inputs) override {
+    std::vector<StatusCode> results(inputs.size());
+    for (size_t i = 0; i < inputs.size(); ++i)
+      results[i] = Write(context, inputs[i]);
     co_return std::move(results);
   }
 };

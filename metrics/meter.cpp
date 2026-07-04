@@ -24,7 +24,7 @@ Instrument& FindOrCreateInstrument(
   std::lock_guard lock{mutex};
 
   const std::string name{metric_name};
-  if (auto instrument = Find(instruments, name)) {
+  if (auto* instrument = FindPtr(instruments, name)) {
     return **instrument;
   }
 

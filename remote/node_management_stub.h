@@ -2,9 +2,8 @@
 
 #include "base/any_executor.h"
 
-#include "base/boost_log.h"
 #include "base/awaitable.h"
-#include "scada/coroutine_services.h"
+#include "base/boost_log.h"
 #include "scada/node_attributes.h"
 #include "scada/node_id.h"
 #include "scada/node_management_service.h"
@@ -21,11 +20,12 @@ class Request;
 namespace scada {
 class NodeManagementService;
 class ServiceContext;
-}
+}  // namespace scada
 
 class MessageSender;
 
-class NodeManagementStub : public std::enable_shared_from_this<NodeManagementStub> {
+class NodeManagementStub
+    : public std::enable_shared_from_this<NodeManagementStub> {
  public:
   NodeManagementStub(AnyExecutor executor,
                      std::weak_ptr<MessageSender> sender,

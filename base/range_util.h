@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
+#include <ranges>
 #include <set>
 #include <vector>
 
@@ -109,9 +110,12 @@ namespace detail {
 struct to_set_forwarder {};
 };  // namespace detail
 
+// Takes a forwarding reference: std::ranges views (e.g. filter_view) are not
+// const-iterable, so `const R&` would reject them.
 template <class R>
-inline auto operator|(const R& r, ::detail::to_set_forwarder) {
-  return std::set<typename R::value_type>(std::begin(r), std::end(r));
+inline auto operator|(R&& r, ::detail::to_set_forwarder) {
+  return std::set<std::ranges::range_value_t<R>>(std::ranges::begin(r),
+                                                 std::ranges::end(r));
 }
 
 inline static const auto to_set = ::detail::to_set_forwarder();
@@ -122,9 +126,12 @@ namespace detail {
 struct to_vector_forwarder {};
 };  // namespace detail
 
+// Takes a forwarding reference: std::ranges views (e.g. filter_view) are not
+// const-iterable, so `const R&` would reject them.
 template <class R>
-inline auto operator|(const R& r, ::detail::to_vector_forwarder) {
-  return std::vector<typename R::value_type>(std::begin(r), std::end(r));
+inline auto operator|(R&& r, ::detail::to_vector_forwarder) {
+  return std::vector<std::ranges::range_value_t<R>>(std::ranges::begin(r),
+                                                    std::ranges::end(r));
 }
 
 inline static const auto to_vector = ::detail::to_vector_forwarder();

@@ -607,14 +607,14 @@ void SessionProxy::ForwardConnectResult(scada::Status&& status) {
 
 Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> SessionProxy::Read(
     scada::ServiceContext context,
-    std::shared_ptr<const std::vector<scada::ReadValueId>> inputs) {
+    std::vector<scada::ReadValueId> inputs) {
   if (!session_created_) {
     co_return scada::StatusCode::Bad_Disconnected;
   }
 
   protocol::Request request;
   auto& read = *request.mutable_read();
-  for (auto& value_id : *inputs)
+  for (auto& value_id : inputs)
     Convert(value_id, *read.add_value_id());
 
   auto response = co_await RequestAsync(std::move(request));
@@ -627,13 +627,13 @@ Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> SessionProxy::Read(
 
 Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> SessionProxy::Write(
     scada::ServiceContext context,
-    std::shared_ptr<const std::vector<scada::WriteValue>> inputs) {
+    std::vector<scada::WriteValue> inputs) {
   if (!session_created_) {
     co_return scada::StatusCode::Bad_Disconnected;
   }
 
   protocol::Request request;
-  for (auto& value : *inputs)
+  for (auto& value : inputs)
     Convert(value, *request.add_write());
 
   auto response = co_await RequestAsync(std::move(request));

@@ -7,28 +7,28 @@
 
 namespace {
 
-TEST(MapUtilTest, FindReturnsReferenceForValueMap) {
+TEST(MapUtilTest, FindPtrReturnsPointerForValueMap) {
   std::map<int, int> values{{1, 10}};
 
-  boost::optional<int&> value = Find(values, 1);
-  boost::optional<int&> missing = Find(values, 2);
+  int* value = FindPtr(values, 1);
+  int* missing = FindPtr(values, 2);
 
-  ASSERT_TRUE(value);
+  ASSERT_NE(value, nullptr);
   EXPECT_EQ(*value, 10);
   *value = 20;
   EXPECT_EQ(values[1], 20);
-  EXPECT_FALSE(missing);
+  EXPECT_EQ(missing, nullptr);
 }
 
-TEST(MapUtilTest, FindReturnsConstReferenceForConstValueMap) {
+TEST(MapUtilTest, FindPtrReturnsConstPointerForConstValueMap) {
   const std::map<int, int> values{{1, 10}};
 
-  boost::optional<const int&> value = Find(values, 1);
-  boost::optional<const int&> missing = Find(values, 2);
+  const int* value = FindPtr(values, 1);
+  const int* missing = FindPtr(values, 2);
 
-  ASSERT_TRUE(value);
+  ASSERT_NE(value, nullptr);
   EXPECT_EQ(*value, 10);
-  EXPECT_FALSE(missing);
+  EXPECT_EQ(missing, nullptr);
 }
 
 TEST(MapUtilTest, FindOrNullPreservesPointerLikeMapBehavior) {
