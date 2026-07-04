@@ -49,7 +49,7 @@ Awaitable<Status> CallNodeAsync(services services,
   auto executor = co_await boost::asio::this_coro::executor;
   co_return co_await CallAsync(executor, *services.method_service,
                                std::move(node_id), std::move(method_id),
-                               std::move(arguments), context.user_id());
+                               std::move(arguments), std::move(context));
 }
 
 Awaitable<StatusOr<DataValue>> ReadNodeAsync(services services,

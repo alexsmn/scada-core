@@ -41,7 +41,7 @@ Awaitable<Status> CallAsync(AnyExecutor executor,
                             NodeId node_id,
                             NodeId method_id,
                             std::vector<Variant> arguments,
-                            NodeId user_id);
+                            ServiceContext context);
 
 Awaitable<HistoryReadRawResult> HistoryReadRawAsync(
     AnyExecutor executor,
@@ -116,9 +116,9 @@ inline Awaitable<Status> CallAsync(AnyExecutor executor,
                                    NodeId node_id,
                                    NodeId method_id,
                                    std::vector<Variant> arguments,
-                                   NodeId user_id) {
+                                   ServiceContext context) {
   co_return co_await service.Call(std::move(node_id), std::move(method_id),
-                                  std::move(arguments), std::move(user_id));
+                                  std::move(arguments), std::move(context));
 }
 
 inline Awaitable<HistoryReadRawResult> HistoryReadRawAsync(

@@ -647,10 +647,13 @@ Awaitable<scada::Status> SessionProxy::Call(
     scada::NodeId node_id,
     scada::NodeId method_id,
     std::vector<scada::Variant> arguments,
-    scada::NodeId user_id) {
+    scada::ServiceContext context) {
   if (!session_created_) {
     co_return scada::StatusCode::Bad_Disconnected;
   }
+  // The session identity is implied by the gRPC session (authorized
+  // server-side), so the caller context is not re-sent on the wire.
+  (void)context;
 
   protocol::Request request;
   auto& command = *request.mutable_call()->mutable_device_command();

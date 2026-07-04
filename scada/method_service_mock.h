@@ -13,7 +13,7 @@ class MockMethodService : public MethodService {
               (NodeId node_id,
                NodeId method_id,
                std::vector<Variant> arguments,
-               NodeId user_id),
+               ServiceContext context),
               (override));
 };
 

@@ -320,7 +320,7 @@ Awaitable<void> SessionStub::OnCallAsync(
       co_await services_.method_service->Call(std::move(node_id),
                                               std::move(method_id),
                                               std::move(arguments),
-                                              service_context_.user_id());
+                                              service_context_);
 
   if (!connection_)
     co_return;
