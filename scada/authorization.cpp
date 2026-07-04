@@ -82,4 +82,35 @@ bool IsPermitted(std::uint32_t access_rights,
   return Contains(PermissionsForUser(access_rights, is_anonymous), required);
 }
 
+std::uint8_t UserAccessLevel(std::uint8_t access_level,
+                             std::uint32_t access_rights,
+                             bool is_anonymous) {
+  const Permission permissions =
+      PermissionsForUser(access_rights, is_anonymous);
+
+  std::uint8_t user = access_level;
+  const auto clear_unless = [&](std::uint8_t bit, Permission needed) {
+    if (!Contains(permissions, needed)) {
+      user &= static_cast<std::uint8_t>(~bit);
+    }
+  };
+
+  clear_unless(access_level::kCurrentRead, Permission::kRead);
+  clear_unless(access_level::kCurrentWrite, Permission::kWrite);
+  clear_unless(access_level::kStatusWrite, Permission::kWrite);
+  clear_unless(access_level::kTimestampWrite, Permission::kWrite);
+  clear_unless(access_level::kHistoryRead, Permission::kReadHistory);
+
+  // HistoryWrite covers inserting, replacing/updating, and removing history, so
+  // it is retained when the caller holds any of those permissions.
+  const Permission history_write = Permission::kInsertHistory |
+                                   Permission::kModifyHistory |
+                                   Permission::kDeleteHistory;
+  if ((permissions & history_write) == Permission::kNone) {
+    user &= static_cast<std::uint8_t>(~access_level::kHistoryWrite);
+  }
+
+  return user;
+}
+
 }  // namespace scada

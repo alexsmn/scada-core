@@ -71,6 +71,38 @@ TEST(AuthorizationTest, RootHasAllPermissions) {
   EXPECT_TRUE(IsPermitted(kRootRights, false, Permission::kWriteRolePermissions));
 }
 
+TEST(AuthorizationTest, UserAccessLevelNarrowsWriteToPermittedRoles) {
+  constexpr std::uint8_t kReadWrite =
+      access_level::kCurrentRead | access_level::kCurrentWrite;
+
+  // An Operator (Control) keeps write; a plain authenticated Observer and an
+  // anonymous caller lose it but keep read.
+  EXPECT_EQ(UserAccessLevel(kReadWrite, kControl, false), kReadWrite);
+  EXPECT_EQ(UserAccessLevel(kReadWrite, 0, false), access_level::kCurrentRead);
+  EXPECT_EQ(UserAccessLevel(kReadWrite, 0, true), access_level::kCurrentRead);
+}
+
+TEST(AuthorizationTest, UserAccessLevelNarrowsHistoryAndWriteBits) {
+  constexpr std::uint8_t kAll =
+      access_level::kCurrentRead | access_level::kCurrentWrite |
+      access_level::kHistoryRead | access_level::kHistoryWrite |
+      access_level::kStatusWrite | access_level::kTimestampWrite;
+
+  // Observer: current-read + history-read only (no write, no history write).
+  EXPECT_EQ(UserAccessLevel(kAll, 0, false),
+            access_level::kCurrentRead | access_level::kHistoryRead);
+  // Anonymous has no history-read permission.
+  EXPECT_EQ(UserAccessLevel(kAll, 0, true), access_level::kCurrentRead);
+  // A configuration admin retains every bit (full write + history rights).
+  EXPECT_EQ(UserAccessLevel(kAll, kConfigure, false), kAll);
+}
+
+TEST(AuthorizationTest, UserAccessLevelPreservesSemanticChange) {
+  // SemanticChange is informational, not user-permission gated.
+  EXPECT_EQ(UserAccessLevel(access_level::kSemanticChange, 0, /*anon=*/true),
+            access_level::kSemanticChange);
+}
+
 TEST(AuthorizationTest, PermissionBitwiseHelpers) {
   const Permission combined = Permission::kRead | Permission::kWrite;
   EXPECT_TRUE(Contains(combined, Permission::kRead));

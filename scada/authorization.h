@@ -46,6 +46,21 @@ enum class Permission : std::uint32_t {
   kAddNode = 1u << 16,
 };
 
+// OPC UA AccessLevelType bit mask (OPC UA Part 3 §8.57). The numeric values
+// match the wire encoding, so an AccessLevel / UserAccessLevel byte can be
+// composed from these and returned directly.
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.57
+namespace access_level {
+inline constexpr std::uint8_t kNone = 0x00;
+inline constexpr std::uint8_t kCurrentRead = 0x01;
+inline constexpr std::uint8_t kCurrentWrite = 0x02;
+inline constexpr std::uint8_t kHistoryRead = 0x04;
+inline constexpr std::uint8_t kHistoryWrite = 0x08;
+inline constexpr std::uint8_t kSemanticChange = 0x10;
+inline constexpr std::uint8_t kStatusWrite = 0x20;
+inline constexpr std::uint8_t kTimestampWrite = 0x40;
+}  // namespace access_level
+
 constexpr Permission operator|(Permission a, Permission b) {
   return static_cast<Permission>(static_cast<std::uint32_t>(a) |
                                  static_cast<std::uint32_t>(b));
@@ -85,5 +100,16 @@ Permission PermissionsForUser(std::uint32_t access_rights, bool is_anonymous);
 bool IsPermitted(std::uint32_t access_rights,
                  bool is_anonymous,
                  Permission required);
+
+// Narrows a node's `access_level` (AccessLevelType bits) to the caller's
+// UserAccessLevel: each access bit is kept only when the caller holds the
+// corresponding permission (OPC UA Part 3 §5.6.2 UserAccessLevel). CurrentRead
+// requires kRead; CurrentWrite / StatusWrite / TimestampWrite require kWrite;
+// HistoryRead requires kReadHistory; HistoryWrite requires any history-modifying
+// permission (Insert/Modify/Delete). SemanticChange is informational and left as
+// declared. https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.2
+std::uint8_t UserAccessLevel(std::uint8_t access_level,
+                             std::uint32_t access_rights,
+                             bool is_anonymous);
 
 }  // namespace scada
