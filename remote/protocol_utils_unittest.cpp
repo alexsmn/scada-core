@@ -2,7 +2,42 @@
 
 #include "model/node_id_util.h"
 #include "remote/protocol_utils.h"
+#include "scada/authorization.h"
 #include "scada/event.h"
+#include "scada/extension_object.h"
+#include "scada/variant.h"
+
+#include <any>
+#include <vector>
+
+TEST(ProtocolUtils, ExtensionObjectRolePermissionArrayRoundTrip) {
+  const scada::RolePermissionType role{
+      .role_id = scada::NodeId{15680u, 0},  // WellKnownRole_Operator
+      .permissions = scada::Permission::kRead | scada::Permission::kWrite};
+  std::vector<scada::ExtensionObject> objects;
+  objects.emplace_back(scada::ExpandedNodeId{scada::NodeId{96u, 0}},
+                       std::any{role});
+  const scada::Variant original{std::move(objects)};
+
+  protocol::Variant proto;
+  Convert(original, proto);
+  const auto restored = ConvertTo<scada::Variant>(proto);
+
+  ASSERT_TRUE(restored.is_array());
+  ASSERT_EQ(restored.type(), scada::Variant::EXTENSION_OBJECT);
+  const auto& restored_objects =
+      restored.get<std::vector<scada::ExtensionObject>>();
+  ASSERT_EQ(restored_objects.size(), 1u);
+  EXPECT_EQ(restored_objects.front().data_type_id().node_id(),
+            (scada::NodeId{96u, 0}));
+
+  const auto* decoded = std::any_cast<scada::RolePermissionType>(
+      &restored_objects.front().value());
+  ASSERT_NE(decoded, nullptr);
+  EXPECT_EQ(decoded->role_id, (scada::NodeId{15680u, 0}));
+  EXPECT_EQ(decoded->permissions,
+            (scada::Permission::kRead | scada::Permission::kWrite));
+}
 
 TEST(ProtocolUtils, NodeId) {
   auto node_id = NodeIdFromScadaString("HISTORICAL_DB.4!PendingTaskCount");

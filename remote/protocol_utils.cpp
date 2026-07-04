@@ -1,13 +1,18 @@
 #include "remote/protocol_utils.h"
 
+#include "base/check.h"
 #include "base/utf_convert.h"
 #include "scada/aggregate_filter.h"
 #include "scada/attribute_service.h"
+#include "scada/authorization.h"
 #include "scada/event.h"
 #include "scada/event_filter.h"
+#include "scada/extension_object.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
 #include "scada/standard_node_ids.h"
+
+#include <any>
 
 namespace {
 
@@ -62,8 +67,38 @@ void Convert(const scada::NodeId& source, protocol::NodeId& target) {
                            source.opaque_id().size());
       break;
     default:
-      assert(false);
-      break;
+      base::NotReached();
+  }
+}
+
+void Convert(const protocol::ExtensionObject& source,
+             scada::ExtensionObject& target) {
+  scada::NodeId type_id;
+  Convert(source.type_id(), type_id);
+
+  std::any value;
+  if (source.has_role_permission()) {
+    scada::RolePermissionType role;
+    Convert(source.role_permission().role_id(), role.role_id);
+    role.permissions =
+        static_cast<scada::Permission>(source.role_permission().permissions());
+    value = std::any{role};
+  }
+  target = scada::ExtensionObject{scada::ExpandedNodeId{std::move(type_id)},
+                                  std::move(value)};
+}
+
+void Convert(const scada::ExtensionObject& source,
+             protocol::ExtensionObject& target) {
+  Convert(source.data_type_id().node_id(), *target.mutable_type_id());
+  // Only RolePermissionType payloads are carried across gRPC today; other
+  // payloads degrade to just the type id (matching the pre-existing behavior).
+  if (const auto* role =
+          std::any_cast<scada::RolePermissionType>(&source.value())) {
+    auto* role_permission = target.mutable_role_permission();
+    Convert(role->role_id, *role_permission->mutable_role_id());
+    role_permission->set_permissions(
+        static_cast<std::uint32_t>(role->permissions));
   }
 }
 
@@ -152,8 +187,11 @@ void Convert(const protocol::Variant& source, scada::Variant& target) {
         target = scada::DateTime::FromDeltaSinceWindowsEpoch(
             base::TimeDelta::FromMicroseconds(source.time_value_time()));
         break;
+      case scada::Variant::EXTENSION_OBJECT:
+        target = ConvertTo<scada::ExtensionObject>(source.extension_object_value());
+        break;
       default:
-        assert(false);
+        // |data_type| arrives from the wire - degrade unknown types to null.
         target = {};
         break;
     }
@@ -199,17 +237,17 @@ void Convert(const protocol::Variant& source, scada::Variant& target) {
             source.string_array_utf8());
         break;
       case scada::Variant::EXTENSION_OBJECT:
-        // Ignore.
-        target = {};
+        target = ConvertTo<std::vector<scada::ExtensionObject>>(
+            source.extension_object_array());
         break;
       default:
-        assert(false);
+        // |data_type| arrives from the wire - degrade unknown types to null.
         target = {};
         break;
     }
 
   } else {
-    assert(false);
+    // Unsupported wire rank - degrade to null.
     target = {};
   }
 }
@@ -278,9 +316,12 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
                                        .ToDeltaSinceWindowsEpoch()
                                        .InMicroseconds());
         break;
-      default:
-        assert(false);
+      case scada::Variant::EXTENSION_OBJECT:
+        Convert(source.get<scada::ExtensionObject>(),
+                *target.mutable_extension_object_value());
         break;
+      default:
+        base::NotReached();
     }
 
   } else {
@@ -335,11 +376,11 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
                 *target.mutable_string_array_utf8());
         break;
       case scada::Variant::EXTENSION_OBJECT:
-        // Ignore.
+        Convert(source.get<std::vector<scada::ExtensionObject>>(),
+                *target.mutable_extension_object_array());
         break;
       default:
-        assert(false);
-        break;
+        base::NotReached();
     }
   }
 }
@@ -408,7 +449,7 @@ void Convert(const protocol::Event& source, scada::Event& target) {
 }
 
 void Convert(const scada::Event& source, protocol::Event& target) {
-  assert(source.event_id != 0);
+  base::Check(source.event_id != 0);
 
   target.set_event_id(source.event_id);
   target.set_time(source.time.ToInternalValue());
@@ -599,23 +640,29 @@ void Convert(const protocol::BrowsePathTarget& source,
 
 void Convert(const scada::BrowsePathTarget& source,
              protocol::BrowsePathTarget& target) {
-  assert(source.target_id.server_index() == 0);
-  assert(source.target_id.namespace_uri().empty());
+  base::Check(source.target_id.server_index() == 0);
+  base::Check(source.target_id.namespace_uri().empty());
   Convert(source.target_id.node_id(), *target.mutable_target_id());
   target.set_remaining_path_index(source.remaining_path_index);
 }
 
-bool AssertValid(const scada::ModelChangeEvent& event) {
-  assert(!event.node_id.is_null());
-  assert(event.verb != 0);
+// Returns true if a model change event is structurally valid: it names a
+// node, carries at least one verb, an added node has a type definition, and
+// a delete is not combined with other verbs.
+bool IsValid(const scada::ModelChangeEvent& event) {
+  if (event.node_id.is_null())
+    return false;
+  if (event.verb == 0)
+    return false;
 
-  if (event.verb & scada::ModelChangeEvent::NodeAdded) {
-    assert(!event.type_definition_id.is_null());
+  if ((event.verb & scada::ModelChangeEvent::NodeAdded) &&
+      event.type_definition_id.is_null()) {
+    return false;
   }
 
-  if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
-    assert(event.verb ==
-           static_cast<uint8_t>(scada::ModelChangeEvent::NodeDeleted));
+  if ((event.verb & scada::ModelChangeEvent::NodeDeleted) &&
+      event.verb != static_cast<uint8_t>(scada::ModelChangeEvent::NodeDeleted)) {
+    return false;
   }
 
   return true;
@@ -637,12 +684,13 @@ void Convert(const protocol::ModelChangeEvent& source,
   if (source.reference_deleted())
     target.verb |= scada::ModelChangeEvent::ReferenceDeleted;
 
-  assert(AssertValid(target));
+  // |source| arrives from the wire; consumers are responsible for handling
+  // structurally invalid events (see IsValid).
 }
 
 void Convert(const scada::ModelChangeEvent& source,
              protocol::ModelChangeEvent& target) {
-  assert(AssertValid(source));
+  base::Check(IsValid(source));
 
   if (!source.node_id.is_null())
     Convert(source.node_id, *target.mutable_node_id());

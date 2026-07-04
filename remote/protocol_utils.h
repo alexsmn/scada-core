@@ -34,6 +34,11 @@ void Convert(const scada::ByteString& source, std::string& target);
 void Convert(const protocol::NodeId& source, scada::NodeId& target);
 void Convert(const scada::NodeId& source, protocol::NodeId& target);
 
+void Convert(const protocol::ExtensionObject& source,
+             scada::ExtensionObject& target);
+void Convert(const scada::ExtensionObject& source,
+             protocol::ExtensionObject& target);
+
 void Convert(const protocol::Variant& source, scada::Variant& target);
 void Convert(const scada::Variant& source, protocol::Variant& target);
 

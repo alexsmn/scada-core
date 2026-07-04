@@ -62,6 +62,21 @@ message ExpandedNodeId {
   NodeId node_id = 1;
 }
 
+// One (role, permissions) entry of a RolePermissionType value (OPC UA Part 3
+// §8.56). Carried inside ExtensionObject on the gRPC wire.
+message RolePermission {
+  NodeId role_id = 1;
+  uint32 permissions = 2;
+}
+
+// gRPC representation of a structured (ExtensionObject) value. `type_id` is the
+// value's DataType NodeId; the payload is a typed field (only RolePermissionType
+// is carried today).
+message ExtensionObject {
+  NodeId type_id = 1;
+  RolePermission role_permission = 2;
+}
+
 message Variant {
   uint32 data_type     = 1;
 
@@ -76,6 +91,7 @@ message Variant {
   NodeId node_id_value = 17;
   bytes  byte_string_value = 18;
   int64  time_value_time = 19;
+  ExtensionObject extension_object_value = 20;
 
   repeated bool   bool_array = 103;
   repeated int64  int_array = 104;
@@ -85,6 +101,7 @@ message Variant {
   NodeId node_id_array = 107;
   bytes  byte_string_array = 108;
   int64  time_array_time = 109;
+  repeated ExtensionObject extension_object_array = 110;
 }
 
 message DataValue {
