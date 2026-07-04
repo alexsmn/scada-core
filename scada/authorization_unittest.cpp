@@ -147,6 +147,42 @@ TEST(AuthorizationTest, UserRolePermissionsReflectsCallerRoles) {
   EXPECT_TRUE(has_operator_with_write);
 }
 
+TEST(AuthorizationTest, UserRolePermissionsFromNodeOverride) {
+  // A node override that grants Operator full write but Observer only browse.
+  const std::vector<RolePermissionType> override_permissions = {
+      {.role_id = WellKnownRoleId(WellKnownRole::kObserver),
+       .permissions = Permission::kBrowse},
+      {.role_id = WellKnownRoleId(WellKnownRole::kOperator),
+       .permissions = Permission::kBrowse | Permission::kRead |
+                      Permission::kWrite}};
+
+  // An operator holds AuthenticatedUser + Observer + Operator; only the Observer
+  // and Operator entries appear in the override, and its effective permissions
+  // are the union (so it may write).
+  const auto op = UserRolePermissionsFrom(override_permissions, kControl,
+                                           /*is_anonymous=*/false);
+  EXPECT_EQ(op.size(), 2u);
+  EXPECT_TRUE(Contains(PermissionsForUserFrom(override_permissions, kControl,
+                                              /*is_anonymous=*/false),
+                       Permission::kWrite));
+
+  // A plain authenticated Observer matches only the Observer entry and may not
+  // write, even though the node grants Operator write.
+  const auto observer = UserRolePermissionsFrom(override_permissions, 0,
+                                                /*is_anonymous=*/false);
+  ASSERT_EQ(observer.size(), 1u);
+  EXPECT_EQ(observer.front().role_id,
+            WellKnownRoleId(WellKnownRole::kObserver));
+  EXPECT_FALSE(Contains(
+      PermissionsForUserFrom(override_permissions, 0, /*is_anonymous=*/false),
+      Permission::kWrite));
+
+  // An anonymous caller matches no entry in this override.
+  EXPECT_TRUE(
+      UserRolePermissionsFrom(override_permissions, 0, /*is_anonymous=*/true)
+          .empty());
+}
+
 TEST(AuthorizationTest, PermissionBitwiseHelpers) {
   const Permission combined = Permission::kRead | Permission::kWrite;
   EXPECT_TRUE(Contains(combined, Permission::kRead));

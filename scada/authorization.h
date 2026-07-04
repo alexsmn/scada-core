@@ -4,6 +4,7 @@
 #include "scada/privileges.h"
 
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace scada {
@@ -139,5 +140,22 @@ std::vector<RolePermissionType> DefaultRolePermissions();
 // per-session narrowing of RolePermissions.
 std::vector<RolePermissionType> UserRolePermissions(std::uint32_t access_rights,
                                                     bool is_anonymous);
+
+// The caller's UserRolePermissions narrowed from a specific node's
+// `role_permissions` override (Part 3 §5.2.10): the entries whose role the
+// caller currently holds. Use this when a node carries its own RolePermissions
+// instead of the server default.
+std::vector<RolePermissionType> UserRolePermissionsFrom(
+    std::span<const RolePermissionType> role_permissions,
+    std::uint32_t access_rights,
+    bool is_anonymous);
+
+// The caller's effective permissions derived from a specific node's
+// `role_permissions` override: the union of permissions across the entries whose
+// role the caller holds. This is the per-node analogue of `PermissionsForUser`.
+Permission PermissionsForUserFrom(
+    std::span<const RolePermissionType> role_permissions,
+    std::uint32_t access_rights,
+    bool is_anonymous);
 
 }  // namespace scada

@@ -1,5 +1,7 @@
 #include "scada/authorization.h"
 
+#include <algorithm>
+
 namespace scada {
 
 namespace {
@@ -164,6 +166,37 @@ std::vector<RolePermissionType> DefaultRolePermissions() {
 std::vector<RolePermissionType> UserRolePermissions(std::uint32_t access_rights,
                                                     bool is_anonymous) {
   return RolePermissionsFor(RolesForUser(access_rights, is_anonymous));
+}
+
+std::vector<RolePermissionType> UserRolePermissionsFrom(
+    std::span<const RolePermissionType> role_permissions,
+    std::uint32_t access_rights,
+    bool is_anonymous) {
+  std::vector<NodeId> caller_role_ids;
+  for (const WellKnownRole role : RolesForUser(access_rights, is_anonymous)) {
+    caller_role_ids.push_back(WellKnownRoleId(role));
+  }
+
+  std::vector<RolePermissionType> result;
+  for (const RolePermissionType& entry : role_permissions) {
+    if (std::find(caller_role_ids.begin(), caller_role_ids.end(),
+                  entry.role_id) != caller_role_ids.end()) {
+      result.push_back(entry);
+    }
+  }
+  return result;
+}
+
+Permission PermissionsForUserFrom(
+    std::span<const RolePermissionType> role_permissions,
+    std::uint32_t access_rights,
+    bool is_anonymous) {
+  Permission permissions = Permission::kNone;
+  for (const RolePermissionType& entry :
+       UserRolePermissionsFrom(role_permissions, access_rights, is_anonymous)) {
+    permissions |= entry.permissions;
+  }
+  return permissions;
 }
 
 }  // namespace scada
