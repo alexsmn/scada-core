@@ -36,9 +36,9 @@ void SessionStub::Init() {
   const std::weak_ptr<MessageSender> sender = weak_from_this();
 
   if (services_.view_service) {
-    view_service_stub_ =
-        std::make_shared<ViewServiceStub>(ViewServiceStubContext{
-            executor_, sender, service_context_, *services_.view_service});
+    view_service_stub_ = std::make_shared<ViewServiceStub>(
+        ViewServiceStubContext{executor_, sender, service_context_,
+                               *services_.view_service, tracer_});
   }
 
   if (services_.node_management_service) {
@@ -49,7 +49,7 @@ void SessionStub::Init() {
 
   if (services_.history_service) {
     history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
-                                                  sender, executor_);
+                                                  sender, executor_, tracer_);
   }
 }
 
@@ -105,6 +105,7 @@ void SessionStub::ProcessRequest(const protocol::Request& request) {
     if (call.has_device_command()) {
       auto& device_command = call.device_command();
       OnCall(request.request_id(),
+             service_context_.with_trace_id(request.trace_id()),
              ConvertTo<scada::NodeId>(device_command.node_id()),
              ConvertTo<scada::NodeId>(device_command.method_id()),
              ConvertTo<std::vector<scada::Variant>>(device_command.argument()));
@@ -237,6 +238,7 @@ void SessionStub::OnSessionDeleted() {
 }
 
 void SessionStub::OnCall(unsigned request_id,
+                         scada::ServiceContext context,
                          const scada::NodeId& node_id,
                          const scada::NodeId& method_id,
                          const std::vector<scada::Variant>& arguments) {
@@ -248,11 +250,12 @@ void SessionStub::OnCall(unsigned request_id,
     return;
   }
   auto self = shared_from_this();
-  CoSpawn(
-      executor_,
-      [self, request_id, node_id, method_id, arguments]() -> Awaitable<void> {
-        co_await self->OnCallAsync(request_id, node_id, method_id, arguments);
-      });
+  CoSpawn(executor_,
+          [self, request_id, context = std::move(context), node_id, method_id,
+           arguments]() -> Awaitable<void> {
+            co_await self->OnCallAsync(request_id, std::move(context), node_id,
+                                       method_id, arguments);
+          });
 }
 
 void SessionStub::OnRead(const protocol::Request& request) {
@@ -271,13 +274,13 @@ void SessionStub::OnRead(const protocol::Request& request) {
   scada::ServiceContext context =
       service_context_.with_trace_id(request.trace_id());
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id = request.request_id(),
-           context = std::move(context),
-           inputs = std::move(inputs)]() mutable -> Awaitable<void> {
-            co_await self->OnReadAsync(request_id, std::move(context),
-                                       std::move(inputs));
-          });
+  CoSpawn(
+      executor_,
+      [self, request_id = request.request_id(), context = std::move(context),
+       inputs = std::move(inputs)]() mutable -> Awaitable<void> {
+        co_await self->OnReadAsync(request_id, std::move(context),
+                                   std::move(inputs));
+      });
 }
 
 void SessionStub::OnWrite(const protocol::Request& request) {
@@ -293,22 +296,31 @@ void SessionStub::OnWrite(const protocol::Request& request) {
 
   const auto request_id = request.request_id();
   auto inputs = ConvertTo<std::vector<scada::WriteValue>>(request.write());
+  scada::ServiceContext context =
+      service_context_.with_trace_id(request.trace_id());
   auto self = shared_from_this();
   CoSpawn(executor_,
-          [self, request_id,
+          [self, request_id, context = std::move(context),
            inputs = std::move(inputs)]() mutable -> Awaitable<void> {
-            co_await self->OnWriteAsync(request_id, std::move(inputs));
+            co_await self->OnWriteAsync(request_id, std::move(context),
+                                        std::move(inputs));
           });
 }
 
 Awaitable<void> SessionStub::OnCallAsync(
     unsigned request_id,
+    scada::ServiceContext context,
     scada::NodeId node_id,
     scada::NodeId method_id,
     std::vector<scada::Variant> arguments) {
+  auto span = tracer_.StartSpan("scada.grpc/Call", TraceSpanKind::kServer,
+                                context.trace_id());
+  if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
+    context = context.with_trace_id(trace_parent);
+  }
+
   auto status = co_await services_.method_service->Call(
-      std::move(node_id), std::move(method_id), std::move(arguments),
-      service_context_);
+      std::move(node_id), std::move(method_id), std::move(arguments), context);
 
   if (!connection_)
     co_return;
@@ -320,9 +332,16 @@ Awaitable<void> SessionStub::OnCallAsync(
   Send(message);
 }
 
-Awaitable<void> SessionStub::OnReadAsync(unsigned request_id,
-                                         scada::ServiceContext context,
-                                         std::vector<scada::ReadValueId> inputs) {
+Awaitable<void> SessionStub::OnReadAsync(
+    unsigned request_id,
+    scada::ServiceContext context,
+    std::vector<scada::ReadValueId> inputs) {
+  auto span = tracer_.StartSpan("scada.grpc/Read", TraceSpanKind::kServer,
+                                context.trace_id());
+  if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
+    context = context.with_trace_id(trace_parent);
+  }
+
   const auto input_count = inputs.size();
   auto result = co_await services_.attribute_service->Read(std::move(context),
                                                            std::move(inputs));
@@ -348,9 +367,16 @@ Awaitable<void> SessionStub::OnReadAsync(unsigned request_id,
 
 Awaitable<void> SessionStub::OnWriteAsync(
     unsigned request_id,
+    scada::ServiceContext context,
     std::vector<scada::WriteValue> inputs) {
+  auto span = tracer_.StartSpan("scada.grpc/Write", TraceSpanKind::kServer,
+                                context.trace_id());
+  if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
+    context = context.with_trace_id(trace_parent);
+  }
+
   const auto input_count = inputs.size();
-  auto result = co_await services_.attribute_service->Write(service_context_,
+  auto result = co_await services_.attribute_service->Write(std::move(context),
                                                             std::move(inputs));
   auto status = result.status();
   auto status_codes = std::move(result).value_or({});

@@ -4,6 +4,7 @@
 
 #include "base/awaitable.h"
 #include "base/boost_log.h"
+#include "metrics/tracer.h"
 #include "remote/message_sender.h"
 #include "scada/attribute_service.h"
 #include "scada/service_context.h"
@@ -40,6 +41,9 @@ struct SessionContext {
   // TODO: Use `scada::client`.
   scada::services services_;
   const scada::ServiceContext service_context_;
+  // Emits SERVER spans for inbound Read/Write/Call requests, continuing the
+  // trace from the request's traceparent when present.
+  Tracer& tracer_ = Tracer::None();
 };
 
 class SessionStub : public MessageSender,
@@ -86,13 +90,16 @@ class SessionStub : public MessageSender,
   void OnWrite(const protocol::Request& request);
   [[nodiscard]] Awaitable<void> OnWriteAsync(
       unsigned request_id,
+      scada::ServiceContext context,
       std::vector<scada::WriteValue> inputs);
   void OnCall(unsigned request_id,
+              scada::ServiceContext context,
               const scada::NodeId& node_id,
               const scada::NodeId& method_id,
               const std::vector<scada::Variant>& arguments);
   [[nodiscard]] Awaitable<void> OnCallAsync(
       unsigned request_id,
+      scada::ServiceContext context,
       scada::NodeId node_id,
       scada::NodeId method_id,
       std::vector<scada::Variant> arguments);

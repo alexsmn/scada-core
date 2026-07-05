@@ -12,3 +12,9 @@ Tracer& Tracer::None() {
 TraceSpan Tracer::StartSpan(std::string_view name) {
   return TraceSpan{sink_, name};
 }
+
+TraceSpan Tracer::StartSpan(std::string_view name,
+                            TraceSpanKind kind,
+                            std::string_view remote_parent) {
+  return TraceSpan{sink_, name, kind, remote_parent};
+}

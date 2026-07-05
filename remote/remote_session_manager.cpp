@@ -229,7 +229,8 @@ SessionStub& RemoteSessionManager::CreateNewSession(
       .services_ = services_,
       .service_context_ =
           scada::ServiceContext{}.with_user_id(user_id).with_user_rights(
-              user_rights)});
+              user_rights),
+      .tracer_ = tracer_});
 
   auto& session_ref = *session;
   session_map_.insert_or_assign(user_id, std::move(session));

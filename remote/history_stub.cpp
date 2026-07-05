@@ -1,8 +1,8 @@
 #include "remote/history_stub.h"
 
-#include "base/check.h"
-#include "base/awaitable.h"
 #include "base/any_executor_dispatch.h"
+#include "base/awaitable.h"
+#include "base/check.h"
 #include "model/node_id_util.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
@@ -13,10 +13,12 @@
 
 HistoryStub::HistoryStub(scada::HistoryService& service,
                          std::weak_ptr<MessageSender> sender,
-                         AnyExecutor executor)
+                         AnyExecutor executor,
+                         Tracer& tracer)
     : service_{service},
       sender_{std::move(sender)},
-      executor_{std::move(executor)} {}
+      executor_{std::move(executor)},
+      tracer_{tracer} {}
 
 HistoryStub::~HistoryStub() {
   // Release continuation points.
@@ -25,12 +27,14 @@ HistoryStub::~HistoryStub() {
       details.release_continuation_point = true;
       details.continuation_point = std::move(continuation_point);
       auto& service = service_;
-      CoSpawn(executor_, [&service, details = std::move(details)]() mutable
-                           -> Awaitable<void> {
-        auto result = co_await service.HistoryReadRaw(std::move(details));
-        base::Check(result.values.empty());
-        base::Check(result.continuation_point.empty());
-      });
+      CoSpawn(executor_,
+              [&service,
+               details = std::move(details)]() mutable -> Awaitable<void> {
+                auto result =
+                    co_await service.HistoryReadRaw(std::move(details));
+                base::Check(result.values.empty());
+                base::Check(result.continuation_point.empty());
+              });
     }
   }
 }
@@ -84,12 +88,12 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   LOG_INFO(logger_) << "History read raw" << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("NodeId", NodeIdToScadaString(details.node_id));
   auto self = shared_from_this();
-  CoSpawn(
-      executor_,
-      [self, request_id, details = std::move(details)]() mutable
-          -> Awaitable<void> {
-        co_await self->OnHistoryReadRawAsync(request_id, std::move(details));
-      });
+  CoSpawn(executor_,
+          [self, request_id, trace_id = request.trace_id(),
+           details = std::move(details)]() mutable -> Awaitable<void> {
+            co_await self->OnHistoryReadRawAsync(
+                request_id, std::move(trace_id), std::move(details));
+          });
 }
 
 void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
@@ -110,18 +114,23 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   LOG_INFO(logger_) << "History read events" << LOG_TAG("RequestId", request_id)
                     << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
   auto self = shared_from_this();
-  CoSpawn(
-      executor_,
-      [self, request_id, node_id = std::move(node_id), from, to,
-       filter = std::move(filter)]() mutable -> Awaitable<void> {
-        co_await self->OnHistoryReadEventsAsync(
-            request_id, std::move(node_id), from, to, std::move(filter));
-      });
+  CoSpawn(executor_,
+          [self, request_id, trace_id = request.trace_id(),
+           node_id = std::move(node_id), from, to,
+           filter = std::move(filter)]() mutable -> Awaitable<void> {
+            co_await self->OnHistoryReadEventsAsync(
+                request_id, std::move(trace_id), std::move(node_id), from, to,
+                std::move(filter));
+          });
 }
 
 Awaitable<void> HistoryStub::OnHistoryReadRawAsync(
     unsigned request_id,
+    std::string trace_id,
     scada::HistoryReadRawDetails details) {
+  auto span = tracer_.StartSpan("scada.grpc/HistoryReadRaw",
+                                TraceSpanKind::kServer, trace_id);
+
   auto result = co_await service_.HistoryReadRaw(details);
 
   LOG_INFO(logger_) << "History read raw completed"
@@ -152,12 +161,16 @@ Awaitable<void> HistoryStub::OnHistoryReadRawAsync(
 
 Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
     unsigned request_id,
+    std::string trace_id,
     scada::NodeId node_id,
     base::Time from,
     base::Time to,
     scada::EventFilter filter) {
-  auto result = co_await service_.HistoryReadEvents(
-      std::move(node_id), from, to, std::move(filter));
+  auto span = tracer_.StartSpan("scada.grpc/HistoryReadEvents",
+                                TraceSpanKind::kServer, trace_id);
+
+  auto result = co_await service_.HistoryReadEvents(std::move(node_id), from,
+                                                    to, std::move(filter));
 
   LOG_INFO(logger_) << "History read events completed"
                     << LOG_TAG("RequestId", request_id)

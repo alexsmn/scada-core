@@ -8,13 +8,15 @@
 
 class TraceSinkImpl final : public TraceSink {
  public:
-  TraceSinkImpl(AnyExecutor executor,
-                std::chrono::milliseconds timeout);
+  TraceSinkImpl(AnyExecutor executor, std::chrono::milliseconds timeout);
 
-  // TraceSink
+  // TraceSink. The watchdog only tracks span liveness; `kind` and
+  // `remote_parent` are ignored.
   void StartSpan(const TraceSpanId& span_id,
                  std::string_view name,
-                 const TraceSpanId& parent_span_id) override;
+                 const TraceSpanId& parent_span_id,
+                 TraceSpanKind kind,
+                 std::string_view remote_parent) override;
   void EndSpan(const TraceSpanId& span_id) override;
 
  private:

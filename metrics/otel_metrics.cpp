@@ -1,6 +1,7 @@
 #include "metrics/otel_metrics.h"
 
 #include "base/map_util.h"
+#include "metrics/otel_endpoint.h"
 
 #include <opentelemetry/exporters/memory/in_memory_metric_data.h>
 #include <opentelemetry/exporters/memory/in_memory_metric_exporter_factory.h>
@@ -29,19 +30,6 @@ namespace metrics_sdk = opentelemetry::sdk::metrics;
 namespace otlp = opentelemetry::exporter::otlp;
 namespace memory = opentelemetry::exporter::memory;
 namespace resource = opentelemetry::sdk::resource;
-
-std::string NormalizeGrpcEndpoint(std::string endpoint) {
-  constexpr std::string_view kHttpPrefix = "http://";
-  constexpr std::string_view kHttpsPrefix = "https://";
-
-  if (endpoint.starts_with(kHttpPrefix)) {
-    endpoint.erase(0, kHttpPrefix.size());
-  } else if (endpoint.starts_with(kHttpsPrefix)) {
-    endpoint.erase(0, kHttpsPrefix.size());
-  }
-
-  return endpoint;
-}
 
 std::optional<std::string> ReadStringAttribute(
     const metrics_sdk::PointAttributes& attributes,

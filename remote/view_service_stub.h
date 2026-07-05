@@ -4,6 +4,7 @@
 
 #include "base/awaitable.h"
 #include "base/boost_log.h"
+#include "metrics/tracer.h"
 #include "scada/service_context.h"
 #include "scada/view_service.h"
 
@@ -25,6 +26,9 @@ struct ViewServiceStubContext {
   const std::weak_ptr<MessageSender> sender_;
   const scada::ServiceContext service_context_;
   scada::ViewService& service_;
+  // Emits SERVER spans for inbound Browse requests, continuing the trace from
+  // the request's traceparent when present.
+  Tracer& tracer_ = Tracer::None();
 };
 
 class ViewServiceStub final

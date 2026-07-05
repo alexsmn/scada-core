@@ -73,6 +73,12 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
     unsigned request_id,
     scada::ServiceContext context,
     std::vector<scada::BrowseDescription> inputs) {
+  auto span = tracer_.StartSpan("scada.grpc/Browse", TraceSpanKind::kServer,
+                                context.trace_id());
+  if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
+    context = context.with_trace_id(trace_parent);
+  }
+
   auto result = co_await service_.Browse(std::move(context), std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});

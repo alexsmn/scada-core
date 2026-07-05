@@ -1,8 +1,8 @@
 #include "remote/session_proxy.h"
 
-#include "base/check.h"
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
+#include "base/check.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -613,6 +613,7 @@ Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> SessionProxy::Read(
   }
 
   protocol::Request request;
+  request.set_trace_id(context.trace_id());
   auto& read = *request.mutable_read();
   for (auto& value_id : inputs)
     Convert(value_id, *read.add_value_id());
@@ -633,6 +634,7 @@ Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> SessionProxy::Write(
   }
 
   protocol::Request request;
+  request.set_trace_id(context.trace_id());
   for (auto& value : inputs)
     Convert(value, *request.add_write());
 
@@ -652,10 +654,10 @@ Awaitable<scada::Status> SessionProxy::Call(
     co_return scada::StatusCode::Bad_Disconnected;
   }
   // The session identity is implied by the gRPC session (authorized
-  // server-side), so the caller context is not re-sent on the wire.
-  (void)context;
-
+  // server-side), so only the trace id from the caller context is re-sent on
+  // the wire.
   protocol::Request request;
+  request.set_trace_id(context.trace_id());
   auto& command = *request.mutable_call()->mutable_device_command();
   Convert(node_id, *command.mutable_node_id());
   Convert(method_id, *command.mutable_method_id());

@@ -4,6 +4,7 @@
 #include "base/awaitable.h"
 #include "base/boost_log.h"
 #include "base/nested_logger.h"
+#include "metrics/tracer.h"
 #include "scada/authentication.h"
 #include "scada/services.h"
 #include "scada/status_or.h"
@@ -40,6 +41,8 @@ struct RemoteSessionManagerContext {
   std::shared_ptr<scada::CoroutineAuthenticator> authenticator_;
   transport::TransportFactory& transport_factory_;
   const std::vector<transport::TransportString> endpoints_;
+  // Passed to every session stub for inbound request SERVER spans.
+  Tracer& tracer_ = Tracer::None();
 };
 
 // Remote login/session lifecycle coordinator. Owns listeners, accepted

@@ -1,8 +1,8 @@
 #include "trace_sink_impl.h"
 
-#include "base/check.h"
-#include "base/boost_log.h"
 #include "base/any_executor.h"
+#include "base/boost_log.h"
+#include "base/check.h"
 #include "metrics/tracing.h"
 
 #include <mutex>
@@ -58,7 +58,8 @@ void TraceSinkImpl::Core::StartSpan(const TraceSpanId& span_id,
     active_spans_.try_emplace(span_id, std::string{name}, parent_span_id);
   }
 
-  PostDelayedTask(executor_, timeout_, [this, ref = shared_from_this(), span_id] {
+  PostDelayedTask(
+      executor_, timeout_, [this, ref = shared_from_this(), span_id] {
         std::optional<SpanInfo> timed_out_span;
         {
           std::lock_guard lock{mutex_};
@@ -107,7 +108,9 @@ TraceSinkImpl::TraceSinkImpl(AnyExecutor executor,
 
 void TraceSinkImpl::StartSpan(const TraceSpanId& span_id,
                               std::string_view name,
-                              const TraceSpanId& parent_span_id) {
+                              const TraceSpanId& parent_span_id,
+                              TraceSpanKind kind,
+                              std::string_view remote_parent) {
   core_->StartSpan(span_id, name, parent_span_id);
 }
 

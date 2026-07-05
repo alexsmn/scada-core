@@ -19,15 +19,32 @@ TraceSpanId GenerateTraceSpanId() {
 // TraceSpan
 
 TraceSpan::TraceSpan(TraceSink& sink, std::string_view name)
-    : TraceSpan{sink, /*span_id=*/GenerateTraceSpanId(), name,
-                /*parent_span_id=*/{}} {}
+    : TraceSpan{sink,
+                /*span_id=*/GenerateTraceSpanId(),
+                name,
+                /*parent_span_id=*/{},
+                TraceSpanKind::kInternal,
+                /*remote_parent=*/{}} {}
+
+TraceSpan::TraceSpan(TraceSink& sink,
+                     std::string_view name,
+                     TraceSpanKind kind,
+                     std::string_view remote_parent)
+    : TraceSpan{sink,
+                /*span_id=*/GenerateTraceSpanId(),
+                name,
+                /*parent_span_id=*/{},
+                kind,
+                remote_parent} {}
 
 TraceSpan::TraceSpan(TraceSink& sink,
                      const TraceSpanId& span_id,
                      std::string_view name,
-                     const TraceSpanId& parent_span_id)
+                     const TraceSpanId& parent_span_id,
+                     TraceSpanKind kind,
+                     std::string_view remote_parent)
     : sink_{&sink}, span_id_{span_id} {
-  sink.StartSpan(span_id, name, parent_span_id);
+  sink.StartSpan(span_id, name, parent_span_id, kind, remote_parent);
 }
 
 TraceSpan::~TraceSpan() {
@@ -36,8 +53,16 @@ TraceSpan::~TraceSpan() {
   }
 }
 
+std::string TraceSpan::traceparent() const {
+  return sink_ ? sink_->GetTraceParent(span_id_) : std::string{};
+}
+
 TraceSpan TraceSpan::StartSpan(std::string_view name) const {
   base::Check(sink_);
-  return TraceSpan{*sink_, /*span_id=*/GenerateTraceSpanId(), name,
-                   /*parent_span_id*/ span_id_};
+  return TraceSpan{*sink_,
+                   /*span_id=*/GenerateTraceSpanId(),
+                   name,
+                   /*parent_span_id=*/span_id_,
+                   TraceSpanKind::kInternal,
+                   /*remote_parent=*/{}};
 }
