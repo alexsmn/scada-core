@@ -65,6 +65,14 @@ auto RunAwaitable(ExecutionContext& context, F&& fn) {
                                       boost::asio::use_future);
   while (result.wait_for(std::chrono::seconds{0}) !=
          std::future_status::ready) {
+    // The scheduler can flip to `stopped` while the awaited coroutine is
+    // still suspended even though a work guard is engaged (outstanding-work
+    // under-accounting, observed once per server startup when a strand-
+    // hopping startup coroutine suspends). Restart so the queued work keeps
+    // draining instead of spinning on a stopped context forever.
+    // TODO: find and fix the work-accounting root cause.
+    if (context.stopped())
+      context.restart();
     context.run_one();
   }
   return result.get();
