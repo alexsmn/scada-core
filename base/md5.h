@@ -19,10 +19,19 @@ inline std::string MD5String(std::string_view input) {
   boost::uuids::detail::md5::digest_type digest;
   hasher.get_digest(digest);
 
-  // Each digest element is a 32-bit word; format as 32 hex chars.
+  // digest_type changed across Boost releases: 4 x 32-bit words (already in
+  // print order) in older Boost, 16 bytes in Boost >= 1.86. Handle both, or
+  // the word-formatting path silently produces a wrong hash from a byte
+  // array (it reads only the first 4 bytes and widens each to 8 hex chars).
   char hex[33];
-  for (int i = 0; i < 4; ++i) {
-    std::snprintf(hex + i * 8, 9, "%08x", digest[i]);
+  if constexpr (sizeof(digest[0]) == 1) {
+    for (int i = 0; i < 16; ++i) {
+      std::snprintf(hex + i * 2, 3, "%02x", static_cast<unsigned>(digest[i]));
+    }
+  } else {
+    for (int i = 0; i < 4; ++i) {
+      std::snprintf(hex + i * 8, 9, "%08x", static_cast<unsigned>(digest[i]));
+    }
   }
   return std::string(hex, 32);
 }
