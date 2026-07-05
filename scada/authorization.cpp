@@ -116,7 +116,13 @@ std::uint8_t UserAccessLevel(std::uint8_t access_level,
 }
 
 NodeId WellKnownRoleId(WellKnownRole role) {
-  // Namespace-0 numeric ids of the standard Role objects (OPC UA Part 3 §4.9).
+  // Namespace-0 numeric ids of the standard WellKnownRole_* objects, verified
+  // against the official 1.05 NodeIds.csv
+  // (https://files.opcfoundation.org/schemas/UA/1.05/NodeIds.csv): Anonymous
+  // 15644, AuthenticatedUser 15656, Observer 15668, Operator 15680, Engineer
+  // 16036, Supervisor 15692, SecurityAdmin 15704, ConfigureAdmin 15716.
+  // OPC UA Part 3 §4.9 well-known roles,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9
   constexpr NamespaceIndex kNs0 = 0;
   switch (role) {
     case WellKnownRole::kAnonymous:
@@ -128,13 +134,13 @@ NodeId WellKnownRoleId(WellKnownRole role) {
     case WellKnownRole::kOperator:
       return NodeId{15680, kNs0};
     case WellKnownRole::kEngineer:
-      return NodeId{15716, kNs0};
+      return NodeId{16036, kNs0};
     case WellKnownRole::kSupervisor:
-      return NodeId{15728, kNs0};
-    case WellKnownRole::kConfigureAdmin:
-      return NodeId{15704, kNs0};
-    case WellKnownRole::kSecurityAdmin:
       return NodeId{15692, kNs0};
+    case WellKnownRole::kConfigureAdmin:
+      return NodeId{15716, kNs0};
+    case WellKnownRole::kSecurityAdmin:
+      return NodeId{15704, kNs0};
   }
   return NodeId{};
 }
@@ -197,6 +203,34 @@ Permission PermissionsForUserFrom(
     permissions |= entry.permissions;
   }
   return permissions;
+}
+
+Permission PermissionsForRoles(
+    std::span<const RolePermissionType> role_permissions,
+    std::span<const NodeId> caller_role_ids) {
+  // Effective permission = OR over the entries of the roles the caller holds
+  // (OPC UA Part 3 §4.9,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9).
+  Permission permissions = Permission::kNone;
+  for (const RolePermissionType& entry : role_permissions) {
+    if (std::find(caller_role_ids.begin(), caller_role_ids.end(),
+                  entry.role_id) != caller_role_ids.end()) {
+      permissions |= entry.permissions;
+    }
+  }
+  return permissions;
+}
+
+std::vector<NodeId> CallerRoleIds(std::uint32_t access_rights,
+                                  bool is_anonymous,
+                                  std::span<const NodeId> granted_role_ids) {
+  std::vector<NodeId> role_ids;
+  for (const WellKnownRole role : RolesForUser(access_rights, is_anonymous)) {
+    role_ids.push_back(WellKnownRoleId(role));
+  }
+  role_ids.insert(role_ids.end(), granted_role_ids.begin(),
+                  granted_role_ids.end());
+  return role_ids;
 }
 
 }  // namespace scada

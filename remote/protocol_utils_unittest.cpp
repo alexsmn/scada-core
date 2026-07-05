@@ -5,6 +5,7 @@
 #include "scada/authorization.h"
 #include "scada/event.h"
 #include "scada/extension_object.h"
+#include "scada/identity_mapping_rule_encoding.h"
 #include "scada/variant.h"
 
 #include <any>
@@ -37,6 +38,35 @@ TEST(ProtocolUtils, ExtensionObjectRolePermissionArrayRoundTrip) {
   EXPECT_EQ(decoded->role_id, (scada::NodeId{15680u, 0}));
   EXPECT_EQ(decoded->permissions,
             (scada::Permission::kRead | scada::Permission::kWrite));
+}
+
+// An IdentityMappingRuleType payload (a Role's Identities entry or an
+// AddIdentity/RemoveIdentity argument, OPC UA Part 18 §4.4.3) survives the
+// gRPC boundary.
+TEST(ProtocolUtils, ExtensionObjectIdentityMappingRuleRoundTrip) {
+  const scada::IdentityMappingRule rule{
+      .criteria_type = scada::IdentityCriteriaType::kUserName,
+      .criteria = "svc-site-a"};
+  std::vector<scada::ExtensionObject> objects;
+  objects.emplace_back(scada::ExpandedNodeId{scada::NodeId{
+                           scada::kIdentityMappingRuleTypeDataTypeId, 0}},
+                       std::any{rule});
+  const scada::Variant original{std::move(objects)};
+
+  protocol::Variant proto;
+  Convert(original, proto);
+  const auto restored = ConvertTo<scada::Variant>(proto);
+
+  ASSERT_TRUE(restored.is_array());
+  ASSERT_EQ(restored.type(), scada::Variant::EXTENSION_OBJECT);
+  const auto& restored_objects =
+      restored.get<std::vector<scada::ExtensionObject>>();
+  ASSERT_EQ(restored_objects.size(), 1u);
+
+  const auto decoded =
+      scada::DecodeIdentityMappingRule(restored_objects.front());
+  ASSERT_TRUE(decoded.has_value());
+  EXPECT_EQ(*decoded, rule);
 }
 
 TEST(ProtocolUtils, NodeId) {
@@ -80,8 +110,7 @@ TEST(ProtocolUtils, ConvertLocalizedTextRoundTrip) {
 
 TEST(ProtocolUtils, ConvertLocalizedTextRoundTripUtf8) {
   // "Привет" in UTF-8
-  std::string original =
-      "\xd0\x9f\xd1\x80\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82";
+  std::string original = "\xd0\x9f\xd1\x80\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82";
   scada::LocalizedText lt;
   Convert(original, lt);
   std::string restored;

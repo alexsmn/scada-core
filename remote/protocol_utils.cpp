@@ -83,6 +83,14 @@ void Convert(const protocol::ExtensionObject& source,
     role.permissions =
         static_cast<scada::Permission>(source.role_permission().permissions());
     value = std::any{role};
+  } else if (source.has_identity_mapping_rule()) {
+    // IdentityMappingRuleType (OPC UA Part 18 §4.4.3): criteria_type carries
+    // the IdentityCriteriaType enum value (Part 18 §4.4.4).
+    // https://reference.opcfoundation.org/Core/Part18/v105/docs/4.4.3
+    value = std::any{scada::IdentityMappingRule{
+        .criteria_type = static_cast<scada::IdentityCriteriaType>(
+            source.identity_mapping_rule().criteria_type()),
+        .criteria = source.identity_mapping_rule().criteria()}};
   }
   target = scada::ExtensionObject{scada::ExpandedNodeId{std::move(type_id)},
                                   std::move(value)};
@@ -91,14 +99,21 @@ void Convert(const protocol::ExtensionObject& source,
 void Convert(const scada::ExtensionObject& source,
              protocol::ExtensionObject& target) {
   Convert(source.data_type_id().node_id(), *target.mutable_type_id());
-  // Only RolePermissionType payloads are carried across gRPC today; other
-  // payloads degrade to just the type id (matching the pre-existing behavior).
+  // Only RolePermissionType and IdentityMappingRuleType payloads are carried
+  // across gRPC today; other payloads degrade to just the type id (matching
+  // the pre-existing behavior).
   if (const auto* role =
           std::any_cast<scada::RolePermissionType>(&source.value())) {
     auto* role_permission = target.mutable_role_permission();
     Convert(role->role_id, *role_permission->mutable_role_id());
     role_permission->set_permissions(
         static_cast<std::uint32_t>(role->permissions));
+  } else if (const auto* rule =
+                 std::any_cast<scada::IdentityMappingRule>(&source.value())) {
+    auto* identity_mapping_rule = target.mutable_identity_mapping_rule();
+    identity_mapping_rule->set_criteria_type(
+        static_cast<std::int32_t>(rule->criteria_type));
+    identity_mapping_rule->set_criteria(rule->criteria);
   }
 }
 

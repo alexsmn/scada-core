@@ -59,8 +59,22 @@ constexpr NumericId Server_ServerCapabilities = 2268;
 constexpr NumericId Server_ServerCapabilities_ServerProfileArray = 2269;
 constexpr NumericId Server_ServerCapabilities_LocaleIdArray = 2271;
 constexpr NumericId Server_ServerCapabilities_MinSupportedSampleRate = 2272;
-constexpr NumericId Server_ServerCapabilities_MaxBrowseContinuationPoints = 2735;
+constexpr NumericId Server_ServerCapabilities_MaxBrowseContinuationPoints =
+    2735;
 constexpr NumericId Server_ServerCapabilities_OperationLimits = 11704;
+// RoleSet: the roles the server supports, published under ServerCapabilities
+// (OPC UA Part 18 §4.3,
+// https://reference.opcfoundation.org/Core/Part18/v105/docs/4.3). Ids per the
+// official 1.05 NodeIds.csv.
+constexpr NumericId Server_ServerCapabilities_RoleSet = 15606;
+constexpr NumericId Server_ServerCapabilities_RoleSet_AddRole = 16301;
+constexpr NumericId Server_ServerCapabilities_RoleSet_RemoveRole = 16304;
+constexpr NumericId RoleSetType = 15607;
+constexpr NumericId RoleType = 15620;
+// The IdentityMappingRuleType structure (OPC UA Part 18 §4.4.3) and its
+// DefaultBinary encoding object.
+constexpr NumericId IdentityMappingRuleType = 15634;
+constexpr NumericId IdentityMappingRuleType_Encoding_DefaultBinary = 15736;
 constexpr NumericId OperationLimits_MaxNodesPerRead = 11705;
 constexpr NumericId OperationLimits_MaxNodesPerWrite = 11707;
 constexpr NumericId OperationLimits_MaxNodesPerMethodCall = 11709;

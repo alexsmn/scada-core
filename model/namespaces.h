@@ -39,7 +39,15 @@ constexpr scada::NamespaceIndex ALIAS = 23;
 constexpr scada::NamespaceIndex VIDICON = 28;
 constexpr scada::NamespaceIndex VIDICON_FILE = 29;
 
-constexpr scada::NamespaceIndex END = 30;
+// User groups modeled as OPC UA Roles and their identity mapping rules.
+// OPC UA Part 18 §4.2/§4.4 Role model,
+// https://reference.opcfoundation.org/Core/Part18/v105/docs/4.2
+constexpr scada::NamespaceIndex ROLE = 30;
+constexpr scada::NamespaceIndex ROLE_IDENTITY = 31;
+// Hosted configurations (tenants) served by the central configuration server.
+constexpr scada::NamespaceIndex CONFIGURATION = 32;
+
+constexpr scada::NamespaceIndex END = 33;
 
 }  // namespace NamespaceIndexes
 

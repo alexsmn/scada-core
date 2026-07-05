@@ -69,12 +69,22 @@ message RolePermission {
   uint32 permissions = 2;
 }
 
+// One identity mapping rule of a Role's Identities value (OPC UA Part 18
+// §4.4.3 IdentityMappingRuleType). Carried inside ExtensionObject on the gRPC
+// wire; `criteria_type` holds the IdentityCriteriaType enum value (Part 18
+// §4.4.4, UserName = 1).
+message IdentityMappingRule {
+  int32 criteria_type = 1;
+  string criteria = 2;
+}
+
 // gRPC representation of a structured (ExtensionObject) value. `type_id` is the
-// value's DataType NodeId; the payload is a typed field (only RolePermissionType
-// is carried today).
+// value's DataType NodeId; the payload is a typed field (RolePermissionType and
+// IdentityMappingRuleType are carried today).
 message ExtensionObject {
   NodeId type_id = 1;
   RolePermission role_permission = 2;
+  IdentityMappingRule identity_mapping_rule = 3;
 }
 
 message Variant {

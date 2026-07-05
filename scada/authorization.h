@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <span>
+#include <string>
 #include <vector>
 
 namespace scada {
@@ -24,8 +25,8 @@ enum class WellKnownRole {
   kSecurityAdmin,
 };
 
-// PermissionType bits (OPC UA Part 3 §8.55). The numeric values match the OPC UA
-// PermissionType bit mask so they can be surfaced directly on the wire.
+// PermissionType bits (OPC UA Part 3 §8.55). The numeric values match the OPC
+// UA PermissionType bit mask so they can be surfaced directly on the wire.
 // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.55
 enum class Permission : std::uint32_t {
   kNone = 0,
@@ -107,12 +108,44 @@ bool IsPermitted(std::uint32_t access_rights,
 // UserAccessLevel: each access bit is kept only when the caller holds the
 // corresponding permission (OPC UA Part 3 §5.6.2 UserAccessLevel). CurrentRead
 // requires kRead; CurrentWrite / StatusWrite / TimestampWrite require kWrite;
-// HistoryRead requires kReadHistory; HistoryWrite requires any history-modifying
-// permission (Insert/Modify/Delete). SemanticChange is informational and left as
-// declared. https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.2
+// HistoryRead requires kReadHistory; HistoryWrite requires any
+// history-modifying permission (Insert/Modify/Delete). SemanticChange is
+// informational and left as declared.
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.2
 std::uint8_t UserAccessLevel(std::uint8_t access_level,
                              std::uint32_t access_rights,
                              bool is_anonymous);
+
+// IdentityCriteriaType: how an identity mapping rule matches a session's
+// identity token (OPC UA Part 18 §4.4.4). The numeric values match the OPC UA
+// enumeration so they can be stored and surfaced on the wire directly. Only
+// kUserName is evaluated for server-managed username/password accounts;
+// kGroupId/kRole refer to claims in an external Authorization Service's
+// Access Token and are not applicable to UserNameIdentityTokens.
+// https://reference.opcfoundation.org/Core/Part18/v105/docs/4.4.4
+enum class IdentityCriteriaType : std::int32_t {
+  kUserName = 1,
+  kThumbprint = 2,
+  kRole = 3,
+  kGroupId = 4,
+  kAnonymous = 5,
+  kAuthenticatedUser = 6,
+  kApplication = 7,
+  kX509Subject = 8,
+  kTrustedApplication = 9,
+};
+
+// One identity mapping rule of a Role's Identities property (OPC UA Part 18
+// §4.4.3 IdentityMappingRuleType): a criteria type plus the criteria string
+// (for kUserName, the user's name; empty for the token-class criteria).
+// https://reference.opcfoundation.org/Core/Part18/v105/docs/4.4.3
+struct IdentityMappingRule {
+  IdentityCriteriaType criteria_type = IdentityCriteriaType::kUserName;
+  std::string criteria;
+
+  friend bool operator==(const IdentityMappingRule&,
+                         const IdentityMappingRule&) = default;
+};
 
 // One (role, permissions) entry of a node's RolePermissions /
 // UserRolePermissions attribute (OPC UA Part 3 §8.56 RolePermissionType).
@@ -151,11 +184,29 @@ std::vector<RolePermissionType> UserRolePermissionsFrom(
     bool is_anonymous);
 
 // The caller's effective permissions derived from a specific node's
-// `role_permissions` override: the union of permissions across the entries whose
-// role the caller holds. This is the per-node analogue of `PermissionsForUser`.
+// `role_permissions` override: the union of permissions across the entries
+// whose role the caller holds. This is the per-node analogue of
+// `PermissionsForUser`.
 Permission PermissionsForUserFrom(
     std::span<const RolePermissionType> role_permissions,
     std::uint32_t access_rights,
     bool is_anonymous);
+
+// The union of permissions granted by `role_permissions` to a caller holding
+// exactly `caller_role_ids` — the OR-across-granted-roles evaluation of OPC UA
+// Part 3 §4.9 for an explicit role-id set (well-known role ids and custom
+// group Role NodeIds alike). Used with a namespace's DefaultRolePermissions
+// (Part 3 §5.2.9, Part 5 §6.3.13) to compute a caller's access to a
+// namespace. https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9
+Permission PermissionsForRoles(
+    std::span<const RolePermissionType> role_permissions,
+    std::span<const NodeId> caller_role_ids);
+
+// The caller's full role-id set: the well-known roles derived from
+// `access_rights` (RolesForUser) plus the custom (group) Role NodeIds granted
+// at session activation (OPC UA Part 18 §4.4.1).
+std::vector<NodeId> CallerRoleIds(std::uint32_t access_rights,
+                                  bool is_anonymous,
+                                  std::span<const NodeId> granted_role_ids);
 
 }  // namespace scada

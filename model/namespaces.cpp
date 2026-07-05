@@ -40,6 +40,9 @@ constexpr std::string_view kNamespaceNames[] = {
     "IEC61850_TRANSMIT",
     "VIDICON",
     "VIDICON_FILE",
+    "ROLE",
+    "ROLE_IDENTITY",
+    "CONFIGURATION",
 };
 
 static_assert(std::size(kNamespaceNames) == NamespaceIndexes::END);

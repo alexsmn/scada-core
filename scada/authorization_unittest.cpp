@@ -8,10 +8,10 @@ namespace scada {
 
 namespace {
 
-constexpr std::uint32_t kConfigure =
-    std::uint32_t{1} << static_cast<int>(Privilege::Configure);
-constexpr std::uint32_t kControl =
-    std::uint32_t{1} << static_cast<int>(Privilege::Control);
+constexpr std::uint32_t kConfigure = std::uint32_t{1}
+                                     << static_cast<int>(Privilege::Configure);
+constexpr std::uint32_t kControl = std::uint32_t{1}
+                                   << static_cast<int>(Privilege::Control);
 constexpr std::uint32_t kRootRights = kConfigure | kControl;
 
 bool HasRole(std::uint32_t access_rights, bool anonymous, WellKnownRole role) {
@@ -59,7 +59,8 @@ TEST(AuthorizationTest, ConfigurePrivilegeGrantsAdminRoles) {
   EXPECT_TRUE(IsPermitted(kConfigure, false, Permission::kWrite));
   EXPECT_TRUE(IsPermitted(kConfigure, false, Permission::kAddNode));
   EXPECT_TRUE(IsPermitted(kConfigure, false, Permission::kDeleteNode));
-  EXPECT_TRUE(IsPermitted(kConfigure, false, Permission::kWriteRolePermissions));
+  EXPECT_TRUE(
+      IsPermitted(kConfigure, false, Permission::kWriteRolePermissions));
 }
 
 TEST(AuthorizationTest, RootHasAllPermissions) {
@@ -68,7 +69,8 @@ TEST(AuthorizationTest, RootHasAllPermissions) {
   EXPECT_TRUE(IsPermitted(kRootRights, false, Permission::kCall));
   EXPECT_TRUE(IsPermitted(kRootRights, false, Permission::kAddNode));
   EXPECT_TRUE(IsPermitted(kRootRights, false, Permission::kDeleteHistory));
-  EXPECT_TRUE(IsPermitted(kRootRights, false, Permission::kWriteRolePermissions));
+  EXPECT_TRUE(
+      IsPermitted(kRootRights, false, Permission::kWriteRolePermissions));
 }
 
 TEST(AuthorizationTest, UserAccessLevelNarrowsWriteToPermittedRoles) {
@@ -104,8 +106,14 @@ TEST(AuthorizationTest, UserAccessLevelPreservesSemanticChange) {
 }
 
 TEST(AuthorizationTest, WellKnownRoleIdsAreNamespaceZero) {
+  // Ids per the official 1.05 NodeIds.csv,
+  // https://files.opcfoundation.org/schemas/UA/1.05/NodeIds.csv
   EXPECT_EQ(WellKnownRoleId(WellKnownRole::kOperator), (NodeId{15680, 0}));
-  EXPECT_EQ(WellKnownRoleId(WellKnownRole::kSecurityAdmin), (NodeId{15692, 0}));
+  EXPECT_EQ(WellKnownRoleId(WellKnownRole::kSecurityAdmin), (NodeId{15704, 0}));
+  EXPECT_EQ(WellKnownRoleId(WellKnownRole::kSupervisor), (NodeId{15692, 0}));
+  EXPECT_EQ(WellKnownRoleId(WellKnownRole::kConfigureAdmin),
+            (NodeId{15716, 0}));
+  EXPECT_EQ(WellKnownRoleId(WellKnownRole::kEngineer), (NodeId{16036, 0}));
   EXPECT_EQ(WellKnownRoleId(WellKnownRole::kAnonymous), (NodeId{15644, 0}));
 }
 
@@ -153,14 +161,14 @@ TEST(AuthorizationTest, UserRolePermissionsFromNodeOverride) {
       {.role_id = WellKnownRoleId(WellKnownRole::kObserver),
        .permissions = Permission::kBrowse},
       {.role_id = WellKnownRoleId(WellKnownRole::kOperator),
-       .permissions = Permission::kBrowse | Permission::kRead |
-                      Permission::kWrite}};
+       .permissions =
+           Permission::kBrowse | Permission::kRead | Permission::kWrite}};
 
-  // An operator holds AuthenticatedUser + Observer + Operator; only the Observer
-  // and Operator entries appear in the override, and its effective permissions
-  // are the union (so it may write).
+  // An operator holds AuthenticatedUser + Observer + Operator; only the
+  // Observer and Operator entries appear in the override, and its effective
+  // permissions are the union (so it may write).
   const auto op = UserRolePermissionsFrom(override_permissions, kControl,
-                                           /*is_anonymous=*/false);
+                                          /*is_anonymous=*/false);
   EXPECT_EQ(op.size(), 2u);
   EXPECT_TRUE(Contains(PermissionsForUserFrom(override_permissions, kControl,
                                               /*is_anonymous=*/false),
