@@ -1,5 +1,6 @@
 #include "remote/subscription_stub.h"
 
+#include "base/check.h"
 #include "base/any_executor_dispatch.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
@@ -59,7 +60,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
   }
 
   auto monitored_item_id = next_monitored_item_id_++;
-  assert(!monitored_items_.contains(monitored_item_id));
+  base::Check(!monitored_items_.contains(monitored_item_id));
 
   LOG_INFO(logger_) << "Create monitored item complete"
                     << LOG_TAG("RequestId", request_id)
@@ -131,7 +132,7 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
     return;
   }
 
-  assert(!data_value.qualifier.failed() ||
+  base::Check(!data_value.qualifier.failed() ||
          scada::IsBad(data_value.status_code));
 
   if (scada::IsBad(data_value.status_code)) {

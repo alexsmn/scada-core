@@ -1,5 +1,6 @@
 #include "remote/history_stub.h"
 
+#include "base/check.h"
 #include "base/awaitable.h"
 #include "base/any_executor_dispatch.h"
 #include "model/node_id_util.h"
@@ -27,8 +28,8 @@ HistoryStub::~HistoryStub() {
       CoSpawn(executor_, [&service, details = std::move(details)]() mutable
                            -> Awaitable<void> {
         auto result = co_await service.HistoryReadRaw(std::move(details));
-        assert(result.values.empty());
-        assert(result.continuation_point.empty());
+        base::Check(result.values.empty());
+        base::Check(result.continuation_point.empty());
       });
     }
   }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
+#include "base/check.h"
 #include "scada/data_value.h"
 #include "scada/node_class.h"
 #include "scada/read_value_id.h"
@@ -9,7 +10,6 @@
 #include "scada/status_or.h"
 #include "scada/write_flags.h"
 
-#include <cassert>
 #include <functional>
 #include <memory>
 #include <utility>
@@ -52,7 +52,7 @@ inline DataValue MakeReadResult(NodeClass node_class) {
 }
 
 inline DataValue MakeReadError(StatusCode status_code) {
-  assert(IsBad(status_code));
+  base::Check(IsBad(status_code));
   const auto timestamp = base::Time::Now();
   return DataValue{status_code, timestamp};
 }
@@ -64,7 +64,7 @@ inline Awaitable<DataValue> Read(AttributeService& attribute_service,
       std::move(context), std::vector<ReadValueId>(1, std::move(input)));
   if (!results.ok())
     co_return MakeReadError(results.status().code());
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   co_return std::move(results->front());
 }
 
@@ -75,7 +75,7 @@ inline Awaitable<Status> Write(AttributeService& attribute_service,
       std::move(context), std::vector<WriteValue>(1, std::move(input)));
   if (!results.ok())
     co_return results.status();
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   co_return Status{results->front()};
 }
 

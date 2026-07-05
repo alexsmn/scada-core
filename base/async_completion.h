@@ -3,8 +3,8 @@
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
+#include "base/check.h"
 
-#include <cassert>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -46,7 +46,7 @@ class AsyncCompletion {
   }
 
   void Fail(std::exception_ptr error) const {
-    assert(error);
+    base::Check(error);
     Finish(std::move(error));
   }
 
@@ -90,7 +90,7 @@ class AsyncCompletion {
   }
 
   void Finish(std::exception_ptr error) const {
-    assert(!state_->completed);
+    base::Check(!state_->completed);
     if (state_->completed) {
       return;
     }

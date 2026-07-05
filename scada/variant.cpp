@@ -1,12 +1,12 @@
 ﻿#include "scada/variant.h"
 
+#include "base/check.h"
 #include "base/debug_util.h"
 #include "base/format.h"
 #include "base/format_time.h"
 #include "base/utf_convert.h"
 #include "scada/standard_node_ids.h"
 
-#include <cassert>
 #include <limits>
 
 namespace scada {
@@ -291,7 +291,7 @@ bool Variant::get(NodeId& node_id) const {
 }
 
 bool Variant::ChangeType(Variant::Type new_type) {
-  assert(new_type != Variant::Type::EMPTY);
+  base::Check(new_type != Variant::Type::EMPTY);
 
   if (!is_scalar())
     return false;
@@ -329,7 +329,7 @@ bool Variant::ChangeType(Variant::Type new_type) {
     case NODE_ID:
       return ChangeTypeTo<NodeId>();
     default:
-      assert(false);
+      base::NotReached();
       return false;
   }
 }
@@ -393,7 +393,7 @@ scada::Variant::Type ParseBuiltInType(std::string_view str) {
 }
 
 NodeId ToNodeId(Variant::Type type) {
-  assert(type != Variant::Type::COUNT);
+  base::Check(type != Variant::Type::COUNT);
   return kBuiltInDataTypeNodeIds[static_cast<size_t>(type)];
 }
 

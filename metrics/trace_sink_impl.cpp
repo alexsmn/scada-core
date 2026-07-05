@@ -1,5 +1,6 @@
 #include "trace_sink_impl.h"
 
+#include "base/check.h"
 #include "base/boost_log.h"
 #include "base/any_executor.h"
 #include "metrics/tracing.h"
@@ -53,7 +54,7 @@ void TraceSinkImpl::Core::StartSpan(const TraceSpanId& span_id,
 
   {
     std::lock_guard lock{mutex_};
-    assert(!active_spans_.contains(span_id));
+    base::Check(!active_spans_.contains(span_id));
     active_spans_.try_emplace(span_id, std::string{name}, parent_span_id);
   }
 

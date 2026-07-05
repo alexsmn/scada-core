@@ -1,10 +1,10 @@
 #pragma once
 
+#include "base/check.h"
 #include "scada/basic_types.h"
 #include "scada/shared_value.h"
 #include "scada/string.h"
 
-#include <cassert>
 #include <format>
 #include <memory>
 #include <ostream>
@@ -87,7 +87,7 @@ inline constexpr bool NodeId::is_namespace_only() const noexcept {
 }
 
 inline constexpr NumericId NodeId::numeric_id() const {
-  assert(type() == NodeIdType::Numeric);
+  base::Check(type() == NodeIdType::Numeric);
   return std::get<NumericId>(identifier_);
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "scada/node.h"
 #include "scada/session_service.h"
 #include "scada/status_or.h"
@@ -21,7 +22,7 @@ class client {
   Awaitable<Status> disconnect() const;
 
   scada::node node(const NodeId& node_id) const {
-    assert(!node_id.is_null());
+    base::Check(!node_id.is_null());
     return scada::node{services_, node_id, context_};
   }
 

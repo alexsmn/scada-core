@@ -1,5 +1,6 @@
 #include "metrics/meter.h"
 
+#include "base/check.h"
 #include "base/map_util.h"
 
 #include <opentelemetry/common/key_value_iterable_view.h>
@@ -29,7 +30,7 @@ Instrument& FindOrCreateInstrument(
   }
 
   auto [iter, inserted] = instruments.try_emplace(name);
-  assert(inserted);
+  base::Check(inserted);
   iter->second = create(name);
 
   return *iter->second;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
+#include "base/check.h"
 #include "base/logger.h"
 
 class BoostLogAdapter : public Logger {
@@ -23,7 +24,7 @@ class BoostLogAdapter : public Logger {
       case LogSeverity::Fatal:
         return BoostLogSeverity::fatal;
       default:
-        assert(false);
+        base::NotReached();
         return BoostLogSeverity::info;
     }
   }

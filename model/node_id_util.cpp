@@ -1,5 +1,6 @@
 #include "node_id_util.h"
 
+#include "base/check.h"
 #include "base/format.h"
 
 #include <format>
@@ -101,8 +102,8 @@ scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
 scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
                                std::string_view nested_name,
                                scada::NamespaceIndex namespace_index) {
-  assert(!parent_id.is_null());
-  assert(!nested_name.empty());
+  base::Check(!parent_id.is_null());
+  base::Check(!nested_name.empty());
 
   if (parent_id.is_null() || nested_name.empty()) {
     return {};
@@ -160,7 +161,8 @@ std::string NodeIdToScadaString(const scada::NodeId& node_id) {
       break;
 
     default:
-      assert(false);
+      // Opaque identifiers have no scada-string form; callers treat an
+      // empty result as unsupported.
       return {};
   }
 

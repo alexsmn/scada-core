@@ -1,7 +1,7 @@
 #include "base/string_util.h"
 
+#include "base/check.h"
 #include <algorithm>
-#include <cassert>
 #include <cstdint>
 #include <numeric>
 
@@ -48,7 +48,7 @@ std::string JoinStrings(std::span<const std::string_view> strings,
     result.append(strings[i].data(), strings[i].size());
   }
 
-  assert(result.size() == result_size);
+  base::Check(result.size() == result_size);
   return result;
 }
 

@@ -20,25 +20,34 @@ namespace base {
 // source location pinpoints the failing call site, and call sites whose
 // condition is not self-explanatory should pass a message.
 
+// Constraint for Check conditions: anything usable in a boolean context,
+// including types with an explicit operator bool (smart pointers,
+// std::optional), matching the semantics of the assert() macro.
+template <typename C>
+concept CheckCondition =
+    requires(C&& condition) { static_cast<bool>(std::forward<C>(condition)); };
+
 // Panics if `condition` is false. `message` should state the violated
 // invariant, e.g. base::Check(!items_.empty(), "aggregate has no items").
-inline constexpr void Check(
-    bool condition,
+template <CheckCondition C>
+constexpr void Check(
+    C&& condition,
     std::string_view message = "Check failed",
     const std::source_location& location = std::source_location::current()) {
-  if (!condition) [[unlikely]]
+  if (!static_cast<bool>(condition)) [[unlikely]]
     Panic(message, location);
 }
 
 // Check overload whose message is built only on failure, for call sites
 // where formatting the message is not free, e.g.
-//   base::Check(size == expected, [&] { return std::format("size={}", size); });
-template <std::invocable F>
+//   base::Check(size == expected, [&] { return std::format("size={}", size);
+//   });
+template <CheckCondition C, std::invocable F>
 constexpr void Check(
-    bool condition,
+    C&& condition,
     F&& make_message,
     const std::source_location& location = std::source_location::current()) {
-  if (!condition) [[unlikely]]
+  if (!static_cast<bool>(condition)) [[unlikely]]
     Panic(std::forward<F>(make_message)(), location);
 }
 

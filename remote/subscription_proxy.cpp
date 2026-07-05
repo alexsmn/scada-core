@@ -1,5 +1,6 @@
 #include "remote/subscription_proxy.h"
 
+#include "base/check.h"
 #include "base/cancelation.h"
 #include "scada/monitored_item_service.h"
 #include "remote/message_sender.h"
@@ -28,7 +29,7 @@ SubscriptionProxy::~SubscriptionProxy() {
 std::shared_ptr<scada::MonitoredItem> SubscriptionProxy::CreateMonitoredItem(
     const scada::ReadValueId& value_id,
     const scada::MonitoringParameters& params) {
-  assert(value_id.attribute_id == scada::AttributeId::EventNotifier ||
+  base::Check(value_id.attribute_id == scada::AttributeId::EventNotifier ||
          !value_id.node_id.is_null());
 
   auto monitored_item = std::make_shared<MonitoredItemProxy>(value_id, params);
@@ -36,7 +37,7 @@ std::shared_ptr<scada::MonitoredItem> SubscriptionProxy::CreateMonitoredItem(
   monitored_items_.emplace_back(monitored_item);
 
   if (state_ == State::CREATED) {
-    assert(sender_);
+    base::Check(sender_);
     monitored_item->OnChannelOpened(*this, *sender_, subscription_id_);
   }
 
@@ -46,7 +47,7 @@ std::shared_ptr<scada::MonitoredItem> SubscriptionProxy::CreateMonitoredItem(
 void SubscriptionProxy::AddMonitoredItemDataObserver(
     MonitoredItemId monitored_item_id,
     MonitoredItemProxy& item) {
-  assert(monitored_item_ids_.find(monitored_item_id) ==
+  base::Check(monitored_item_ids_.find(monitored_item_id) ==
          monitored_item_ids_.end());
 
   monitored_item_ids_[monitored_item_id] = &item;
@@ -54,7 +55,7 @@ void SubscriptionProxy::AddMonitoredItemDataObserver(
 
 void SubscriptionProxy::RemoveMonitoredItemDataObserver(
     MonitoredItemId monitored_item_id) {
-  assert(monitored_item_ids_.find(monitored_item_id) !=
+  base::Check(monitored_item_ids_.find(monitored_item_id) !=
          monitored_item_ids_.end());
 
   monitored_item_ids_.erase(monitored_item_id);
@@ -76,8 +77,8 @@ void SubscriptionProxy::OnEvent(int monitored_item_id,
 }
 
 void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
-  assert(!sender_);
-  assert(state_ == State::DELETED);
+  base::Check(!sender_);
+  base::Check(state_ == State::DELETED);
 
   sender_ = &sender;
   state_ = State::CREATING;
@@ -97,8 +98,8 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
 }
 
 void SubscriptionProxy::OnChannelClosed() {
-  assert(state_ != State::DELETED);
-  assert(sender_);
+  base::Check(state_ != State::DELETED);
+  base::Check(sender_);
 
   sender_ = nullptr;
   state_ = State::DELETED;

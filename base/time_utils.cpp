@@ -1,5 +1,6 @@
 #include "base/time_utils.h"
 
+#include "base/check.h"
 #include "base/format.h"
 #include "base/string_util.h"
 
@@ -51,8 +52,8 @@ std::string SerializeToString(base::Time time) {
 #ifndef NDEBUG
   base::Time parsed_time;
   bool parse_result = Deserialize(str, parsed_time);
-  assert(parse_result);
-  assert(FloorToMilliseconds(time) == parsed_time);
+  base::Check(parse_result);
+  base::Check(FloorToMilliseconds(time) == parsed_time);
 #endif
 
   return str;

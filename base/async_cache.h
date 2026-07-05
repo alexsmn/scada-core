@@ -3,8 +3,8 @@
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
+#include "base/check.h"
 
-#include <cassert>
 #include <functional>
 #include <map>
 #include <optional>
@@ -85,7 +85,7 @@ class AsyncCache {
 
   void Complete(const Key& key, Value value) {
     auto i = entries_.find(key);
-    assert(i != entries_.end());
+    base::Check(i != entries_.end());
     if (i == entries_.end()) {
       return;
     }

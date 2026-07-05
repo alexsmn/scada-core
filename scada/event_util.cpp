@@ -1,5 +1,6 @@
 #include "scada/event_util.h"
 
+#include "base/check.h"
 #include "scada/event.h"
 
 namespace scada {
@@ -39,7 +40,7 @@ scada::SemanticChangeEvent AssembleSemanticChangeEvent(
 }
 
 std::any AssembleEvent(std::span<const scada::Variant> fields) {
-  assert(!fields.empty());
+  base::Check(!fields.empty());
   if (fields.empty())
     return {};
 
@@ -51,7 +52,8 @@ std::any AssembleEvent(std::span<const scada::Variant> fields) {
   } else if (event_type_id == scada::id::SemanticChangeEventType) {
     return AssembleSemanticChangeEvent(fields);
   } else {
-    assert(false);
+    // The event type id arrives with the event fields from the wire -
+    // degrade unknown event types to an empty event.
     return {};
   }
 }
@@ -93,7 +95,7 @@ std::vector<scada::Variant> DisassembleEvent(
 }
 
 std::vector<scada::Variant> DisassembleEvent(const std::any& event) {
-  assert(event.has_value());
+  base::Check(event.has_value());
   if (auto* system_event = std::any_cast<scada::Event>(&event)) {
     return DisassembleEvent(*system_event);
   } else if (auto* model_change_event =
@@ -103,7 +105,7 @@ std::vector<scada::Variant> DisassembleEvent(const std::any& event) {
                  std::any_cast<scada::SemanticChangeEvent>(&event)) {
     return DisassembleEvent(*semantic_change_event);
   } else {
-    assert(false);
+    base::NotReached();
     return {};
   }
 }

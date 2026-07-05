@@ -1,5 +1,6 @@
 #include "remote/monitored_item_proxy.h"
 
+#include "base/check.h"
 #include "base/cancelation.h"
 #include "remote/message_sender.h"
 #include "remote/monitored_item_router.h"
@@ -24,8 +25,8 @@ MonitoredItemProxy::~MonitoredItemProxy() {
 }
 
 void MonitoredItemProxy::Subscribe(scada::MonitoredItemHandler handler) {
-  assert(!subscribed_);
-  assert(state_ == State::DELETED);
+  base::Check(!subscribed_);
+  base::Check(state_ == State::DELETED);
 
   subscribed_ = true;
 
@@ -38,7 +39,7 @@ void MonitoredItemProxy::Subscribe(scada::MonitoredItemHandler handler) {
   } else if (auto* event_handler = std::get_if<scada::EventHandler>(&handler)) {
     event_handler_ = std::move(*event_handler);
   } else {
-    assert(false);
+    base::NotReached();
   }
 
   if (channel_opened_)
@@ -46,9 +47,9 @@ void MonitoredItemProxy::Subscribe(scada::MonitoredItemHandler handler) {
 }
 
 void MonitoredItemProxy::CreateStub() {
-  assert(subscribed_);
-  assert(state_ == State::DELETED);
-  assert(sender_);
+  base::Check(subscribed_);
+  base::Check(state_ == State::DELETED);
+  base::Check(sender_);
 
   LOG_INFO(logger_) << "Create stub"
                     << LOG_TAG("SubscriptionId", subscription_id_);
@@ -75,10 +76,10 @@ void MonitoredItemProxy::CreateStub() {
 }
 
 void MonitoredItemProxy::DeleteStub() {
-  assert(subscribed_);
-  assert(router_);
-  assert(state_ == State::CREATED);
-  assert(sender_);
+  base::Check(subscribed_);
+  base::Check(router_);
+  base::Check(state_ == State::CREATED);
+  base::Check(sender_);
 
   LOG_INFO(logger_) << "Delete stub";
 
@@ -98,10 +99,10 @@ void MonitoredItemProxy::DeleteStub() {
 void MonitoredItemProxy::OnChannelOpened(MonitoredItemRouter& router,
                                          MessageSender& sender,
                                          int subscription_id) {
-  assert(state_ == State::DELETED);
-  assert(!router_);
-  assert(!sender_);
-  assert(!channel_opened_);
+  base::Check(state_ == State::DELETED);
+  base::Check(!router_);
+  base::Check(!sender_);
+  base::Check(!channel_opened_);
 
   router_ = &router;
   sender_ = &sender;
@@ -123,9 +124,9 @@ void MonitoredItemProxy::OnChannelOpened(MonitoredItemRouter& router,
 }
 
 void MonitoredItemProxy::OnChannelClosed() {
-  assert(router_);
-  assert(sender_);
-  assert(channel_opened_);
+  base::Check(router_);
+  base::Check(sender_);
+  base::Check(channel_opened_);
 
   if (state_ == State::CREATED)
     router_->RemoveMonitoredItemDataObserver(monitored_item_id_);
@@ -174,10 +175,10 @@ void MonitoredItemProxy::OnCreateMonitoredItemResult(
 }
 
 void MonitoredItemProxy::OnDataChange(scada::DataValue value) {
-  assert(router_);
-  assert(subscribed_);
-  assert(data_change_handler_);
-  assert(value_id_.attribute_id != scada::AttributeId::EventNotifier);
+  base::Check(router_);
+  base::Check(subscribed_);
+  base::Check(data_change_handler_);
+  base::Check(value_id_.attribute_id != scada::AttributeId::EventNotifier);
 
   if (state_ != State::CREATED) {
     LOG_WARNING(logger_) << "Unexpected data message"
@@ -208,10 +209,10 @@ void MonitoredItemProxy::OnDataChange(scada::DataValue value) {
 }
 
 void MonitoredItemProxy::OnEvent(scada::Status status, std::any event) {
-  assert(router_);
-  assert(subscribed_);
-  assert(event_handler_);
-  assert(value_id_.attribute_id == scada::AttributeId::EventNotifier);
+  base::Check(router_);
+  base::Check(subscribed_);
+  base::Check(event_handler_);
+  base::Check(value_id_.attribute_id == scada::AttributeId::EventNotifier);
 
   if (state_ != State::CREATED) {
     LOG_WARNING(logger_) << "Unexpected data message"
@@ -235,12 +236,12 @@ void MonitoredItemProxy::OnEvent(scada::Status status, std::any event) {
 void MonitoredItemProxy::UpdateQualifier(scada::StatusCode status_code,
                                          unsigned remove,
                                          unsigned add) {
-  assert(value_id_.attribute_id != scada::AttributeId::EventNotifier);
+  base::Check(value_id_.attribute_id != scada::AttributeId::EventNotifier);
 
   if (!subscribed_)
     return;
 
-  assert(data_change_handler_);
+  base::Check(data_change_handler_);
 
   scada::Qualifier new_qualifier = current_data_.qualifier;
   new_qualifier.Update(remove, add);

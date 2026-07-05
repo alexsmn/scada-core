@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
+#include "base/check.h"
 #include "base/struct_writer.h"
 #include "scada/node_attributes.h"
 #include "scada/node_class.h"
@@ -84,7 +85,7 @@ inline Awaitable<AddNodesResult> AddNode(NodeManagementService& service,
   if (!results.ok()) {
     co_return AddNodesResult{.status_code = results.status().code()};
   }
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   co_return std::move(results->front());
 }
 
@@ -97,7 +98,7 @@ inline Awaitable<Status> DeleteNode(NodeManagementService& service,
   if (!results.ok()) {
     co_return results.status();
   }
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   co_return Status{results->front()};
 }
 

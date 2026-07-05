@@ -1,5 +1,6 @@
 #include "scada/node.h"
 
+#include "base/check.h"
 #include "scada/attribute_service.h"
 #include "scada/method_service.h"
 #include "scada/service_context.h"
@@ -29,7 +30,7 @@ Awaitable<Status> WriteNodeAsync(services services,
   if (!statuses.ok()) {
     co_return statuses.status();
   }
-  assert(statuses->size() == 1);
+  base::Check(statuses->size() == 1);
   co_return (*statuses)[0];
 }
 
@@ -62,7 +63,7 @@ Awaitable<StatusOr<DataValue>> ReadNodeAsync(services services,
   if (!results.ok()) {
     co_return results.status();
   }
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   if (!IsGood((*results)[0].status_code)) {
     co_return (*results)[0].status_code;
   }
@@ -103,7 +104,7 @@ Awaitable<StatusOr<std::vector<ReferenceDescription>>> node::browse(
   if (!results.ok()) {
     co_return results.status();
   }
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   if (!IsGood((*results)[0].status_code)) {
     co_return (*results)[0].status_code;
   }
@@ -135,7 +136,7 @@ Awaitable<StatusOr<std::vector<BrowsePathTarget>>> node::translate_browse_path(
   if (!results.ok()) {
     co_return results.status();
   }
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   if (!IsGood((*results)[0].status_code)) {
     co_return (*results)[0].status_code;
   }
@@ -174,8 +175,8 @@ Awaitable<Status> node::call_packed(
 
 Awaitable<StatusOr<std::vector<scada::DataValue>>> node::read_value_history(
     const HistoryReadRawDetails& details) const {
-  assert(details.node_id.is_null());
-  assert(details.continuation_point.empty());
+  base::Check(details.node_id.is_null());
+  base::Check(details.continuation_point.empty());
 
   std::vector<scada::DataValue> values;
   auto next_details = details;
@@ -195,7 +196,7 @@ Awaitable<StatusOr<std::vector<scada::DataValue>>> node::read_value_history(
 
 Awaitable<HistoryReadRawResult> node::read_value_history_chunk(
     const HistoryReadRawDetails& details) const {
-  assert(details.node_id.is_null());
+  base::Check(details.node_id.is_null());
 
   if (!services_.history_service) {
     co_return HistoryReadRawResult{.status = StatusCode::Bad_Disconnected};

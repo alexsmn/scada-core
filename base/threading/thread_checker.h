@@ -35,9 +35,8 @@ class ThreadChecker {
   }
 
   // Panics unless called on the bound thread.
-  void CheckCalledOnValidThread(
-      const std::source_location& location =
-          std::source_location::current()) const {
+  void CheckCalledOnValidThread(const std::source_location& location =
+                                    std::source_location::current()) const {
     base::Check(CalledOnValidThread(), "Called on invalid thread", location);
   }
 

@@ -1,5 +1,6 @@
 #include "remote/remote_connection.h"
 
+#include "base/check.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "remote/session_stub.h"
@@ -185,7 +186,7 @@ void ServerConnection::Send(protocol::Message& message) {
 }
 
 void ServerConnection::OnCreateSession(const protocol::Request& request) {
-  assert(request.has_create_session());
+  base::Check(request.has_create_session());
   auto self = shared_from_this();
   boost::asio::co_spawn(
       transport_.get_executor(),
@@ -236,7 +237,7 @@ Awaitable<void> ServerConnection::OnCreateSessionAsync(protocol::Request request
 }
 
 void ServerConnection::OnDeleteSession(const protocol::Request& request) {
-  assert(request.has_delete_session());
+  base::Check(request.has_delete_session());
   auto self = shared_from_this();
   boost::asio::co_spawn(
       transport_.get_executor(),

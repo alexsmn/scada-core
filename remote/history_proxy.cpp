@@ -11,8 +11,8 @@ HistoryProxy::HistoryProxy(AnyExecutor executor) : executor_{std::move(executor)
 Awaitable<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
     scada::HistoryReadRawDetails details) {
   if (!sender_) {
-    assert(false);
-    co_return scada::HistoryReadRawResult{.status = scada::StatusCode::Bad_Disconnected};
+    co_return scada::HistoryReadRawResult{
+        .status = scada::StatusCode::Bad_Disconnected};
   }
 
   protocol::Request request;
@@ -54,7 +54,6 @@ Awaitable<scada::HistoryReadEventsResult> HistoryProxy::HistoryReadEvents(
     base::Time to,
     scada::EventFilter filter) {
   if (!sender_) {
-    assert(false);
     co_return scada::HistoryReadEventsResult{
         .status = scada::StatusCode::Bad_Disconnected};
   }

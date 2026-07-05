@@ -188,7 +188,8 @@ void Convert(const protocol::Variant& source, scada::Variant& target) {
             base::TimeDelta::FromMicroseconds(source.time_value_time()));
         break;
       case scada::Variant::EXTENSION_OBJECT:
-        target = ConvertTo<scada::ExtensionObject>(source.extension_object_value());
+        target =
+            ConvertTo<scada::ExtensionObject>(source.extension_object_value());
         break;
       default:
         // |data_type| arrives from the wire - degrade unknown types to null.
@@ -661,7 +662,8 @@ bool IsValid(const scada::ModelChangeEvent& event) {
   }
 
   if ((event.verb & scada::ModelChangeEvent::NodeDeleted) &&
-      event.verb != static_cast<uint8_t>(scada::ModelChangeEvent::NodeDeleted)) {
+      event.verb !=
+          static_cast<uint8_t>(scada::ModelChangeEvent::NodeDeleted)) {
     return false;
   }
 

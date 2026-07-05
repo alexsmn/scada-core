@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/check.h"
+
 // COM IStream implementation over a memory buffer (Windows only).
 // Replaces the ChromiumBase MemoryIStream utility.
 
@@ -7,12 +9,11 @@
 
 #include <windows.h>
 
-#include <cassert>
 
 class MemoryIStream : public IStream {
  public:
   MemoryIStream(BYTE* data, DWORD size, DWORD capacity = 0) noexcept {
-    assert(data);
+    base::Check(data);
     data_ = data;
     pos_ = 0;
     size_ = size;
@@ -21,7 +22,7 @@ class MemoryIStream : public IStream {
 
   ~MemoryIStream() {
 #ifndef NDEBUG
-    assert(ref_count_ == 0);
+    base::Check(ref_count_ == 0);
 #endif
   }
 
@@ -138,7 +139,7 @@ class MemoryIStream : public IStream {
 
   ULONG STDMETHODCALLTYPE Release(void) noexcept {
 #ifndef NDEBUG
-    assert(ref_count_ > 0);
+    base::Check(ref_count_ > 0);
     --ref_count_;
 #endif
     return 1;

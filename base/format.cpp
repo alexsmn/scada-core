@@ -1,5 +1,6 @@
 #include "base/format.h"
 
+#include "base/check.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 
@@ -288,7 +289,7 @@ bool Parse(const std::u16string_view& str, std::u16string& value) {
 }
 
 std::string FormatHexBuffer(const void* buf, size_t len) {
-  assert(buf);
+  base::Check(buf);
   if (!len)
     return std::string();
 

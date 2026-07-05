@@ -1,12 +1,12 @@
 #ifdef _WIN32
 
+#include "base/check.h"
 #include "base/time/time.h"
 
 #include "base/test/scoped_mock_clock_override.h"
 
 #include <windows.h>
 
-#include <cassert>
 #include <cstring>
 
 namespace {
@@ -19,7 +19,7 @@ int64_t FileTimeToMicroseconds(const FILETIME& ft) {
 }
 
 void MicrosecondsToFileTime(int64_t us, FILETIME* ft) {
-  assert(us >= 0);
+  base::Check(us >= 0);
   int64_t val = us * 10;
   std::memcpy(ft, &val, sizeof(*ft));
 }
@@ -77,7 +77,7 @@ void Time::Explode(bool is_local, Exploded* exploded) const {
   }
 
   if (!success) {
-    assert(false && "Unable to convert time");
+    base::Check(false && "Unable to convert time");
     ZeroMemory(exploded, sizeof(*exploded));
     return;
   }

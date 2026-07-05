@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/view_service_proxy.h"
@@ -60,13 +61,13 @@ inline ViewServiceChannel::ViewServiceChannel(scada::ViewService& view_service)
               proxy_.OnNotification(notification);
           },
           [this](protocol::Request& request, MessageSender::ResponseHandler response_handler) {
-            assert(false);
+            base::NotReached();
           },
       },
       stub_{stub_sender_, service_, logger_},
       proxy_sender_{
           [this](protocol::Message& message) {
-            assert(false);
+            base::NotReached();
           },
           [this](protocol::Request& request, MessageSender::ResponseHandler response_handler) {
             proxy_requests_.emplace(request.request_id(), std::move(response_handler));

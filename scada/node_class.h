@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cassert>
+#include "base/check.h"
+
 #include <ostream>
 #include <string>
 
@@ -67,7 +68,7 @@ inline std::string ToString(scada::NodeClass node_class) {
     case scada::NodeClass::View:
       return "View";
     default:
-      assert(false);
+      base::NotReached();
       return "Unknown";
   };
 }

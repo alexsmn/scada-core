@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
+#include "base/check.h"
 #include "base/time/time.h"
 
 #include <concepts>
@@ -66,7 +67,7 @@ template <class Key, class Value>
   requires std::totally_ordered<Key>
 template <class T>
 inline void TimedCache<Key, Value>::Add(const Key& key, T&& value) {
-  assert(map_.find(key) == map_.end());
+  base::Check(map_.find(key) == map_.end());
   map_.emplace(std::piecewise_construct, std::forward_as_tuple(key),
                std::forward_as_tuple(std::forward<T>(value)));
 }

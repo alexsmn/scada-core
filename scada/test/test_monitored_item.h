@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "scada/data_value.h"
 #include "scada/monitored_item.h"
 #include "scada/status.h"
@@ -14,8 +15,8 @@ namespace scada {
 class TestMonitoredItem : public MonitoredItem {
  public:
   virtual void Subscribe(MonitoredItemHandler handler) override {
-    assert(!data_change_handler_);
-    assert(!event_handler_);
+    base::Check(!data_change_handler_);
+    base::Check(!event_handler_);
 
     if (auto* data_change_handler = std::get_if<DataChangeHandler>(&handler)) {
       data_change_handler_ = std::move(*data_change_handler);
@@ -25,7 +26,7 @@ class TestMonitoredItem : public MonitoredItem {
     } else if (auto* event_handler = std::get_if<EventHandler>(&handler)) {
       event_handler_ = std::move(*event_handler);
     } else {
-      assert(false);
+      base::NotReached();
     }
 
     {

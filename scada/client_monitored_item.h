@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "scada/attribute_service.h"
 #include "scada/legacy_monitored_item_adapter.h"
 #include "scada/monitored_item.h"
@@ -112,7 +113,7 @@ inline void monitored_item::subscribe(const node& node,
                                       AttributeId attribute_id,
                                       const MonitoringParameters& params,
                                       Handler&& data_change_handler) {
-  assert(attribute_id != AttributeId::EventNotifier);
+  base::Check(attribute_id != AttributeId::EventNotifier);
 
   if (!node.services_.monitored_item_service) {
     data_change_handler(MakeReadError(StatusCode::Bad_Disconnected));
@@ -125,8 +126,8 @@ inline void monitored_item::subscribe(const node& node,
   auto item = adapter->CreateMonitoredItem(
       {.node_id = node.node_id_, .attribute_id = attribute_id}, params);
 
-  assert(!state_);
-  assert(item);
+  base::Check(!state_);
+  base::Check(item);
 
   state_ = std::make_shared<state>(std::move(adapter), item);
 
@@ -161,8 +162,8 @@ inline void monitored_item::subscribe_events(const node& node,
       {.node_id = node.node_id_, .attribute_id = AttributeId::EventNotifier},
       params);
 
-  assert(!state_);
-  assert(item);
+  base::Check(!state_);
+  base::Check(item);
 
   state_ = std::make_shared<state>(std::move(adapter), item);
 

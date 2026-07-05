@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cassert>
+#include "base/check.h"
+
 #include <string>
 
 template <class T>
@@ -10,22 +11,22 @@ class AggregatedMetric {
   bool empty() const { return count_ == 0; }
 
   T min() const {
-    assert(!empty());
+    base::Check(!empty());
     return min_;
   }
 
   T max() const {
-    assert(!empty());
+    base::Check(!empty());
     return max_;
   }
 
   T mean() const {
-    assert(!empty());
+    base::Check(!empty());
     return sum_ / count_;
   }
 
   T sum() const {
-    assert(!empty());
+    base::Check(!empty());
     return sum_;
   }
 

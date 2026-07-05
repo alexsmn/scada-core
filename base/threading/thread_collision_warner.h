@@ -1,7 +1,8 @@
 #pragma once
 
+#include "base/check.h"
+
 #include <atomic>
-#include <cassert>
 #include <thread>
 
 #ifndef NDEBUG
@@ -11,7 +12,7 @@ class ThreadCollisionWarner {
   void EnterSelf() {
     auto expected = std::thread::id{};
     auto current = std::this_thread::get_id();
-    assert(owner_.compare_exchange_strong(expected, current) ||
+    base::Check(owner_.compare_exchange_strong(expected, current) ||
            expected == current);
   }
   void LeaveSelf() { owner_.store(std::thread::id{}); }
@@ -22,7 +23,7 @@ class ThreadCollisionWarner {
         expected == current) {
       ++depth_;
     } else {
-      assert(false && "ThreadCollisionWarner: concurrent access detected");
+      base::Check(false && "ThreadCollisionWarner: concurrent access detected");
     }
   }
   void LeaveSelfRecursive() {

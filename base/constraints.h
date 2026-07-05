@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cassert>
+#include "base/check.h"
+
 
 template <class Func>
 class ScopedInvariant {
@@ -9,8 +10,8 @@ class ScopedInvariant {
   explicit ScopedInvariant(Func&& func) {}
   ~ScopedInvariant() {}
 #else
-  explicit ScopedInvariant(Func&& func) : func_{func} { assert(func_()); }
-  ~ScopedInvariant() { assert(func_()); }
+  explicit ScopedInvariant(Func&& func) : func_{func} { base::Check(func_()); }
+  ~ScopedInvariant() { base::Check(func_()); }
 #endif
 
  private:

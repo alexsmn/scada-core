@@ -1,6 +1,6 @@
+#include "base/check.h"
 ﻿#include "base/win/format_hresult.h"
 
-#include <cassert>
 #include <format>
 #include <windows.h>
 
@@ -11,7 +11,7 @@ std::wstring FormatHresultUTF16(HRESULT err) {
           err, 0, reinterpret_cast<LPWSTR>(&buf), 0, NULL))
     return std::format(L"Ошибка Windows %d", err);
 
-  assert(buf);
+  base::Check(buf);
 
   // Delete ending line breaks.
   size_t len = wcslen(buf);
@@ -32,7 +32,7 @@ std::string FormatHresult(HRESULT err) {
           err, 0, reinterpret_cast<LPSTR>(&buf), 0, NULL))
     return std::format("Windows error %d", err);
 
-  assert(buf);
+  base::Check(buf);
 
   // Delete ending line breaks.
   size_t len = strlen(buf);

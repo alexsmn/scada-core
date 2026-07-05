@@ -1,5 +1,6 @@
 #include "remote/protocol_message_transport.h"
 
+#include "base/check.h"
 #include "base/auto_reset.h"
 #include "base/boost_log.h"
 #include "remote/protocol_buffer.h"
@@ -49,7 +50,7 @@ transport::awaitable<transport::expected<size_t>> ReadPayloadSize(
 ProtocolMessageTransport::ProtocolMessageTransport(
     transport::any_transport transport)
     : transport_{std::move(transport)} {
-  assert(!transport_.message_oriented());
+  base::Check(!transport_.message_oriented());
 }
 
 ProtocolMessageTransport::~ProtocolMessageTransport() = default;
@@ -72,8 +73,8 @@ ProtocolMessageTransport::accept() {
 
 transport::awaitable<transport::expected<size_t>>
 ProtocolMessageTransport::read(std::span<char> data) {
-  assert(transport_);
-  assert(!transport_.message_oriented());
+  base::Check(transport_);
+  base::Check(!transport_.message_oriented());
 
   if (reading_) {
     co_return transport::ERR_IO_PENDING;

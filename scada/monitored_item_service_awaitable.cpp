@@ -1,10 +1,10 @@
 #include "scada/monitored_item_service_awaitable.h"
 
+#include "base/check.h"
 #include "scada/attribute_service.h"
 #include "scada/status.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cstdint>
 #include <limits>
 
@@ -49,7 +49,7 @@ Awaitable<DataValue> ReadInitialValueAsync(
   auto values = co_await ReadInitialValuesAsync(
       std::move(executor), monitored_item_service,
       std::vector<ReadValueId>{read_value_id}, params);
-  assert(values.size() == 1);
+  base::Check(values.size() == 1);
   co_return std::move(values.front());
 }
 

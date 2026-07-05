@@ -1,5 +1,6 @@
 #include "scada/node_id.h"
 
+#include "base/check.h"
 #include "base/base64.h"
 #include "base/format.h"
 
@@ -50,7 +51,7 @@ NodeId::NodeId(NodeId&& source) noexcept
       namespace_index_{source.namespace_index_} {
   source.identifier_ = static_cast<NumericId>(0);
   source.namespace_index_ = 0;
-  assert(source.is_null());
+  base::Check(source.is_null());
 }
 
 NodeId& NodeId::operator=(NodeId&& source) noexcept {
@@ -59,18 +60,18 @@ NodeId& NodeId::operator=(NodeId&& source) noexcept {
     identifier_ = std::move(source.identifier_);
     source.identifier_ = {};
     source.namespace_index_ = 0;
-    assert(source.is_null());
+    base::Check(source.is_null());
   }
   return *this;
 }
 
 const String& NodeId::string_id() const {
-  assert(type() == NodeIdType::String);
+  base::Check(type() == NodeIdType::String);
   return std::get<SharedValue<String>>(identifier_).get();
 }
 
 const ByteString& NodeId::opaque_id() const {
-  assert(type() == NodeIdType::Opaque);
+  base::Check(type() == NodeIdType::Opaque);
   return std::get<SharedValue<ByteString>>(identifier_).get();
 }
 

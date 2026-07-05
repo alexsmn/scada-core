@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "base/any_executor.h"
+#include "base/check.h"
 #include "scada/callback_awaitable.h"
 #include "scada/expanded_node_id.h"
 #include "scada/localized_text.h"
@@ -146,7 +147,7 @@ inline Awaitable<BrowseResult> Browse(ViewService& view_service,
   if (!results.ok()) {
     co_return BrowseResult{.status_code = results.status().code()};
   }
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   co_return std::move(results->front());
 }
 
@@ -159,7 +160,7 @@ inline Awaitable<BrowsePathResult> TranslateBrowsePath(
   if (!results.ok()) {
     co_return BrowsePathResult{.status_code = results.status().code()};
   }
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   co_return std::move(results->front());
 }
 

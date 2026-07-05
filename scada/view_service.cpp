@@ -19,7 +19,7 @@ std::ostream& operator<<(std::ostream& stream, BrowseDirection v) {
       name = "Both";
       break;
     default:
-      assert(false);
+      name = "(unknown)";
       break;
   }
 

@@ -1,5 +1,6 @@
 #include "remote/session_proxy.h"
 
+#include "base/check.h"
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
 #include <boost/algorithm/string/classification.hpp>
@@ -183,7 +184,7 @@ void SessionProxy::OnTransportOpened() {
 }
 
 void SessionProxy::OnSessionCreated() {
-  assert(!session_created_);
+  base::Check(!session_created_);
   session_created_ = true;
   pending_connect_result_.reset();
 
@@ -357,12 +358,11 @@ Awaitable<scada::Status> SessionProxy::DisconnectAsync() {
 }
 
 void SessionProxy::Send(protocol::Message& message) {
-  assert(message.IsInitialized());
+  base::Check(message.IsInitialized());
 
-  // TODO: This check shall be changed on assert when all proxy object will
-  // support MonitoredItemService reconnection.
+  // TODO: Enforce with base::Check once all proxy objects support
+  // MonitoredItemService reconnection.
   if (!transport_) {
-    assert(false);
     return;
   }
 
@@ -471,7 +471,7 @@ void SessionProxy::Request(protocol::Request& request,
   debugger_->NotifyRequestEvent(event);
 
   request.set_request_id(request_id);
-  assert(request.IsInitialized());
+  base::Check(request.IsInitialized());
 
   protocol::Message message;
   message.add_requests()->Swap(&request);
@@ -489,7 +489,7 @@ Awaitable<scada::Status> SessionProxy::ConnectStatus(
 
 Awaitable<scada::Status> SessionProxy::ConnectAsync(
     scada::SessionConnectParams params) {
-  assert(!transport_);
+  base::Check(!transport_);
 
   if (session_created_) {
     co_return scada::StatusCode::Bad;
@@ -751,7 +751,7 @@ void SessionProxy::SchedulePing() {
 }
 
 void SessionProxy::Ping() {
-  assert(ping_time_.is_null());
+  base::Check(ping_time_.is_null());
 
   ping_time_ = base::TimeTicks::Now();
   ping_completion_ = base::AsyncCompletion{executor_};

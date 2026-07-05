@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "scada/date_time.h"
 #include "scada/qualifier.h"
 #include "scada/variant.h"
@@ -12,7 +13,7 @@ class DataValue {
 
   constexpr DataValue(StatusCode status_code, DateTime server_timestamp)
       : server_timestamp{server_timestamp}, status_code{status_code} {
-    assert(!IsGood(status_code));
+    base::Check(!IsGood(status_code));
   }
 
   template <class T>

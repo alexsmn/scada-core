@@ -1,10 +1,10 @@
 #include "clipboard.h"
 
-#include <cassert>
+#include "base/check.h"
 #include <windows.h>
 
 static HGLOBAL CreateHGlobal(const void* data, size_t size) {
-  assert(size > 0);
+  base::Check(size > 0);
 
   HGLOBAL global = GlobalAlloc(GMEM_MOVEABLE, size);
   if (!global)
@@ -68,8 +68,8 @@ void Clipboard::Close() {
 }
 
 bool Clipboard::SetData(unsigned format, const void* data, size_t size) {
-  assert(data);
-  assert(size > 0);
+  base::Check(data);
+  base::Check(size > 0);
   
   if (!Open())
     return false;

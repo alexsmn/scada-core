@@ -1,6 +1,6 @@
 #include "base/time/time.h"
 
-#include <cassert>
+#include "base/check.h"
 #include <cmath>
 #include <format>
 #include <iomanip>
@@ -163,7 +163,7 @@ Time Time::LocalMidnight() const {
   Time out_time;
   if (FromLocalExploded(exploded, &out_time))
     return out_time;
-  assert(false && "LocalMidnight failed");
+  base::Check(false && "LocalMidnight failed");
   return Time();
 }
 

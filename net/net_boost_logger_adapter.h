@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/boost_log.h"
+#include "base/check.h"
 
 #include <memory>
 #include <string_view>
@@ -28,7 +29,7 @@ class NetBoostLoggerAdapter final : public transport::LogSink {
       case transport::LogSeverity::Fatal:
         return BoostLogSeverity::fatal;
       default:
-        assert(false);
+        base::NotReached();
         return BoostLogSeverity::info;
     }
   }

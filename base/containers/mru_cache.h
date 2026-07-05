@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cassert>
+#include "base/check.h"
+
 #include <list>
 #include <map>
 #include <unordered_map>
@@ -23,7 +24,7 @@ class MRUCacheBase {
   using reverse_iterator = typename PayloadList::reverse_iterator;
 
   explicit MRUCacheBase(size_t max_size) : max_size_{max_size} {
-    assert(max_size > 0);
+    base::Check(max_size > 0);
   }
 
   MRUCacheBase(const MRUCacheBase&) = delete;

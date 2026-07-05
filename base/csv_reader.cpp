@@ -1,8 +1,8 @@
 #include "base/csv_reader.h"
 
+#include "base/check.h"
 #include "base/string_util.h"
 #include "base/utf_convert.h"
-#include <cassert>
 
 CsvReader::CsvReader(std::istream& stream, std::u16string_view signature)
     : stream_{stream}, signature_{signature} {}
@@ -46,7 +46,7 @@ bool CsvReader::NextCell(std::u16string& str) {
     while (line_pos_ < line_.size()) {
       auto p = line_.find(u'"', line_pos_);
       if (p == std::string::npos) {
-        assert(false);
+        // Unterminated quoted cell in external CSV input.
         return false;
       }
       str += line_.substr(line_pos_, p - line_pos_);
@@ -58,7 +58,7 @@ bool CsvReader::NextCell(std::u16string& str) {
     }
     // Should end with line break or separator.
     if (line_pos_ < line_.size()) {
-      assert(line_[line_pos_] == separator_);
+      base::Check(line_[line_pos_] == separator_);
       ++line_pos_;
     }
     return true;

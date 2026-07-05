@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/check.h"
 #include "scada/event.h"
 
 #include <format>
@@ -71,7 +72,7 @@ inline std::ostream& operator<<(std::ostream& stream,
                  std::get_if<scada::SemanticChangeEvent>(&event)) {
     stream << std::format("{}", *semantic_change);
   } else {
-    assert(false);
+    base::NotReached();
   }
 
   return stream;

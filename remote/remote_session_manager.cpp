@@ -1,5 +1,6 @@
 #include "remote/remote_session_manager.h"
 
+#include "base/check.h"
 #include "base/any_executor_dispatch.h"
 #include "base/boost_log_adapter.h"
 #include "base/debug_util.h"
@@ -252,7 +253,7 @@ SessionStub& RemoteSessionManager::CreateNewSession(
 void RemoteSessionManager::DeleteSession(const scada::NodeId& user_id) {
   // Remove session from map.
   auto i = session_map_.find(user_id);
-  assert(i != session_map_.end());
+  base::Check(i != session_map_.end());
   auto session = std::move(i->second);
   session_map_.erase(i);
 

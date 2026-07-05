@@ -1,10 +1,10 @@
 #include "metrics/tracing.h"
 
+#include "base/check.h"
 #include "metrics/trace_sink.h"
 
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <cassert>
 
 namespace {
 
@@ -37,7 +37,7 @@ TraceSpan::~TraceSpan() {
 }
 
 TraceSpan TraceSpan::StartSpan(std::string_view name) const {
-  assert(sink_);
+  base::Check(sink_);
   return TraceSpan{*sink_, /*span_id=*/GenerateTraceSpanId(), name,
                    /*parent_span_id*/ span_id_};
 }

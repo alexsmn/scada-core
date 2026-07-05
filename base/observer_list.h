@@ -1,7 +1,8 @@
 #pragma once
 
+#include "base/check.h"
+
 #include <algorithm>
-#include <cassert>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -17,8 +18,8 @@ class ObserverList {
   ObserverList() = default;
 
   void AddObserver(T* observer) {
-    assert(observer);
-    assert(!HasObserver(observer));
+    base::Check(observer);
+    base::Check(!HasObserver(observer));
     observers_.push_back(observer);
   }
 

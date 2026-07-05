@@ -1,5 +1,6 @@
 #include "scada/client.h"
 
+#include "base/check.h"
 #include "scada/node_management_service.h"
 #include "scada/service_context.h"
 #include "scada/view_service.h"
@@ -68,18 +69,18 @@ Awaitable<StatusOr<scada::node>> client::add_node(AddNodesItem item) const {
   if (!results.ok()) {
     co_return results.status();
   }
-  assert(results->size() == 1);
+  base::Check(results->size() == 1);
   const auto& [status_code, node_id] = (*results)[0];
   if (!IsGood(status_code)) {
     co_return status_code;
   }
-  assert(!node_id.is_null());
+  base::Check(!node_id.is_null());
   co_return node(node_id);
 }
 
 Awaitable<Status> client::acknowledge_events(std::vector<EventId> event_ids,
                                              DateTime acknowledge_time) const {
-  assert(!event_ids.empty());
+  base::Check(!event_ids.empty());
   co_return co_await server_node().call(
       scada::id::AcknowledgeableConditionType_Acknowledge,
       std::move(event_ids), acknowledge_time);
