@@ -69,6 +69,15 @@ constexpr NumericId Server_ServerCapabilities_OperationLimits = 11704;
 constexpr NumericId Server_ServerCapabilities_RoleSet = 15606;
 constexpr NumericId Server_ServerCapabilities_RoleSet_AddRole = 16301;
 constexpr NumericId Server_ServerCapabilities_RoleSet_RemoveRole = 16304;
+// Server.Namespaces and the NamespaceMetadataType of its per-namespace
+// metadata objects (OPC UA Part 5 §6.3.12/§6.3.13,
+// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.3.12). Ids per
+// the official 1.05 NodeIds.csv.
+constexpr NumericId Server_Namespaces = 11715;
+constexpr NumericId NamespaceMetadataType = 11616;
+// The RolePermissionType structure (OPC UA Part 3 §8.56) carried by the
+// NamespaceMetadata DefaultRolePermissions property.
+constexpr NumericId RolePermissionType = 96;
 constexpr NumericId RoleSetType = 15607;
 constexpr NumericId RoleType = 15620;
 // The IdentityMappingRuleType structure (OPC UA Part 18 §4.4.3) and its
