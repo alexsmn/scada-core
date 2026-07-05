@@ -4,12 +4,13 @@
 #include "base/awaitable.h"
 #include "base/boost_log.h"
 #include "base/nested_logger.h"
-#include "base/observer_list.h"
 #include "scada/authentication.h"
 #include "scada/services.h"
 #include "scada/status_or.h"
 #include "scada/view_service.h"
 
+#include <boost/signals2/connection.hpp>
+#include <boost/signals2/signal.hpp>
 #include <functional>
 #include <map>
 #include <memory>
@@ -47,11 +48,8 @@ struct RemoteSessionManagerContext {
 // flow.
 class RemoteSessionManager final : private RemoteSessionManagerContext {
  public:
-  class Observer {
-   public:
-    virtual void OnSessionOpened(SessionStub& session) {}
-    virtual void OnSessionClosed(SessionStub& session) {}
-  };
+  using SessionOpenedCallback = std::function<void(SessionStub& session)>;
+  using SessionClosedCallback = std::function<void(SessionStub& session)>;
 
   explicit RemoteSessionManager(RemoteSessionManagerContext&& context);
   virtual ~RemoteSessionManager();
@@ -61,10 +59,13 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
   void CloseUserSessions(const scada::NodeId& user_id);
 
-  void AddObserver(Observer& observer) { observers_.AddObserver(&observer); }
-  void RemoveObserver(Observer& observer) {
-    observers_.RemoveObserver(&observer);
-  }
+  // Notifies whenever a new logical session has been created and stored.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeSessionOpened(
+      const SessionOpenedCallback& callback);
+  // Notifies right after a logical session has been removed; the session
+  // object is still alive for the duration of the callback.
+  [[nodiscard]] boost::signals2::scoped_connection SubscribeSessionClosed(
+      const SessionClosedCallback& callback);
 
  private:
   [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
@@ -95,7 +96,8 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   using SessionMap = std::map<scada::NodeId, std::shared_ptr<SessionStub>>;
   SessionMap session_map_;
 
-  base::ObserverList<Observer> observers_;
+  boost::signals2::signal<void(SessionStub&)> session_opened_signal_;
+  boost::signals2::signal<void(SessionStub&)> session_closed_signal_;
   std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
 
   friend class SessionStub;

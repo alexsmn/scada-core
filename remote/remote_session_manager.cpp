@@ -1,10 +1,10 @@
 #include "remote/remote_session_manager.h"
 
-#include "base/check.h"
+#include "base/any_executor.h"
 #include "base/any_executor_dispatch.h"
 #include "base/boost_log_adapter.h"
+#include "base/check.h"
 #include "base/debug_util.h"
-#include "base/any_executor.h"
 #include "base/utf_convert.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
@@ -176,7 +176,8 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
         scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
   }
 
-  auto& session = CreateNewSession(user_id, user_name, auth_result->user_rights);
+  auto& session =
+      CreateNewSession(user_id, user_name, auth_result->user_rights);
 
   LOG_INFO(*logger_) << "CreateSessionAsync returning success"
                      << LOG_TAG("UserId", NodeIdToScadaString(user_id));
@@ -226,9 +227,9 @@ SessionStub& RemoteSessionManager::CreateNewSession(
   auto session = SessionStub::Create(SessionContext{
       .executor_ = executor_,
       .services_ = services_,
-      .service_context_ = scada::ServiceContext{}
-                              .with_user_id(user_id)
-                              .with_user_rights(user_rights)});
+      .service_context_ =
+          scada::ServiceContext{}.with_user_id(user_id).with_user_rights(
+              user_rights)});
 
   auto& session_ref = *session;
   session_map_.insert_or_assign(user_id, std::move(session));
@@ -237,12 +238,9 @@ SessionStub& RemoteSessionManager::CreateNewSession(
                      << LOG_TAG("UserId", NodeIdToScadaString(user_id))
                      << LOG_TAG("SessionCount", session_map_.size());
 
-  // Notify all observers.
-  for (auto& o : observers_) {
-    LOG_INFO(*logger_) << "Notify session-open observer"
-                       << LOG_TAG("UserId", NodeIdToScadaString(user_id));
-    o.OnSessionOpened(session_ref);
-  }
+  LOG_INFO(*logger_) << "Notify session-open observers"
+                     << LOG_TAG("UserId", NodeIdToScadaString(user_id));
+  session_opened_signal_(session_ref);
 
   LOG_INFO(*logger_) << "Session creation finalized"
                      << LOG_TAG("UserId", NodeIdToScadaString(user_id));
@@ -260,9 +258,17 @@ void RemoteSessionManager::DeleteSession(const scada::NodeId& user_id) {
   LOG_INFO(*logger_) << "Session deleted"
                      << " | Context = " << session->service_context();
 
-  // Notify all observers.
-  for (auto& o : observers_)
-    o.OnSessionClosed(*session);
+  session_closed_signal_(*session);
+}
+
+boost::signals2::scoped_connection RemoteSessionManager::SubscribeSessionOpened(
+    const SessionOpenedCallback& callback) {
+  return session_opened_signal_.connect(callback);
+}
+
+boost::signals2::scoped_connection RemoteSessionManager::SubscribeSessionClosed(
+    const SessionClosedCallback& callback) {
+  return session_closed_signal_.connect(callback);
 }
 
 void RemoteSessionManager::CloseUserSessions(const scada::NodeId& user_id) {

@@ -6,6 +6,7 @@
 #include "remote/session_stub.h"
 #include "scada/authentication_adapters.h"
 
+#include <boost/signals2/connection.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <optional>
@@ -13,20 +14,6 @@
 using namespace testing;
 
 namespace {
-
-class SessionManagerObserver final : public RemoteSessionManager::Observer {
- public:
-  void OnSessionOpened(SessionStub& session) override {
-    opened_user_ids.push_back(session.service_context().user_id());
-  }
-
-  void OnSessionClosed(SessionStub& session) override {
-    closed_user_ids.push_back(session.service_context().user_id());
-  }
-
-  std::vector<scada::NodeId> opened_user_ids;
-  std::vector<scada::NodeId> closed_user_ids;
-};
 
 class SessionProxyTest : public Test {
  public:
@@ -125,20 +112,26 @@ TEST_F(SessionProxyTest, ReconnectIsAwaitable) {
 }
 
 TEST_F(SessionProxyTest, ManagerObserverNotifiedOnOpenAndClose) {
-  SessionManagerObserver observer;
-  session_manager_->AddObserver(observer);
+  std::vector<scada::NodeId> opened_user_ids;
+  std::vector<scada::NodeId> closed_user_ids;
+  boost::signals2::scoped_connection opened_connection =
+      session_manager_->SubscribeSessionOpened([&](SessionStub& session) {
+        opened_user_ids.push_back(session.service_context().user_id());
+      });
+  boost::signals2::scoped_connection closed_connection =
+      session_manager_->SubscribeSessionClosed([&](SessionStub& session) {
+        closed_user_ids.push_back(session.service_context().user_id());
+      });
 
   SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
 
   asio_env_.Wait(session.Connect(GetConnectParams()));
-  EXPECT_THAT(observer.opened_user_ids, ElementsAre(kUserId));
-  EXPECT_THAT(observer.closed_user_ids, IsEmpty());
+  EXPECT_THAT(opened_user_ids, ElementsAre(kUserId));
+  EXPECT_THAT(closed_user_ids, IsEmpty());
 
   asio_env_.Wait(session.Disconnect());
-  EXPECT_THAT(observer.closed_user_ids, ElementsAre(kUserId));
-
-  session_manager_->RemoveObserver(observer);
+  EXPECT_THAT(closed_user_ids, ElementsAre(kUserId));
 }
 
 }  // namespace
