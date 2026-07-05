@@ -81,6 +81,10 @@ function(_scada_module_add_sources MODULE_NAME SCOPE SOURCE_DIR)
     set(glob_mode GLOB)
   endif()
 
+  # Only *.cpp/*.h are globbed. C++20 module interface units (*.cppm, e.g.
+  # base/scada_base.cppm) rely on being invisible here: they are attached to
+  # dedicated module targets via FILE_SET CXX_MODULES and must never join a
+  # module's regular source list.
   file(${glob_mode} sources CONFIGURE_DEPENDS
     "${SOURCE_DIR}/*.cpp"
     "${SOURCE_DIR}/*.h")

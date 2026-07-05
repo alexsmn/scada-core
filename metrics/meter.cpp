@@ -1,14 +1,21 @@
 #include "metrics/meter.h"
 
-#include "base/check.h"
-#include "base/map_util.h"
-
 #include <opentelemetry/common/key_value_iterable_view.h>
 #include <opentelemetry/metrics/provider.h>
 
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+
+#if defined(SCADA_USE_BASE_MODULE)
+// Modules-pilot consumer (SCADA_CXX_MODULES=ON): base names come from the
+// scada.base facade. The import sits after the textual includes because the
+// reverse order trips an AppleClang 21 declaration-merging bug in libc++.
+import scada.base;
+#else
+#include "base/check.h"
+#include "base/map_util.h"
+#endif
 
 namespace metrics {
 

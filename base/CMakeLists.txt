@@ -83,3 +83,33 @@ elseif(NOT APPLE)
       -Wno-error=dangling-reference)
   endif()
 endif(WIN32)
+
+if(SCADA_CXX_MODULES)
+  # scada.base named-module facade (pilot). A separate target rather than a
+  # FILE_SET on scada_base itself so that the default header build - including
+  # the ~68 targets reusing scada_base's PCH - is completely unaffected.
+  # scada_module()'s GLOB matches only *.cpp/*.h, so scada_base.cppm is
+  # deliberately invisible to scada_base's own source discovery.
+  add_library(scada_base_module STATIC)
+  target_sources(scada_base_module
+    PUBLIC FILE_SET CXX_MODULES FILES scada_base.cppm)
+  target_link_libraries(scada_base_module PUBLIC scada_base)
+  target_compile_features(scada_base_module PUBLIC cxx_std_23)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # AppleClang (checked on 21.0) parses named C++20 modules only behind
+    # -fcxx-modules; without it `module;` / `export module` fail to parse.
+    # PUBLIC so importing consumers get the flag too.
+    target_compile_options(scada_base_module PUBLIC -fcxx-modules)
+  endif()
+  set_target_properties(scada_base_module PROPERTIES
+    CXX_CPPCHECK ""  # cppcheck cannot parse module interface units
+    # ccache is UNSAFE for module compiles, not merely a cache miss: it does
+    # not treat the BMI referenced through the @modmap response file as an
+    # input, so it can restore a stale object (observed: an importing TU kept
+    # an old inlined function body after the module was rebuilt), and a
+    # cache hit on the interface unit itself would skip regenerating the
+    # -fmodule-output .pcm side output.
+    CXX_COMPILER_LAUNCHER ""
+    FOLDER ${scada_core_folder})
+  add_subdirectory(module_test)
+endif()
