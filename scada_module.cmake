@@ -178,21 +178,27 @@ function(scada_add_module_facade LIB)
   if(NOT SCADA_CXX_MODULES)
     return()
   endif()
-  cmake_parse_arguments(ARG "" "" "FILES;IMPORTS" ${ARGN})
-  add_library(${LIB}_module STATIC)
+  # NAME overrides the facade target name (default <lib>_module) for libs
+  # whose name would collide with an existing target (e.g. device ->
+  # device_module is already the devices/module library).
+  cmake_parse_arguments(ARG "" "NAME" "FILES;IMPORTS" ${ARGN})
+  if(NOT ARG_NAME)
+    set(ARG_NAME ${LIB}_module)
+  endif()
+  add_library(${ARG_NAME} STATIC)
   # NOTE: *.cppm is deliberately invisible to scada_module()'s *.cpp/*.h GLOB.
-  target_sources(${LIB}_module PUBLIC FILE_SET CXX_MODULES FILES ${ARG_FILES})
+  target_sources(${ARG_NAME} PUBLIC FILE_SET CXX_MODULES FILES ${ARG_FILES})
   # PUBLIC <lib>: include dirs/defines for the GMF + link the implementation.
   # PUBLIC IMPORTS: BMIs of export-imported facades must reach consumers.
-  target_link_libraries(${LIB}_module PUBLIC ${LIB} ${ARG_IMPORTS})
-  target_compile_features(${LIB}_module PUBLIC cxx_std_23)
+  target_link_libraries(${ARG_NAME} PUBLIC ${LIB} ${ARG_IMPORTS})
+  target_compile_features(${ARG_NAME} PUBLIC cxx_std_23)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     # AppleClang (checked on 21.0) parses named C++20 modules only behind
     # -fcxx-modules; without it `module;` / `export module` fail to parse.
     # PUBLIC so importing consumers get the flag too.
-    target_compile_options(${LIB}_module PUBLIC -fcxx-modules)
+    target_compile_options(${ARG_NAME} PUBLIC -fcxx-modules)
   endif()
-  set_target_properties(${LIB}_module PROPERTIES
+  set_target_properties(${ARG_NAME} PROPERTIES
     CXX_CPPCHECK ""  # cppcheck cannot parse module interface units
     # ccache is UNSAFE for module compiles, not merely a cache miss: it does
     # not treat the BMI referenced through the @modmap response file as an
@@ -202,7 +208,7 @@ function(scada_add_module_facade LIB)
     # -fmodule-output .pcm side output.
     CXX_COMPILER_LAUNCHER "")
   _scada_module_ide_folder(_module_folder)
-  set_target_properties(${LIB}_module PROPERTIES FOLDER ${_module_folder})
+  set_target_properties(${ARG_NAME} PROPERTIES FOLDER ${_module_folder})
 endfunction()
 
 # scada_module_import_pilot(<lib> IMPORTS <module_targets...> DEFINES <macros...>)
@@ -233,18 +239,21 @@ endfunction()
 # call under `if(SCADA_CXX_MODULES)` (typically via the module_test
 # subdirectory added there).
 function(scada_add_module_smoke_test LIB)
-  cmake_parse_arguments(ARG "" "" "SOURCES;LINK" ${ARGN})
-  add_executable(${LIB}_module_unittests ${ARG_SOURCES})
+  cmake_parse_arguments(ARG "" "MODULE_TARGET" "SOURCES;LINK" ${ARGN})
+  if(NOT ARG_MODULE_TARGET)
+    set(ARG_MODULE_TARGET ${LIB}_module)
+  endif()
+  add_executable(${ARG_MODULE_TARGET}_unittests ${ARG_SOURCES})
   _scada_module_ide_folder(_module_folder)
-  set_target_properties(${LIB}_module_unittests PROPERTIES
+  set_target_properties(${ARG_MODULE_TARGET}_unittests PROPERTIES
     CXX_SCAN_FOR_MODULES ON
     CXX_CPPCHECK ""
     CXX_COMPILER_LAUNCHER ""
     FOLDER ${_module_folder})
-  target_link_libraries(${LIB}_module_unittests PRIVATE
-    ${LIB}_module base_unittest ${ARG_LINK})
+  target_link_libraries(${ARG_MODULE_TARGET}_unittests PRIVATE
+    ${ARG_MODULE_TARGET} base_unittest ${ARG_LINK})
   include(GoogleTest)
   # PRE_TEST defers test discovery to ctest runtime (see scada_module_unittests).
-  gtest_discover_tests(${LIB}_module_unittests DISCOVERY_MODE PRE_TEST
+  gtest_discover_tests(${ARG_MODULE_TARGET}_unittests DISCOVERY_MODE PRE_TEST
                        PROPERTIES TIMEOUT 60)
 endfunction()
