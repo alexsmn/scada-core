@@ -1,13 +1,13 @@
 #include "metrics/otel_log_sink.h"
 
 #include "base/utf_convert.h"
+#include "metrics/boost_log_attribute_types.h"
 #include "metrics/trace_parent.h"
 
 #include <boost/log/attributes/value_visitation.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/trivial.hpp>
-#include <boost/mpl/vector.hpp>
 #include <opentelemetry/common/timestamp.h>
 #include <opentelemetry/logs/log_record.h>
 #include <opentelemetry/logs/severity.h>
@@ -29,23 +29,6 @@ namespace {
 
 namespace logs_api = opentelemetry::logs;
 namespace nostd = opentelemetry::nostd;
-
-// Mirrors the value types the text formatter extracts (boost_log_init.cpp
-// ToString); attributes of any other type are skipped, matching the text
-// sinks' behavior (e.g. ProcessID / ThreadID never reach the output).
-using AttributeTypes = boost::mpl::vector<bool,
-                                          int16_t,
-                                          uint16_t,
-                                          int32_t,
-                                          uint32_t,
-                                          int64_t,
-                                          uint64_t,
-                                          long,
-                                          float,
-                                          double,
-                                          std::string,
-                                          std::wstring,
-                                          std::u16string>;
 
 logs_api::Severity ToOtelSeverity(BoostLogSeverity severity) {
   switch (severity) {
@@ -72,7 +55,7 @@ logs_api::Severity ToOtelSeverity(BoostLogSeverity severity) {
 void SetTypedAttribute(logs_api::LogRecord& log_record,
                        nostd::string_view key,
                        const boost::log::attribute_value& attr) {
-  boost::log::visit<AttributeTypes>(attr, [&](const auto& value) {
+  boost::log::visit<BoostLogAttributeTypes>(attr, [&](const auto& value) {
     using T = std::decay_t<decltype(value)>;
     if constexpr (std::is_same_v<T, bool>) {
       log_record.SetAttribute(key, value);

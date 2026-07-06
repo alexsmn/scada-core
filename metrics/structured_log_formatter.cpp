@@ -58,8 +58,7 @@ std::string FormatRfc3339Now() {
 #endif
   return std::format("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z",
                      utc.tm_year + 1900, utc.tm_mon + 1, utc.tm_mday,
-                     utc.tm_hour, utc.tm_min, utc.tm_sec,
-                     microseconds.count());
+                     utc.tm_hour, utc.tm_min, utc.tm_sec, microseconds.count());
 }
 
 std::string ToLowerHex(std::span<const uint8_t> bytes) {
@@ -135,8 +134,7 @@ void FormatRecord(const StructuredLogFormatterOptions& options,
   if (trace_parent) {
     object["logging.googleapis.com/trace"] =
         options.trace_prefix + ToLowerHex(trace_parent->trace_id);
-    object["logging.googleapis.com/spanId"] =
-        ToLowerHex(trace_parent->span_id);
+    object["logging.googleapis.com/spanId"] = ToLowerHex(trace_parent->span_id);
     object["logging.googleapis.com/trace_sampled"] = trace_parent->sampled();
   }
 
@@ -149,11 +147,11 @@ void FormatRecord(const StructuredLogFormatterOptions& options,
 
 BoostLogFormatter MakeStructuredLogFormatter(
     StructuredLogFormatterOptions options) {
-  return [options = std::move(options)](
-             const boost::log::record_view& record,
-             boost::log::formatting_ostream& stream) {
-    FormatRecord(options, record, stream);
-  };
+  return
+      [options = std::move(options)](const boost::log::record_view& record,
+                                     boost::log::formatting_ostream& stream) {
+        FormatRecord(options, record, stream);
+      };
 }
 
 }  // namespace metrics

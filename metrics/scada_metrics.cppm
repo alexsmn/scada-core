@@ -18,6 +18,7 @@ module;
 #include "metrics/meter.h"
 #include "metrics/metric_registry.h"
 #include "metrics/metric_value.h"
+#include "metrics/boost_log_attribute_types.h"
 #include "metrics/otel_endpoint.h"
 #include "metrics/otel_log_sink.h"
 #include "metrics/otel_logs.h"
@@ -27,6 +28,7 @@ module;
 #include "metrics/trace_attribute_util.h"
 #include "metrics/trace_id.h"
 #include "metrics/trace_parent.h"
+#include "metrics/structured_log_formatter.h"
 #include "metrics/trace_sink.h"
 #include "metrics/trace_sink_impl.h"
 #include "metrics/trace_span_kind.h"
@@ -63,6 +65,11 @@ using metrics::OpenTelemetryLogs;
 using metrics::OpenTelemetryLogsOptions;
 using metrics::OtelLogSinkBackend;
 using metrics::ScopedOtelLogSink;
+
+// boost_log_attribute_types.h / structured_log_formatter.h
+using metrics::BoostLogAttributeTypes;
+using metrics::MakeStructuredLogFormatter;
+using metrics::StructuredLogFormatterOptions;
 
 // otel_metrics.h
 using metrics::MetricPoint;

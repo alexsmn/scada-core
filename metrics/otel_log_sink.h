@@ -16,7 +16,10 @@ namespace metrics {
 // Logging) correlate the entry with the matching distributed-trace span.
 // Attach it at the log site with
 // `LOG_TAG(metrics::kTraceParentLogAttribute, FormatTraceParent(...))` or
-// scope-wide with LOG_SCOPED_TAG / LOG_BIND_TAG.
+// scope-wide with LOG_SCOPED_TAG / LOG_BIND_TAG. The opcuapp request logs
+// ("OPC UA Read/Browse completed", both server and client side) attach it
+// via the mirrored opcua::kTraceParentLogAttribute — the two constants are a
+// string contract and must stay "TraceParent" on both sides.
 inline constexpr const char* kTraceParentLogAttribute = "TraceParent";
 
 // Boost.Log sink backend bridging log records into the OpenTelemetry Logs

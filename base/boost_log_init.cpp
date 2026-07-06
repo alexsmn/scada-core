@@ -2,11 +2,12 @@
 
 #include "base/boost_log.h"
 #include "base/format.h"
+#include "base/no_destructor.h"
 
+#include "base/utf_convert.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/time_formatters.hpp>
 #include <boost/filesystem.hpp>
-#include "base/utf_convert.h"
 #include <boost/log/attributes.hpp>
 #include <boost/log/attributes/clock.hpp>
 #include <boost/log/attributes/value_visitation.hpp>
@@ -157,16 +158,23 @@ void InitBoostLogging(const BoostLogParams& params) {
     attributes_installed = true;
   }
 
-  static bool console_installed = false;
-  if (!console_installed && params.console) {
-    auto sink = boost::log::add_console_log();
-    boost::log::core::get()->add_sink(sink);
+  // The console sink is installed once but reconfigured on every call:
+  // Server::Main bootstraps logging with defaults before the params file is
+  // read, then re-initializes with the configured formatter/severity (e.g.
+  // the structured JSON formatter from `log.console_format`).
+  using ConsoleSink =
+      std::remove_reference_t<decltype(*boost::log::add_console_log())>;
+  static base::NoDestructor<boost::shared_ptr<ConsoleSink>> console_sink;
+  if (params.console) {
+    if (!*console_sink) {
+      *console_sink = boost::log::add_console_log();
+      boost::log::core::get()->add_sink(*console_sink);
+    }
     if (params.console_formatter)
-      sink->set_formatter(params.console_formatter);
+      (*console_sink)->set_formatter(params.console_formatter);
     else
-      sink->set_formatter(&FormatLogRecordT<true>);
-    sink->set_filter(severity >= params.console_log_severity);
-    console_installed = true;
+      (*console_sink)->set_formatter(&FormatLogRecordT<true>);
+    (*console_sink)->set_filter(severity >= params.console_log_severity);
   }
 
   static bool file_installed = false;

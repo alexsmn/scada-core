@@ -269,6 +269,7 @@ export {
   // boost_log.h / boost_log_init.h (types and functions; the LOG_* macros
   // require including base/boost_log.h, and the operator<< overloads are
   // deliberately not exported)
+  using ::BoostLogFormatter;
   using ::BoostLogger;
   using ::BoostLogParams;
   using ::BoostLogSeverity;
