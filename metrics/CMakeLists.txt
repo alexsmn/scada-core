@@ -31,3 +31,9 @@ endif()
 scada_module_import_pilot(scada_metrics
   IMPORTS scada_base_module
   DEFINES SCADA_USE_BASE_MODULE)
+
+scada_add_module_facade(scada_metrics FILES scada_metrics.cppm
+  IMPORTS scada_base_module)
+if(SCADA_CXX_MODULES)
+  add_subdirectory(module_test)
+endif()
