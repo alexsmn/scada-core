@@ -27,6 +27,20 @@ INTERNAL so sibling repos see them):
 | `scada.node_service` | `node_service_module` | `node_service/scada_node_service.cppm` | `scada.common` |
 | `scada.opcua_bridge` | `scada_opcua_bridge_module` | `opcua_bridge/scada_opcua_bridge.cppm` | `scada.core` |
 
+In the server repo (same helpers), ~35 facades named `scada.server.*`
+cover every macOS-buildable library: the base/discovery/device/
+node_manager/configuration tiers and all modules/* feature libraries
+(configuration db family, events, security, metrics, license, filesystem,
+redundancy, replication, data_items, config_schema, aggregation, opcua,
+remote, history family, core). Facade target = `<lib>_module`, except
+`scada_server_device_module` (the `device` lib; `device_module` is already
+the devices/module library — the helper's NAME argument covers such
+collisions). Not facaded in server: `history_server` (no public headers),
+Windows-only opc/vidicon, and the iec60870/iec61850/modbus driver leaves.
+Server facades follow the timed_data name-parity precedent: they
+export-import the facades their *headers* textually expose, since most
+server libs link their deps PRIVATE.
+
 Not facaded in common: `node_service_v1/v2/v3/proxy` (implementation
 targets), `scada_common_opc` / `scada_common_vidicon*` (Windows-only —
 unbuildable on the macOS iteration platform). Additional common-specific
