@@ -1,13 +1,25 @@
 #include "remote/monitored_item_proxy.h"
 
-#include "base/check.h"
-#include "base/cancelation.h"
 #include "remote/message_sender.h"
 #include "remote/monitored_item_router.h"
 #include "remote/protocol_utils.h"
 #include "remote/subscription_proxy.h"
 
+// base/debug_util.h stays textual in both modes: its ADL operator<<
+// overloads are deliberately not exported by the facades.
 #include "base/debug_util.h"
+
+#if defined(SCADA_USE_CORE_MODULE)
+// Modules-pilot consumer (SCADA_CXX_MODULES=ON): base/scada names come from
+// the scada.core facade. The import sits after the textual includes because
+// the reverse order trips an AppleClang 21 declaration-merging bug in
+// libc++. Note remote/protocol_utils.h (protobuf) above composes fine with
+// the import - pb names simply stay textual.
+import scada.core;
+#else
+#include "base/cancelation.h"
+#include "base/check.h"
+#endif
 
 // MonitoredItemProxy
 

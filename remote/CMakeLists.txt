@@ -53,7 +53,11 @@ endif()
 
 scada_module(scada_core_remote)
 
-target_precompile_headers(scada_core_remote REUSE_FROM scada_base)
+# No PCH in the modules pilot: clang-scan-deps cannot read the AppleClang
+# PCH and silently emits an empty dependency scan (see docs/cxx-modules.md).
+if(NOT SCADA_CXX_MODULES)
+  target_precompile_headers(scada_core_remote REUSE_FROM scada_base)
+endif()
 
 target_link_libraries(scada_core_remote PUBLIC scada_core)
 
@@ -70,6 +74,21 @@ if(WIN32)
   target_compile_options(scada_core_remote PRIVATE
     /wd4244 # 'conversion' conversion from 'type1' to 'type2', possible loss of data
   )
+endif()
+
+# Modules-pilot consumer: monitored_item_proxy.cpp imports scada.core
+# instead of including base headers (see SCADA_USE_CORE_MODULE there).
+scada_module_import_pilot(scada_core_remote
+  IMPORTS scada_core_module
+  DEFINES SCADA_USE_CORE_MODULE)
+
+scada_add_module_facade(scada_core_remote FILES scada_remote.cppm
+  IMPORTS scada_core_module)
+if(SCADA_CXX_MODULES)
+  # The facade's GMF headers use transport:: types, which scada_core_remote
+  # links only PRIVATE - the module unit needs the include dirs itself.
+  target_link_libraries(scada_core_remote_module PRIVATE Transport::transport)
+  add_subdirectory(module_test)
 endif()
 
 # UTs
