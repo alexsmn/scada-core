@@ -1,13 +1,22 @@
 #include "node_id_util.h"
 
-#include "base/check.h"
-#include "base/format.h"
-
+#include <algorithm>
 #include <format>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
+#include <boost/algorithm/string/predicate.hpp>
+
+#if defined(SCADA_USE_CORE_MODULE)
+// Modules-pilot consumer (SCADA_CXX_MODULES=ON): base/scada names come from
+// the scada.core facade (which export-imports scada.base). The import sits
+// after the textual includes because the reverse order trips an AppleClang
+// 21 declaration-merging bug in libc++.
+import scada.core;
+#else
+#include "base/check.h"
+#include "base/format.h"
+#endif
 
 namespace {
 
@@ -109,10 +118,9 @@ scada::NodeId MakeNestedNodeId(const scada::NodeId& parent_id,
     return {};
   }
 
-  auto parent_namespace =
-      namespace_index != parent_id.namespace_index()
-          ? std::format("{}:", parent_id.namespace_index())
-          : std::string{};
+  auto parent_namespace = namespace_index != parent_id.namespace_index()
+                              ? std::format("{}:", parent_id.namespace_index())
+                              : std::string{};
   auto parent_identifier = parent_id.type() == scada::NodeIdType::Numeric
                                ? std::format("{}", parent_id.numeric_id())
                                : std::string{parent_id.string_id()};

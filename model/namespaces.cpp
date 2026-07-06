@@ -1,9 +1,18 @@
 #include "model/namespaces.h"
 
-#include "base/format.h"
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <cstring>
+
+#if defined(SCADA_USE_CORE_MODULE)
+// Modules-pilot consumer (SCADA_CXX_MODULES=ON): base/scada names come from
+// the scada.core facade (which export-imports scada.base). The import sits
+// after the textual includes because the reverse order trips an AppleClang
+// 21 declaration-merging bug in libc++.
+import scada.core;
+#else
+#include "base/format.h"
+#endif
 
 namespace {
 
