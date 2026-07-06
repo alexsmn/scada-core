@@ -281,6 +281,7 @@ export {
   using ::ConsoleLogger;
   using ::ForkLogger;
   using ::Logger;
+  using ::LogSeverity;
   using ::NestedLogger;
   using ::NullLogger;
 
