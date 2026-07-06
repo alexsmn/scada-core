@@ -146,3 +146,90 @@ function(scada_module MODULE_NAME)
     scada_module_sources(${MODULE_NAME} ${ARG_UNPARSED_ARGUMENTS} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
 endfunction()
+
+#[=======================================================================[
+C++20 named-module facade helpers (SCADA_CXX_MODULES pilot).
+
+All three functions are no-ops (or gate their module-specific parts) when
+SCADA_CXX_MODULES is OFF, so the default header build is untouched. See
+docs/cxx-modules.md for the facade design and the consumer rules.
+#]=======================================================================]
+
+# scada_add_module_facade(<lib> FILES <name.cppm> [IMPORTS <module_targets...>])
+#
+# Creates <lib>_module: a STATIC library holding the named-module facade over
+# <lib>'s headers. IMPORTS lists the facade targets of <lib>'s PUBLIC link
+# dependencies (the .cppm `export import`s their modules, so their BMIs must
+# propagate to consumers).
+function(scada_add_module_facade LIB)
+  if(NOT SCADA_CXX_MODULES)
+    return()
+  endif()
+  cmake_parse_arguments(ARG "" "" "FILES;IMPORTS" ${ARGN})
+  add_library(${LIB}_module STATIC)
+  # NOTE: *.cppm is deliberately invisible to scada_module()'s *.cpp/*.h GLOB.
+  target_sources(${LIB}_module PUBLIC FILE_SET CXX_MODULES FILES ${ARG_FILES})
+  # PUBLIC <lib>: include dirs/defines for the GMF + link the implementation.
+  # PUBLIC IMPORTS: BMIs of export-imported facades must reach consumers.
+  target_link_libraries(${LIB}_module PUBLIC ${LIB} ${ARG_IMPORTS})
+  target_compile_features(${LIB}_module PUBLIC cxx_std_23)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # AppleClang (checked on 21.0) parses named C++20 modules only behind
+    # -fcxx-modules; without it `module;` / `export module` fail to parse.
+    # PUBLIC so importing consumers get the flag too.
+    target_compile_options(${LIB}_module PUBLIC -fcxx-modules)
+  endif()
+  set_target_properties(${LIB}_module PROPERTIES
+    CXX_CPPCHECK ""  # cppcheck cannot parse module interface units
+    # ccache is UNSAFE for module compiles, not merely a cache miss: it does
+    # not treat the BMI referenced through the @modmap response file as an
+    # input, so it can restore a stale object (observed: an importing TU kept
+    # an old inlined function body after the module was rebuilt), and a
+    # cache hit on the interface unit itself would skip regenerating the
+    # -fmodule-output .pcm side output.
+    CXX_COMPILER_LAUNCHER ""
+    FOLDER ${scada_core_folder})
+endfunction()
+
+# scada_module_import_pilot(<lib> IMPORTS <module_targets...> DEFINES <macros...>)
+#
+# Opts an existing library into importing facade modules: its pilot TUs are
+# gated in-source by the DEFINES macros (e.g. SCADA_USE_BASE_MODULE). The
+# caller must also wrap its target_precompile_headers(... REUSE_FROM ...) in
+# `if(NOT SCADA_CXX_MODULES)` - clang-scan-deps cannot read the AppleClang
+# PCH and silently emits an empty dependency scan.
+function(scada_module_import_pilot LIB)
+  if(NOT SCADA_CXX_MODULES)
+    return()
+  endif()
+  cmake_parse_arguments(ARG "" "" "IMPORTS;DEFINES" ${ARGN})
+  target_link_libraries(${LIB} PRIVATE ${ARG_IMPORTS})
+  target_compile_definitions(${LIB} PRIVATE ${ARG_DEFINES})
+  set_target_properties(${LIB} PROPERTIES
+    # The tree's policy version predates CMP0155, so ordinary sources are
+    # not scanned for imports by default; importing TUs must opt in.
+    CXX_SCAN_FOR_MODULES ON
+    # ccache does not hash the imported BMI (see scada_add_module_facade).
+    CXX_COMPILER_LAUNCHER "")
+endfunction()
+
+# scada_add_module_smoke_test(<lib> SOURCES <files...> [LINK <extra targets...>])
+#
+# Creates <lib>_module_unittests from the lib's module_test/ sources. Only
+# call under `if(SCADA_CXX_MODULES)` (typically via the module_test
+# subdirectory added there).
+function(scada_add_module_smoke_test LIB)
+  cmake_parse_arguments(ARG "" "" "SOURCES;LINK" ${ARGN})
+  add_executable(${LIB}_module_unittests ${ARG_SOURCES})
+  set_target_properties(${LIB}_module_unittests PROPERTIES
+    CXX_SCAN_FOR_MODULES ON
+    CXX_CPPCHECK ""
+    CXX_COMPILER_LAUNCHER ""
+    FOLDER ${scada_core_folder})
+  target_link_libraries(${LIB}_module_unittests PRIVATE
+    ${LIB}_module base_unittest ${ARG_LINK})
+  include(GoogleTest)
+  # PRE_TEST defers test discovery to ctest runtime (see scada_module_unittests).
+  gtest_discover_tests(${LIB}_module_unittests DISCOVERY_MODE PRE_TEST
+                       PROPERTIES TIMEOUT 60)
+endfunction()

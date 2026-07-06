@@ -26,15 +26,8 @@ if(WIN32)
   target_link_libraries(scada_metrics PRIVATE Bcrypt)
 endif()
 
-if(SCADA_CXX_MODULES)
-  # Modules-pilot consumer: meter.cpp imports scada.base instead of including
-  # base headers (see SCADA_USE_BASE_MODULE there). Scanning is opt-in
-  # because the tree's policy version predates CMP0155; the launcher is
-  # cleared because ccache does not hash the imported BMI and can restore
-  # stale objects for importing TUs (see base/CMakeLists.txt).
-  target_link_libraries(scada_metrics PRIVATE scada_base_module)
-  target_compile_definitions(scada_metrics PRIVATE SCADA_USE_BASE_MODULE)
-  set_target_properties(scada_metrics PROPERTIES
-    CXX_SCAN_FOR_MODULES ON
-    CXX_COMPILER_LAUNCHER "")
-endif()
+# Modules-pilot consumer: meter.cpp imports scada.base instead of including
+# base headers (see SCADA_USE_BASE_MODULE there).
+scada_module_import_pilot(scada_metrics
+  IMPORTS scada_base_module
+  DEFINES SCADA_USE_BASE_MODULE)
