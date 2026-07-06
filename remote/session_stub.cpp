@@ -1,5 +1,7 @@
 #include "remote/session_stub.h"
 
+#include "metrics/trace_attribute_util.h"
+
 #include "base/any_executor_dispatch.h"
 #include "base/awaitable.h"
 #include "base/range_util.h"
@@ -318,6 +320,8 @@ Awaitable<void> SessionStub::OnCallAsync(
   if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
     context = context.with_trace_id(trace_parent);
   }
+  span.SetAttribute("scada.object_node_id", node_id.ToString());
+  span.SetAttribute("scada.method_node_id", method_id.ToString());
 
   auto status = co_await services_.method_service->Call(
       std::move(node_id), std::move(method_id), std::move(arguments), context);
@@ -341,6 +345,12 @@ Awaitable<void> SessionStub::OnReadAsync(
   if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
     context = context.with_trace_id(trace_parent);
   }
+  span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
+  span.SetAttribute(
+      "scada.node_ids",
+      metrics::JoinForAttribute(inputs, [](const scada::ReadValueId& input) {
+        return input.node_id.ToString();
+      }));
 
   const auto input_count = inputs.size();
   auto result = co_await services_.attribute_service->Read(std::move(context),
@@ -374,6 +384,12 @@ Awaitable<void> SessionStub::OnWriteAsync(
   if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
     context = context.with_trace_id(trace_parent);
   }
+  span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
+  span.SetAttribute(
+      "scada.node_ids",
+      metrics::JoinForAttribute(inputs, [](const scada::WriteValue& input) {
+        return input.node_id.ToString();
+      }));
 
   const auto input_count = inputs.size();
   auto result = co_await services_.attribute_service->Write(std::move(context),

@@ -38,6 +38,11 @@ class [[nodiscard]] TraceSpan {
   // configured or the span was moved out.
   std::string traceparent() const;
 
+  // Attaches a string attribute (request parameters such as node ids) to the
+  // span. No-op when no exporting sink is configured or the span was moved
+  // out.
+  void SetAttribute(std::string_view key, std::string_view value);
+
   TraceSpan StartSpan(std::string_view name) const;
 
  private:

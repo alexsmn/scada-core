@@ -21,6 +21,9 @@ class CompositeTraceSink final : public TraceSink {
                  TraceSpanKind kind,
                  std::string_view remote_parent) override;
   void EndSpan(const TraceSpanId& span_id) override;
+  void SetSpanAttribute(const TraceSpanId& span_id,
+                        std::string_view key,
+                        std::string_view value) override;
   // First non-empty result wins (only the exporting sink produces one).
   std::string GetTraceParent(const TraceSpanId& span_id) const override;
 

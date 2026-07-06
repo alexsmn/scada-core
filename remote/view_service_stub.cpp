@@ -1,6 +1,7 @@
 #include "remote/view_service_stub.h"
 
 #include "base/any_executor_dispatch.h"
+#include "metrics/trace_attribute_util.h"
 #include "metrics/tracer.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
@@ -78,6 +79,12 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
   if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
     context = context.with_trace_id(trace_parent);
   }
+  span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
+  span.SetAttribute("scada.node_ids",
+                    metrics::JoinForAttribute(
+                        inputs, [](const scada::BrowseDescription& input) {
+                          return input.node_id.ToString();
+                        }));
 
   auto result = co_await service_.Browse(std::move(context), std::move(inputs));
   auto status = result.status();

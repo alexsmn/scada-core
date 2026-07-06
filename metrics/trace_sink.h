@@ -25,6 +25,12 @@ class TraceSink {
 
   virtual void EndSpan(const TraceSpanId& span_id) = 0;
 
+  // Attaches a string attribute to a live span (request parameters such as
+  // node ids). Default no-op so non-exporting sinks stay trivial.
+  virtual void SetSpanAttribute(const TraceSpanId& span_id,
+                                std::string_view key,
+                                std::string_view value) {}
+
   // The W3C traceparent of a live span, for injecting into outbound requests.
   // Empty when the sink does not export spans (watchdog-only configurations)
   // or the span is unknown.

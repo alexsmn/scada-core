@@ -184,6 +184,30 @@ TEST_F(OtelTraceSinkTest, UnsampledRatioStillReturnsTraceParent) {
   EXPECT_TRUE(data->GetSpans().empty());
 }
 
+TEST_F(OtelTraceSinkTest, ExportsSpanAttributes) {
+  {
+    auto span = tracer_->StartSpan("Read", TraceSpanKind::kServer, {});
+    span.SetAttribute("scada.node_ids", "ns=1;i=42,ns=1;i=43");
+    span.SetAttribute("scada.input_count", "2");
+  }
+
+  auto spans = ExportedSpans();
+  ASSERT_EQ(spans.size(), 1u);
+  const auto& attributes = spans[0]->GetAttributes();
+  auto node_ids = attributes.find("scada.node_ids");
+  ASSERT_NE(node_ids, attributes.end());
+  EXPECT_EQ(opentelemetry::nostd::get<std::string>(node_ids->second),
+            "ns=1;i=42,ns=1;i=43");
+  auto count = attributes.find("scada.input_count");
+  ASSERT_NE(count, attributes.end());
+  EXPECT_EQ(opentelemetry::nostd::get<std::string>(count->second), "2");
+}
+
+TEST_F(OtelTraceSinkTest, SetAttributeForUnknownIdIsNoOp) {
+  sink_->SetSpanAttribute("unknown-span-id", "key", "value");
+  EXPECT_TRUE(ExportedSpans().empty());
+}
+
 TEST_F(OtelTraceSinkTest, EndSpanForUnknownIdIsNoOp) {
   sink_->EndSpan("unknown-span-id");
   EXPECT_TRUE(ExportedSpans().empty());
@@ -214,8 +238,15 @@ TEST_F(OtelTraceSinkTest, ConcurrentSpansSmoke) {
     thread.join();
   }
 
-  auto spans = ExportedSpans();
-  EXPECT_EQ(spans.size(), 2u * kThreads * kSpansPerThread);
+  // Under heavy machine load one ForceFlush window may expire before the
+  // batch worker drains; flush repeatedly and accumulate until the expected
+  // count arrives (GetSpans() consumes what has been exported so far).
+  size_t exported = 0;
+  const size_t expected = 2u * kThreads * kSpansPerThread;
+  for (int attempt = 0; attempt < 5 && exported < expected; ++attempt) {
+    exported += ExportedSpans().size();
+  }
+  EXPECT_EQ(exported, expected);
 }
 
 }  // namespace

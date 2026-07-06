@@ -130,6 +130,7 @@ Awaitable<void> HistoryStub::OnHistoryReadRawAsync(
     scada::HistoryReadRawDetails details) {
   auto span = tracer_.StartSpan("scada.grpc/HistoryReadRaw",
                                 TraceSpanKind::kServer, trace_id);
+  span.SetAttribute("scada.node_id", details.node_id.ToString());
 
   auto result = co_await service_.HistoryReadRaw(details);
 
@@ -168,6 +169,7 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
     scada::EventFilter filter) {
   auto span = tracer_.StartSpan("scada.grpc/HistoryReadEvents",
                                 TraceSpanKind::kServer, trace_id);
+  span.SetAttribute("scada.node_id", node_id.ToString());
 
   auto result = co_await service_.HistoryReadEvents(std::move(node_id), from,
                                                     to, std::move(filter));

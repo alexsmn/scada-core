@@ -82,6 +82,20 @@ void OtelTraceSink::EndSpan(const TraceSpanId& span_id) {
   span->End();
 }
 
+void OtelTraceSink::SetSpanAttribute(const TraceSpanId& span_id,
+                                     std::string_view key,
+                                     std::string_view value) {
+  std::lock_guard lock{mutex_};
+
+  auto i = spans_.find(span_id);
+  if (i == spans_.end()) {
+    return;
+  }
+  i->second->SetAttribute(
+      opentelemetry::nostd::string_view{key.data(), key.size()},
+      opentelemetry::nostd::string_view{value.data(), value.size()});
+}
+
 std::string OtelTraceSink::GetTraceParent(const TraceSpanId& span_id) const {
   std::lock_guard lock{mutex_};
 

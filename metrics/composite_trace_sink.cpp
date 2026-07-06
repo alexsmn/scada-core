@@ -27,6 +27,14 @@ void CompositeTraceSink::EndSpan(const TraceSpanId& span_id) {
   }
 }
 
+void CompositeTraceSink::SetSpanAttribute(const TraceSpanId& span_id,
+                                          std::string_view key,
+                                          std::string_view value) {
+  for (TraceSink* sink : sinks_) {
+    sink->SetSpanAttribute(span_id, key, value);
+  }
+}
+
 std::string CompositeTraceSink::GetTraceParent(
     const TraceSpanId& span_id) const {
   for (TraceSink* sink : sinks_) {

@@ -57,6 +57,12 @@ std::string TraceSpan::traceparent() const {
   return sink_ ? sink_->GetTraceParent(span_id_) : std::string{};
 }
 
+void TraceSpan::SetAttribute(std::string_view key, std::string_view value) {
+  if (sink_) {
+    sink_->SetSpanAttribute(span_id_, key, value);
+  }
+}
+
 TraceSpan TraceSpan::StartSpan(std::string_view name) const {
   base::Check(sink_);
   return TraceSpan{*sink_,
