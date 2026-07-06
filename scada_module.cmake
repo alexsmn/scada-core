@@ -155,6 +155,19 @@ SCADA_CXX_MODULES is OFF, so the default header build is untouched. See
 docs/cxx-modules.md for the facade design and the consumer rules.
 #]=======================================================================]
 
+# Resolves the IDE folder for module targets: each repo defines its own
+# folder variable (core: scada_core_folder, common: scada_common_folder),
+# visible only in that repo's directory scope.
+function(_scada_module_ide_folder OUT_VAR)
+  if(DEFINED scada_core_folder)
+    set(${OUT_VAR} ${scada_core_folder} PARENT_SCOPE)
+  elseif(DEFINED scada_common_folder)
+    set(${OUT_VAR} ${scada_common_folder} PARENT_SCOPE)
+  else()
+    set(${OUT_VAR} "Modules" PARENT_SCOPE)
+  endif()
+endfunction()
+
 # scada_add_module_facade(<lib> FILES <name.cppm> [IMPORTS <module_targets...>])
 #
 # Creates <lib>_module: a STATIC library holding the named-module facade over
@@ -187,8 +200,9 @@ function(scada_add_module_facade LIB)
     # an old inlined function body after the module was rebuilt), and a
     # cache hit on the interface unit itself would skip regenerating the
     # -fmodule-output .pcm side output.
-    CXX_COMPILER_LAUNCHER ""
-    FOLDER ${scada_core_folder})
+    CXX_COMPILER_LAUNCHER "")
+  _scada_module_ide_folder(_module_folder)
+  set_target_properties(${LIB}_module PROPERTIES FOLDER ${_module_folder})
 endfunction()
 
 # scada_module_import_pilot(<lib> IMPORTS <module_targets...> DEFINES <macros...>)
@@ -221,11 +235,12 @@ endfunction()
 function(scada_add_module_smoke_test LIB)
   cmake_parse_arguments(ARG "" "" "SOURCES;LINK" ${ARGN})
   add_executable(${LIB}_module_unittests ${ARG_SOURCES})
+  _scada_module_ide_folder(_module_folder)
   set_target_properties(${LIB}_module_unittests PROPERTIES
     CXX_SCAN_FOR_MODULES ON
     CXX_CPPCHECK ""
     CXX_COMPILER_LAUNCHER ""
-    FOLDER ${scada_core_folder})
+    FOLDER ${_module_folder})
   target_link_libraries(${LIB}_module_unittests PRIVATE
     ${LIB}_module base_unittest ${ARG_LINK})
   include(GoogleTest)

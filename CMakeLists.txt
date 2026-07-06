@@ -67,7 +67,7 @@ if(SCADA_CXX_MODULES)
       COMMAND xcrun --show-sdk-path
       OUTPUT_VARIABLE _appleclang_sysroot
       OUTPUT_STRIP_TRAILING_WHITESPACE)
-    string(CONCAT CMAKE_CXX_SCANDEP_SOURCE
+    string(CONCAT _appleclang_scandep_source
       "\"${CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS}\""
       " -format=p1689"
       " --"
@@ -79,12 +79,20 @@ if(SCADA_CXX_MODULES)
       " -MD -MF <DEP_FILE>"
       " > <DYNDEP_FILE>.tmp"
       " && mv <DYNDEP_FILE>.tmp <DYNDEP_FILE>")
+    # CACHE INTERNAL, not directory-scope set(): module facades also live in
+    # sibling repos (common/), which never see this directory's variables.
+    set(CMAKE_CXX_SCANDEP_SOURCE "${_appleclang_scandep_source}"
+        CACHE INTERNAL "AppleClang module dependency scanning command")
+    unset(_appleclang_scandep_source)
     unset(_appleclang_resource_dir)
     unset(_appleclang_sysroot)
-    set(CMAKE_CXX_MODULE_MAP_FORMAT "clang")
-    set(CMAKE_CXX_MODULE_MAP_FLAG "@<MODULE_MAP_FILE>")
+    set(CMAKE_CXX_MODULE_MAP_FORMAT "clang"
+        CACHE INTERNAL "AppleClang module map format")
+    set(CMAKE_CXX_MODULE_MAP_FLAG "@<MODULE_MAP_FILE>"
+        CACHE INTERNAL "AppleClang module map flag")
     set(CMAKE_CXX_COMPILE_BMI
-      "<CMAKE_CXX_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> --precompile <SOURCE>")
+      "<CMAKE_CXX_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> --precompile <SOURCE>"
+      CACHE INTERNAL "AppleClang BMI compile command")
   endif()
 endif()
 
