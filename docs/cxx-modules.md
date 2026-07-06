@@ -15,6 +15,26 @@ for imports, PCH stays enabled.
 | `scada.model` | `scada_model_module` | `model/scada_model.cppm` | `scada.core` |
 | `scada.remote` | `scada_core_remote_module` | `remote/scada_remote.cppm` | `scada.core` |
 
+In the common repo (same helpers; the AppleClang scandep variables are CACHE
+INTERNAL so sibling repos see them):
+
+| Module | Facade target | Interface unit | `export import`s |
+|---|---|---|---|
+| `scada.common` | `scada_common_module` | `common/scada_common.cppm` | `scada.core`, `scada.metrics` |
+| `scada.events` | `scada_common_events_module` | `events/scada_events.cppm` | `scada.common` |
+| `scada.timed_data` | `timed_data_module` | `timed_data/scada_timed_data.cppm` | `scada.common`, `scada.events` |
+| `scada.address_space` | `address_space_module` | `address_space/scada_address_space.cppm` | `scada.core` |
+| `scada.node_service` | `node_service_module` | `node_service/scada_node_service.cppm` | `scada.common` |
+| `scada.opcua_bridge` | `scada_opcua_bridge_module` | `opcua_bridge/scada_opcua_bridge.cppm` | `scada.core` |
+
+Not facaded in common: `node_service_v1/v2/v3/proxy` (implementation
+targets), `scada_common_opc` / `scada_common_vidicon*` (Windows-only —
+unbuildable on the macOS iteration platform). Additional common-specific
+exclusions: `vds_runtime_api.h` (extern-C plugin ABI) and
+`session_proxy_notifier.h` (its global SessionProxyNotifier template
+collides by name with core/remote's class — exporting both would make TUs
+importing scada.common and scada.remote together ill-formed).
+
 Each facade `export import`s the facades of its PUBLIC-linked dependencies —
 the module analogue of PUBLIC link transitivity — so `import scada.core;`
 provides the full transitive surface (base + metrics + core names).

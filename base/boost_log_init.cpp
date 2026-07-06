@@ -161,7 +161,10 @@ void InitBoostLogging(const BoostLogParams& params) {
   if (!console_installed && params.console) {
     auto sink = boost::log::add_console_log();
     boost::log::core::get()->add_sink(sink);
-    sink->set_formatter(&FormatLogRecordT<true>);
+    if (params.console_formatter)
+      sink->set_formatter(params.console_formatter);
+    else
+      sink->set_formatter(&FormatLogRecordT<true>);
     sink->set_filter(severity >= params.console_log_severity);
     console_installed = true;
   }

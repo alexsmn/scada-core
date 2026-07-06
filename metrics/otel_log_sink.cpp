@@ -33,20 +33,19 @@ namespace nostd = opentelemetry::nostd;
 // Mirrors the value types the text formatter extracts (boost_log_init.cpp
 // ToString); attributes of any other type are skipped, matching the text
 // sinks' behavior (e.g. ProcessID / ThreadID never reach the output).
-using AttributeTypes =
-    boost::mpl::vector<bool,
-                       int16_t,
-                       uint16_t,
-                       int32_t,
-                       uint32_t,
-                       int64_t,
-                       uint64_t,
-                       long,
-                       float,
-                       double,
-                       std::string,
-                       std::wstring,
-                       std::u16string>;
+using AttributeTypes = boost::mpl::vector<bool,
+                                          int16_t,
+                                          uint16_t,
+                                          int32_t,
+                                          uint32_t,
+                                          int64_t,
+                                          uint64_t,
+                                          long,
+                                          float,
+                                          double,
+                                          std::string,
+                                          std::wstring,
+                                          std::u16string>;
 
 logs_api::Severity ToOtelSeverity(BoostLogSeverity severity) {
   switch (severity) {
@@ -140,10 +139,10 @@ void OtelLogSinkBackend::consume(const boost::log::record_view& record) {
   if (trace_parent) {
     log_record->SetTraceId(opentelemetry::trace::TraceId{
         nostd::span<const uint8_t, opentelemetry::trace::TraceId::kSize>{
-            trace_parent->trace_id}});
+            trace_parent->trace_id.data(), trace_parent->trace_id.size()}});
     log_record->SetSpanId(opentelemetry::trace::SpanId{
         nostd::span<const uint8_t, opentelemetry::trace::SpanId::kSize>{
-            trace_parent->span_id}});
+            trace_parent->span_id.data(), trace_parent->span_id.size()}});
     log_record->SetTraceFlags(
         opentelemetry::trace::TraceFlags{trace_parent->flags});
   }

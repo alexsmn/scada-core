@@ -5,9 +5,10 @@
 // fragment includes them, the purview re-exports names with `export using`.
 // `export import scada.base;` mirrors scada_metrics's PUBLIC link.
 //
-// opentelemetry:: names (pulled by otel_traces.h / otel_trace_sink.h) are
-// third-party and deliberately not exported; TUs using them include the
-// otel headers textually alongside the import.
+// opentelemetry:: names (pulled by otel_traces.h / otel_trace_sink.h /
+// otel_logs.h / otel_log_sink.h) are third-party and deliberately not
+// exported; TUs using them include the otel headers textually alongside the
+// import.
 
 module;
 
@@ -18,6 +19,8 @@ module;
 #include "metrics/metric_registry.h"
 #include "metrics/metric_value.h"
 #include "metrics/otel_endpoint.h"
+#include "metrics/otel_log_sink.h"
+#include "metrics/otel_logs.h"
 #include "metrics/otel_metrics.h"
 #include "metrics/otel_trace_sink.h"
 #include "metrics/otel_traces.h"
@@ -53,6 +56,13 @@ using metrics::MetricValue;
 
 // otel_endpoint.h
 using metrics::NormalizeGrpcEndpoint;
+
+// otel_logs.h / otel_log_sink.h
+using metrics::kTraceParentLogAttribute;
+using metrics::OpenTelemetryLogs;
+using metrics::OpenTelemetryLogsOptions;
+using metrics::OtelLogSinkBackend;
+using metrics::ScopedOtelLogSink;
 
 // otel_metrics.h
 using metrics::MetricPoint;

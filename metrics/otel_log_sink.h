@@ -36,9 +36,8 @@ inline constexpr const char* kTraceParentLogAttribute = "TraceParent";
 // Feeding is concurrent: EmitLogRecord hands the populated record to the
 // (internally synchronized) processor, so the backend needs no frontend
 // locking — pair it with sinks::unlocked_sink as ScopedOtelLogSink does.
-class OtelLogSinkBackend final
-    : public boost::log::sinks::basic_sink_backend<
-          boost::log::sinks::concurrent_feeding> {
+class OtelLogSinkBackend final : public boost::log::sinks::basic_sink_backend<
+                                     boost::log::sinks::concurrent_feeding> {
  public:
   explicit OtelLogSinkBackend(
       opentelemetry::nostd::shared_ptr<opentelemetry::logs::Logger> logger);
@@ -64,8 +63,7 @@ class ScopedOtelLogSink {
   ScopedOtelLogSink& operator=(const ScopedOtelLogSink&) = delete;
 
  private:
-  boost::shared_ptr<boost::log::sinks::unlocked_sink<OtelLogSinkBackend>>
-      sink_;
+  boost::shared_ptr<boost::log::sinks::unlocked_sink<OtelLogSinkBackend>> sink_;
 };
 
 }  // namespace metrics
