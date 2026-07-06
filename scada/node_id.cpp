@@ -1,15 +1,22 @@
 #include "scada/node_id.h"
 
-#include "base/check.h"
-#include "base/base64.h"
-#include "base/format.h"
-
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <format>
 
 #include <atomic>
 #include <boost/container_hash/hash.hpp>
+
+#if defined(SCADA_USE_BASE_MODULE)
+// Modules-pilot consumer (SCADA_CXX_MODULES=ON): base names come from the
+// scada.base facade. The import sits after the textual includes because the
+// reverse order trips an AppleClang 21 declaration-merging bug in libc++.
+import scada.base;
+#else
+#include "base/base64.h"
+#include "base/check.h"
+#include "base/format.h"
+#endif
 
 namespace std {
 
@@ -79,8 +86,7 @@ String NodeId::ToString() const {
   std::string result;
 
   if (namespace_index_ != 0) {
-    result += std::format("ns={};",
-                          static_cast<unsigned>(namespace_index_));
+    result += std::format("ns={};", static_cast<unsigned>(namespace_index_));
   }
 
   switch (type()) {

@@ -7,6 +7,7 @@
 #include "base/utf_convert.h"
 #include "scada/standard_node_ids.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace scada {

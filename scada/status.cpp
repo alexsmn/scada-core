@@ -1,6 +1,13 @@
 ﻿#include "scada/status.h"
 
+#if defined(SCADA_USE_BASE_MODULE)
+// Modules-pilot consumer (SCADA_CXX_MODULES=ON): base names come from the
+// scada.base facade. The import sits after the textual includes because the
+// reverse order trips an AppleClang 21 declaration-merging bug in libc++.
+import scada.base;
+#else
 #include "base/utf_convert.h"
+#endif
 
 namespace scada {
 
@@ -100,8 +107,7 @@ const Entry kEntries[] = {
     {scada::StatusCode::Bad_MessageNotAvailable, "Bad_MessageNotAvailable",
      L"Запрошенное сообщение больше недоступно"},
     {scada::StatusCode::Bad_ApplicationSignatureInvalid,
-     "Bad_ApplicationSignatureInvalid",
-     L"Неверная подпись приложения клиента"},
+     "Bad_ApplicationSignatureInvalid", L"Неверная подпись приложения клиента"},
     {scada::StatusCode::Bad_TooManyOperations, "Bad_TooManyOperations",
      L"Слишком много операций в запросе"},
     {scada::StatusCode::Bad_TooManyMonitoredItems, "Bad_TooManyMonitoredItems",
@@ -116,8 +122,7 @@ const Entry kEntries[] = {
     {scada::StatusCode::Bad_ViewIdUnknown, "Bad_ViewIdUnknown",
      L"Неизвестный идентификатор представления"},
     {scada::StatusCode::Bad_HistoryOperationInvalid,
-     "Bad_HistoryOperationInvalid",
-     L"Недопустимые параметры запроса истории"},
+     "Bad_HistoryOperationInvalid", L"Недопустимые параметры запроса истории"},
     {scada::StatusCode::Bad_NoSubscription, "Bad_NoSubscription",
      L"Для сессии нет подписок"},
     {scada::StatusCode::Bad_UserAccessDenied, "Bad_UserAccessDenied",
