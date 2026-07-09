@@ -105,6 +105,11 @@ function(_scada_module_add_sources MODULE_NAME SCOPE SOURCE_DIR)
     list(FILTER sources EXCLUDE REGEX "_qt(_unittest)?\\.(cpp|h)$")
   endif()
 
+  # Module-facade smoke tests live in module_test/ subdirectories and are
+  # attached via add_subdirectory(module_test) guarded by SCADA_CXX_MODULES;
+  # keep them out of RECURSE globs so non-modules builds never compile them.
+  list(FILTER sources EXCLUDE REGEX "/module_test/")
+
   # Separate unittest files and exclude mocks.
   set(ut_sources ${sources})
   list(FILTER ut_sources INCLUDE REGEX "_unittest\\.")
