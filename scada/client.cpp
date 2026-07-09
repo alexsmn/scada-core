@@ -35,12 +35,13 @@ Awaitable<Status> client::disconnect() const {
 
 Awaitable<StatusOr<
     std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>>
-client::browse(const std::vector<scada::BrowseDescription>& inputs) const {
+client::browse(std::vector<scada::BrowseDescription> inputs) const {
   if (!services_.view_service) {
     co_return StatusCode::Bad_Disconnected;
   }
 
-  auto results = co_await services_.view_service->Browse(context_, inputs);
+  auto results =
+      co_await services_.view_service->Browse(context_, std::move(inputs));
   if (!results.ok()) {
     co_return results.status();
   }
@@ -48,11 +49,11 @@ client::browse(const std::vector<scada::BrowseDescription>& inputs) const {
   std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>> output;
   output.reserve(results->size());
   for (auto& result : *results) {
-    output.emplace_back(IsGood(result.status_code)
-                            ? StatusOr<std::vector<ReferenceDescription>>{
-                                  std::move(result.references)}
-                            : StatusOr<std::vector<ReferenceDescription>>{
-                                  result.status_code});
+    output.emplace_back(
+        IsGood(result.status_code)
+            ? StatusOr<std::vector<ReferenceDescription>>{std::move(
+                  result.references)}
+            : StatusOr<std::vector<ReferenceDescription>>{result.status_code});
   }
   co_return output;
 }
@@ -82,8 +83,8 @@ Awaitable<Status> client::acknowledge_events(std::vector<EventId> event_ids,
                                              DateTime acknowledge_time) const {
   base::Check(!event_ids.empty());
   co_return co_await server_node().call(
-      scada::id::AcknowledgeableConditionType_Acknowledge,
-      std::move(event_ids), acknowledge_time);
+      scada::id::AcknowledgeableConditionType_Acknowledge, std::move(event_ids),
+      acknowledge_time);
 }
 
 }  // namespace scada

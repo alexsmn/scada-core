@@ -31,8 +31,10 @@ class client {
 
   scada::node server_node() const { return node(id::Server); }
 
+  // Lazy coroutine: `inputs` is taken by value so the coroutine frame owns
+  // the vector; a const& bound to a caller temporary would dangle.
   Awaitable<StatusOr<std::vector<StatusOr<std::vector<ReferenceDescription>>>>>
-  browse(const std::vector<BrowseDescription>& inputs) const;
+  browse(std::vector<BrowseDescription> inputs) const;
 
   Awaitable<StatusOr<scada::node>> add_node(AddNodesItem item) const;
 

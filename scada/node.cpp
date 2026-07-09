@@ -20,11 +20,10 @@ Awaitable<Status> WriteNodeAsync(services services,
     co_return StatusCode::Bad;
   }
 
-  std::vector<WriteValue> write_values{
-      {.node_id = std::move(node_id),
-       .attribute_id = attribute_id,
-       .value = std::move(value),
-       .flags = flags}};
+  std::vector<WriteValue> write_values{{.node_id = std::move(node_id),
+                                        .attribute_id = attribute_id,
+                                        .value = std::move(value),
+                                        .flags = flags}};
   auto statuses = co_await services.attribute_service->Write(
       context, std::move(write_values));
   if (!statuses.ok()) {
@@ -90,7 +89,7 @@ Awaitable<Status> node::write(AttributeId attribute_id,
 }
 
 Awaitable<StatusOr<std::vector<ReferenceDescription>>> node::browse(
-    const browse_details& details) const {
+    browse_details details) const {
   if (!services_.view_service) {
     co_return StatusCode::Bad_Disconnected;
   }
@@ -112,8 +111,8 @@ Awaitable<StatusOr<std::vector<ReferenceDescription>>> node::browse(
 }
 
 Awaitable<StatusOr<scada::node>> node::browse_node(
-    const browse_details& details) const {
-  auto results = co_await browse(details);
+    browse_details details) const {
+  auto results = co_await browse(std::move(details));
   if (!results.ok()) {
     co_return results.status();
   }
@@ -124,15 +123,15 @@ Awaitable<StatusOr<scada::node>> node::browse_node(
 }
 
 Awaitable<StatusOr<std::vector<BrowsePathTarget>>> node::translate_browse_path(
-    const RelativePath& relative_path) const {
+    RelativePath relative_path) const {
   if (!services_.view_service) {
     co_return StatusCode::Bad_Disconnected;
   }
 
   std::vector<BrowsePath> paths{
-      {.node_id = node_id_, .relative_path = relative_path}};
-  auto results = co_await services_.view_service->TranslateBrowsePaths(
-      std::move(paths));
+      {.node_id = node_id_, .relative_path = std::move(relative_path)}};
+  auto results =
+      co_await services_.view_service->TranslateBrowsePaths(std::move(paths));
   if (!results.ok()) {
     co_return results.status();
   }
@@ -166,20 +165,19 @@ Awaitable<StatusOr<node>> node::child_node(
   co_return scada::node{services_, *id, context_};
 }
 
-Awaitable<Status> node::call_packed(
-    NodeId method_id,
-    std::vector<Variant> arguments) const {
+Awaitable<Status> node::call_packed(NodeId method_id,
+                                    std::vector<Variant> arguments) const {
   return CallNodeAsync(services_, node_id_, context_, std::move(method_id),
                        std::move(arguments));
 }
 
 Awaitable<StatusOr<std::vector<scada::DataValue>>> node::read_value_history(
-    const HistoryReadRawDetails& details) const {
+    HistoryReadRawDetails details) const {
   base::Check(details.node_id.is_null());
   base::Check(details.continuation_point.empty());
 
   std::vector<scada::DataValue> values;
-  auto next_details = details;
+  auto next_details = std::move(details);
 
   for (;;) {
     auto result = co_await read_value_history_chunk(next_details);
@@ -195,21 +193,21 @@ Awaitable<StatusOr<std::vector<scada::DataValue>>> node::read_value_history(
 }
 
 Awaitable<HistoryReadRawResult> node::read_value_history_chunk(
-    const HistoryReadRawDetails& details) const {
+    HistoryReadRawDetails details) const {
   base::Check(details.node_id.is_null());
 
   if (!services_.history_service) {
     co_return HistoryReadRawResult{.status = StatusCode::Bad_Disconnected};
   }
 
-  auto sanitized_details = details;
+  auto sanitized_details = std::move(details);
   sanitized_details.node_id = node_id_;
   co_return co_await services_.history_service->HistoryReadRaw(
       std::move(sanitized_details));
 }
 
 Awaitable<StatusOr<std::vector<Event>>> node::read_event_history(
-    const event_history_details& details) const {
+    event_history_details details) const {
   if (!services_.history_service) {
     co_return StatusCode::Bad_Disconnected;
   }

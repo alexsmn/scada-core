@@ -49,13 +49,24 @@ class node {
     BrowseDirection direction = BrowseDirection::Both;
   };
 
+  // The awaitable-returning methods below are lazy coroutines: value-type
+  // parameters are taken by value so the coroutine frame owns copies. A
+  // const& parameter bound to a caller temporary (e.g. the braced defaults
+  // in `parent()` / `type_definition()`) would dangle, because the body
+  // first runs after the caller's full expression has ended.
+  //
+  // The node object itself must outlive the returned awaitable: member
+  // coroutines capture `this`, not a copy of the node. `co_await
+  // client.node(id).browse()` in one full expression is safe (the temporary
+  // lives in the awaiting coroutine's frame across suspension), but storing
+  // the awaitable past the node's lifetime is not.
   Awaitable<StatusOr<std::vector<ReferenceDescription>>> browse(
-      const browse_details& details = browse_details{
+      browse_details details = browse_details{
           .reference_type_id = id::References,
           .direction = BrowseDirection::Both}) const;
 
   Awaitable<StatusOr<scada::node>> browse_node(
-      const browse_details& details = browse_details{
+      browse_details details = browse_details{
           .reference_type_id = id::References,
           .direction = BrowseDirection::Both}) const;
 
@@ -72,7 +83,7 @@ class node {
   // Takes vector instead of span as a parameter to simplify invocation.
   // Requires `ViewService`.
   Awaitable<StatusOr<std::vector<BrowsePathTarget>>> translate_browse_path(
-      const RelativePath& relative_path) const;
+      RelativePath relative_path) const;
 
   // Requires `ViewService`.
   Awaitable<StatusOr<NodeId>> child_id(scada::QualifiedName browse_name) const;
@@ -82,19 +93,19 @@ class node {
                                 std::vector<Variant> arguments) const;
 
   template <class... Args>
-  Awaitable<Status> call(const NodeId& method_id, Args&&... args) const {
-    return call_packed(method_id, {std::forward<Args>(args)...});
+  Awaitable<Status> call(NodeId method_id, Args&&... args) const {
+    return call_packed(std::move(method_id), {std::forward<Args>(args)...});
   }
 
   // `details.node_id` is overridden by the node ID and doesn't have
   // to be set.
   Awaitable<StatusOr<std::vector<scada::DataValue>>> read_value_history(
-      const HistoryReadRawDetails& details) const;
+      HistoryReadRawDetails details) const;
 
   // `details.node_id` is overridden by the node ID and doesn't have
   // to be set.
   Awaitable<HistoryReadRawResult> read_value_history_chunk(
-      const HistoryReadRawDetails& details) const;
+      HistoryReadRawDetails details) const;
 
   struct event_history_details {
     DateTime from;
@@ -103,7 +114,7 @@ class node {
   };
 
   Awaitable<StatusOr<std::vector<Event>>> read_event_history(
-      const event_history_details& details = {}) const;
+      event_history_details details = {}) const;
 
  private:
   node(const services& services,
