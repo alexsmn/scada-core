@@ -1,27 +1,34 @@
 #include "remote/protocol_message_transport.h"
 
-#include "base/check.h"
-#include "base/auto_reset.h"
 #include "base/boost_log.h"
+#include "base/check.h"
 #include "remote/protocol_buffer.h"
 
 #include <array>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <transport/transport_util.h>
 #include <transport/transport_string.h>
+#include <transport/transport_util.h>
 
 namespace {
 
 BoostLogger logger{LOG_NAME("ProtocolMessageTransport")};
 
-// Reads exactly `data.size()` bytes from the transport.
+// Reads exactly `data.size()` bytes from the transport. `transport` is a
+// reference into the owning ProtocolMessageTransport, which may be destroyed
+// while a child read is suspended (session teardown resets the transport with
+// the read loop in flight); `cancelation` expires with the owner, so every
+// resumption must check it before touching `transport` again.
 transport::awaitable<transport::expected<size_t>> ReadExact(
     const transport::any_transport& transport,
+    std::weak_ptr<bool> cancelation,
     std::span<char> data) {
   size_t total_read = 0;
   while (total_read < data.size()) {
     auto bytes_read = co_await transport.read(data.subspan(total_read));
+    if (cancelation.expired()) {
+      co_return transport::ERR_ABORTED;
+    }
     if (!bytes_read.ok()) {
       co_return bytes_read.error();
     }
@@ -34,9 +41,11 @@ transport::awaitable<transport::expected<size_t>> ReadExact(
 }
 
 transport::awaitable<transport::expected<size_t>> ReadPayloadSize(
-    const transport::any_transport& transport) {
+    const transport::any_transport& transport,
+    std::weak_ptr<bool> cancelation) {
   std::array<char, protocol::kHeaderSize> header{};
-  auto bytes_read = co_await ReadExact(transport, header);
+  auto bytes_read =
+      co_await ReadExact(transport, std::move(cancelation), header);
 
   if (!bytes_read.ok() || *bytes_read == 0) {
     co_return bytes_read;
@@ -80,23 +89,49 @@ ProtocolMessageTransport::read(std::span<char> data) {
     co_return transport::ERR_IO_PENDING;
   }
 
-  base::AutoReset reading{&reading_, true};
+  // Session teardown destroys `*this` while the child reads below are
+  // suspended, and the frames only resume when the aborted socket read
+  // completes. `cancelation_` expires together with `*this`, so every
+  // resumption checks it before touching members. That is also why `reading_`
+  // is managed manually rather than with base::AutoReset: the AutoReset
+  // destructor would write to the freed member on the aborted path.
+  std::weak_ptr<bool> cancelation = cancelation_;
+  reading_ = true;
 
-  auto payload_size = co_await ReadPayloadSize(transport_);
+  auto payload_size = co_await ReadPayloadSize(transport_, cancelation);
+  if (cancelation.expired()) {
+    co_return transport::ERR_ABORTED;
+  }
   if (!payload_size.ok() || *payload_size == 0) {
+    reading_ = false;
     LOG_INFO(logger) << "Read payload size failed or closed"
                      << LOG_TAG("Ok", payload_size.ok())
                      << LOG_TAG("Value", payload_size.ok() ? *payload_size : 0);
     co_return payload_size;
   }
 
-  LOG_INFO(logger) << "Read payload"
-                   << LOG_TAG("PayloadSize", *payload_size);
+  // The payload size comes from the wire; reject anything larger than the
+  // caller's buffer instead of forming an out-of-range subspan.
+  if (*payload_size > data.size()) {
+    reading_ = false;
+    LOG_ERROR(logger) << "Incoming message exceeds read buffer"
+                      << LOG_TAG("PayloadSize", *payload_size)
+                      << LOG_TAG("BufferSize", data.size());
+    co_return transport::ERR_FAILED;
+  }
 
-  auto payload_read = co_await ReadExact(transport_, data.subspan(0, *payload_size));
+  LOG_INFO(logger) << "Read payload" << LOG_TAG("PayloadSize", *payload_size);
+
+  auto payload_read = co_await ReadExact(transport_, cancelation,
+                                         data.subspan(0, *payload_size));
+  if (cancelation.expired()) {
+    co_return transport::ERR_ABORTED;
+  }
+  reading_ = false;
   LOG_INFO(logger) << "Read payload completed"
                    << LOG_TAG("Ok", payload_read.ok())
-                   << LOG_TAG("BytesRead", payload_read.ok() ? *payload_read : 0);
+                   << LOG_TAG("BytesRead",
+                              payload_read.ok() ? *payload_read : 0);
   co_return payload_read;
 }
 

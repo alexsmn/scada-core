@@ -13,11 +13,11 @@ class ProtocolMessageTransport final : public transport::Transport {
   explicit ProtocolMessageTransport(transport::any_transport transport);
   ~ProtocolMessageTransport();
 
-  [[nodiscard]] virtual transport::awaitable<transport::error_code>
-  open() override;
+  [[nodiscard]] virtual transport::awaitable<transport::error_code> open()
+      override;
 
-  [[nodiscard]] virtual transport::awaitable<transport::error_code>
-  close() override;
+  [[nodiscard]] virtual transport::awaitable<transport::error_code> close()
+      override;
 
   [[nodiscard]] virtual transport::awaitable<
       transport::expected<transport::any_transport>>
@@ -51,5 +51,9 @@ class ProtocolMessageTransport final : public transport::Transport {
 
   bool reading_ = false;
 
+  // Expires when `*this` is destroyed. Read coroutines keep a weak_ptr and
+  // re-check it after every co_await: teardown destroys the transport while a
+  // read is suspended, and the resumed frames must not touch members (or the
+  // `transport_` reference) once this has expired.
   std::shared_ptr<bool> cancelation_ = std::make_shared<bool>(false);
 };
