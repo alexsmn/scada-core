@@ -22,7 +22,8 @@ struct DataServices {
             .history_service = history_service_.get(),
             .view_service = view_service_.get(),
             .node_management_service = node_management_service_.get(),
-            .session_service = session_service_.get()};
+            .session_service = session_service_.get(),
+            .monitored_item_executor = monitored_item_executor_};
   }
 
   std::shared_ptr<const scada::services> CreateSharedServices() const {
@@ -63,8 +64,10 @@ struct DataServices {
         .method_service_ =
             std::shared_ptr<scada::MethodService>{
                 shared_services, shared_services->method_service},
-        .monitored_item_service_ = std::shared_ptr<scada::MonitoredItemService>{
-            shared_services, shared_services->monitored_item_service}};
+        .monitored_item_service_ =
+            std::shared_ptr<scada::MonitoredItemService>{
+                shared_services, shared_services->monitored_item_service},
+        .monitored_item_executor_ = shared_services->monitored_item_executor};
   }
 
   std::shared_ptr<scada::SessionService> session_service_;
@@ -74,4 +77,10 @@ struct DataServices {
   std::shared_ptr<scada::AttributeService> attribute_service_;
   std::shared_ptr<scada::MethodService> method_service_;
   std::shared_ptr<scada::MonitoredItemService> monitored_item_service_;
+
+  // Mirrors `scada::services::monitored_item_executor`: required by nodes that
+  // flow into the client `monitored_item::subscribe` path (it drives the
+  // `LegacyMonitoredItemAdapter` backing single monitored items). Must be
+  // carried here so `as_services()` round-trips do not silently drop it.
+  AnyExecutor monitored_item_executor_;
 };
