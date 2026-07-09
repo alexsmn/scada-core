@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/basic_types.h"
 #include "scada/date_time.h"
 #include "scada/expanded_node_id.h"
@@ -87,18 +88,22 @@ class Variant {
   Int64 as_int64() const { return std::get<Int64>(data_); }
   UInt64 as_uint64() const { return std::get<UInt64>(data_); }
   Double as_double() const { return std::get<Double>(data_); }
-  const String& as_string() const { return std::get<String>(data_); }
-  const LocalizedText& as_localized_text() const {
+  const String& as_string() const SCADA_LIFETIME_BOUND {
+    return std::get<String>(data_);
+  }
+  const LocalizedText& as_localized_text() const SCADA_LIFETIME_BOUND {
     return std::get<LocalizedText>(data_);
   }
-  const NodeId& as_node_id() const { return std::get<NodeId>(data_); }
+  const NodeId& as_node_id() const SCADA_LIFETIME_BOUND {
+    return std::get<NodeId>(data_);
+  }
 
   template <class T>
-  constexpr const T& get() const {
+  constexpr const T& get() const SCADA_LIFETIME_BOUND {
     return std::get<T>(data_);
   }
   template <class T>
-  constexpr T& get() {
+  constexpr T& get() SCADA_LIFETIME_BOUND {
     return std::get<T>(data_);
   }
 
@@ -124,10 +129,10 @@ class Variant {
   T get_or(T or_value) const;
 
   template <class T>
-  constexpr T* get_if() noexcept;
+  constexpr T* get_if() noexcept SCADA_LIFETIME_BOUND;
 
   template <class T>
-  constexpr const T* get_if() const noexcept;
+  constexpr const T* get_if() const noexcept SCADA_LIFETIME_BOUND;
 
   Variant& operator=(const Variant& source) = default;
   Variant& operator=(Variant&& source) = default;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/debug_util.h"
+#include "base/lifetime.h"
 
 #include <format>
 #include <span>
@@ -66,7 +67,8 @@ class StructFormatter {
   // Adds a `name: value` field. `value` may be any std::formattable type;
   // strings are quoted/escaped and bool renders as true/false.
   template <class T>
-  StructFormatter& AddField(std::string_view name, const T& value) {
+  StructFormatter& AddField(std::string_view name,
+                            const T& value) SCADA_LIFETIME_BOUND {
     BeginField(name);
     AppendValue(value);
     return *this;
@@ -76,7 +78,7 @@ class StructFormatter {
   StructFormatter& AddBitMaskField(
       std::string_view name,
       unsigned bit_mask,
-      std::span<const std::string_view> bit_strings) {
+      std::span<const std::string_view> bit_strings) SCADA_LIFETIME_BOUND {
     BeginField(name);
     out_ = std::format_to(out_, "{}", BitMaskToString(bit_mask, bit_strings));
     return *this;

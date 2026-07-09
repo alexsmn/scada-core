@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <functional>
 
 // Stores a value. When the value changes, calls a handler.
@@ -16,7 +18,7 @@ class Cell {
   Cell(const Cell&) = delete;
   Cell& operator=(const Cell&) = delete;
 
-  const T& get() const { return value_; }
+  const T& get() const SCADA_LIFETIME_BOUND { return value_; }
   void Set(const T& value);
 
  private:

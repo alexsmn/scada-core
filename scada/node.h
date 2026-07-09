@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
+#include "base/lifetime.h"
 #include "scada/attribute_ids.h"
 #include "scada/history_service.h"
 #include "scada/monitored_item_service.h"
@@ -23,8 +24,10 @@ class node {
 
   node with_context(const ServiceContext& context) const;
 
-  const scada::NodeId& id() const { return node_id_; }
-  const ServiceContext& context() const { return context_; }
+  const scada::NodeId& id() const SCADA_LIFETIME_BOUND { return node_id_; }
+  const ServiceContext& context() const SCADA_LIFETIME_BOUND {
+    return context_;
+  }
 
   Awaitable<StatusOr<DataValue>> read(AttributeId attribute_id) const;
 

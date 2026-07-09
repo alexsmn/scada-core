@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "base/utf_convert.h"
 
 #include <boost/json.hpp>
@@ -29,9 +30,10 @@ inline int GetInt(const boost::json::value& value,
   return static_cast<int>(k->as_int64());
 }
 
-inline std::string_view GetString(const boost::json::value& value,
-                                  std::string_view key,
-                                  std::string_view default_value = {}) {
+inline std::string_view GetString(
+    const boost::json::value& value SCADA_LIFETIME_BOUND,
+    std::string_view key,
+    std::string_view default_value SCADA_LIFETIME_BOUND = {}) {
   if (!value.is_object())
     return default_value;
   auto* k = value.as_object().if_contains(key);
@@ -51,7 +53,8 @@ inline std::u16string GetString16(const boost::json::value& value,
   return UtfConvert<char16_t>(std::string_view{k->as_string()});
 }
 
-inline const boost::json::value* FindDict(const boost::json::value& value,
+inline const boost::json::value* FindDict(const boost::json::value& value
+                                              SCADA_LIFETIME_BOUND,
                                           std::string_view key) {
   if (!value.is_object())
     return nullptr;
@@ -61,7 +64,8 @@ inline const boost::json::value* FindDict(const boost::json::value& value,
   return k;
 }
 
-inline const boost::json::value& GetDict(const boost::json::value& value,
+inline const boost::json::value& GetDict(const boost::json::value& value
+                                             SCADA_LIFETIME_BOUND,
                                          std::string_view key) {
   static const boost::json::value kEmptyObject =
       boost::json::value(boost::json::object{});
@@ -69,7 +73,8 @@ inline const boost::json::value& GetDict(const boost::json::value& value,
   return dict ? *dict : kEmptyObject;
 }
 
-inline const boost::json::array* GetList(const boost::json::value& value,
+inline const boost::json::array* GetList(const boost::json::value& value
+                                             SCADA_LIFETIME_BOUND,
                                          std::string_view key) {
   if (!value.is_object())
     return nullptr;
@@ -94,7 +99,8 @@ inline std::optional<int> GetKey(const boost::json::value& dict,
   return static_cast<int>(k->as_int64());
 }
 
-inline const boost::json::value& GetKey(const boost::json::value& dict,
+inline const boost::json::value& GetKey(const boost::json::value& dict
+                                            SCADA_LIFETIME_BOUND,
                                         std::string_view key) {
   static const boost::json::value kNull;
   if (!dict.is_object())
@@ -103,15 +109,11 @@ inline const boost::json::value& GetKey(const boost::json::value& dict,
   return k ? *k : kNull;
 }
 
-inline void SetKey(boost::json::value& dict,
-                   std::string_view key,
-                   bool value) {
+inline void SetKey(boost::json::value& dict, std::string_view key, bool value) {
   dict.as_object()[key] = value;
 }
 
-inline void SetKey(boost::json::value& dict,
-                   std::string_view key,
-                   int value) {
+inline void SetKey(boost::json::value& dict, std::string_view key, int value) {
   dict.as_object()[key] = value;
 }
 

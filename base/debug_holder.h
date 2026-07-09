@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #if defined(NDEBUG)
 
 template <class T>
@@ -20,7 +22,7 @@ class DebugHolder {
  public:
   explicit DebugHolder(const T& value) : value_{value} {}
 
-  const T& get() const { return value_; }
+  const T& get() const SCADA_LIFETIME_BOUND { return value_; }
 
  private:
   T value_;

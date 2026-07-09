@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <new>
 #include <type_traits>
 #include <utility>
@@ -25,14 +27,16 @@ class NoDestructor {
 
   ~NoDestructor() = default;
 
-  const T& operator*() const { return *get(); }
-  T& operator*() { return *get(); }
+  const T& operator*() const SCADA_LIFETIME_BOUND { return *get(); }
+  T& operator*() SCADA_LIFETIME_BOUND { return *get(); }
 
-  const T* operator->() const { return get(); }
-  T* operator->() { return get(); }
+  const T* operator->() const SCADA_LIFETIME_BOUND { return get(); }
+  T* operator->() SCADA_LIFETIME_BOUND { return get(); }
 
-  const T* get() const { return reinterpret_cast<const T*>(storage_); }
-  T* get() { return reinterpret_cast<T*>(storage_); }
+  const T* get() const SCADA_LIFETIME_BOUND {
+    return reinterpret_cast<const T*>(storage_);
+  }
+  T* get() SCADA_LIFETIME_BOUND { return reinterpret_cast<T*>(storage_); }
 
  private:
   alignas(T) char storage_[sizeof(T)];

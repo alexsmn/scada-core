@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <memory>
 
 // Move operator is also defined, to enable `NodeId` move.
@@ -10,7 +12,7 @@ class SharedValue {
   explicit SharedValue(U&& value)
       : value_{std::make_shared<T>(std::forward<U>(value))} {}
 
-  const T& get() const { return *value_; }
+  const T& get() const SCADA_LIFETIME_BOUND { return *value_; }
 
   auto operator==(const SharedValue& other) const {
     return *value_ == *other.value_;

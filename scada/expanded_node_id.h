@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/node_id.h"
 #include "scada/string.h"
 
@@ -20,8 +21,10 @@ class ExpandedNodeId {
     return !operator==(other);
   }
 
-  const NodeId& node_id() const { return node_id_; }
-  const String& namespace_uri() const { return namespace_uri_; }
+  const NodeId& node_id() const SCADA_LIFETIME_BOUND { return node_id_; }
+  const String& namespace_uri() const SCADA_LIFETIME_BOUND {
+    return namespace_uri_;
+  }
   unsigned server_index() const { return server_index_; }
 
  private:

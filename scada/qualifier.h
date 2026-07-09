@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/status.h"
 
 #include <ostream>
@@ -61,7 +62,7 @@ class Qualifier {
     qualifier_ = (qualifier_ & ~remove) | add;
   }
 
-  Qualifier& set_flag(unsigned flag, bool set) {
+  Qualifier& set_flag(unsigned flag, bool set) SCADA_LIFETIME_BOUND {
     if (set)
       qualifier_ |= flag;
     else
@@ -69,17 +70,33 @@ class Qualifier {
     return *this;
   }
 
-  Qualifier& set_bad(bool set) { return set_flag(BAD, set); }
-  Qualifier& set_manual(bool set) { return set_flag(MANUAL, set); }
-  Qualifier& set_backup(bool set) { return set_flag(BACKUP, set); }
-  Qualifier& set_online(bool set) { return set_flag(OFFLINE, !set); }
-  Qualifier& set_failed(bool set) { return set_flag(FAILED, set); }
-  Qualifier& set_stale(bool set) { return set_flag(STALE, set); }
-  Qualifier& set_simulated(bool set) { return set_flag(SIMULATED, set); }
-  Qualifier& set_misconfigured(bool set) {
+  Qualifier& set_bad(bool set) SCADA_LIFETIME_BOUND {
+    return set_flag(BAD, set);
+  }
+  Qualifier& set_manual(bool set) SCADA_LIFETIME_BOUND {
+    return set_flag(MANUAL, set);
+  }
+  Qualifier& set_backup(bool set) SCADA_LIFETIME_BOUND {
+    return set_flag(BACKUP, set);
+  }
+  Qualifier& set_online(bool set) SCADA_LIFETIME_BOUND {
+    return set_flag(OFFLINE, !set);
+  }
+  Qualifier& set_failed(bool set) SCADA_LIFETIME_BOUND {
+    return set_flag(FAILED, set);
+  }
+  Qualifier& set_stale(bool set) SCADA_LIFETIME_BOUND {
+    return set_flag(STALE, set);
+  }
+  Qualifier& set_simulated(bool set) SCADA_LIFETIME_BOUND {
+    return set_flag(SIMULATED, set);
+  }
+  Qualifier& set_misconfigured(bool set) SCADA_LIFETIME_BOUND {
     return set_flag(MISCONFIGURED, set);
   }
-  Qualifier& set_sporadic(bool set) { return set_flag(SPORADIC, set); }
+  Qualifier& set_sporadic(bool set) SCADA_LIFETIME_BOUND {
+    return set_flag(SPORADIC, set);
+  }
 
   void set_limit(Limit limit) {
     qualifier_ =
@@ -119,7 +136,7 @@ class Qualifier {
   Qualifier operator|(Qualifier other) const {
     return Qualifier(qualifier_ | other.qualifier_);
   }
-  Qualifier& operator|=(Qualifier other) {
+  Qualifier& operator|=(Qualifier other) SCADA_LIFETIME_BOUND {
     qualifier_ |= other.qualifier_;
     return *this;
   }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "base/panic.h"
 #include "scada/status.h"
 
@@ -31,23 +32,24 @@ class [[nodiscard]] StatusOr {
   }
 
   T& value(const std::source_location& location =
-               std::source_location::current()) {
+               std::source_location::current()) SCADA_LIFETIME_BOUND {
     CheckValuePresent(location);
     return std::get<T>(value_);
   }
 
   const T& value(const std::source_location& location =
-                     std::source_location::current()) const {
+                     std::source_location::current()) const
+      SCADA_LIFETIME_BOUND {
     CheckValuePresent(location);
     return std::get<T>(value_);
   }
 
-  T& operator*() {
+  T& operator*() SCADA_LIFETIME_BOUND {
     CheckValuePresent(std::source_location::current());
     return std::get<T>(value_);
   }
 
-  const T& operator*() const {
+  const T& operator*() const SCADA_LIFETIME_BOUND {
     CheckValuePresent(std::source_location::current());
     return std::get<T>(value_);
   }
@@ -56,12 +58,12 @@ class [[nodiscard]] StatusOr {
     return ok() ? std::move(value()) : std::move(fallback);
   }
 
-  T* operator->() {
+  T* operator->() SCADA_LIFETIME_BOUND {
     CheckValuePresent(std::source_location::current());
     return &std::get<T>(value_);
   }
 
-  const T* operator->() const {
+  const T* operator->() const SCADA_LIFETIME_BOUND {
     CheckValuePresent(std::source_location::current());
     return &std::get<T>(value_);
   }

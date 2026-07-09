@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "base/boost_log.h"
+#include "base/lifetime.h"
 #include "base/nested_logger.h"
 #include "metrics/tracer.h"
 #include "scada/authentication.h"
@@ -81,9 +82,10 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
                             bool delete_existing);
   SessionStub& CreateNewSession(const scada::NodeId& user_id,
                                 const scada::LocalizedText& user_name,
-                                unsigned user_rights);
+                                unsigned user_rights) SCADA_LIFETIME_BOUND;
 
-  SessionStub* FindUserSession(const scada::NodeId& user_id) const;
+  SessionStub* FindUserSession(const scada::NodeId& user_id) const
+      SCADA_LIFETIME_BOUND;
 
   void OnSessionAccepted(transport::any_transport transport);
   void OnConnectionClosed(ServerConnection& connection);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/debug_util.h"
+#include "base/lifetime.h"
 #include "scada/attribute_ids.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
@@ -26,22 +27,24 @@ class AttributeSet {
 };
 
 struct NodeAttributes {
-  NodeAttributes& set_browse_name(QualifiedName browse_name) {
+  NodeAttributes& set_browse_name(QualifiedName browse_name)
+      SCADA_LIFETIME_BOUND {
     this->browse_name = std::move(browse_name);
     return *this;
   }
 
-  NodeAttributes& set_display_name(LocalizedText display_name) {
+  NodeAttributes& set_display_name(LocalizedText display_name)
+      SCADA_LIFETIME_BOUND {
     this->display_name = std::move(display_name);
     return *this;
   }
 
-  NodeAttributes& set_data_type(NodeId data_type) {
+  NodeAttributes& set_data_type(NodeId data_type) SCADA_LIFETIME_BOUND {
     this->data_type = std::move(data_type);
     return *this;
   }
 
-  NodeAttributes& set_value(Variant value) {
+  NodeAttributes& set_value(Variant value) SCADA_LIFETIME_BOUND {
     this->value = std::move(value);
     return *this;
   }

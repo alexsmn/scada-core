@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "metrics/trace_id.h"
 #include "metrics/trace_span_kind.h"
 
@@ -31,7 +32,7 @@ class [[nodiscard]] TraceSpan {
     return *this;
   }
 
-  const TraceSpanId& span_id() const { return span_id_; }
+  const TraceSpanId& span_id() const SCADA_LIFETIME_BOUND { return span_id_; }
 
   // The span's W3C traceparent, for injecting into outbound requests (via
   // `scada::ServiceContext::with_trace_id`). Empty when no exporting sink is

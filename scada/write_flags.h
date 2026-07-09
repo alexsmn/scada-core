@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <ostream>
 
 namespace scada {
@@ -17,12 +19,12 @@ class WriteFlags {
   bool select() const { return get(SELECT); }
   bool param() const { return get(PARAM); }
 
-  WriteFlags& set(Flag flag) {
+  WriteFlags& set(Flag flag) SCADA_LIFETIME_BOUND {
     flags_ |= flag;
     return *this;
   }
-  WriteFlags& set_select() { return set(SELECT); }
-  WriteFlags& set_param() { return set(PARAM); }
+  WriteFlags& set_select() SCADA_LIFETIME_BOUND { return set(SELECT); }
+  WriteFlags& set_param() SCADA_LIFETIME_BOUND { return set(PARAM); }
 
   bool operator==(WriteFlags other) const { return flags_ == other.flags_; }
 

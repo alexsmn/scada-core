@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "base/struct_format.h"
 #include "base/struct_writer.h"
 #include "scada/data_value.h"
@@ -81,7 +82,7 @@ struct ModelChangeEvent {
     DataTypeChanged = 1 << 4,
   };
 
-  ModelChangeEvent& set_verb(uint8_t verb) {
+  ModelChangeEvent& set_verb(uint8_t verb) SCADA_LIFETIME_BOUND {
     this->verb = verb;
     return *this;
   }

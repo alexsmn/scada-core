@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/basic_types.h"
 #include "scada/string.h"
 
@@ -19,7 +20,7 @@ class QualifiedName {
       : name_{name}, namespace_index_{namespace_index} {}
 
   NamespaceIndex namespace_index() const { return namespace_index_; }
-  const String& name() const { return name_; }
+  const String& name() const SCADA_LIFETIME_BOUND { return name_; }
   bool empty() const { return namespace_index_ == 0 && name_.empty(); }
 
  private:
@@ -42,7 +43,8 @@ inline std::ostream& operator<<(std::ostream& stream,
 
 }  // namespace scada
 
-inline const std::string& ToString(const scada::QualifiedName& name) {
+inline const std::string& ToString(
+    const scada::QualifiedName& name SCADA_LIFETIME_BOUND) {
   return name.name();
 }
 

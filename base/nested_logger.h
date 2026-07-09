@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "base/logger.h"
 
 #include <memory>
@@ -10,7 +11,7 @@ class NestedLogger : public Logger {
   NestedLogger();
   NestedLogger(std::shared_ptr<const Logger> parent, const std::string& prefix);
 
-  const Logger* parent() const { return parent_.get(); }
+  const Logger* parent() const SCADA_LIFETIME_BOUND { return parent_.get(); }
   void set_parent(std::shared_ptr<const Logger> parent) {
     parent_ = std::move(parent);
   }

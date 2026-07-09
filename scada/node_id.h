@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/check.h"
+#include "base/lifetime.h"
 #include "scada/basic_types.h"
 #include "scada/shared_value.h"
 #include "scada/string.h"
@@ -53,8 +54,8 @@ class NodeId {
   }
 
   constexpr NumericId numeric_id() const;
-  const String& string_id() const;
-  const ByteString& opaque_id() const;
+  const String& string_id() const SCADA_LIFETIME_BOUND;
+  const ByteString& opaque_id() const SCADA_LIFETIME_BOUND;
 
   auto operator<=>(const NodeId&) const = default;
 

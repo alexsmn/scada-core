@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/check.h"
+#include "base/lifetime.h"
 #include "scada/node.h"
 #include "scada/session_service.h"
 #include "scada/status_or.h"
@@ -15,7 +16,9 @@ class client {
   client();
   explicit client(const services& services);
 
-  const ServiceContext& context() const { return context_; }
+  const ServiceContext& context() const SCADA_LIFETIME_BOUND {
+    return context_;
+  }
   client with_context(const ServiceContext& context) const;
 
   Awaitable<Status> connect(SessionConnectParams params) const;
@@ -29,8 +32,7 @@ class client {
   scada::node server_node() const { return node(id::Server); }
 
   Awaitable<StatusOr<std::vector<StatusOr<std::vector<ReferenceDescription>>>>>
-  browse(
-      const std::vector<BrowseDescription>& inputs) const;
+  browse(const std::vector<BrowseDescription>& inputs) const;
 
   Awaitable<StatusOr<scada::node>> add_node(AddNodesItem item) const;
 

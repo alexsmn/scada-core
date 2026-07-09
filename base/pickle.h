@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -11,10 +13,9 @@ class Pickle {
  public:
   Pickle() = default;
 
-  Pickle(const char* data, int data_len)
-      : data_(data, data + data_len) {}
+  Pickle(const char* data, int data_len) : data_(data, data + data_len) {}
 
-  const char* data() const { return data_.data(); }
+  const char* data() const SCADA_LIFETIME_BOUND { return data_.data(); }
   size_t size() const { return data_.size(); }
 
   void WriteUInt16(uint16_t value) { WriteBytes(&value, sizeof(value)); }
@@ -39,7 +40,7 @@ class Pickle {
 
 class PickleIterator {
  public:
-  explicit PickleIterator(const Pickle& pickle)
+  explicit PickleIterator(const Pickle& pickle SCADA_LIFETIME_BOUND)
       : data_(pickle.data()), end_(pickle.data() + pickle.size()) {}
 
   bool ReadUInt16(uint16_t* result) { return ReadPod(result); }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <string>
 #include <string_view>
 
@@ -16,7 +18,8 @@ inline LocalizedText ToLocalizedText(const std::u16string_view& string) {
   return LocalizedText{string.data(), string.size()};
 }
 
-inline const LocalizedText& ToLocalizedText(const std::u16string& string) {
+inline const LocalizedText& ToLocalizedText(
+    const std::u16string& string SCADA_LIFETIME_BOUND) {
   return string;
 }
 
@@ -31,6 +34,6 @@ inline LocalizedText ToLocalizedText(std::u16string&& string) {
 std::string ToString(const scada::LocalizedText& text);
 
 inline const std::u16string& ToString16(
-    const scada::LocalizedText& localized_text) {
+    const scada::LocalizedText& localized_text SCADA_LIFETIME_BOUND) {
   return localized_text;
 }

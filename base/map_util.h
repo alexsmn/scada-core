@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/lifetime.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <ranges>
@@ -39,7 +41,8 @@ constexpr internal::MappedType<Map> FindOrNull(Map& map, const Key& key) {
 
 template <typename Map, typename Key>
 // Returns a pointer to the mapped value for `key`, or null when absent.
-constexpr const internal::MappedType<Map>* FindPtr(const Map& map,
+constexpr const internal::MappedType<Map>* FindPtr(const Map& map
+                                                       SCADA_LIFETIME_BOUND,
                                                    const Key& key) {
   auto it = map.find(key);
   return it != map.end() ? &it->second : nullptr;
@@ -47,7 +50,8 @@ constexpr const internal::MappedType<Map>* FindPtr(const Map& map,
 
 template <typename Map, typename Key>
 // Returns a pointer to the mapped value for `key`, or null when absent.
-constexpr internal::MappedType<Map>* FindPtr(Map& map, const Key& key) {
+constexpr internal::MappedType<Map>* FindPtr(Map& map SCADA_LIFETIME_BOUND,
+                                             const Key& key) {
   auto it = map.find(key);
   return it != map.end() ? &it->second : nullptr;
 }

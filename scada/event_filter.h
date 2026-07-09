@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/node_id.h"
 
 #include <vector>
@@ -11,22 +12,23 @@ struct EventFilter {
 
   static const unsigned ALL_TYPES = 0;
 
-  EventFilter& set_of_type(std::vector<NodeId> of_type) {
+  EventFilter& set_of_type(std::vector<NodeId> of_type) SCADA_LIFETIME_BOUND {
     this->of_type = std::move(of_type);
     return *this;
   }
 
-  EventFilter& add_of_type(const NodeId& type_definition_id) {
+  EventFilter& add_of_type(const NodeId& type_definition_id)
+      SCADA_LIFETIME_BOUND {
     of_type.emplace_back(type_definition_id);
     return *this;
   }
 
-  EventFilter& set_child_of(std::vector<NodeId> child_of) {
+  EventFilter& set_child_of(std::vector<NodeId> child_of) SCADA_LIFETIME_BOUND {
     this->child_of = std::move(child_of);
     return *this;
   }
 
-  EventFilter& add_child_of(const NodeId& parent_id) {
+  EventFilter& add_child_of(const NodeId& parent_id) SCADA_LIFETIME_BOUND {
     child_of.emplace_back(parent_id);
     return *this;
   }

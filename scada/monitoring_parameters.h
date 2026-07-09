@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/aggregate_filter.h"
 #include "scada/data_change_filter.h"
 #include "scada/event_filter.h"
@@ -18,7 +19,8 @@ struct MonitoringParameters {
            !queue_size.has_value();
   }
 
-  MonitoringParameters& set_filter(MonitoringFilter filter) {
+  MonitoringParameters& set_filter(MonitoringFilter filter)
+      SCADA_LIFETIME_BOUND {
     this->filter = std::move(filter);
     return *this;
   }

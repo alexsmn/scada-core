@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/lifetime.h"
 #include "scada/expanded_node_id.h"
 
 #include <any>
@@ -14,7 +15,9 @@ class ExtensionObject {
   ExtensionObject(ExpandedNodeId data_type_id, std::any value)
       : data_type_id_{std::move(data_type_id)}, value_{std::move(value)} {}
 
-  const ExpandedNodeId& data_type_id() const { return data_type_id_; }
+  const ExpandedNodeId& data_type_id() const SCADA_LIFETIME_BOUND {
+    return data_type_id_;
+  }
 
   ExtensionObject(const ExtensionObject&) = default;
   ExtensionObject& operator=(const ExtensionObject&) = default;
@@ -38,8 +41,8 @@ class ExtensionObject {
     return ExtensionObject{std::any{std::move(object)}};
   }*/
 
-  std::any& value() { return value_; }
-  const std::any& value() const { return value_; }
+  std::any& value() SCADA_LIFETIME_BOUND { return value_; }
+  const std::any& value() const SCADA_LIFETIME_BOUND { return value_; }
 
  private:
   ExpandedNodeId data_type_id_;

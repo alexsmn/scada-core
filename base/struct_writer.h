@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/debug_util.h"
+#include "base/lifetime.h"
 
 #include <format>
 #include <ostream>
@@ -22,11 +23,13 @@ class StructWriter {
   ~StructWriter();
 
   template <class T>
-  StructWriter& AddField(std::string_view name, const T& value);
+  StructWriter& AddField(std::string_view name,
+                         const T& value) SCADA_LIFETIME_BOUND;
 
   StructWriter& AddBitMaskField(std::string_view name,
                                 unsigned bit_mask,
-                                std::span<const std::string_view> bit_strings);
+                                std::span<const std::string_view> bit_strings)
+      SCADA_LIFETIME_BOUND;
 
  private:
   template <class T>
