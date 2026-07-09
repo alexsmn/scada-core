@@ -6,7 +6,7 @@ This document provides comprehensive guidance for AI assistants working with the
 
 **scada-core** is a C++ library providing a distributed SCADA (Supervisory Control and Data Acquisition) system framework. It implements OPC UA-like semantics for industrial control and data acquisition, with support for remote communication, metrics, and a hierarchical node-based data model.
 
-- **Language:** C++20
+- **Language:** C++23
 - **Build System:** CMake
 - **License:** GPLv3
 - **Version:** 2.6.0
@@ -149,13 +149,17 @@ Order: Standard library, external deps (Boost, etc.), project headers
 - 40+ status codes defined (Good, Uncertain_*, Bad_*)
 - Use `Status` for error-only returns
 - Use `StatusOr<T>` for value-or-error returns
+- `StatusOr<T>` derives from `std::expected<T, Status>`: implicit
+  construction from `Status`/`StatusCode`, fail-stop (panicking) accessors
+  instead of throwing/UB ones, plus the standard monadic operations
+  (`and_then`/`transform`/`or_else`)
 - Coroutines propagate unexpected failures via exceptions
 - Internal invariants: `base::Check(cond, "message")` / `base::NotReached()`
   from `base/check.h` — always-on in every build type, fail-stop via
   `base::Panic`. Never bare `assert()`; no debug-only checks. External input
   (wire data, config) never panics — validate, log, return `Status`/`StatusOr`
 
-### Modern C++ Features (C++20)
+### Modern C++ Features (C++23)
 - `constexpr` and `noexcept` where appropriate
 - `std::variant` for type-safe unions
 - Spaceship operator (`<=>`) for comparisons

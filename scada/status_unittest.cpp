@@ -5,6 +5,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <expected>
+
 // ToCString
 
 TEST(StatusTest, ToCStringGood) {
@@ -42,8 +44,7 @@ TEST(StatusTest, ToStringGood) {
 }
 
 TEST(StatusTest, ToStringBadDisconnected) {
-  EXPECT_EQ("Bad_Disconnected",
-            ToString(scada::StatusCode::Bad_Disconnected));
+  EXPECT_EQ("Bad_Disconnected", ToString(scada::StatusCode::Bad_Disconnected));
 }
 
 // ToString16(StatusCode)
@@ -144,7 +145,8 @@ TEST(StatusTest, TestStatusMatchersAcceptStatusAndStatusOr) {
               scada::test::StatusIs(scada::StatusCode::Bad_Disconnected));
 
   const scada::StatusOr<int> bad_result{scada::StatusCode::Bad_Timeout};
-  EXPECT_THAT(bad_result, scada::test::StatusIs(scada::StatusCode::Bad_Timeout));
+  EXPECT_THAT(bad_result,
+              scada::test::StatusIs(scada::StatusCode::Bad_Timeout));
 
   const scada::StatusOr<int> good_result{42};
   EXPECT_THAT(good_result, scada::test::IsOkAndHolds(testing::Eq(42)));
@@ -159,14 +161,66 @@ TEST(StatusTest, TestStatusMacrosAcceptOkResults) {
   EXPECT_EQ(value, 7);
 }
 
+// StatusOr std::expected interface
+
+TEST(StatusTest, StatusOrHasValue) {
+  const scada::StatusOr<int> ok_result{1};
+  EXPECT_TRUE(ok_result.has_value());
+
+  const scada::StatusOr<int> bad_result{scada::StatusCode::Bad_Timeout};
+  EXPECT_FALSE(bad_result.has_value());
+}
+
+TEST(StatusTest, StatusOrErrorReturnsStatus) {
+  const scada::StatusOr<int> bad_result{scada::StatusCode::Bad_Timeout};
+  EXPECT_EQ(scada::StatusCode::Bad_Timeout, bad_result.error().code());
+}
+
+TEST(StatusTest, StatusOrValueOr) {
+  EXPECT_EQ(7, scada::StatusOr<int>{7}.value_or(5));
+  EXPECT_EQ(5, scada::StatusOr<int>{scada::StatusCode::Bad}.value_or(5));
+}
+
+TEST(StatusTest, StatusOrEquality) {
+  EXPECT_EQ(scada::StatusOr<int>{7}, scada::StatusOr<int>{7});
+  EXPECT_NE(scada::StatusOr<int>{7}, scada::StatusOr<int>{8});
+  EXPECT_NE(scada::StatusOr<int>{7},
+            scada::StatusOr<int>{scada::StatusCode::Bad});
+}
+
+TEST(StatusTest, StatusOrMonadicTransform) {
+  const scada::StatusOr<int> ok_result{21};
+  const scada::StatusOr<int> doubled =
+      ok_result.transform([](int value) { return value * 2; });
+  EXPECT_THAT(doubled, scada::test::IsOkAndHolds(testing::Eq(42)));
+}
+
+TEST(StatusTest, StatusOrMonadicAndThenPropagatesError) {
+  const scada::StatusOr<int> bad_result{scada::StatusCode::Bad_Timeout};
+  const scada::StatusOr<int> result = bad_result.and_then(
+      [](int value) { return std::expected<int, scada::Status>{value}; });
+  EXPECT_THAT(result, scada::test::StatusIs(scada::StatusCode::Bad_Timeout));
+}
+
+TEST(StatusTest, StatusOrFromExpectedWithValue) {
+  const std::expected<int, scada::Status> expected{42};
+  const scada::StatusOr<int> result{expected};
+  EXPECT_THAT(result, scada::test::IsOkAndHolds(testing::Eq(42)));
+}
+
+TEST(StatusTest, StatusOrFromExpectedWithBadStatus) {
+  const std::expected<int, scada::Status> expected{
+      std::unexpect, scada::Status{scada::StatusCode::Bad_Timeout}};
+  const scada::StatusOr<int> result{expected};
+  EXPECT_THAT(result, scada::test::StatusIs(scada::StatusCode::Bad_Timeout));
+}
+
 #if GTEST_HAS_DEATH_TEST
 TEST(StatusTest, StatusOrValuePanicsWithoutValue) {
   const scada::StatusOr<int> result{scada::StatusCode::Bad};
 
   EXPECT_DEATH(
-      {
-        (void)result.value();
-      },
+      { (void)result.value(); },
       "Panic: StatusOr value access without a value\r?\n.*"
       "status_unittest.cpp");
 }
@@ -179,5 +233,26 @@ TEST(StatusTest, StatusOrOkStatusWithoutValuePanics) {
       },
       "Panic: StatusOr constructed without a value from an ok status.*"
       "\r?\n.*status_or.h");
+}
+
+TEST(StatusTest, StatusOrFromExpectedWithOkStatusPanics) {
+  const std::expected<int, scada::Status> expected{
+      std::unexpect, scada::Status{scada::StatusCode::Good}};
+
+  EXPECT_DEATH(
+      {
+        const scada::StatusOr<int> result{expected};
+        (void)result;
+      },
+      "Panic: StatusOr constructed without a value from an ok status");
+}
+
+TEST(StatusTest, StatusOrErrorPanicsWithValuePresent) {
+  const scada::StatusOr<int> result{7};
+
+  EXPECT_DEATH(
+      { (void)result.error(); },
+      "Panic: StatusOr error access with a value present\r?\n.*"
+      "status_unittest.cpp");
 }
 #endif
