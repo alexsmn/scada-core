@@ -79,6 +79,12 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
   if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
     context = context.with_trace_id(trace_parent);
   }
+  // OTel identity convention: `user.id` is the authenticated caller,
+  // https://opentelemetry.io/docs/specs/semconv/registry/attributes/user/.
+  // Omitted for an anonymous session (null user id).
+  if (!context.user_id().is_null()) {
+    span.SetAttribute("user.id", context.user_id().ToString());
+  }
   span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
   span.SetAttribute("scada.node_ids",
                     metrics::JoinForAttribute(

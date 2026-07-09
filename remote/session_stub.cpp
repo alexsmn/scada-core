@@ -20,6 +20,19 @@
 #include "scada/write_flags.h"
 #include <boost/range/adaptor/transformed.hpp>
 
+namespace {
+
+// OTel identity convention: `user.id` is the authenticated caller,
+// https://opentelemetry.io/docs/specs/semconv/registry/attributes/user/.
+// Omitted for an anonymous session (null user id).
+void SetUserIdAttribute(TraceSpan& span, const scada::ServiceContext& context) {
+  if (!context.user_id().is_null()) {
+    span.SetAttribute("user.id", context.user_id().ToString());
+  }
+}
+
+}  // namespace
+
 SessionStub::SessionStub(SessionContext&& context)
     : SessionContext(std::move(context)) {
   LOG_BIND_TAG(logger_, "UserId",
@@ -320,6 +333,7 @@ Awaitable<void> SessionStub::OnCallAsync(
   if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
     context = context.with_trace_id(trace_parent);
   }
+  SetUserIdAttribute(span, context);
   span.SetAttribute("scada.object_node_id", node_id.ToString());
   span.SetAttribute("scada.method_node_id", method_id.ToString());
 
@@ -345,6 +359,7 @@ Awaitable<void> SessionStub::OnReadAsync(
   if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
     context = context.with_trace_id(trace_parent);
   }
+  SetUserIdAttribute(span, context);
   span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
   span.SetAttribute(
       "scada.node_ids",
@@ -384,6 +399,7 @@ Awaitable<void> SessionStub::OnWriteAsync(
   if (auto trace_parent = span.traceparent(); !trace_parent.empty()) {
     context = context.with_trace_id(trace_parent);
   }
+  SetUserIdAttribute(span, context);
   span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
   span.SetAttribute(
       "scada.node_ids",
