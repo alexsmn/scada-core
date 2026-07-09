@@ -44,11 +44,11 @@ void CompleteWithValue(std::vector<DataValue>& results,
 Awaitable<DataValue> ReadInitialValueAsync(
     AnyExecutor executor,
     MonitoredItemService& monitored_item_service,
-    const ReadValueId& read_value_id,
-    const MonitoringParameters& params) {
+    ReadValueId read_value_id,
+    MonitoringParameters params) {
   auto values = co_await ReadInitialValuesAsync(
       std::move(executor), monitored_item_service,
-      std::vector<ReadValueId>{read_value_id}, params);
+      std::vector<ReadValueId>{std::move(read_value_id)}, std::move(params));
   base::Check(values.size() == 1);
   co_return std::move(values.front());
 }
@@ -57,7 +57,7 @@ Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
     AnyExecutor /*executor*/,
     MonitoredItemService& monitored_item_service,
     std::vector<ReadValueId> read_value_ids,
-    const MonitoringParameters& params) {
+    MonitoringParameters params) {
   std::vector<DataValue> results(read_value_ids.size());
   std::vector<bool> completed(read_value_ids.size());
   std::size_t remaining = read_value_ids.size();
@@ -68,8 +68,8 @@ Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
   auto subscription_result = monitored_item_service.CreateSubscription(
       ServiceContext{}, {.max_batch_size = read_value_ids.size()});
   if (!subscription_result.ok()) {
-    std::ranges::fill(
-        results, MakeReadError(subscription_result.status().code()));
+    std::ranges::fill(results,
+                      MakeReadError(subscription_result.status().code()));
     co_return results;
   }
 
@@ -78,8 +78,8 @@ Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
   requests.reserve(read_value_ids.size());
   for (std::size_t i = 0; i < read_value_ids.size(); ++i) {
     const auto client_handle = i > std::numeric_limits<std::uint32_t>::max()
-        ? std::numeric_limits<std::uint32_t>::max()
-        : static_cast<std::uint32_t>(i);
+                                   ? std::numeric_limits<std::uint32_t>::max()
+                                   : static_cast<std::uint32_t>(i);
     requests.emplace_back(MonitoredItemCreateRequest{
         .item_to_monitor = std::move(read_value_ids[i]),
         .parameters = params,
@@ -124,8 +124,8 @@ Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
                           data_change->client_handle, data_change->value);
       } else if (const auto* status =
                      std::get_if<ItemStatusNotification>(&notification)) {
-        CompleteWithStatus(results, completed, remaining,
-                           status->client_handle, status->status.code());
+        CompleteWithStatus(results, completed, remaining, status->client_handle,
+                           status->status.code());
       } else if (const auto* overflow =
                      std::get_if<OverflowNotification>(&notification)) {
         for (std::size_t i = 0; i < results.size(); ++i) {
