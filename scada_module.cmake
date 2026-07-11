@@ -3,8 +3,10 @@ scada_module.cmake — Convention-based CMake module helpers
 
 Source files (*.cpp, *.h) are auto-discovered via GLOB CONFIGURE_DEPENDS.
 Files matching *_unittest.* are compiled into a separate GoogleTest
-executable (<module>_unittests). Files matching *_mock.* are excluded.
-On Windows, a win/ subdirectory is also scanned automatically.
+executable (<module>_unittests). Files matching *_benchmark.* are compiled
+into an opt-in Google Benchmark executable (<module>_benchmarks), which is
+EXCLUDE_FROM_ALL and not registered with ctest. Files matching *_mock.* are
+excluded. On Windows, a win/ subdirectory is also scanned automatically.
 
 Functions
 ---------
@@ -72,6 +74,44 @@ function(scada_module_unittests MODULE_NAME)
   target_sources(${MODULE_NAME}_unittests PRIVATE ${ARGN})
 endfunction()
 
+function(scada_module_benchmarks MODULE_NAME)
+  if(NOT ARGN)
+    return()
+  endif()
+
+  # Google Benchmark is an optional dependency. Skip benchmark targets when it
+  # is not installed so a build that never asked for benchmarks does not fail.
+  find_package(benchmark CONFIG QUIET)
+  if(NOT benchmark_FOUND)
+    return()
+  endif()
+
+  if(NOT TARGET ${MODULE_NAME}_benchmarks)
+    # EXCLUDE_FROM_ALL: benchmarks are opt-in diagnostics, built and run on
+    # demand (e.g. `ninja ${MODULE_NAME}_benchmarks`), not part of the default
+    # build or the ctest suite. benchmark_main supplies main().
+    add_executable(${MODULE_NAME}_benchmarks EXCLUDE_FROM_ALL)
+    target_link_libraries(${MODULE_NAME}_benchmarks PRIVATE
+      ${MODULE_NAME} benchmark::benchmark benchmark::benchmark_main)
+    target_include_directories(${MODULE_NAME}_benchmarks PRIVATE
+      ${CMAKE_SOURCE_DIR}
+      ${CMAKE_SOURCE_DIR}/server
+      ${CMAKE_SOURCE_DIR}/server/modules)
+
+    if(MSVC)
+      # Match scada_module_unittests: embedded object debug info via the preset,
+      # so skip linker-generated debug info to avoid large test-bin PDB paths.
+      target_link_options(${MODULE_NAME}_benchmarks PRIVATE
+        $<$<CONFIG:Debug>:/DEBUG:NONE>
+        $<$<CONFIG:Debug>:/INCREMENTAL:NO>
+        $<$<CONFIG:Debug>:/PDB:NONE>
+        $<$<CONFIG:RelWithDebInfo>:/DEBUG:NONE>)
+    endif()
+  endif()
+
+  target_sources(${MODULE_NAME}_benchmarks PRIVATE ${ARGN})
+endfunction()
+
 function(_scada_module_add_sources MODULE_NAME SCOPE SOURCE_DIR)
   cmake_parse_arguments(ARG "RECURSE" "" "" ${ARGN})
 
@@ -110,6 +150,12 @@ function(_scada_module_add_sources MODULE_NAME SCOPE SOURCE_DIR)
   # keep them out of RECURSE globs so non-modules builds never compile them.
   list(FILTER sources EXCLUDE REGEX "/module_test/")
 
+  # Separate benchmark files: they belong to neither the library nor the unit
+  # tests, but to an opt-in <module>_benchmarks executable.
+  set(bench_sources ${sources})
+  list(FILTER bench_sources INCLUDE REGEX "_benchmark\\.")
+  list(FILTER sources EXCLUDE REGEX "_benchmark\\.")
+
   # Separate unittest files and exclude mocks.
   set(ut_sources ${sources})
   list(FILTER ut_sources INCLUDE REGEX "_unittest\\.")
@@ -120,6 +166,9 @@ function(_scada_module_add_sources MODULE_NAME SCOPE SOURCE_DIR)
 
   if(ut_sources)
     scada_module_unittests(${MODULE_NAME} ${ut_sources})
+  endif()
+  if(bench_sources)
+    scada_module_benchmarks(${MODULE_NAME} ${bench_sources})
   endif()
 endfunction()
 
