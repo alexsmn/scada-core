@@ -38,6 +38,7 @@ module;
 #include "base/base64.h"
 #include "base/binary_reader.h"
 #include "base/binary_writer.h"
+#include "base/bit_mask_string.h"
 #include "base/boost_json_file.h"
 #include "base/boost_log.h"
 #include "base/boost_log_init.h"
@@ -48,6 +49,7 @@ module;
 #include "base/common_types.h"
 #include "base/console_logger.h"
 #include "base/constraints.h"
+#include "base/container_dump.h"
 #include "base/containers/mru_cache.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
@@ -75,6 +77,7 @@ module;
 #include "base/range_util.h"
 #include "base/rate_limiter.h"
 #include "base/stop_token.h"
+#include "base/stream_utf.h"
 #include "base/string_util.h"
 #include "base/struct_format.h"
 #include "base/struct_writer.h"
@@ -95,10 +98,9 @@ module;
 #include "base/shared_event.h"
 #include "base/synchronization/waitable_event.h"
 #endif
-// Not included: lifetime.h (macro-only), debug_util-inl.h (implementation
-// detail), boost_log_adapter.h (adapter impl), timer/timer.h (forwarding
-// header for base/timer.h), win/*.h (pilot keeps platform headers
-// include-based).
+// Not included: lifetime.h (macro-only), boost_log_adapter.h (adapter impl),
+// timer/timer.h (forwarding header for base/timer.h), win/*.h (pilot keeps
+// platform headers include-based).
 
 export module scada.base;
 
@@ -125,6 +127,17 @@ using base::AsyncCompletion;
 using base::Base64Decode;
 using base::Base64Encode;
 using base::MD5String;
+
+// bit_mask_string.h / container_dump.h
+using base::AsDict;
+using base::AsList;
+using base::AsOpt;
+using base::BitMaskToString;
+// The dump wrappers' operator<< / std::formatter specializations are found by
+// ADL / the std::formatter primary template; ToString / ToString16 and the
+// transitional global container operator<< overloads (debug_util.h) and the
+// wide-string operators (stream_utf.h) are found by ordinary lookup and are
+// deliberately not exported — include the owning header where needed.
 
 // containers/mru_cache.h
 using base::HashingMRUCache;

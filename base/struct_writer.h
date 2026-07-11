@@ -1,5 +1,8 @@
 #pragma once
 
+// StructWriter is operator<<-based: AddField streams arbitrary values, so it
+// needs the container/wide-string operator<< overloads from debug_util.h (the
+// std::format-native counterpart is StructFormatter in struct_format.h).
 #include "base/debug_util.h"
 #include "base/lifetime.h"
 
@@ -64,7 +67,7 @@ inline StructWriter& StructWriter::AddBitMaskField(
     std::span<const std::string_view> bit_strings) {
   if (count_ != 0)
     stream_ << ", ";
-  stream_ << name << ": " << BitMaskToString(bit_mask, bit_strings);
+  stream_ << name << ": " << base::BitMaskToString(bit_mask, bit_strings);
   ++count_;
   return *this;
 }

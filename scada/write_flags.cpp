@@ -1,6 +1,6 @@
 #include "scada/write_flags.h"
 
-#include "base/debug_util.h"
+#include "base/bit_mask_string.h"
 
 
 namespace scada {
@@ -10,7 +10,7 @@ std::ostream& operator<<(std::ostream& stream, WriteFlags flags) {
       "Select",
       "Parameter",
   };
-  return stream << BitMaskToString(flags.raw(), kBitStrings);
+  return stream << base::BitMaskToString(flags.raw(), kBitStrings);
 }
 
 }  // namespace scada

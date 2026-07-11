@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/stream_utf.h"
 #include "base/utf_convert.h"
 
 #include <boost/log/common.hpp>
@@ -9,17 +10,11 @@
 #include <boost/log/utility/manipulators/add_value.hpp>
 #include <optional>
 
-// Allow streaming std::u16string to std::ostream.
-inline std::ostream& operator<<(std::ostream& os, std::u16string_view sv) {
-  os << UtfConvert<char>(sv);
-  return os;
-}
-inline std::ostream& operator<<(std::ostream& os, const std::u16string& str) {
-  os << UtfConvert<char>(std::u16string_view{str});
-  return os;
-}
-
-// Overloads in Boost.Log namespace so ADL finds them for formatting_ostream.
+// The wide / UTF-16 string operator<< overloads for std::ostream live in
+// base/stream_utf.h (included above). The overloads below are the
+// boost::log::formatting_ostream counterparts, kept here next to the Boost.Log
+// include they require; ADL finds them for that stream type even where a nearer
+// operator<< shadows the global ones.
 namespace boost::log {
 inline formatting_ostream& operator<<(formatting_ostream& os,
                                       std::u16string_view sv) {

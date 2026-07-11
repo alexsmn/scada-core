@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/debug_util.h"
+#include "base/bit_mask_string.h"
 #include "base/lifetime.h"
 
 #include <format>
@@ -80,7 +80,7 @@ class StructFormatter {
       unsigned bit_mask,
       std::span<const std::string_view> bit_strings) SCADA_LIFETIME_BOUND {
     BeginField(name);
-    out_ = std::format_to(out_, "{}", BitMaskToString(bit_mask, bit_strings));
+    out_ = std::format_to(out_, "{}", base::BitMaskToString(bit_mask, bit_strings));
     return *this;
   }
 
