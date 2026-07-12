@@ -96,10 +96,14 @@ Core SCADA abstractions and services:
 - **`tracer.h` / `tracing.h`** - Distributed tracing support
 - Provider/sink pattern for metric collection
 
-### model/ - Data Model
-OPC UA-compatible node definitions:
-- **`namespaces.h`** - Namespace indices (NS0-NS29)
-- **`*_node_ids.h`** - Generated node ID headers from `node_ids.csv`
+### model/ - Data Model (MOVED)
+The model library moved out of core into the `common` submodule at
+`common/model/`. The nodeset XML there is the single source of truth and the
+`namespaces.*` / `*_node_ids.h` headers are generated from it at build time. See
+`common/model/` and `common/CLAUDE.md`. `core` no longer depends on the model;
+low-level code that needs a friendly NodeId log string uses
+`scada::NodeIdToLogString` (`core/scada/node_id_log.h`), whose namespace-name
+resolver the model installs at startup.
 
 ### remote/ - Protocol Layer
 Protocol Buffers-based remote communication:
@@ -291,7 +295,7 @@ See [chromium_deps.md](chromium_deps.md) for a detailed analysis of chromium-bas
 | Protocol definition | `remote/scada.proto` |
 | Async utilities | `base/awaitable.h` |
 | Metrics API | `metrics/otel_metrics.h` |
-| Namespace definitions | `model/namespaces.h` |
+| Namespace definitions | `common/model/` (generated; see common/CLAUDE.md) |
 
 ## Common Tasks for AI Assistants
 
@@ -304,9 +308,14 @@ See [chromium_deps.md](chromium_deps.md) for a detailed analysis of chromium-bas
 6. Write unit tests
 
 ### Adding a New Node Type
-1. Add node ID to `model/node_ids.csv`
-2. Regenerate headers (CMake does this automatically)
-3. Update namespace if needed in `model/namespaces.h`
+The model now lives in `common/model/`. Add the node to the appropriate
+`common/model/nodesets/*.xml` with a `symbolicName` (and `codeNs` if it belongs
+to a different domain than the file default); the `scada::<domain>::id::` C++
+constant is generated on the next build. For an id with no static node, add a
+row to `common/model/nodesets/extra_node_ids.csv`. Namespaces come from
+`common/model/nodesets/namespaces.csv`. Never change an existing numeric id —
+they are persisted in user configuration databases (see the
+`ModelFrozenIds` regression test).
 
 ### Adding Unit Tests
 1. Create `*_unittest.cpp` in the module directory
