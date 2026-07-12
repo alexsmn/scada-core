@@ -5,6 +5,8 @@
 #include <memory>
 #include <transport/log.h>
 
+namespace scada {
+
 class NetLoggerAdapter final : public transport::LogSink {
  public:
   explicit NetLoggerAdapter(std::shared_ptr<const ::Logger> logger)
@@ -24,3 +26,10 @@ inline std::shared_ptr<transport::LogSink> CreateNetLoggerAdapter(
   return logger ? std::make_shared<NetLoggerAdapter>(std::move(logger))
                 : nullptr;
 }
+
+}  // namespace scada
+
+// Transitional compatibility shim: expose the historically global-scope names
+// until all callers migrate to `scada::`.
+using scada::CreateNetLoggerAdapter;  // NOLINT(build/namespaces) transitional
+using scada::NetLoggerAdapter;        // NOLINT(build/namespaces) transitional

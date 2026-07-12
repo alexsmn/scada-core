@@ -2,6 +2,8 @@
 
 #include "scada/node_id.h"
 
+namespace scada {
+
 // Normal nodes are not considered nested.
 //
 // WARNING: This method must be very performant, as a service locator may invoke
@@ -37,3 +39,14 @@ bool GetNestedSubName(const scada::NodeId& node_id,
 
 scada::NodeId NodeIdFromScadaString(std::string_view scada_string);
 std::string NodeIdToScadaString(const scada::NodeId& node_id);
+
+}  // namespace scada
+
+// Transitional compatibility shim: these node-id utilities historically lived
+// at global scope. Expose them there until all callers migrate to `scada::`.
+using scada::GetNestedSubName;       // NOLINT(build/namespaces) transitional
+using scada::GetRootNestedNodeId;    // NOLINT(build/namespaces) transitional
+using scada::IsNestedNodeId;         // NOLINT(build/namespaces) transitional
+using scada::MakeNestedNodeId;       // NOLINT(build/namespaces) transitional
+using scada::NodeIdFromScadaString;  // NOLINT(build/namespaces) transitional
+using scada::NodeIdToScadaString;    // NOLINT(build/namespaces) transitional

@@ -9,7 +9,8 @@
 #include <windows.h>
 #endif
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 class Environment {
  public:
@@ -37,4 +38,4 @@ class Environment {
   }
 };
 
-}  // namespace base
+}  // namespace scada::base

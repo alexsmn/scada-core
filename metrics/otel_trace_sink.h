@@ -9,7 +9,8 @@
 #include <mutex>
 #include <unordered_map>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 // Bridges the SCADA `TraceSink` contract to OpenTelemetry spans: every live
 // SCADA span id maps to an OTel span created on the given tracer. Parent
@@ -48,4 +49,4 @@ class OtelTraceSink final : public TraceSink {
   std::unordered_map<TraceSpanId, SpanPtr> spans_;
 };
 
-}  // namespace metrics
+}  // namespace scada::metrics

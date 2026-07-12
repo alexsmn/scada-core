@@ -39,7 +39,7 @@ int64_t ConvertTimespecToMicros(const struct timespec& ts) {
 
 }  // namespace
 
-namespace base {
+namespace scada::base {
 
 // Time -----------------------------------------------------------------------
 
@@ -176,6 +176,6 @@ TimeTicks TimeTicks::Now() {
   return TimeTicks(ConvertTimespecToMicros(ts));
 }
 
-}  // namespace base
+}  // namespace scada::base
 
 #endif  // !_WIN32

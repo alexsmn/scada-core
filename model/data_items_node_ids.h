@@ -3,7 +3,8 @@
 #include "scada/node_id.h"
 #include "model/namespaces.h"
 
-namespace data_items {
+#include "model/model_compat.h"
+namespace scada::data_items {
   
 namespace numeric_id {
 

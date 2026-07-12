@@ -14,21 +14,21 @@ module;
 
 // ---- Global module fragment: headers stay the source of truth ----
 #include "metrics/aggregated_metric.h"
+#include "metrics/boost_log_attribute_types.h"
 #include "metrics/composite_trace_sink.h"
 #include "metrics/meter.h"
 #include "metrics/metric_registry.h"
 #include "metrics/metric_value.h"
-#include "metrics/boost_log_attribute_types.h"
 #include "metrics/otel_endpoint.h"
 #include "metrics/otel_log_sink.h"
 #include "metrics/otel_logs.h"
 #include "metrics/otel_metrics.h"
 #include "metrics/otel_trace_sink.h"
 #include "metrics/otel_traces.h"
+#include "metrics/structured_log_formatter.h"
 #include "metrics/trace_attribute_util.h"
 #include "metrics/trace_id.h"
 #include "metrics/trace_parent.h"
-#include "metrics/structured_log_formatter.h"
 #include "metrics/trace_sink.h"
 #include "metrics/trace_sink_impl.h"
 #include "metrics/trace_span_kind.h"
@@ -42,47 +42,47 @@ export import scada.base;
 export namespace metrics {
 
 // composite_trace_sink.h / otel_trace_sink.h
-using metrics::CompositeTraceSink;
-using metrics::OtelTraceSink;
+using scada::metrics::CompositeTraceSink;
+using scada::metrics::OtelTraceSink;
 
 // meter.h
-using metrics::Meter;
-using metrics::MetricAttributes;
+using scada::metrics::Meter;
+using scada::metrics::MetricAttributes;
 
 // metric_registry.h
-using metrics::MetricCallback;
-using metrics::MetricRegistry;
-using metrics::MetricSink;
-using metrics::MetricTrigger;
-using metrics::MetricValue;
+using scada::metrics::MetricCallback;
+using scada::metrics::MetricRegistry;
+using scada::metrics::MetricSink;
+using scada::metrics::MetricTrigger;
+using scada::metrics::MetricValue;
 
 // otel_endpoint.h
-using metrics::NormalizeGrpcEndpoint;
+using scada::metrics::NormalizeGrpcEndpoint;
 
 // otel_logs.h / otel_log_sink.h
-using metrics::kTraceParentLogAttribute;
-using metrics::OpenTelemetryLogs;
-using metrics::OpenTelemetryLogsOptions;
-using metrics::OtelLogSinkBackend;
-using metrics::ScopedOtelLogSink;
+using scada::metrics::kTraceParentLogAttribute;
+using scada::metrics::OpenTelemetryLogs;
+using scada::metrics::OpenTelemetryLogsOptions;
+using scada::metrics::OtelLogSinkBackend;
+using scada::metrics::ScopedOtelLogSink;
 
 // boost_log_attribute_types.h / structured_log_formatter.h
-using metrics::BoostLogAttributeTypes;
-using metrics::MakeStructuredLogFormatter;
-using metrics::StructuredLogFormatterOptions;
+using scada::metrics::BoostLogAttributeTypes;
+using scada::metrics::MakeStructuredLogFormatter;
+using scada::metrics::StructuredLogFormatterOptions;
 
 // otel_metrics.h
-using metrics::MetricPoint;
-using metrics::MetricValueObserver;
-using metrics::OpenTelemetryMetrics;
-using metrics::OpenTelemetryMetricsOptions;
+using scada::metrics::MetricPoint;
+using scada::metrics::MetricValueObserver;
+using scada::metrics::OpenTelemetryMetrics;
+using scada::metrics::OpenTelemetryMetricsOptions;
 
 // otel_traces.h
-using metrics::OpenTelemetryTraces;
-using metrics::OpenTelemetryTracesOptions;
+using scada::metrics::OpenTelemetryTraces;
+using scada::metrics::OpenTelemetryTracesOptions;
 
 // trace_attribute_util.h
-using metrics::JoinForAttribute;
+using scada::metrics::JoinForAttribute;
 
 }  // namespace metrics
 

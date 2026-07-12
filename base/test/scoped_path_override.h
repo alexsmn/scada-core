@@ -4,7 +4,8 @@
 
 #include <filesystem>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Overrides a PathService key to a temporary directory for the duration of a
 // test. Restores the original path on destruction.
@@ -37,4 +38,4 @@ class ScopedPathOverride {
   std::filesystem::path temp_dir_;
 };
 
-}  // namespace base
+}  // namespace scada::base

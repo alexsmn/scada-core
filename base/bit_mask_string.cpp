@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace base {
+namespace scada::base {
 
 std::string BitMaskToString(unsigned bit_mask,
                             std::span<const std::string_view> labels) {
@@ -28,4 +28,4 @@ std::string BitMaskToString(unsigned bit_mask,
   return result;
 }
 
-}  // namespace base
+}  // namespace scada::base

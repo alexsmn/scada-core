@@ -3,7 +3,8 @@
 #include "scada/node_id.h"
 #include "model/namespaces.h"
 
-namespace opc {
+#include "model/model_compat.h"
+namespace scada::opc {
 
 namespace id {
 

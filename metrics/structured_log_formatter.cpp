@@ -17,7 +17,7 @@
 #include <string_view>
 #include <type_traits>
 
-namespace metrics {
+namespace scada::metrics {
 
 namespace {
 
@@ -154,4 +154,4 @@ BoostLogFormatter MakeStructuredLogFormatter(
       };
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

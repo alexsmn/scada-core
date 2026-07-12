@@ -2,7 +2,7 @@
 
 #include "base/check.h"
 
-namespace metrics {
+namespace scada::metrics {
 
 CompositeTraceSink::CompositeTraceSink(std::vector<TraceSink*> sinks)
     : sinks_{std::move(sinks)} {
@@ -46,4 +46,4 @@ std::string CompositeTraceSink::GetTraceParent(
   return {};
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

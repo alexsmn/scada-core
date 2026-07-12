@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 
-namespace base {
+namespace scada::base {
 class TimeDelta;
 }
 

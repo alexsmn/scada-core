@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace metrics {
+namespace scada::metrics {
 namespace {
 
 // Captures the formatter's output through a real console-style ostream sink,
@@ -140,4 +140,4 @@ TEST_F(StructuredLogFormatterTest, EscapesMessageIntoSingleLine) {
 }
 
 }  // namespace
-}  // namespace metrics
+}  // namespace scada::metrics

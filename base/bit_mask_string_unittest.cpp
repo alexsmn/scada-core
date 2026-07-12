@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-namespace base {
+namespace scada::base {
 namespace {
 
 constexpr std::array<std::string_view, 3> kLabels{"Select", "Parameter",
@@ -47,4 +47,4 @@ TEST(BitMaskToStringTest, HighBitDoesNotOverflow) {
 }
 
 }  // namespace
-}  // namespace base
+}  // namespace scada::base

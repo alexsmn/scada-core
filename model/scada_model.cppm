@@ -44,12 +44,12 @@ export {
 export namespace cfg {
 
 // static_types.h (the inline constants have external linkage - exportable)
-using cfg::Iec60870Mode;
-using cfg::Iec60870Protocol;
-using cfg::kDataGroupDevicePlaceholder;
-using cfg::ModbusEncoding;
-using cfg::ModbusMode;
-using cfg::NUM_CHANNELS;
-using cfg::SimulationSignalType;
+using scada::cfg::Iec60870Mode;
+using scada::cfg::Iec60870Protocol;
+using scada::cfg::kDataGroupDevicePlaceholder;
+using scada::cfg::ModbusEncoding;
+using scada::cfg::ModbusMode;
+using scada::cfg::NUM_CHANNELS;
+using scada::cfg::SimulationSignalType;
 
 }  // namespace cfg

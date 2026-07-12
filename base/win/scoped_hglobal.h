@@ -1,7 +1,8 @@
 #pragma once
 #include <windows.h>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 namespace win {
 
 template <typename T>
@@ -26,4 +27,4 @@ class ScopedHGlobal {
 };
 
 }  // namespace win
-}  // namespace base
+}  // namespace scada::base

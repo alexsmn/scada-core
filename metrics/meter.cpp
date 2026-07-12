@@ -17,7 +17,7 @@ import scada.base;
 #include "base/map_util.h"
 #endif
 
-namespace metrics {
+namespace scada::metrics {
 
 namespace {
 
@@ -163,4 +163,4 @@ void Meter::RecordHistogram(std::string_view metric_name,
   impl_->RecordHistogram(metric_name, value, attributes);
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

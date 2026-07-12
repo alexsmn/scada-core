@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string_view>
 
-namespace base {
+namespace scada::base {
 
 // TimeDelta ------------------------------------------------------------------
 
@@ -283,4 +283,4 @@ std::ostream& operator<<(std::ostream& os, TimeTicks time_ticks) {
   return os << as_time_delta.InMicroseconds() << " bogo-microseconds";
 }
 
-}  // namespace base
+}  // namespace scada::base

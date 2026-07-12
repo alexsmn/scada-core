@@ -4,7 +4,8 @@
 #include <string>
 #include <string_view>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Renders the set bits of `bit_mask` as a JSON-style array of their labels,
 // e.g. bits {0, 2} with labels {"A", "B", "C"} produce ["A","C"]. `labels[i]`
@@ -13,4 +14,4 @@ namespace base {
 std::string BitMaskToString(unsigned bit_mask,
                             std::span<const std::string_view> labels);
 
-}  // namespace base
+}  // namespace scada::base

@@ -84,7 +84,7 @@ int HexToInt(char c) {
 
 }  // namespace
 
-namespace base {
+namespace scada::base {
 
 std::string UnescapeURLComponent(std::string_view escaped_text,
                                  unsigned rules) {
@@ -113,4 +113,4 @@ std::string UnescapeURLComponent(std::string_view escaped_text,
   return result;
 }
 
-}  // namespace base
+}  // namespace scada::base

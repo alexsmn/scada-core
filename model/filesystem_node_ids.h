@@ -3,7 +3,8 @@
 #include "scada/node_id.h"
 #include "model/namespaces.h"
 
-namespace filesystem {
+#include "model/model_compat.h"
+namespace scada::filesystem {
 
 namespace id {
 
@@ -15,4 +16,4 @@ const scada::NodeId FileType_Size{308, NamespaceIndexes::SCADA};
 
 }  // namespace id
 
-}  // namespace filesystem
+}  // namespace scada::filesystem

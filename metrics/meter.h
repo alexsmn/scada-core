@@ -6,7 +6,8 @@
 #include <string>
 #include <string_view>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 using MetricAttributes = std::map<std::string, std::string>;
 
@@ -35,4 +36,4 @@ class Meter {
   std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace metrics
+}  // namespace scada::metrics

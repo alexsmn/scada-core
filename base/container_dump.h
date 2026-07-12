@@ -26,7 +26,8 @@
 #include <optional>
 #include <string>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Common base so a single constrained operator<< serves every wrapper.
 struct DumpTag {};
@@ -95,7 +96,7 @@ auto operator<<(StreamT& stream, const W& wrapper)
   return stream << std::format("{}", wrapper);
 }
 
-}  // namespace base
+}  // namespace scada::base
 
 template <class R>
 struct std::formatter<base::ListDump<R>> : base::internal::DumpParse {

@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 
-namespace base {
+namespace scada::base {
 namespace {
 
 // The wrappers must render identically through std::format and through a
@@ -109,4 +109,4 @@ TEST(ContainerDumpTest, RendersThroughBoostLogFormattingOstream) {
 }
 
 }  // namespace
-}  // namespace base
+}  // namespace scada::base

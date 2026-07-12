@@ -42,6 +42,8 @@ std::string_view NodeIdToPredefinedScadaString(const scada::NodeId& node_id) {
 
 }  // namespace
 
+namespace scada {
+
 bool IsNestedNodeId(const scada::NodeId& node_id,
                     scada::NodeId& parent_id,
                     std::string_view& nested_name) {
@@ -213,3 +215,5 @@ scada::NodeId NodeIdFromScadaString(std::string_view scada_string) {
   return scada::NodeId{numeric_id,
                        static_cast<scada::NamespaceIndex>(namespace_index)};
 }
+
+}  // namespace scada

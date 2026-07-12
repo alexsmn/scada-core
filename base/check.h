@@ -6,7 +6,8 @@
 
 #include "base/panic.h"
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Hardened invariant checks - active in ALL build types, including
 // NDEBUG/release. On failure they terminate via base::Panic, reporting the
@@ -61,4 +62,4 @@ constexpr void Check(
   Panic(message, location);
 }
 
-}  // namespace base
+}  // namespace scada::base

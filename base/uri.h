@@ -12,7 +12,8 @@ std::string EscapeQueryParamValue(std::string_view text, bool use_plus);
 // non-printable, non-7bit, and (including space)  "#%:<>?[\]^`{|}
 std::string EscapePath(std::string_view path);
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 namespace UnescapeRule {
 enum Type : unsigned {
@@ -28,4 +29,4 @@ enum Type : unsigned {
 std::string UnescapeURLComponent(std::string_view escaped_text,
                                  unsigned rules);
 
-}  // namespace base
+}  // namespace scada::base

@@ -3,7 +3,8 @@
 #include <string>
 #include <string_view>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 // Strips an http(s):// scheme from an OTLP endpoint: the OTLP/gRPC exporters
 // expect a bare host:port target. Shared by the metrics and traces runtimes.
@@ -20,4 +21,4 @@ inline std::string NormalizeGrpcEndpoint(std::string endpoint) {
   return endpoint;
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

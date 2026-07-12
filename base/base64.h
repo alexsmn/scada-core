@@ -4,7 +4,8 @@
 #include <string>
 #include <string_view>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 inline void Base64Encode(std::string_view input, std::string* output) {
   namespace b64 = boost::beast::detail::base64;
@@ -20,4 +21,4 @@ inline bool Base64Decode(std::string_view input, std::string* output) {
   return true;
 }
 
-}  // namespace base
+}  // namespace scada::base

@@ -6,7 +6,8 @@
 #include <type_traits>
 #include <utility>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Stores an object of type T with static storage duration whose destructor is
 // never called. Use as a function-local static to avoid global destructor
@@ -42,4 +43,4 @@ class NoDestructor {
   alignas(T) char storage_[sizeof(T)];
 };
 
-}  // namespace base
+}  // namespace scada::base

@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <string>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 // The Boost.Log attribute value types the structured sinks extract — the
 // same list the text formatter visits (boost_log_init.cpp ToString), so all
@@ -28,4 +29,4 @@ using BoostLogAttributeTypes = boost::mpl::vector<bool,
                                                   std::wstring,
                                                   std::u16string>;
 
-}  // namespace metrics
+}  // namespace scada::metrics

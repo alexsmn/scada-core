@@ -2,7 +2,8 @@
 
 #include <utility>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 template <typename T>
 class AutoReset {
@@ -22,4 +23,4 @@ class AutoReset {
   T old_value_;
 };
 
-}  // namespace base
+}  // namespace scada::base

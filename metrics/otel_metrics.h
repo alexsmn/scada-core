@@ -12,7 +12,8 @@
 #include "metrics/meter.h"
 #include "metrics/metric_value.h"
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 struct MetricPoint {
   std::string scope_name;
@@ -53,4 +54,4 @@ class OpenTelemetryMetrics {
   std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace metrics
+}  // namespace scada::metrics

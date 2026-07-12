@@ -58,6 +58,8 @@ static_assert(std::size(kNamespaceNames) == NamespaceIndexes::END);
 
 }  // namespace
 
+namespace scada {
+
 std::string_view GetNamespaceName(scada::NamespaceIndex namespace_index) {
   if (namespace_index >= 0 && namespace_index < NamespaceIndexes::END)
     return kNamespaceNames[namespace_index];
@@ -85,3 +87,5 @@ int FindNamespaceIndexByName(std::string_view name) {
 
   return -1;
 }
+
+}  // namespace scada

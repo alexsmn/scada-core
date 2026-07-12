@@ -2,7 +2,8 @@
 
 #include <windows.h>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // A simple wrapper around a Windows manual-reset event, replacing the
 // ChromiumBase WaitableEvent that was removed.
@@ -25,4 +26,4 @@ class WaitableEvent {
   HANDLE event_;
 };
 
-}  // namespace base
+}  // namespace scada::base

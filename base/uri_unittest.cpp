@@ -5,7 +5,7 @@
 #include <gmock/gmock.h>
 #include <string>
 
-namespace net {
+namespace scada::base {
 namespace {
 
 struct EscapeCase {
@@ -69,4 +69,4 @@ TEST(EscapeTest, EscapePath) {
 }
 
 }  // namespace
-}  // namespace net
+}  // namespace scada::base

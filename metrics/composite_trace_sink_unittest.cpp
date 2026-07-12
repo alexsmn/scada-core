@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace metrics {
+namespace scada::metrics {
 namespace {
 
 // Records span events; optionally answers GetTraceParent like an exporting
@@ -77,4 +77,4 @@ TEST(CompositeTraceSinkTest, TraceParentEmptyWhenNoSinkExports) {
 }
 
 }  // namespace
-}  // namespace metrics
+}  // namespace scada::metrics

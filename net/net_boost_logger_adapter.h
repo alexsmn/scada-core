@@ -7,6 +7,8 @@
 #include <string_view>
 #include <transport/log.h>
 
+namespace scada {
+
 class NetBoostLoggerAdapter final : public transport::LogSink {
  public:
   explicit NetBoostLoggerAdapter(std::shared_ptr<BoostLogger> boost_logger)
@@ -36,3 +38,9 @@ class NetBoostLoggerAdapter final : public transport::LogSink {
 
   const std::shared_ptr<BoostLogger> boost_logger_;
 };
+
+}  // namespace scada
+
+// Transitional compatibility shim: expose the historically global-scope name
+// until all callers migrate to `scada::`.
+using scada::NetBoostLoggerAdapter;  // NOLINT(build/namespaces) transitional

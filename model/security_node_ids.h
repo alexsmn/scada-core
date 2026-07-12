@@ -4,7 +4,8 @@
 #include "scada/node_id.h"
 #include "scada/standard_node_ids.h"
 
-namespace security {
+#include "model/model_compat.h"
+namespace scada::security {
 
 namespace numeric_id {
 
@@ -93,4 +94,4 @@ inline scada::NodeId UserNodeId(unsigned user_id) {
   return scada::NodeId{user_id, NamespaceIndexes::USER};
 }
 
-}  // namespace security
+}  // namespace scada::security

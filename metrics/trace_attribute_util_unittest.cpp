@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace metrics {
+namespace scada::metrics {
 namespace {
 
 std::string Identity(const std::string& value) {
@@ -35,4 +35,4 @@ TEST(TraceAttributeUtilTest, AppliesProjection) {
 }
 
 }  // namespace
-}  // namespace metrics
+}  // namespace scada::metrics

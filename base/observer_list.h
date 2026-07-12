@@ -7,7 +7,8 @@
 #include <memory>
 #include <vector>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 template <typename T>
 class ObserverList {
@@ -213,4 +214,4 @@ class ObserverList {
   int32_t null_count_ = 0;
 };
 
-}  // namespace base
+}  // namespace scada::base

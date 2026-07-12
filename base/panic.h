@@ -3,10 +3,11 @@
 #include <source_location>
 #include <string_view>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 [[noreturn]] void Panic(
     std::string_view message,
     const std::source_location& location = std::source_location::current());
 
-}  // namespace base
+}  // namespace scada::base

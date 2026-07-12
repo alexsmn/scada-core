@@ -15,7 +15,8 @@
 #include <string>
 #endif
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 #ifdef _WIN32
 using ProcessHandle = HANDLE;
@@ -125,4 +126,4 @@ class ProcessMetrics {
   int64_t last_cpu_time_value_ = 0;
 };
 
-}  // namespace base
+}  // namespace scada::base

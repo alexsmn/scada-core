@@ -2,7 +2,8 @@
 
 #include <string>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 class Time;
 }
 

@@ -4,7 +4,8 @@
 
 #include <string_view>
 
-namespace NamespaceIndexes {
+#include "model/model_compat.h"
+namespace scada::NamespaceIndexes {
 
 constexpr scada::NamespaceIndex NS0 = 0;
 constexpr scada::NamespaceIndex TS = 1;
@@ -49,7 +50,14 @@ constexpr scada::NamespaceIndex CONFIGURATION = 32;
 
 constexpr scada::NamespaceIndex END = 33;
 
-}  // namespace NamespaceIndexes
+}  // namespace scada::NamespaceIndexes
 
+namespace scada {
 std::string_view GetNamespaceName(scada::NamespaceIndex namespace_index);
 int FindNamespaceIndexByName(std::string_view name);
+}  // namespace scada
+
+// Transitional compatibility shim: expose the historically global-scope names
+// until all callers migrate to `scada::`.
+using scada::FindNamespaceIndexByName;  // NOLINT(build/namespaces) transitional
+using scada::GetNamespaceName;          // NOLINT(build/namespaces) transitional

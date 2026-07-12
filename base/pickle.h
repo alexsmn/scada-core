@@ -7,7 +7,8 @@
 #include <string>
 #include <vector>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 class Pickle {
  public:
@@ -82,4 +83,4 @@ class PickleIterator {
   const char* end_;
 };
 
-}  // namespace base
+}  // namespace scada::base

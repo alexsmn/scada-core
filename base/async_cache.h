@@ -10,7 +10,8 @@
 #include <optional>
 #include <vector>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Executor-affine async result cache.
 //
@@ -111,4 +112,4 @@ class AsyncCache {
   std::map<Key, Entry, Compare> entries_;
 };
 
-}  // namespace base
+}  // namespace scada::base

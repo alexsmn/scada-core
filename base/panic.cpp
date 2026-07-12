@@ -8,7 +8,7 @@
 #include <intrin.h>
 #endif
 
-namespace base {
+namespace scada::base {
 
 namespace {
 
@@ -42,4 +42,4 @@ namespace {
   ImmediateCrash();
 }
 
-}  // namespace base
+}  // namespace scada::base

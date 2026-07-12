@@ -2,7 +2,8 @@
 
 #include "base/time/clock.h"
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Default clock implementation using base::Time::Now().
 class DefaultClock : public Clock {
@@ -15,4 +16,4 @@ class DefaultClock : public Clock {
   Time Now() const override { return Time::Now(); }
 };
 
-}  // namespace base
+}  // namespace scada::base

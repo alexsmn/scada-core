@@ -20,7 +20,7 @@
 #include <mutex>
 #include <vector>
 
-namespace metrics {
+namespace scada::metrics {
 
 namespace {
 
@@ -233,4 +233,4 @@ boost::signals2::connection OpenTelemetryMetrics::AddMetricValueObserver(
   return impl_->AddMetricValueObserver(std::move(observer));
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

@@ -2,7 +2,8 @@
 #include <OAIdl.h>  // VARIANT
 #include <cstdint>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 namespace win {
 
 class ScopedVariant {
@@ -131,4 +132,4 @@ class ScopedVariant {
 };
 
 }  // namespace win
-}  // namespace base
+}  // namespace scada::base

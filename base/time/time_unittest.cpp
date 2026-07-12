@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-namespace base {
+namespace scada::base {
 
 // TimeDelta tests ------------------------------------------------------------
 
@@ -361,4 +361,4 @@ TEST(TimeTicksTest, DefaultIsNull) {
   EXPECT_TRUE(ticks.is_null());
 }
 
-}  // namespace base
+}  // namespace scada::base

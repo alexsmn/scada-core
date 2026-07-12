@@ -4,7 +4,8 @@
 #include <format>
 #include <string>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 // Joins the string forms of a batched request's node ids into one span
 // attribute value, capped so huge batches don't bloat span storage: the
@@ -32,4 +33,4 @@ std::string JoinForAttribute(const Range& range,
   return result;
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

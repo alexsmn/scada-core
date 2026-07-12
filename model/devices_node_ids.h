@@ -3,7 +3,8 @@
 #include "scada/node_id.h"
 #include "model/namespaces.h"
 
-namespace devices {
+#include "model/model_compat.h"
+namespace scada::devices {
 
 namespace numeric_id {
 
@@ -114,4 +115,4 @@ const scada::NodeId Iec61850TransmissionItemType{344, NamespaceIndexes::SCADA};
 
 }
 
-}  // namespace devices
+}  // namespace scada::devices

@@ -2,7 +2,8 @@
 
 // TODO: Remove this file.
 
-namespace cfg {
+#include "model/model_compat.h"
+namespace scada::cfg {
 
 enum class ModbusEncoding : int { RTU, ASCII, TCP };
 enum class ModbusMode : int { MASTER, SLAVE };
@@ -22,4 +23,4 @@ enum class SimulationSignalType : int {
 
 inline const char kDataGroupDevicePlaceholder[] = "GROUP_DEVICE";
 
-}  // namespace cfg
+}  // namespace scada::cfg

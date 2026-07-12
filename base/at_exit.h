@@ -4,7 +4,8 @@
 #include <mutex>
 #include <stack>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 class AtExitManager {
  public:
@@ -32,4 +33,4 @@ class AtExitManager {
   static inline AtExitManager* s_current = nullptr;
 };
 
-}  // namespace base
+}  // namespace scada::base

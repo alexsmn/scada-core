@@ -10,7 +10,8 @@
 #include <memory>
 #include <vector>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Executor-affine one-shot async completion gate.
 //
@@ -108,4 +109,4 @@ class AsyncCompletion {
   std::shared_ptr<State> state_;
 };
 
-}  // namespace base
+}  // namespace scada::base

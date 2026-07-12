@@ -10,7 +10,8 @@
 #include <string>
 #include <string_view>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 inline std::string MD5String(std::string_view input) {
   boost::uuids::detail::md5 hasher;
@@ -36,4 +37,4 @@ inline std::string MD5String(std::string_view input) {
   return std::string(hex, 32);
 }
 
-}  // namespace base
+}  // namespace scada::base

@@ -3,7 +3,8 @@
 #include <filesystem>
 #include <functional>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 enum {
   DIR_CURRENT,
@@ -33,4 +34,4 @@ class PathService {
   static bool GetBuiltin(int key, std::filesystem::path* result);
 };
 
-}  // namespace base
+}  // namespace scada::base

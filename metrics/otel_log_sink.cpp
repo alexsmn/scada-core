@@ -23,7 +23,7 @@
 #include <string>
 #include <type_traits>
 
-namespace metrics {
+namespace scada::metrics {
 
 namespace {
 
@@ -149,4 +149,4 @@ ScopedOtelLogSink::~ScopedOtelLogSink() {
   boost::log::core::get()->remove_sink(sink_);
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

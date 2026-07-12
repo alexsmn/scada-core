@@ -21,7 +21,8 @@
 typedef struct _FILETIME FILETIME;
 #endif
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 class TimeDelta;
 
@@ -443,4 +444,4 @@ class TimeTicks : public time_internal::TimeBase<TimeTicks> {
 
 std::ostream& operator<<(std::ostream& os, TimeTicks time_ticks);
 
-}  // namespace base
+}  // namespace scada::base

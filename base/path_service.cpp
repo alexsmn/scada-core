@@ -17,7 +17,7 @@
 #include <unistd.h>
 #endif
 
-namespace base {
+namespace scada::base {
 
 namespace {
 
@@ -170,4 +170,4 @@ void PathService::Override(int key, const std::filesystem::path& path) {
   GetOverrides()[key] = path;
 }
 
-}  // namespace base
+}  // namespace scada::base

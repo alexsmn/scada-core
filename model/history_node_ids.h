@@ -3,7 +3,8 @@
 #include "model/namespaces.h"
 #include "scada/node_id.h"
 
-namespace history {
+#include "model/model_compat.h"
+namespace scada::history {
 
 namespace numeric_id {
 
@@ -36,4 +37,4 @@ const scada::NodeId HasEventDatabase{335, NamespaceIndexes::SCADA};
 
 }  // namespace id
 
-}  // namespace history
+}  // namespace scada::history

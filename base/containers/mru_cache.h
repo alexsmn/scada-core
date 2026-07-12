@@ -6,7 +6,8 @@
 #include <map>
 #include <unordered_map>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // A most-recently-used cache, compatible with the ChromiumBase API.
 // KeyType must be comparable with the MapType's key_compare.
@@ -154,4 +155,4 @@ class HashingMRUCache
   using Base::Base;
 };
 
-}  // namespace base
+}  // namespace scada::base

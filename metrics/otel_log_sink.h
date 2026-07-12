@@ -8,7 +8,8 @@
 #include <opentelemetry/logs/logger.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 // Boost.Log record attribute that carries a W3C traceparent string
 // (trace_parent.h). When present, the OTel sink parses it and stamps the
@@ -69,4 +70,4 @@ class ScopedOtelLogSink {
   boost::shared_ptr<boost::log::sinks::unlocked_sink<OtelLogSinkBackend>> sink_;
 };
 
-}  // namespace metrics
+}  // namespace scada::metrics

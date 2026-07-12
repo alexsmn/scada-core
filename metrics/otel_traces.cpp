@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <chrono>
 
-namespace metrics {
+namespace scada::metrics {
 
 namespace {
 
@@ -93,4 +93,4 @@ void OpenTelemetryTraces::ForceFlush() {
   impl_->ForceFlush();
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

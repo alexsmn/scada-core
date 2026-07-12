@@ -7,7 +7,8 @@
 #include <memory>
 #include <string>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 // Defines OpenTelemetry log exporter and resource settings for the process.
 // `service_name` and `endpoint` follow the traces/metrics convention — one
@@ -46,4 +47,4 @@ class OpenTelemetryLogs {
   std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace metrics
+}  // namespace scada::metrics

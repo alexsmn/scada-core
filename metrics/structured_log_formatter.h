@@ -4,7 +4,8 @@
 
 #include <string>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 // Settings for the structured (JSON-lines) console log formatter.
 struct StructuredLogFormatterOptions {
@@ -34,4 +35,4 @@ struct StructuredLogFormatterOptions {
 BoostLogFormatter MakeStructuredLogFormatter(
     StructuredLogFormatterOptions options);
 
-}  // namespace metrics
+}  // namespace scada::metrics

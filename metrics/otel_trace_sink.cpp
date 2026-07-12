@@ -6,7 +6,7 @@
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/span_startoptions.h>
 
-namespace metrics {
+namespace scada::metrics {
 
 namespace {
 
@@ -115,4 +115,4 @@ std::string OtelTraceSink::GetTraceParent(const TraceSpanId& span_id) const {
   return FormatTraceParent(parent);
 }
 
-}  // namespace metrics
+}  // namespace scada::metrics

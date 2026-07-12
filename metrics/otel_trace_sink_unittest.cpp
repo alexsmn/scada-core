@@ -12,7 +12,7 @@
 #include <thread>
 #include <vector>
 
-namespace metrics {
+namespace scada::metrics {
 namespace {
 
 namespace memory = opentelemetry::exporter::memory;
@@ -250,4 +250,4 @@ TEST_F(OtelTraceSinkTest, ConcurrentSpansSmoke) {
 }
 
 }  // namespace
-}  // namespace metrics
+}  // namespace scada::metrics

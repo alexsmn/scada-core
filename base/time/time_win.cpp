@@ -35,7 +35,7 @@ bool SafeConvertToWord(int in, WORD* out) {
 
 }  // namespace
 
-namespace base {
+namespace scada::base {
 
 // Time -----------------------------------------------------------------------
 
@@ -155,6 +155,6 @@ TimeTicks TimeTicks::Now() {
                    leftover * Time::kMicrosecondsPerSecond / freq);
 }
 
-}  // namespace base
+}  // namespace scada::base
 
 #endif  // _WIN32

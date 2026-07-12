@@ -2,7 +2,8 @@
 
 #include "base/time/time.h"
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 
 // Overrides base::Time::Now() in tests. When constructed, sets a fixed time
 // point. Call Advance() to move time forward.
@@ -26,4 +27,4 @@ class ScopedMockClockOverride {
   inline static thread_local ScopedMockClockOverride* current_ = nullptr;
 };
 
-}  // namespace base
+}  // namespace scada::base

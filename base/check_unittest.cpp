@@ -7,7 +7,7 @@
 
 #include "base/threading/thread_checker.h"
 
-namespace base {
+namespace scada::base {
 namespace {
 
 TEST(CheckTest, PassingCheckIsNoOp) {
@@ -68,4 +68,4 @@ TEST(CheckDeathTest, ThreadCheckerPanicsOnWrongThread) {
 }
 
 }  // namespace
-}  // namespace base
+}  // namespace scada::base

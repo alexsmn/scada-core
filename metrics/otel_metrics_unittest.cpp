@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-namespace metrics {
+namespace scada::metrics {
 namespace {
 
 TEST(OpenTelemetryMetricsTest, MeterRecordsValues) {
@@ -33,4 +33,4 @@ TEST(OpenTelemetryMetricsTest, MeterRecordsValuesWithDefaultAttributes) {
 }
 
 }  // namespace
-}  // namespace metrics
+}  // namespace scada::metrics

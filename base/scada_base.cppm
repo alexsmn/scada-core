@@ -108,31 +108,31 @@ export module scada.base;
 export namespace base {
 
 // check.h / panic.h
-using base::Check;
-using base::CheckCondition;
-using base::NotReached;
-using base::Panic;
+using scada::base::Check;
+using scada::base::CheckCondition;
+using scada::base::NotReached;
+using scada::base::Panic;
 
 // at_exit.h / auto_reset.h / no_destructor.h / observer_list.h
-using base::AtExitManager;
-using base::AutoReset;
-using base::NoDestructor;
-using base::ObserverList;
+using scada::base::AtExitManager;
+using scada::base::AutoReset;
+using scada::base::NoDestructor;
+using scada::base::ObserverList;
 
 // async_cache.h / async_completion.h
-using base::AsyncCache;
-using base::AsyncCompletion;
+using scada::base::AsyncCache;
+using scada::base::AsyncCompletion;
 
 // base64.h / md5.h
-using base::Base64Decode;
-using base::Base64Encode;
-using base::MD5String;
+using scada::base::Base64Decode;
+using scada::base::Base64Encode;
+using scada::base::MD5String;
 
 // bit_mask_string.h / container_dump.h
-using base::AsDict;
-using base::AsList;
-using base::AsOpt;
-using base::BitMaskToString;
+using scada::base::AsDict;
+using scada::base::AsList;
+using scada::base::AsOpt;
+using scada::base::BitMaskToString;
 // The dump wrappers' operator<< / std::formatter specializations are found by
 // ADL / the std::formatter primary template; ToString / ToString16 and the
 // transitional global container operator<< overloads (debug_util.h) and the
@@ -140,61 +140,61 @@ using base::BitMaskToString;
 // deliberately not exported — include the owning header where needed.
 
 // containers/mru_cache.h
-using base::HashingMRUCache;
-using base::MRUCache;
-using base::MRUCacheBase;
+using scada::base::HashingMRUCache;
+using scada::base::MRUCache;
+using scada::base::MRUCacheBase;
 
 // environment.h
-using base::Environment;
+using scada::base::Environment;
 
 // path_service.h (incl. the unnamed-enum path keys)
-using base::DIR_CURRENT;
-using base::DIR_EXE;
-using base::DIR_TEMP;
-using base::FILE_EXE;
-using base::PATH_BASE_END;
-using base::PathProviderFunc;
-using base::PathService;
+using scada::base::DIR_CURRENT;
+using scada::base::DIR_EXE;
+using scada::base::DIR_TEMP;
+using scada::base::FILE_EXE;
+using scada::base::PATH_BASE_END;
+using scada::base::PathProviderFunc;
+using scada::base::PathService;
 #ifdef _WIN32
-using base::DIR_APP_DATA;
-using base::DIR_COMMON_APP_DATA;
-using base::DIR_LOCAL_APP_DATA;
-using base::DIR_WINDOWS;
+using scada::base::DIR_APP_DATA;
+using scada::base::DIR_COMMON_APP_DATA;
+using scada::base::DIR_LOCAL_APP_DATA;
+using scada::base::DIR_WINDOWS;
 #endif
 
 // pickle.h
-using base::Pickle;
-using base::PickleIterator;
+using scada::base::Pickle;
+using scada::base::PickleIterator;
 
 // process/process_metrics.h
-using base::ProcessHandle;
-using base::ProcessMetrics;
-using base::SystemMemoryInfoKB;
+using scada::base::ProcessHandle;
+using scada::base::ProcessMetrics;
+using scada::base::SystemMemoryInfoKB;
 
 // time/clock.h / time/default_clock.h / time/time.h
-using base::Clock;
-using base::DefaultClock;
-using base::Time;
-using base::TimeDelta;
-using base::TimeTicks;
+using scada::base::Clock;
+using scada::base::DefaultClock;
+using scada::base::Time;
+using scada::base::TimeDelta;
+using scada::base::TimeTicks;
 // Free operators on Time/TimeDelta (member operators travel with the
 // classes; these using-declarations pick up the free overload sets).
-using base::operator+;
-using base::operator*;
-using base::operator<<;
+using scada::base::operator+;
+using scada::base::operator*;
+using scada::base::operator<<;
 
 // uri.h
-using base::UnescapeURLComponent;
+using scada::base::UnescapeURLComponent;
 namespace UnescapeRule {
-using base::UnescapeRule::NORMAL;
-using base::UnescapeRule::PATH_SEPARATORS;
-using base::UnescapeRule::SPACES;
-using base::UnescapeRule::Type;
+using scada::base::UnescapeRule::NORMAL;
+using scada::base::UnescapeRule::PATH_SEPARATORS;
+using scada::base::UnescapeRule::SPACES;
+using scada::base::UnescapeRule::Type;
 }  // namespace UnescapeRule
 
 #ifdef _WIN32
 // synchronization/waitable_event.h (Windows-only header)
-using base::WaitableEvent;
+using scada::base::WaitableEvent;
 #endif
 
 }  // namespace base

@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace metrics {
+namespace scada::metrics {
 namespace {
 
 namespace logs_sdk = opentelemetry::sdk::logs;
@@ -193,4 +193,4 @@ TEST_F(OtelLogSinkTest, StopsExportingAfterScopeExit) {
 }
 
 }  // namespace
-}  // namespace metrics
+}  // namespace scada::metrics

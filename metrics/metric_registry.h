@@ -3,7 +3,8 @@
 #include <functional>
 #include <string_view>
 
-namespace metrics {
+#include "metrics/metrics_compat.h"
+namespace scada::metrics {
 
 struct MetricValue {};
 
@@ -31,4 +32,4 @@ class MetricTrigger {
   MetricTrigger(MetricRegistry& registry, const MetricCallback& callback);
 };
 
-}  // namespace metrics
+}  // namespace scada::metrics

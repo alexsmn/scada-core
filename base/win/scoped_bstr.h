@@ -3,7 +3,8 @@
 #include <string>
 #include <string_view>
 
-namespace base {
+#include "base/base_compat.h"
+namespace scada::base {
 namespace win {
 
 class ScopedBstr {
@@ -43,4 +44,4 @@ class ScopedBstr {
 };
 
 }  // namespace win
-}  // namespace base
+}  // namespace scada::base
