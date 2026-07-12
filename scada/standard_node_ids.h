@@ -108,6 +108,12 @@ constexpr NumericId OperationLimits_MaxMonitoredItemsPerCall = 11714;
 
 constexpr NumericId ModellingRules = 87;
 constexpr NumericId ModellingRule_Mandatory = 78;
+constexpr NumericId ModellingRule_Optional = 80;
+// OPC UA Part 3 §6.4.4.4.4/§6.4.4.4.5: placeholder ModellingRules mark an
+// InstanceDeclaration whose instances are added with server- or user-defined
+// BrowseNames, https://reference.opcfoundation.org/Core/Part3/v105/docs/6.4.4
+constexpr NumericId ModellingRule_OptionalPlaceholder = 11508;
+constexpr NumericId ModellingRule_MandatoryPlaceholder = 11510;
 
 constexpr NumericId BaseEventType = 2041;
 constexpr NumericId SystemEventType = 2130;

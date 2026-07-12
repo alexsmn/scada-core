@@ -39,6 +39,12 @@ struct NodeAttributes {
     return *this;
   }
 
+  NodeAttributes& set_inverse_name(LocalizedText inverse_name)
+      SCADA_LIFETIME_BOUND {
+    this->inverse_name = std::move(inverse_name);
+    return *this;
+  }
+
   NodeAttributes& set_data_type(NodeId data_type) SCADA_LIFETIME_BOUND {
     this->data_type = std::move(data_type);
     return *this;
@@ -50,8 +56,8 @@ struct NodeAttributes {
   }
 
   bool empty() const {
-    return browse_name.empty() && display_name.empty() && data_type.is_null() &&
-           !value.has_value();
+    return browse_name.empty() && display_name.empty() &&
+           inverse_name.empty() && data_type.is_null() && !value.has_value();
   }
 
   [[nodiscard]] std::optional<scada::Variant> Get(
@@ -63,6 +69,11 @@ struct NodeAttributes {
 
   QualifiedName browse_name;
   LocalizedText display_name;
+  // ReferenceType nodes only: the reference's meaning as seen from the
+  // TargetNode (OPC UA Part 3 §5.3.2,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/5.3.2). Empty for
+  // every other node class and for symmetric ReferenceTypes.
+  LocalizedText inverse_name;
   NodeId data_type;
   std::optional<Variant> value;
 };
@@ -74,6 +85,8 @@ inline std::optional<scada::Variant> NodeAttributes::Get(
       return browse_name;
     case AttributeId::DisplayName:
       return display_name;
+    case AttributeId::InverseName:
+      return inverse_name;
     case AttributeId::DataType:
       return data_type;
     case AttributeId::Value:
@@ -99,6 +112,14 @@ inline scada::StatusCode NodeAttributes::Set(scada::AttributeId attribute_id,
       if (!typed_value)
         return scada::StatusCode::Bad;
       display_name = std::move(*typed_value);
+      return scada::StatusCode::Good;
+    }
+
+    case scada::AttributeId::InverseName: {
+      auto* typed_value = value.get_if<scada::LocalizedText>();
+      if (!typed_value)
+        return scada::StatusCode::Bad;
+      inverse_name = std::move(*typed_value);
       return scada::StatusCode::Good;
     }
 
