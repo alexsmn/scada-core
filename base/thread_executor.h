@@ -69,7 +69,7 @@ class ThreadExecutor {
   void PostTask(Task task,
                 const std::source_location& location =
                     std::source_location::current()) const;
-  void PostDelayedTask(Duration delay,
+  void PostDelayedTask(Clock::duration delay,
                        Task task,
                        const std::source_location& location =
                            std::source_location::current()) const;

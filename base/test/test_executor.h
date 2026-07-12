@@ -74,7 +74,7 @@ class TestExecutor {
     // It's important to run all the remaining pending tasks. E.g.
     // HistoricalDb will only close on the posted task.
     for (;;) {
-      auto run_tasks = PopRunTasks(Duration());
+      auto run_tasks = PopRunTasks(Clock::duration());
       if (run_tasks.empty()) {
         break;
       }
@@ -89,7 +89,7 @@ class TestExecutor {
            current_executor_stack_.end();
   }
 
-  void PostDelayedTask(Duration delay,
+  void PostDelayedTask(Clock::duration delay,
                        Task task,
                        const std::source_location& location =
                            std::source_location::current()) const {
@@ -113,13 +113,13 @@ class TestExecutor {
   bool HasReadyTasks() const {
     std::lock_guard lock{state_->mutex};
     return std::ranges::any_of(state_->pending_tasks, [](const PendingTask& task) {
-      return task.delay <= Duration{};
+      return task.delay <= Clock::duration{};
     });
   }
 
   void Poll() { Advance({}); }
 
-  void Advance(Duration delta) {
+  void Advance(Clock::duration delta) {
     ScopedCurrentExecutor current{state_.get()};
 
     auto run_tasks = PopRunTasks(delta);
@@ -131,7 +131,7 @@ class TestExecutor {
 
  private:
   struct PendingTask {
-    Duration delay;
+    Clock::duration delay;
     Task task;
     std::source_location location;
   };
@@ -157,7 +157,7 @@ class TestExecutor {
     const State* state_;
   };
 
-  std::vector<Task> PopRunTasks(Duration delta) {
+  std::vector<Task> PopRunTasks(Clock::duration delta) {
     std::lock_guard lock{state_->mutex};
 
     // Move run tasks with |task.delay <= delta| to the end of queue.

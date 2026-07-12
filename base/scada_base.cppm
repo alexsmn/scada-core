@@ -295,7 +295,6 @@ export {
 
   // common_types.h
   using ::Clock;
-  using ::Duration;
   using ::TimePoint;
 
   // csv_reader.h / csv_writer.h

@@ -22,7 +22,7 @@ struct ThreadExecutor::State : public std::enable_shared_from_this<State> {
   Task GetTask();
   Task GetImmediateTask();
 
-  void PostDelayedTask(Duration delay,
+  void PostDelayedTask(Clock::duration delay,
                        Task task,
                        const std::source_location& location);
   size_t GetTaskCount() const;
@@ -69,11 +69,11 @@ void ThreadExecutor::State::Stop() {
 }
 
 void ThreadExecutor::State::PostDelayedTask(
-    Duration delay,
+    Clock::duration delay,
     Task task,
     const std::source_location& location) {
   std::lock_guard lock(mutex_);
-  if (delay == Duration()) {
+  if (delay == Clock::duration()) {
     task_queue_.emplace(std::move(task));
   } else {
     PendingTask pending_task = {
@@ -169,10 +169,10 @@ boost::asio::execution_context& ThreadExecutor::context() const noexcept {
 
 void ThreadExecutor::PostTask(Task task,
                               const std::source_location& location) const {
-  state_->PostDelayedTask(Duration{}, std::move(task), location);
+  state_->PostDelayedTask(Clock::duration{}, std::move(task), location);
 }
 
-void ThreadExecutor::PostDelayedTask(Duration delay,
+void ThreadExecutor::PostDelayedTask(Clock::duration delay,
                                      Task task,
                                      const std::source_location& location)
     const {

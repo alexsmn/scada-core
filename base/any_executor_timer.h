@@ -21,7 +21,7 @@ class AnyExecutorTimer {
   AnyExecutorTimer& operator=(const AnyExecutorTimer&) = delete;
 
   void StartOne(
-      Duration period,
+      Clock::duration period,
       std::function<void()> callback,
       const std::source_location& location = std::source_location::current()) {
     core_ = std::make_shared<Core>(executor_, period, std::move(callback),
@@ -30,7 +30,7 @@ class AnyExecutorTimer {
   }
 
   void StartRepeating(
-      Duration period,
+      Clock::duration period,
       std::function<void()> callback,
       const std::source_location& location = std::source_location::current()) {
     core_ = std::make_shared<Core>(executor_, period, std::move(callback),
@@ -44,7 +44,7 @@ class AnyExecutorTimer {
   class Core : public std::enable_shared_from_this<Core> {
    public:
     Core(AnyExecutor executor,
-         Duration period,
+         Clock::duration period,
          std::function<void()> callback,
          const std::source_location& location)
         : executor_{std::move(executor)},
@@ -77,7 +77,7 @@ class AnyExecutorTimer {
 
    private:
     const AnyExecutor executor_;
-    const Duration period_;
+    const Clock::duration period_;
     const std::function<void()> callback_;
 #ifndef NDEBUG
     const std::source_location location_;
@@ -91,7 +91,7 @@ class AnyExecutorTimer {
 
 inline void StartRepeatableTimer(
     AnyExecutor executor,
-    Duration period,
+    Clock::duration period,
     const std::weak_ptr<bool>& cancelation,
     std::function<void()> task,
     const std::source_location& location = std::source_location::current()) {
