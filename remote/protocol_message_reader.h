@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/logger.h"
 #include "transport/message_reader.h"
 
 class ProtocolMessageReader : public transport::MessageReaderImpl<4096> {

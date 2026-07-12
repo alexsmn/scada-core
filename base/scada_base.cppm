@@ -47,7 +47,6 @@ module;
 #include "base/cell.h"
 #include "base/check.h"
 #include "base/common_types.h"
-#include "base/console_logger.h"
 #include "base/constraints.h"
 #include "base/container_dump.h"
 #include "base/containers/mru_cache.h"
@@ -57,17 +56,14 @@ module;
 #include "base/debug_util.h"
 #include "base/enum_mapping.h"
 #include "base/environment.h"
-#include "base/fork_logger.h"
 #include "base/format.h"
 #include "base/format_time.h"
 #include "base/interval.h"
 #include "base/interval_util.h"
-#include "base/logger.h"
 #include "base/map_util.h"
 #include "base/md5.h"
 #include "base/memory_istream.h"  // self-guarded: contents are _WIN32-only
 #include "base/minute_time.h"
-#include "base/nested_logger.h"
 #include "base/no_destructor.h"
 #include "base/observer_list.h"
 #include "base/panic.h"
@@ -98,9 +94,8 @@ module;
 #include "base/shared_event.h"
 #include "base/synchronization/waitable_event.h"
 #endif
-// Not included: lifetime.h (macro-only), boost_log_adapter.h (adapter impl),
-// timer/timer.h (forwarding header for base/timer.h), win/*.h (pilot keeps
-// platform headers include-based).
+// Not included: lifetime.h (macro-only), timer/timer.h (forwarding header for
+// base/timer.h), win/*.h (pilot keeps platform headers include-based).
 
 export module scada.base;
 
@@ -291,13 +286,6 @@ export {
   using ::ShutdownBoostLogging;
   using ::ToStringView;
 
-  // logger.h / console_logger.h / fork_logger.h / nested_logger.h
-  using ::ConsoleLogger;
-  using ::ForkLogger;
-  using ::Logger;
-  using ::LogSeverity;
-  using ::NestedLogger;
-  using ::NullLogger;
 
   // cell.h / constraints.h / debug_holder.h / enum_mapping.h
   using ::Cell;

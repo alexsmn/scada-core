@@ -4,7 +4,6 @@
 #include "base/awaitable.h"
 #include "base/boost_log.h"
 #include "base/lifetime.h"
-#include "base/nested_logger.h"
 #include "metrics/tracer.h"
 #include "scada/authentication.h"
 #include "scada/services.h"

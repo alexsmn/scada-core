@@ -2,7 +2,6 @@
 
 #include "base/any_executor.h"
 #include "base/any_executor_dispatch.h"
-#include "base/boost_log_adapter.h"
 #include "base/check.h"
 #include "base/debug_util.h"
 #include "base/utf_convert.h"

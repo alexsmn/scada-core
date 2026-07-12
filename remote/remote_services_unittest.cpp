@@ -1,6 +1,6 @@
 #include "remote/remote_services.h"
 
-#include "base/logger.h"
+#include "base/boost_log.h"
 #include "base/test/asio_test_environment.h"
 #include "base/test/network_test_environment.h"
 #include "remote/remote_session_manager.h"
@@ -106,7 +106,7 @@ void RemoteServicesTest::SetUp() {
   server_ = std::make_unique<TestServer>(asio_env_, network_env_);
 
   ASSERT_TRUE(CreateRemoteServices(
-      DataServicesContext{.logger = NullLogger::GetInstance(),
+      DataServicesContext{.logger = std::make_shared<BoostLogger>(LOG_NAME("Test")),
                           .executor = asio_env_.executor,
                           .transport_factory = asio_env_.transport_factory},
       data_services_));

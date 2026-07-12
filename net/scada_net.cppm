@@ -10,16 +10,13 @@ module;
 // ---- Global module fragment: headers stay the source of truth ----
 #include "net/net_boost_logger_adapter.h"
 #include "net/net_executor_adapter.h"
-#include "net/net_logger_adapter.h"
 
 export module scada.net;
 
 export import scada.base;
 
 export {
-  // net_logger_adapter.h / net_boost_logger_adapter.h / net_executor_adapter.h
-  using ::CreateNetLoggerAdapter;
+  // net_boost_logger_adapter.h / net_executor_adapter.h
   using ::NetBoostLoggerAdapter;
   using ::NetExecutorAdapter;
-  using ::NetLoggerAdapter;
 }  // export

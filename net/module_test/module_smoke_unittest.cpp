@@ -17,9 +17,9 @@ import scada.net;
 namespace scada_net_module {
 namespace {
 
-TEST(ScadaNetModuleSmoke, LoggerAdapter) {
-  auto logger = std::make_shared<NullLogger>();  // via scada.base re-export
-  NetLoggerAdapter adapter{logger};
+TEST(ScadaNetModuleSmoke, BoostLoggerAdapter) {
+  auto logger = std::make_shared<BoostLogger>();  // via scada.base re-export
+  NetBoostLoggerAdapter adapter{logger};
   adapter.Write(transport::LogSeverity::Normal, "smoke");
 }
 
