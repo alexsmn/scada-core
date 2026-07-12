@@ -3,7 +3,8 @@
 #include "base/any_executor_dispatch.h"
 #include "base/awaitable.h"
 #include "base/check.h"
-#include "model/node_id_util.h"
+#include "base/time/time_wire_codec.h"
+#include "scada/node_id_log.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
@@ -73,10 +74,10 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
     details.node_id = ConvertTo<scada::NodeId>(history_read_raw.node_id());
     details.from =
         history_read_raw.from_time()
-            ? base::Time::FromInternalValue(history_read_raw.from_time())
+            ? base::DecodeWireTime(history_read_raw.from_time())
             : base::Time();
     details.to = history_read_raw.to_time()
-                     ? base::Time::FromInternalValue(history_read_raw.to_time())
+                     ? base::DecodeWireTime(history_read_raw.to_time())
                      : base::Time();
     details.max_count = history_read_raw.max_count();
     details.aggregation = history_read_raw.has_aggregate_filter()
@@ -86,7 +87,7 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
   }
 
   LOG_INFO(logger_) << "History read raw" << LOG_TAG("RequestId", request_id)
-                    << LOG_TAG("NodeId", NodeIdToScadaString(details.node_id));
+                    << LOG_TAG("NodeId", NodeIdToLogString(details.node_id));
   auto self = shared_from_this();
   CoSpawn(executor_,
           [self, request_id, trace_id = request.trace_id(),
@@ -100,19 +101,18 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   auto request_id = request.request_id();
   auto& history_read_events = request.history_read_events();
   const auto node_id = ConvertTo<scada::NodeId>(history_read_events.node_id());
-  auto from =
-      history_read_events.from_time()
-          ? base::Time::FromInternalValue(history_read_events.from_time())
-          : base::Time();
+  auto from = history_read_events.from_time()
+                  ? base::DecodeWireTime(history_read_events.from_time())
+                  : base::Time();
   auto to = history_read_events.to_time()
-                ? base::Time::FromInternalValue(history_read_events.to_time())
+                ? base::DecodeWireTime(history_read_events.to_time())
                 : base::Time();
   scada::EventFilter filter;
   if (history_read_events.has_filter())
     Convert(history_read_events.filter(), filter);
 
   LOG_INFO(logger_) << "History read events" << LOG_TAG("RequestId", request_id)
-                    << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
+                    << LOG_TAG("NodeId", NodeIdToLogString(node_id));
   auto self = shared_from_this();
   CoSpawn(executor_,
           [self, request_id, trace_id = request.trace_id(),

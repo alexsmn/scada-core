@@ -1,5 +1,6 @@
 #include "remote/history_proxy.h"
 
+#include "base/time/time_wire_codec.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
@@ -19,9 +20,9 @@ Awaitable<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
   auto& history_read_raw = *request.mutable_history_read_raw();
   Convert(details.node_id, *history_read_raw.mutable_node_id());
   if (!details.from.is_null())
-    history_read_raw.set_from_time(details.from.ToInternalValue());
+    history_read_raw.set_from_time(base::EncodeWireMicroseconds(details.from));
   if (!details.to.is_null())
-    history_read_raw.set_to_time(details.to.ToInternalValue());
+    history_read_raw.set_to_time(base::EncodeWireMicroseconds(details.to));
   if (details.max_count != 0)
     history_read_raw.set_max_count(details.max_count);
   if (!details.aggregation.is_null())
@@ -62,9 +63,9 @@ Awaitable<scada::HistoryReadEventsResult> HistoryProxy::HistoryReadEvents(
   auto& history_read_events = *request.mutable_history_read_events();
   Convert(node_id, *history_read_events.mutable_node_id());
   if (!from.is_null())
-    history_read_events.set_from_time(from.ToInternalValue());
+    history_read_events.set_from_time(base::EncodeWireMicroseconds(from));
   if (!to.is_null())
-    history_read_events.set_to_time(to.ToInternalValue());
+    history_read_events.set_to_time(base::EncodeWireMicroseconds(to));
   Convert(filter, *history_read_events.mutable_filter());
 
   co_return co_await scada::AwaitCallbackValue<scada::HistoryReadEventsResult>(

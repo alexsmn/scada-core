@@ -1,6 +1,5 @@
 #include <gmock/gmock.h>
 
-#include "model/node_id_util.h"
 #include "remote/protocol_utils.h"
 #include "scada/authorization.h"
 #include "scada/event.h"
@@ -70,7 +69,10 @@ TEST(ProtocolUtils, ExtensionObjectIdentityMappingRuleRoundTrip) {
 }
 
 TEST(ProtocolUtils, NodeId) {
-  auto node_id = NodeIdFromScadaString("HISTORICAL_DB.4!PendingTaskCount");
+  // A nested (String-type) NodeId; the exact namespace is immaterial to this
+  // protobuf round-trip test. Constructed directly to keep core/remote free of
+  // the model layer (HISTORICAL_DB == namespace index 6).
+  scada::NodeId node_id{scada::String{"4!PendingTaskCount"}, 6};
   protocol::NodeId proto_node_id;
   Convert(node_id, proto_node_id);
   auto restored_node_id = ConvertTo<scada::NodeId>(proto_node_id);

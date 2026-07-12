@@ -94,7 +94,6 @@ endif()
 # UTs
 
 target_link_libraries(scada_core_remote_unittests PRIVATE
-  scada_model
   scada_remote_protocol
   Transport::transport
 )

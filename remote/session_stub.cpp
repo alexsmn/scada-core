@@ -5,7 +5,7 @@
 #include "base/any_executor_dispatch.h"
 #include "base/awaitable.h"
 #include "base/range_util.h"
-#include "model/node_id_util.h"
+#include "scada/node_id_log.h"
 #include "remote/connection.h"
 #include "remote/history_stub.h"
 #include "remote/node_management_stub.h"
@@ -36,7 +36,7 @@ void SetUserIdAttribute(TraceSpan& span, const scada::ServiceContext& context) {
 SessionStub::SessionStub(SessionContext&& context)
     : SessionContext(std::move(context)) {
   LOG_BIND_TAG(logger_, "UserId",
-               NodeIdToScadaString(service_context_.user_id()));
+               NodeIdToLogString(service_context_.user_id()));
   LOG_INFO(logger_) << "Created";
 }
 

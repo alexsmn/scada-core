@@ -6,8 +6,7 @@
 #include "base/check.h"
 #include "base/debug_util.h"
 #include "base/utf_convert.h"
-#include "model/node_id_util.h"
-#include "model/scada_node_ids.h"
+#include "scada/node_id_log.h"
 #include "net/net_boost_logger_adapter.h"
 #include "net/net_executor_adapter.h"
 #include "remote/protocol.h"
@@ -163,14 +162,14 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
 
   auto& user_id = auth_result->user_id;
   LOG_INFO(*logger_) << "Authorization succeeded"
-                     << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                     << LOG_TAG("UserId", NodeIdToLogString(user_id))
                      << LOG_TAG("UserName", ToString(user_name))
                      << LOG_TAG("AuthorizationResult", ToString(*auth_result));
 
   if (!auth_result->multi_sessions &&
       !CheckExistingSession(user_id, user_name, delete_existing)) {
     LOG_WARNING(*logger_) << "Session is already opened"
-                          << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                          << LOG_TAG("UserId", NodeIdToLogString(user_id))
                           << LOG_TAG("UserName", ToString(user_name));
     co_return MakeCreateSessionResult(
         scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
@@ -180,7 +179,7 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
       CreateNewSession(user_id, user_name, auth_result->user_rights);
 
   LOG_INFO(*logger_) << "CreateSessionAsync returning success"
-                     << LOG_TAG("UserId", NodeIdToScadaString(user_id));
+                     << LOG_TAG("UserId", NodeIdToLogString(user_id));
 
   co_return CreateSessionResult{
       .status = scada::StatusCode::Good,
@@ -201,7 +200,7 @@ bool RemoteSessionManager::CheckExistingSession(
       return false;
 
     LOG_WARNING(*logger_) << "Forced log off existing session"
-                          << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                          << LOG_TAG("UserId", NodeIdToLogString(user_id))
                           << LOG_TAG("UserName", user_name)
                           << LOG_TAG(
                                  "Context",
@@ -218,7 +217,7 @@ SessionStub& RemoteSessionManager::CreateNewSession(
     const scada::LocalizedText& user_name,
     unsigned user_rights) {
   LOG_INFO(*logger_) << "Create session"
-                     << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                     << LOG_TAG("UserId", NodeIdToLogString(user_id))
                      << LOG_TAG("UserName", ToString(user_name));
 
   // `SessionContext` still expects a legacy `AnyExecutor`; the
@@ -236,15 +235,15 @@ SessionStub& RemoteSessionManager::CreateNewSession(
   session_map_.insert_or_assign(user_id, std::move(session));
 
   LOG_INFO(*logger_) << "Session stored"
-                     << LOG_TAG("UserId", NodeIdToScadaString(user_id))
+                     << LOG_TAG("UserId", NodeIdToLogString(user_id))
                      << LOG_TAG("SessionCount", session_map_.size());
 
   LOG_INFO(*logger_) << "Notify session-open observers"
-                     << LOG_TAG("UserId", NodeIdToScadaString(user_id));
+                     << LOG_TAG("UserId", NodeIdToLogString(user_id));
   session_opened_signal_(session_ref);
 
   LOG_INFO(*logger_) << "Session creation finalized"
-                     << LOG_TAG("UserId", NodeIdToScadaString(user_id));
+                     << LOG_TAG("UserId", NodeIdToLogString(user_id));
 
   return session_ref;
 }
