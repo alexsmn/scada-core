@@ -38,11 +38,21 @@ constexpr NumericId HasSubtype = 45;
 constexpr NumericId HasModellingRule = 37;
 constexpr NumericId HasEventSource = 36;
 constexpr NumericId HasNotifier = 48;
+// Historized node (source) -> its historical configuration object (target),
+// conventionally browse-named "HA Configuration"; subtype of Aggregates
+// (OPC UA Part 11 §5.3.2 / §5.2.4,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/5.3.2). The
+// historian's external-node historization entries are the targets of this
+// reference (ADR 0002 §2c).
+constexpr NumericId HasHistoricalConfiguration = 56;
 
 constexpr NumericId BaseObjectType = 58;
 constexpr NumericId BaseVariableType = 62;
 constexpr NumericId FolderType = 61;
 constexpr NumericId PropertyType = 68;
+// The per-node historical configuration ObjectType (OPC UA Part 11 §5.2.2,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/5.2.2).
+constexpr NumericId HistoricalDataConfigurationType = 2318;
 
 constexpr NumericId RootFolder = 84;
 constexpr NumericId ObjectsFolder = 85;
