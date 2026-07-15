@@ -1,14 +1,14 @@
 #pragma once
 
-#include "base/awaitable.h"
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "net/test/test_net_interceptors.h"
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/use_future.hpp>
 #include <boost/asio/strand.hpp>
+#include <boost/asio/use_future.hpp>
 #include <transport/intercepting_transport_factory.h>
 #include <transport/transport_factory_impl.h>
 
@@ -41,8 +41,8 @@ struct AsioTestEnvironment {
     auto result = std::make_shared<AsioAwaitableResult<T>>();
     boost::asio::co_spawn(
         executor,
-        [result, awaitable = std::move(awaitable)]() mutable
-            -> Awaitable<void> {
+        [result,
+         awaitable = std::move(awaitable)]() mutable -> Awaitable<void> {
           try {
             if constexpr (std::is_void_v<T>) {
               co_await std::move(awaitable);
@@ -82,6 +82,27 @@ struct AsioTestEnvironment {
     }
   }
 
+  // Pumps the io_context until `result` completes or `timeout` elapses.
+  // Returns true on completion (rethrowing a stored error); false on timeout,
+  // leaving the awaitable pending — it may still complete on later pumps.
+  template <class T>
+  bool WaitResultFor(const std::shared_ptr<AsioAwaitableResult<T>>& result,
+                     std::chrono::steady_clock::duration timeout) {
+    using namespace std::chrono_literals;
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (!result->done && std::chrono::steady_clock::now() < deadline) {
+      RunOneReadyOrBlockFor(1ms);
+    }
+    if (!result->done) {
+      return false;
+    }
+    Poll();
+    if (result->error) {
+      std::rethrow_exception(result->error);
+    }
+    return true;
+  }
+
   template <class T>
   T Wait(Awaitable<T> awaitable) {
     return WaitResult(Start(std::move(awaitable)));
@@ -91,9 +112,20 @@ struct AsioTestEnvironment {
     WaitResult(Start(std::move(awaitable)));
   }
 
+  // Drains every handler that is ready now, plus any that become ready while
+  // draining — but for at most one second. The time budget guards against
+  // self-sustaining io_context work: two in-process device peers polling each
+  // other over loopback TCP can keep the ready queue non-empty on every pass
+  // (each response completes a read that immediately issues the next
+  // request), which turned this drain into an infinite 98%-CPU spin inside
+  // test waits whenever the machine was loaded enough that a new completion
+  // always arrived before poll() ran dry.
   void Poll() {
+    const auto deadline =
+        std::chrono::steady_clock::now() + std::chrono::seconds{1};
     io_context.restart();
-    while (io_context.poll() != 0) {
+    while (io_context.poll() != 0 &&
+           std::chrono::steady_clock::now() < deadline) {
     }
   }
 
@@ -127,9 +159,11 @@ struct AsioTestEnvironment {
   transport::InterceptingTransportFactory transport_factory{
       transport_factory_impl};
 
-  const AnyExecutor executor = boost::asio::make_strand(io_context.get_executor());
+  const AnyExecutor executor =
+      boost::asio::make_strand(io_context.get_executor());
 
-  const AnyExecutorFactory executor_factory = MakeSingleExecutorFactory(executor);
+  const AnyExecutorFactory executor_factory =
+      MakeSingleExecutorFactory(executor);
 
   const AnyExecutorFactory any_executor_factory = executor_factory;
 };
