@@ -2,6 +2,7 @@
 
 #include "base/check.h"
 #include "remote/protocol.h"
+#include "remote/protocol_buffer.h"
 #include "remote/protocol_utils.h"
 #include "remote/session_stub.h"
 
@@ -56,8 +57,9 @@ transport::awaitable<void> ServerConnection::Run() {
   std::vector<char> message;
 
   while (!cancelation.expired()) {
-    // TODO: Revise buffer.
-    message.resize(1024 * 1024);
+    // The framed Scada protocol has no chunking, so the buffer must fit the
+    // largest single message the peer sends (see protocol::kMaxMessageSize).
+    message.resize(protocol::kMaxMessageSize);
     auto bytes_read = co_await transport_.read(message);
 
     if (cancelation.expired()) {

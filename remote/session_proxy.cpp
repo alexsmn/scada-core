@@ -12,6 +12,7 @@
 #include "remote/history_proxy.h"
 #include "remote/node_management_proxy.h"
 #include "remote/protocol.h"
+#include "remote/protocol_buffer.h"
 #include "remote/protocol_message_reader.h"
 #include "remote/protocol_message_transport.h"
 #include "remote/protocol_utils.h"
@@ -553,8 +554,9 @@ transport::awaitable<void> SessionProxy::Connect() {
         co_return;
       }
 
-      // TODO: Set up message size.
-      buffer.resize(1024 * 1024);
+      // The framed Scada protocol has no chunking, so the buffer must fit the
+      // largest single message the server sends (see protocol::kMaxMessageSize).
+      buffer.resize(protocol::kMaxMessageSize);
       auto bytes_read = co_await transport_.read(buffer);
 
       if (cancelation.canceled()) {
