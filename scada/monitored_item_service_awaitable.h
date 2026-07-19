@@ -7,9 +7,17 @@
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
 
+#include <chrono>
 #include <vector>
 
 namespace scada {
+
+// Upper bound on how long an initial-value read waits for its monitored items
+// to report. The wait itself is legitimate — a device value often arrives just
+// after the item is created — but an item whose source never writes a value
+// would otherwise never report at all and suspend the read forever. Items still
+// outstanding when this elapses complete with `Bad_Timeout`.
+inline constexpr std::chrono::seconds kDefaultInitialValueTimeout{5};
 
 // Reads the current value of `read_value_id` by creating a temporary
 // monitored item and awaiting its first notification.
@@ -23,7 +31,8 @@ namespace scada {
     AnyExecutor executor,
     MonitoredItemService& monitored_item_service,
     ReadValueId read_value_id,
-    MonitoringParameters params);
+    MonitoringParameters params,
+    std::chrono::steady_clock::duration timeout = kDefaultInitialValueTimeout);
 
 // Batch variant of `ReadInitialValueAsync`: reads the current values of
 // `read_value_ids` and returns them in input order.
@@ -31,6 +40,7 @@ namespace scada {
     AnyExecutor executor,
     MonitoredItemService& monitored_item_service,
     std::vector<ReadValueId> read_value_ids,
-    MonitoringParameters params);
+    MonitoringParameters params,
+    std::chrono::steady_clock::duration timeout = kDefaultInitialValueTimeout);
 
 }  // namespace scada

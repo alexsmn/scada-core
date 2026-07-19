@@ -4,9 +4,13 @@
 #include "scada/attribute_service.h"
 #include "scada/status.h"
 
+#include <boost/asio/steady_timer.hpp>
+
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <limits>
+#include <memory>
 
 namespace scada {
 namespace {
@@ -45,19 +49,22 @@ Awaitable<DataValue> ReadInitialValueAsync(
     AnyExecutor executor,
     MonitoredItemService& monitored_item_service,
     ReadValueId read_value_id,
-    MonitoringParameters params) {
+    MonitoringParameters params,
+    std::chrono::steady_clock::duration timeout) {
   auto values = co_await ReadInitialValuesAsync(
       std::move(executor), monitored_item_service,
-      std::vector<ReadValueId>{std::move(read_value_id)}, std::move(params));
+      std::vector<ReadValueId>{std::move(read_value_id)}, std::move(params),
+      timeout);
   base::Check(values.size() == 1);
   co_return std::move(values.front());
 }
 
 Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
-    AnyExecutor /*executor*/,
+    AnyExecutor executor,
     MonitoredItemService& monitored_item_service,
     std::vector<ReadValueId> read_value_ids,
-    MonitoringParameters params) {
+    MonitoringParameters params,
+    std::chrono::steady_clock::duration timeout) {
   std::vector<DataValue> results(read_value_ids.size());
   std::vector<bool> completed(read_value_ids.size());
   std::size_t remaining = read_value_ids.size();
@@ -73,7 +80,9 @@ Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
     co_return results;
   }
 
-  auto subscription = std::move(*subscription_result);
+  // Shared so the timeout handler below can outlive this coroutine safely.
+  const std::shared_ptr<MonitoredItemSubscription> subscription =
+      std::move(*subscription_result);
   std::vector<MonitoredItemCreateRequest> requests;
   requests.reserve(read_value_ids.size());
   for (std::size_t i = 0; i < read_value_ids.size(); ++i) {
@@ -107,6 +116,22 @@ Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
     }
   }
 
+  // Bound the wait. Closing the subscription makes the pending (and any
+  // subsequent) ReadNext return the close status, which the loop below turns
+  // into Bad_Timeout for every item that has not reported yet. Without this an
+  // item whose source never writes a value leaves the read suspended forever.
+  std::shared_ptr<boost::asio::steady_timer> timeout_timer;
+  if (executor) {
+    timeout_timer = std::make_shared<boost::asio::steady_timer>(executor);
+    timeout_timer->expires_after(timeout);
+    timeout_timer->async_wait(
+        [timeout_timer, subscription](boost::system::error_code error) {
+          if (error)  // cancelled after the read completed
+            return;
+          subscription->Close(StatusCode::Bad_Timeout);
+        });
+  }
+
   while (remaining != 0) {
     auto notifications = co_await subscription->ReadNext(remaining);
     if (!notifications.ok()) {
@@ -114,9 +139,10 @@ Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
         CompleteWithStatus(results, completed, remaining, i,
                            notifications.status().code());
       }
-      co_return results;
+      break;
     }
 
+    bool overflowed = false;
     for (const auto& notification : *notifications) {
       if (const auto* data_change =
               std::get_if<DataChangeNotification>(&notification)) {
@@ -132,10 +158,17 @@ Awaitable<std::vector<DataValue>> ReadInitialValuesAsync(
           CompleteWithStatus(results, completed, remaining, i,
                              overflow->status.code());
         }
-        co_return results;
+        overflowed = true;
+        break;
       }
     }
+
+    if (overflowed)
+      break;
   }
+
+  if (timeout_timer)
+    timeout_timer->cancel();
 
   co_return results;
 }

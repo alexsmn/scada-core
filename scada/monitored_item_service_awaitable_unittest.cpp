@@ -131,6 +131,24 @@ TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
                           Field(&DataValue::value, Variant{22})));
 }
 
+// An item whose source never writes a value must not suspend the read forever:
+// the initial-value wait is bounded and completes Bad_Timeout. This is what
+// stalled fetches of device metrics the driver never produces.
+TEST(MonitoredItemServiceAwaitable, ReadTimesOutWhenItemNeverReports) {
+  TestExecutor executor;
+  TestMonitoredItemService service;
+  service.items.emplace(NodeId{1, 1}, std::make_shared<TestMonitoredItem>());
+
+  auto read_result = StartAwaitable(
+      executor,
+      ReadInitialValueAsync(executor, service, ReadValueId{NodeId{1, 1}},
+                            /*params=*/{},
+                            /*timeout=*/std::chrono::milliseconds{20}));
+
+  EXPECT_THAT(WaitResult(executor, read_result),
+              Field(&DataValue::status_code, StatusCode::Bad_Timeout));
+}
+
 TEST(MonitoredItemServiceAwaitable, ReadInitialValueReturnsFirstDataChange) {
   TestExecutor executor;
   TestMonitoredItemService service;
