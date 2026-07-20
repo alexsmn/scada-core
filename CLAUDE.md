@@ -197,7 +197,6 @@ scada_module_unittests(module_name source_files)
 **Required:**
 - Boost (atomic, context, date_time, filesystem, json, log, program_options, thread)
 - Protobuf 3
-- ChromiumBase
 - Net (networking abstraction)
 
 **Optional:**
@@ -280,7 +279,14 @@ GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`):
 
 ## Chromium-Base Dependencies
 
-See [chromium_deps.md](chromium_deps.md) for a detailed analysis of chromium-base usage across core modules, including dependency ranking, most-used headers, and the CMake link chain.
+None. The former `ChromiumBase::base` dependency was fully removed; the
+chromium-heritage `base/...` headers under `base/` (`at_exit.h`,
+`threading/`, `win/scoped_*.h`, etc.) are scada-owned, std-based
+reimplementations in `namespace scada::base`. The replacements were:
+`std::filesystem` (paths/files), `boost::json` (for `base::Value`),
+`boost::program_options` (for `base::CommandLine`), `std::to_chars`
+(for `dmg_fp::g_fmt`), and local API-compatible `base::PathService`,
+`base::win::ScopedHandle`, and `base/time/time.h`.
 
 ## Important Files Reference
 
