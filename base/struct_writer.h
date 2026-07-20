@@ -67,7 +67,8 @@ inline StructWriter& StructWriter::AddBitMaskField(
     std::span<const std::string_view> bit_strings) {
   if (count_ != 0)
     stream_ << ", ";
-  stream_ << name << ": " << base::BitMaskToString(bit_mask, bit_strings);
+  stream_ << name << ": "
+          << scada::base::BitMaskToString(bit_mask, bit_strings);
   ++count_;
   return *this;
 }

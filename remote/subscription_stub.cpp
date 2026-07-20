@@ -60,7 +60,7 @@ void SubscriptionStub::OnCreateMonitoredItem(
   }
 
   auto monitored_item_id = next_monitored_item_id_++;
-  base::Check(!monitored_items_.contains(monitored_item_id));
+  scada::base::Check(!monitored_items_.contains(monitored_item_id));
 
   LOG_INFO(logger_) << "Create monitored item complete"
                     << LOG_TAG("RequestId", request_id)
@@ -132,8 +132,8 @@ void SubscriptionStub::OnDataChange(MonitoredItemId monitored_item_id,
     return;
   }
 
-  base::Check(!data_value.qualifier.failed() ||
-         scada::IsBad(data_value.status_code));
+  scada::base::Check(!data_value.qualifier.failed() ||
+                     scada::IsBad(data_value.status_code));
 
   if (scada::IsBad(data_value.status_code)) {
     const ItemInfo& item_info = i->second;

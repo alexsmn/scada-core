@@ -9,7 +9,6 @@
 #include <mutex>
 #include <unordered_map>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 // Bridges the SCADA `TraceSink` contract to OpenTelemetry spans: every live

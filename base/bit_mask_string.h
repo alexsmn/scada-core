@@ -4,7 +4,6 @@
 #include <string>
 #include <string_view>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Renders the set bits of `bit_mask` as a JSON-style array of their labels,

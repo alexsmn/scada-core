@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "base/base_compat.h"
 namespace scada::base {
 class Time;
 }
@@ -16,4 +15,4 @@ enum TimeFormatFlags {
 	TIME_FORMAT_DEFAULT	= TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC,
 };
 
-std::string FormatTime(base::Time time, int flags = TIME_FORMAT_DEFAULT);
+std::string FormatTime(scada::base::Time time, int flags = TIME_FORMAT_DEFAULT);

@@ -2,7 +2,6 @@
 
 #include "base/time/time.h"
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Overrides base::Time::Now() in tests. When constructed, sets a fixed time

@@ -68,7 +68,7 @@ inline std::string ToString(scada::NodeClass node_class) {
     case scada::NodeClass::View:
       return "View";
     default:
-      base::NotReached();
+      scada::base::NotReached();
       return "Unknown";
   };
 }

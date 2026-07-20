@@ -4,7 +4,6 @@
 
 #include <vector>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 // Fans span events out to a fixed set of sinks (e.g. the hung-span watchdog

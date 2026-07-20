@@ -2,7 +2,6 @@
 
 #include "base/time/clock.h"
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // A simple test clock that returns a fixed time. Call SetNow() to change it.

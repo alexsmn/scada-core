@@ -2,7 +2,6 @@
 
 #include <windows.h>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // A simple wrapper around a Windows manual-reset event, replacing the

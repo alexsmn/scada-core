@@ -4,7 +4,6 @@
 
 #include <string>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 // Settings for the structured (JSON-lines) console log formatter.

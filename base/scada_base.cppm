@@ -100,7 +100,7 @@ module;
 export module scada.base;
 
 // ---- namespace base ----
-export namespace base {
+export namespace scada::base {
 
 // check.h / panic.h
 using scada::base::Check;
@@ -192,7 +192,7 @@ using scada::base::UnescapeRule::Type;
 using scada::base::WaitableEvent;
 #endif
 
-}  // namespace base
+}  // namespace scada::base
 
 // ---- global namespace ----
 export {

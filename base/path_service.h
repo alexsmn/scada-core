@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <functional>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 enum {

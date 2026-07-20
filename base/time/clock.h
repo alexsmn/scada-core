@@ -2,7 +2,6 @@
 
 #include "base/time/time.h"
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Abstract clock interface. Allows injecting a mock clock for testing.

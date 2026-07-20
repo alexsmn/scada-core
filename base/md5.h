@@ -10,7 +10,6 @@
 #include <string>
 #include <string_view>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 inline std::string MD5String(std::string_view input) {

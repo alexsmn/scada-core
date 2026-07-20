@@ -361,11 +361,11 @@ Awaitable<void> SessionStub::OnReadAsync(
   }
   SetUserIdAttribute(span, context);
   span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
-  span.SetAttribute(
-      "scada.node_ids",
-      metrics::JoinForAttribute(inputs, [](const scada::ReadValueId& input) {
-        return input.node_id.ToString();
-      }));
+  span.SetAttribute("scada.node_ids",
+                    scada::metrics::JoinForAttribute(
+                        inputs, [](const scada::ReadValueId& input) {
+                          return input.node_id.ToString();
+                        }));
 
   const auto input_count = inputs.size();
   auto result = co_await services_.attribute_service->Read(std::move(context),
@@ -401,11 +401,11 @@ Awaitable<void> SessionStub::OnWriteAsync(
   }
   SetUserIdAttribute(span, context);
   span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
-  span.SetAttribute(
-      "scada.node_ids",
-      metrics::JoinForAttribute(inputs, [](const scada::WriteValue& input) {
-        return input.node_id.ToString();
-      }));
+  span.SetAttribute("scada.node_ids",
+                    scada::metrics::JoinForAttribute(
+                        inputs, [](const scada::WriteValue& input) {
+                          return input.node_id.ToString();
+                        }));
 
   const auto input_count = inputs.size();
   auto result = co_await services_.attribute_service->Write(std::move(context),

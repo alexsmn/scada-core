@@ -37,7 +37,8 @@ class ThreadChecker {
   // Panics unless called on the bound thread.
   void CheckCalledOnValidThread(const std::source_location& location =
                                     std::source_location::current()) const {
-    base::Check(CalledOnValidThread(), "Called on invalid thread", location);
+    scada::base::Check(CalledOnValidThread(), "Called on invalid thread",
+                       location);
   }
 
   // Unbinds the checker; the next thread that checks becomes the bound one.

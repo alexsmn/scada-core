@@ -102,7 +102,7 @@ std::wstring LoadResourceString(HMODULE module, unsigned id) {
 }
 
 std::wstring GetWindowText(HWND window_handle) {
-  base::Check(IsWindow(window_handle));
+  scada::base::Check(IsWindow(window_handle));
   int len = GetWindowTextLength(window_handle) + 1;
   std::wstring str;
   if (len > 1)

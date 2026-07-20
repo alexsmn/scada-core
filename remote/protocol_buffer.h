@@ -23,12 +23,12 @@ constexpr size_t kHeaderSize = sizeof(MessageSizeType);
 constexpr size_t kMaxMessageSize = 16 * 1024 * 1024;
 
 inline size_t GetMessagePayloadSize(std::span<const char> message) {
-  base::Check(message.size() >= sizeof(MessageSizeType));
+  scada::base::Check(message.size() >= sizeof(MessageSizeType));
   return reinterpret_cast<const MessageSizeType&>(message[0]);
 }
 
 inline const void* GetMessagePayload(std::span<const char> message) {
-  base::Check(message.size() >= sizeof(MessageSizeType));
+  scada::base::Check(message.size() >= sizeof(MessageSizeType));
   return &message[sizeof(MessageSizeType)];
 }
 
@@ -45,7 +45,7 @@ inline void AppendMessage(std::string& message, const void* data, size_t size) {
 }
 
 inline void PrependMessageSize(std::string& message) {
-  base::Check(message.empty());
+  scada::base::Check(message.empty());
   message.resize(sizeof(MessageSizeType));
 }
 

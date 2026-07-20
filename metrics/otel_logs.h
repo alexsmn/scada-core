@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 // Defines OpenTelemetry log exporter and resource settings for the process.

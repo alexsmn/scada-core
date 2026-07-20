@@ -12,7 +12,6 @@ std::string EscapeQueryParamValue(std::string_view text, bool use_plus);
 // non-printable, non-7bit, and (including space)  "#%:<>?[\]^`{|}
 std::string EscapePath(std::string_view path);
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 namespace UnescapeRule {

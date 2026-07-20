@@ -10,7 +10,6 @@
 #include <memory>
 #include <vector>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Executor-affine one-shot async completion gate.

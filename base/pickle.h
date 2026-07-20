@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 class Pickle {

@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 template <typename T>

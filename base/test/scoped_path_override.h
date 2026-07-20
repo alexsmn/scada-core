@@ -4,7 +4,6 @@
 
 #include <filesystem>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Overrides a PathService key to a temporary directory for the duration of a

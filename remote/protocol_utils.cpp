@@ -68,7 +68,7 @@ void Convert(const scada::NodeId& source, protocol::NodeId& target) {
                            source.opaque_id().size());
       break;
     default:
-      base::NotReached();
+      scada::base::NotReached();
   }
 }
 
@@ -201,7 +201,7 @@ void Convert(const protocol::Variant& source, scada::Variant& target) {
         break;
       case scada::Variant::DATE_TIME:
         target = scada::DateTime::FromDeltaSinceWindowsEpoch(
-            base::TimeDelta::FromMicroseconds(source.time_value_time()));
+            scada::base::TimeDelta::FromMicroseconds(source.time_value_time()));
         break;
       case scada::Variant::EXTENSION_OBJECT:
         target =
@@ -338,7 +338,7 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
                 *target.mutable_extension_object_value());
         break;
       default:
-        base::NotReached();
+        scada::base::NotReached();
     }
 
   } else {
@@ -397,16 +397,16 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
                 *target.mutable_extension_object_array());
         break;
       default:
-        base::NotReached();
+        scada::base::NotReached();
     }
   }
 }
 
 void Convert(const protocol::DataValue& source, scada::DataValue& target) {
   if (source.server_time())
-    target.server_timestamp = base::DecodeWireTime(source.server_time());
+    target.server_timestamp = scada::base::DecodeWireTime(source.server_time());
   if (source.source_time())
-    target.source_timestamp = base::DecodeWireTime(source.source_time());
+    target.source_timestamp = scada::base::DecodeWireTime(source.source_time());
   if (source.has_value())
     Convert(source.value(), target.value);
   target.qualifier = scada::Qualifier(source.qualifier());
@@ -414,8 +414,10 @@ void Convert(const protocol::DataValue& source, scada::DataValue& target) {
 }
 
 void Convert(const scada::DataValue& source, protocol::DataValue& target) {
-  target.set_server_time(base::EncodeWireMicroseconds(source.server_timestamp));
-  target.set_source_time(base::EncodeWireMicroseconds(source.source_timestamp));
+  target.set_server_time(
+      scada::base::EncodeWireMicroseconds(source.server_timestamp));
+  target.set_source_time(
+      scada::base::EncodeWireMicroseconds(source.source_timestamp));
   if (!source.value.is_null())
     Convert(source.value, *target.mutable_value());
   target.set_qualifier(source.qualifier.raw());
@@ -444,7 +446,7 @@ void Convert(const scada::Status& source, protocol::Status& target) {
 
 void Convert(const protocol::Event& source, scada::Event& target) {
   target.event_id = source.event_id();
-  target.time = base::DecodeWireTime(source.time());
+  target.time = scada::base::DecodeWireTime(source.time());
   target.severity = source.severity();
   if (source.has_source_node_id())
     Convert(source.source_node_id(), target.node_id);
@@ -456,17 +458,18 @@ void Convert(const protocol::Event& source, scada::Event& target) {
   target.message = UtfConvert<char16_t>(source.message_utf8());
   target.acked = source.acknowledged();
   if (source.acknowledge_time()) {
-    target.acknowledged_time = base::DecodeWireTime(source.acknowledge_time());
+    target.acknowledged_time =
+        scada::base::DecodeWireTime(source.acknowledge_time());
   }
   if (source.has_acknowledge_user_id())
     Convert(source.acknowledge_user_id(), target.acknowledged_user_id);
 }
 
 void Convert(const scada::Event& source, protocol::Event& target) {
-  base::Check(source.event_id != 0);
+  scada::base::Check(source.event_id != 0);
 
   target.set_event_id(source.event_id);
-  target.set_time(base::EncodeWireMicroseconds(source.time));
+  target.set_time(scada::base::EncodeWireMicroseconds(source.time));
   target.set_severity(source.severity);
   if (!source.node_id.is_null())
     Convert(source.node_id, *target.mutable_source_node_id());
@@ -482,7 +485,7 @@ void Convert(const scada::Event& source, protocol::Event& target) {
     target.set_acknowledged(true);
   if (!source.acknowledged_time.is_null())
     target.set_acknowledge_time(
-        base::EncodeWireMicroseconds(source.acknowledged_time));
+        scada::base::EncodeWireMicroseconds(source.acknowledged_time));
   if (!source.acknowledged_user_id.is_null())
     Convert(source.acknowledged_user_id, *target.mutable_acknowledge_user_id());
 }
@@ -655,8 +658,8 @@ void Convert(const protocol::BrowsePathTarget& source,
 
 void Convert(const scada::BrowsePathTarget& source,
              protocol::BrowsePathTarget& target) {
-  base::Check(source.target_id.server_index() == 0);
-  base::Check(source.target_id.namespace_uri().empty());
+  scada::base::Check(source.target_id.server_index() == 0);
+  scada::base::Check(source.target_id.namespace_uri().empty());
   Convert(source.target_id.node_id(), *target.mutable_target_id());
   target.set_remaining_path_index(source.remaining_path_index);
 }
@@ -706,7 +709,7 @@ void Convert(const protocol::ModelChangeEvent& source,
 
 void Convert(const scada::ModelChangeEvent& source,
              protocol::ModelChangeEvent& target) {
-  base::Check(IsValid(source));
+  scada::base::Check(IsValid(source));
 
   if (!source.node_id.is_null())
     Convert(source.node_id, *target.mutable_node_id());
@@ -725,15 +728,15 @@ void Convert(const scada::ModelChangeEvent& source,
 
 void Convert(const protocol::AggregateFilter& source,
              scada::AggregateFilter& target) {
-  target.start_time = base::DecodeWireTime(source.start_time());
-  target.interval = base::DecodeWireDelta(source.interval());
+  target.start_time = scada::base::DecodeWireTime(source.start_time());
+  target.interval = scada::base::DecodeWireDelta(source.interval());
   Convert(source.aggregate_type(), target.aggregate_type);
 }
 
 void Convert(const scada::AggregateFilter& source,
              protocol::AggregateFilter& target) {
-  target.set_start_time(base::EncodeWireMicroseconds(source.start_time));
-  target.set_interval(base::EncodeWireMicroseconds(source.interval));
+  target.set_start_time(scada::base::EncodeWireMicroseconds(source.start_time));
+  target.set_interval(scada::base::EncodeWireMicroseconds(source.interval));
   Convert(std::move(source.aggregate_type), *target.mutable_aggregate_type());
 }
 

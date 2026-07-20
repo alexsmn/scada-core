@@ -29,13 +29,13 @@ class TimedCache {
     explicit CacheEntry(T&& value) : value{std::forward<T>(value)} {}
 
     Value value;
-    base::TimeTicks expiration_time;
+    scada::base::TimeTicks expiration_time;
   };
 
   void OnTimer();
 
-  const base::TimeDelta cache_duration_ =
-      base::TimeDelta::FromSeconds(kCacheDurationS);
+  const scada::base::TimeDelta cache_duration_ =
+      scada::base::TimeDelta::FromSeconds(kCacheDurationS);
 
   std::map<Key, CacheEntry> map_;
 
@@ -67,7 +67,7 @@ template <class Key, class Value>
   requires std::totally_ordered<Key>
 template <class T>
 inline void TimedCache<Key, Value>::Add(const Key& key, T&& value) {
-  base::Check(map_.find(key) == map_.end());
+  scada::base::Check(map_.find(key) == map_.end());
   map_.emplace(std::piecewise_construct, std::forward_as_tuple(key),
                std::forward_as_tuple(std::forward<T>(value)));
 }
@@ -75,13 +75,13 @@ inline void TimedCache<Key, Value>::Add(const Key& key, T&& value) {
 template <class Key, class Value>
   requires std::totally_ordered<Key>
 inline void TimedCache<Key, Value>::OnTimer() {
-  base::TimeTicks time = base::TimeTicks::Now();
+  scada::base::TimeTicks time = scada::base::TimeTicks::Now();
   for (auto i = map_.begin(); i != map_.end();) {
     auto& entry = i->second;
     if (IsTimedCacheExpired(entry.value)) {
       if (entry.expiration_time.is_null()) {
         // Expiration timer started.
-        entry.expiration_time = base::TimeTicks::Now();
+        entry.expiration_time = scada::base::TimeTicks::Now();
       } else if (time - entry.expiration_time >= cache_duration_) {
         // Expired.
         map_.erase(i++);

@@ -85,7 +85,7 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
   }
   span.SetAttribute("scada.input_count", std::to_string(inputs.size()));
   span.SetAttribute("scada.node_ids",
-                    metrics::JoinForAttribute(
+                    scada::metrics::JoinForAttribute(
                         inputs, [](const scada::BrowseDescription& input) {
                           return input.node_id.ToString();
                         }));

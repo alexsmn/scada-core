@@ -9,7 +9,6 @@
 #include <windows.h>
 #endif
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 class Environment {

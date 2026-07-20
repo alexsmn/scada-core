@@ -26,7 +26,6 @@
 #include <optional>
 #include <string>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Common base so a single constrained operator<< serves every wrapper.
@@ -99,9 +98,10 @@ auto operator<<(StreamT& stream, const W& wrapper)
 }  // namespace scada::base
 
 template <class R>
-struct std::formatter<base::ListDump<R>> : base::internal::DumpParse {
+struct std::formatter<scada::base::ListDump<R>>
+    : scada::base::internal::DumpParse {
   template <class FormatContext>
-  auto format(const base::ListDump<R>& w, FormatContext& ctx) const {
+  auto format(const scada::base::ListDump<R>& w, FormatContext& ctx) const {
     typename FormatContext::iterator out = ctx.out();
     *out++ = '[';
     bool first = true;
@@ -117,9 +117,10 @@ struct std::formatter<base::ListDump<R>> : base::internal::DumpParse {
 };
 
 template <class M>
-struct std::formatter<base::DictDump<M>> : base::internal::DumpParse {
+struct std::formatter<scada::base::DictDump<M>>
+    : scada::base::internal::DumpParse {
   template <class FormatContext>
-  auto format(const base::DictDump<M>& w, FormatContext& ctx) const {
+  auto format(const scada::base::DictDump<M>& w, FormatContext& ctx) const {
     typename FormatContext::iterator out = ctx.out();
     *out++ = '{';
     bool first = true;
@@ -135,9 +136,10 @@ struct std::formatter<base::DictDump<M>> : base::internal::DumpParse {
 };
 
 template <class T>
-struct std::formatter<base::OptDump<T>> : base::internal::DumpParse {
+struct std::formatter<scada::base::OptDump<T>>
+    : scada::base::internal::DumpParse {
   template <class FormatContext>
-  auto format(const base::OptDump<T>& w, FormatContext& ctx) const {
+  auto format(const scada::base::OptDump<T>& w, FormatContext& ctx) const {
     if (w.opt.has_value())
       return std::format_to(ctx.out(), "{}", *w.opt);
     return std::format_to(ctx.out(), "nullopt");

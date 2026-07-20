@@ -23,7 +23,7 @@ namespace {
 TEST(ScadaBaseModuleMixed, ImportAndIncludeCoexist) {
   // Callable via the imported name and the included declaration alike;
   // both must resolve to the same entity.
-  base::Check(true, "mixed mode");
+  scada::base::Check(true, "mixed mode");
   EXPECT_EQ(Format(123456), "123456");
 }
 

@@ -6,7 +6,6 @@
 
 #include "base/panic.h"
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Hardened invariant checks - active in ALL build types, including

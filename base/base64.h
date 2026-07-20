@@ -4,7 +4,6 @@
 #include <string>
 #include <string_view>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 inline void Base64Encode(std::string_view input, std::string* output) {

@@ -2,7 +2,6 @@
 
 #include "base/time/clock.h"
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Default clock implementation using base::Time::Now().

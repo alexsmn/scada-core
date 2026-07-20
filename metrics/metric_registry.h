@@ -3,7 +3,6 @@
 #include <functional>
 #include <string_view>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 struct MetricValue {};

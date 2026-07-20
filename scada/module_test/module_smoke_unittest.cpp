@@ -59,9 +59,9 @@ TEST(ScadaCoreModuleSmoke, ServicesAggregateAndTransitiveBase) {
   EXPECT_EQ(services.attribute_service, nullptr);
 
   // Transitive scada.base and scada.metrics surfaces via export import.
-  base::Check(true, "core module smoke");
+  scada::base::Check(true, "core module smoke");
   EXPECT_EQ(Format(42), "42");
-  EXPECT_EQ(metrics::NormalizeGrpcEndpoint("https://h:1"), "h:1");
+  EXPECT_EQ(scada::metrics::NormalizeGrpcEndpoint("https://h:1"), "h:1");
 }
 
 }  // namespace

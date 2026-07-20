@@ -29,5 +29,5 @@ class SharedEvent {
   }
 
  private:
-  base::win::ScopedHandle handle_;
+  scada::base::win::ScopedHandle handle_;
 };

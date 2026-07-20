@@ -6,7 +6,6 @@
 #include <map>
 #include <unordered_map>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // A most-recently-used cache, compatible with the ChromiumBase API.

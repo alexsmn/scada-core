@@ -12,7 +12,6 @@
 #include "metrics/meter.h"
 #include "metrics/metric_value.h"
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 struct MetricPoint {

@@ -2,7 +2,6 @@
 #include <OAIdl.h>  // VARIANT
 #include <cstdint>
 
-#include "base/base_compat.h"
 namespace scada::base {
 namespace win {
 

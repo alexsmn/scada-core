@@ -39,7 +39,7 @@ export module scada.metrics;
 
 export import scada.base;
 
-export namespace metrics {
+export namespace scada::metrics {
 
 // composite_trace_sink.h / otel_trace_sink.h
 using scada::metrics::CompositeTraceSink;
@@ -84,7 +84,7 @@ using scada::metrics::OpenTelemetryTracesOptions;
 // trace_attribute_util.h
 using scada::metrics::JoinForAttribute;
 
-}  // namespace metrics
+}  // namespace scada::metrics
 
 export {
   // aggregated_metric.h / metric_value.h

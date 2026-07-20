@@ -164,7 +164,7 @@ void InitBoostLogging(const BoostLogParams& params) {
   // the structured JSON formatter from `log.console_format`).
   using ConsoleSink =
       std::remove_reference_t<decltype(*boost::log::add_console_log())>;
-  static base::NoDestructor<boost::shared_ptr<ConsoleSink>> console_sink;
+  static scada::base::NoDestructor<boost::shared_ptr<ConsoleSink>> console_sink;
   if (params.console) {
     if (!*console_sink) {
       *console_sink = boost::log::add_console_log();

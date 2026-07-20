@@ -4,7 +4,7 @@
 #include <windows.h>
 
 static HGLOBAL CreateHGlobal(const void* data, size_t size) {
-  base::Check(size > 0);
+  scada::base::Check(size > 0);
 
   HGLOBAL global = GlobalAlloc(GMEM_MOVEABLE, size);
   if (!global)
@@ -68,9 +68,9 @@ void Clipboard::Close() {
 }
 
 bool Clipboard::SetData(unsigned format, const void* data, size_t size) {
-  base::Check(data);
-  base::Check(size > 0);
-  
+  scada::base::Check(data);
+  scada::base::Check(size > 0);
+
   if (!Open())
     return false;
   

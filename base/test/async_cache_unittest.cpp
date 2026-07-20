@@ -8,7 +8,7 @@ using namespace std::chrono_literals;
 
 TEST(AsyncCache, WaitersShareOneStartedFetch) {
   TestExecutor executor;
-  base::AsyncCache<int, int> cache{executor};
+  scada::base::AsyncCache<int, int> cache{executor};
   int starts = 0;
 
   auto first = StartAwaitable(executor, cache.Wait(1, [&](int key) {
@@ -35,7 +35,7 @@ TEST(AsyncCache, WaitersShareOneStartedFetch) {
 
 TEST(AsyncCache, CompletedValueIsReused) {
   TestExecutor executor;
-  base::AsyncCache<int, int> cache{executor};
+  scada::base::AsyncCache<int, int> cache{executor};
   int starts = 0;
 
   auto first = StartAwaitable(executor, cache.Wait(1, [&](int key) {
@@ -59,7 +59,7 @@ TEST(AsyncCache, CompletedValueIsReused) {
 
 TEST(AsyncCache, PendingKeysExposeUnstartedWaiters) {
   TestExecutor executor;
-  base::AsyncCache<int, int> cache{executor};
+  scada::base::AsyncCache<int, int> cache{executor};
 
   auto first = StartAwaitable(executor, cache.Wait(1, [](int) {}));
   auto second = StartAwaitable(executor, cache.Wait(2, [](int) {}));

@@ -185,7 +185,7 @@ void SessionProxy::OnTransportOpened() {
 }
 
 void SessionProxy::OnSessionCreated() {
-  base::Check(!session_created_);
+  scada::base::Check(!session_created_);
   session_created_ = true;
   pending_connect_result_.reset();
 
@@ -359,7 +359,7 @@ Awaitable<scada::Status> SessionProxy::DisconnectAsync() {
 }
 
 void SessionProxy::Send(protocol::Message& message) {
-  base::Check(message.IsInitialized());
+  scada::base::Check(message.IsInitialized());
 
   // TODO: Enforce with base::Check once all proxy objects support
   // MonitoredItemService reconnection.
@@ -472,7 +472,7 @@ void SessionProxy::Request(protocol::Request& request,
   debugger_->NotifyRequestEvent(event);
 
   request.set_request_id(request_id);
-  base::Check(request.IsInitialized());
+  scada::base::Check(request.IsInitialized());
 
   protocol::Message message;
   message.add_requests()->Swap(&request);
@@ -490,7 +490,7 @@ Awaitable<scada::Status> SessionProxy::ConnectStatus(
 
 Awaitable<scada::Status> SessionProxy::ConnectAsync(
     scada::SessionConnectParams params) {
-  base::Check(!transport_);
+  scada::base::Check(!transport_);
 
   if (session_created_) {
     co_return scada::StatusCode::Bad;
@@ -698,8 +698,8 @@ Awaitable<void> SessionProxy::ReconnectAsync() {
   write_queue_.reset();
   transport_.reset();
 
-  connect_completion_ = base::AsyncCompletion{executor_};
-  connect_loop_completion_ = base::AsyncCompletion{executor_};
+  connect_completion_ = scada::base::AsyncCompletion{executor_};
+  connect_loop_completion_ = scada::base::AsyncCompletion{executor_};
   pending_connect_result_.reset();
   connect_status_ = scada::StatusCode::Good;
 
@@ -733,11 +733,12 @@ Awaitable<void> SessionProxy::ReconnectAsync() {
   co_await connect_completion_.Wait();
 }
 
-bool SessionProxy::IsConnected(base::TimeDelta* ping_delay) const {
+bool SessionProxy::IsConnected(scada::base::TimeDelta* ping_delay) const {
   if (ping_delay) {
     *ping_delay = last_ping_delay_;
     if (!ping_time_.is_null())
-      *ping_delay = std::max(*ping_delay, base::TimeTicks::Now() - ping_time_);
+      *ping_delay =
+          std::max(*ping_delay, scada::base::TimeTicks::Now() - ping_time_);
   }
   return session_created_;
 }
@@ -755,10 +756,10 @@ void SessionProxy::SchedulePing() {
 }
 
 void SessionProxy::Ping() {
-  base::Check(ping_time_.is_null());
+  scada::base::Check(ping_time_.is_null());
 
-  ping_time_ = base::TimeTicks::Now();
-  ping_completion_ = base::AsyncCompletion{executor_};
+  ping_time_ = scada::base::TimeTicks::Now();
+  ping_completion_ = scada::base::AsyncCompletion{executor_};
   auto lifetime = std::weak_ptr<void>{lifetime_};
   boost::asio::co_spawn(
       executor_, PingAsync(),
@@ -788,7 +789,7 @@ Awaitable<void> SessionProxy::PingAsync() {
   if (!transport_)
     co_return;
 
-  last_ping_delay_ = base::TimeTicks::Now() - ping_time_;
+  last_ping_delay_ = scada::base::TimeTicks::Now() - ping_time_;
   ping_time_ = {};
   SchedulePing();
 }

@@ -60,16 +60,16 @@ inline ViewServiceChannel::ViewServiceChannel(scada::ViewService& view_service)
             for (auto& notification : message.notifications())
               proxy_.OnNotification(notification);
           },
-          [this](protocol::Request& request, MessageSender::ResponseHandler response_handler) {
-            base::NotReached();
+          [this](protocol::Request& request,
+                 MessageSender::ResponseHandler response_handler) {
+            scada::base::NotReached();
           },
       },
       stub_{stub_sender_, service_, logger_},
       proxy_sender_{
-          [this](protocol::Message& message) {
-            base::NotReached();
-          },
-          [this](protocol::Request& request, MessageSender::ResponseHandler response_handler) {
+          [this](protocol::Message& message) { scada::base::NotReached(); },
+          [this](protocol::Request& request,
+                 MessageSender::ResponseHandler response_handler) {
             proxy_requests_.emplace(request.request_id(), std::move(response_handler));
             stub_.OnRequestReceived(request);
           },

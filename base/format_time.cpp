@@ -3,7 +3,7 @@
 #include "base/time/time.h"
 #include <format>
 
-std::string FormatTime(base::Time time, int flags) {
+std::string FormatTime(scada::base::Time time, int flags) {
   if (time.is_null())
     return {};
 
@@ -13,7 +13,7 @@ std::string FormatTime(base::Time time, int flags) {
   if (time.is_max())
     return "max";
 
-  base::Time::Exploded e = {0};
+  scada::base::Time::Exploded e = {0};
   if (flags & TIME_FORMAT_UTC)
     time.UTCExplode(&e);
   else

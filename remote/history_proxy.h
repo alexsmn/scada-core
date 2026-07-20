@@ -17,8 +17,8 @@ class HistoryProxy : public scada::HistoryService {
       scada::HistoryReadRawDetails details) override;
   virtual Awaitable<scada::HistoryReadEventsResult> HistoryReadEvents(
       scada::NodeId node_id,
-      base::Time from,
-      base::Time to,
+      scada::base::Time from,
+      scada::base::Time to,
       scada::EventFilter filter) override;
 
  private:

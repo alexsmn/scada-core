@@ -54,7 +54,7 @@ void TraceSinkImpl::Core::StartSpan(const TraceSpanId& span_id,
 
   {
     std::lock_guard lock{mutex_};
-    base::Check(!active_spans_.contains(span_id));
+    scada::base::Check(!active_spans_.contains(span_id));
     active_spans_.try_emplace(span_id, std::string{name}, parent_span_id);
   }
 

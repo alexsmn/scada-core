@@ -19,7 +19,7 @@ int64_t FileTimeToMicroseconds(const FILETIME& ft) {
 }
 
 void MicrosecondsToFileTime(int64_t us, FILETIME* ft) {
-  base::Check(us >= 0);
+  scada::base::Check(us >= 0);
   int64_t val = us * 10;
   std::memcpy(ft, &val, sizeof(*ft));
 }

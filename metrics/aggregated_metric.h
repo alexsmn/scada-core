@@ -11,22 +11,22 @@ class AggregatedMetric {
   bool empty() const { return count_ == 0; }
 
   T min() const {
-    base::Check(!empty());
+    scada::base::Check(!empty());
     return min_;
   }
 
   T max() const {
-    base::Check(!empty());
+    scada::base::Check(!empty());
     return max_;
   }
 
   T mean() const {
-    base::Check(!empty());
+    scada::base::Check(!empty());
     return sum_ / count_;
   }
 
   T sum() const {
-    base::Check(!empty());
+    scada::base::Check(!empty());
     return sum_;
   }
 

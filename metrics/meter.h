@@ -6,7 +6,6 @@
 #include <string>
 #include <string_view>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 using MetricAttributes = std::map<std::string, std::string>;

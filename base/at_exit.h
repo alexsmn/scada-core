@@ -4,7 +4,6 @@
 #include <mutex>
 #include <stack>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 class AtExitManager {

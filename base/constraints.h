@@ -10,8 +10,10 @@ class ScopedInvariant {
   explicit ScopedInvariant(Func&& func) {}
   ~ScopedInvariant() {}
 #else
-  explicit ScopedInvariant(Func&& func) : func_{func} { base::Check(func_()); }
-  ~ScopedInvariant() { base::Check(func_()); }
+  explicit ScopedInvariant(Func&& func) : func_{func} {
+    scada::base::Check(func_());
+  }
+  ~ScopedInvariant() { scada::base::Check(func_()); }
 #endif
 
  private:

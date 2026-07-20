@@ -58,7 +58,7 @@ bool CsvReader::NextCell(std::u16string& str) {
     }
     // Should end with line break or separator.
     if (line_pos_ < line_.size()) {
-      base::Check(line_[line_pos_] == separator_);
+      scada::base::Check(line_[line_pos_] == separator_);
       ++line_pos_;
     }
     return true;

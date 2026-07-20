@@ -62,7 +62,7 @@ class SessionProxy : private SessionProxyContext,
       scada::SessionConnectParams params) override;
   virtual Awaitable<void> Reconnect() override;
   virtual Awaitable<void> Disconnect() override;
-  virtual bool IsConnected(base::TimeDelta* ping_delay) const override;
+  virtual bool IsConnected(scada::base::TimeDelta* ping_delay) const override;
   virtual bool HasPrivilege(scada::Privilege privilege) const override;
   virtual bool IsScada() const override { return false; }
   virtual scada::NodeId GetUserId() const override;
@@ -156,9 +156,9 @@ class SessionProxy : private SessionProxyContext,
   boost::signals2::signal<void(bool connected, const scada::Status& status)>
       session_state_changed_signal_;
 
-  base::AsyncCompletion connect_completion_;
-  base::AsyncCompletion connect_loop_completion_;
-  base::AsyncCompletion ping_completion_;
+  scada::base::AsyncCompletion connect_completion_;
+  scada::base::AsyncCompletion connect_loop_completion_;
+  scada::base::AsyncCompletion ping_completion_;
   std::optional<scada::Status> pending_connect_result_;
   scada::Status connect_status_ = scada::StatusCode::Good;
 
@@ -166,8 +166,8 @@ class SessionProxy : private SessionProxyContext,
 
   // Ping.
   AnyExecutorTimer ping_timer_;
-  base::TimeTicks ping_time_;
-  base::TimeDelta last_ping_delay_;
+  scada::base::TimeTicks ping_time_;
+  scada::base::TimeDelta last_ping_delay_;
 
   std::optional<transport::WriteQueue> write_queue_;
 

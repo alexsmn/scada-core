@@ -2,7 +2,6 @@
 
 #include <windows.h>
 
-#include "base/base_compat.h"
 namespace scada::base {
 namespace win {
 

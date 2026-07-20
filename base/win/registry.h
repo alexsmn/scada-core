@@ -3,7 +3,6 @@
 #include <windows.h>
 #include <string>
 
-#include "base/base_compat.h"
 namespace scada::base {
 namespace win {
 

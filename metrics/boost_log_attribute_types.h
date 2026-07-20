@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <string>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 // The Boost.Log attribute value types the structured sinks extract — the

@@ -15,7 +15,6 @@
 #include <string>
 #endif
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 #ifdef _WIN32

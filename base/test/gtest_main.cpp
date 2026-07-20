@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 
   if (vm.count("log-to-file")) {
     std::filesystem::path path;
-    if (!base::PathService::Get(base::DIR_EXE, &path))
+    if (!scada::base::PathService::Get(scada::base::DIR_EXE, &path))
       return 2;
 
     path /= "logs";

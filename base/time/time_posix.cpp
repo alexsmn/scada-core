@@ -32,8 +32,8 @@ void SysTimeToTimeStruct(time_t t, struct tm* timestruct, bool is_local) {
 
 int64_t ConvertTimespecToMicros(const struct timespec& ts) {
   int64_t result = ts.tv_sec;
-  result *= base::Time::kMicrosecondsPerSecond;
-  result += (ts.tv_nsec / base::Time::kNanosecondsPerMicrosecond);
+  result *= scada::base::Time::kMicrosecondsPerSecond;
+  result += (ts.tv_nsec / scada::base::Time::kNanosecondsPerMicrosecond);
   return result;
 }
 

@@ -29,7 +29,7 @@ TEST(ScadaRemoteModuleSmoke, ExportedTypesAndTransitiveSurface) {
   // Transitive scada.core / scada.base surfaces via export import.
   scada::NodeId node_id{5, 1};
   EXPECT_EQ(ToString(scada::StatusCode::Good), "Good");
-  base::Check(!node_id.is_null(), "remote module smoke");
+  scada::base::Check(!node_id.is_null(), "remote module smoke");
 }
 
 }  // namespace

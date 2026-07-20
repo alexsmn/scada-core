@@ -11,7 +11,7 @@ struct TestObserver {
 }  // namespace
 
 TEST(ObserverListTest, RemoveAfterRangeIterationErasesObserver) {
-  base::ObserverList<TestObserver> observers;
+  scada::base::ObserverList<TestObserver> observers;
   TestObserver observer;
   observers.AddObserver(&observer);
 
@@ -26,7 +26,7 @@ TEST(ObserverListTest, RemoveAfterRangeIterationErasesObserver) {
 }
 
 TEST(ObserverListTest, RemoveDuringRangeIterationCompactsAfterLoop) {
-  base::ObserverList<TestObserver> observers;
+  scada::base::ObserverList<TestObserver> observers;
   TestObserver first;
   TestObserver second;
   observers.AddObserver(&first);

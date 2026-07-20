@@ -11,7 +11,7 @@ using namespace std::chrono_literals;
 
 TEST(AsyncCompletion, WaitersResumeWhenCompleted) {
   TestExecutor executor;
-  base::AsyncCompletion completion{executor};
+  scada::base::AsyncCompletion completion{executor};
 
   auto first = StartAwaitable(executor, completion.Wait());
   auto second = StartAwaitable(executor, completion.Wait());
@@ -28,7 +28,7 @@ TEST(AsyncCompletion, WaitersResumeWhenCompleted) {
 
 TEST(AsyncCompletion, WaitAfterCompleteReturnsImmediately) {
   TestExecutor executor;
-  base::AsyncCompletion completion{executor};
+  scada::base::AsyncCompletion completion{executor};
 
   completion.Complete();
 
@@ -37,7 +37,7 @@ TEST(AsyncCompletion, WaitAfterCompleteReturnsImmediately) {
 
 TEST(AsyncCompletion, CopiesShareCompletionState) {
   TestExecutor executor;
-  base::AsyncCompletion owner{executor};
+  scada::base::AsyncCompletion owner{executor};
   auto handle = owner;
 
   auto waiter = StartAwaitable(executor, owner.Wait());
@@ -53,7 +53,7 @@ TEST(AsyncCompletion, CopiesShareCompletionState) {
 
 TEST(AsyncCompletion, FailurePropagatesToCurrentAndFutureWaiters) {
   TestExecutor executor;
-  base::AsyncCompletion completion{executor};
+  scada::base::AsyncCompletion completion{executor};
 
   auto waiter = StartAwaitable(executor, completion.Wait());
   Drain(executor);
@@ -67,8 +67,7 @@ TEST(AsyncCompletion, FailurePropagatesToCurrentAndFutureWaiters) {
 
 TEST(AsyncCompletion, PrecreatedWaitDoesNotDependOnOwnerLifetime) {
   TestExecutor executor;
-  auto completion =
-      std::make_unique<base::AsyncCompletion>(executor);
+  auto completion = std::make_unique<scada::base::AsyncCompletion>(executor);
 
   auto waiter = completion->Wait();
   completion->Complete();

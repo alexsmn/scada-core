@@ -10,7 +10,6 @@
 #include <optional>
 #include <vector>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Executor-affine async result cache.

@@ -4,7 +4,6 @@
 #include <format>
 #include <string>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 // Joins the string forms of a batched request's node ids into one span

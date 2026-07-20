@@ -12,8 +12,8 @@ class ThreadCollisionWarner {
   void EnterSelf() {
     auto expected = std::thread::id{};
     auto current = std::this_thread::get_id();
-    base::Check(owner_.compare_exchange_strong(expected, current) ||
-           expected == current);
+    scada::base::Check(owner_.compare_exchange_strong(expected, current) ||
+                       expected == current);
   }
   void LeaveSelf() { owner_.store(std::thread::id{}); }
   void EnterSelfRecursive() {
@@ -23,7 +23,8 @@ class ThreadCollisionWarner {
         expected == current) {
       ++depth_;
     } else {
-      base::Check(false && "ThreadCollisionWarner: concurrent access detected");
+      scada::base::Check(false &&
+                         "ThreadCollisionWarner: concurrent access detected");
     }
   }
   void LeaveSelfRecursive() {

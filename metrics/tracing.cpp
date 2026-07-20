@@ -64,7 +64,7 @@ void TraceSpan::SetAttribute(std::string_view key, std::string_view value) {
 }
 
 TraceSpan TraceSpan::StartSpan(std::string_view name) const {
-  base::Check(sink_);
+  scada::base::Check(sink_);
   return TraceSpan{*sink_,
                    /*span_id=*/GenerateTraceSpanId(),
                    name,

@@ -6,7 +6,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "base/base_compat.h"
 namespace scada::base {
 
 // Stores an object of type T with static storage duration whose destructor is

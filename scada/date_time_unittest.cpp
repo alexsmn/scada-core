@@ -8,7 +8,7 @@ namespace {
 
 scada::DateTime MakeUTCTime(int year, int month, int day, int hour, int minute,
                             int second, int millisecond = 0) {
-  base::Time::Exploded exploded = {};
+  scada::base::Time::Exploded exploded = {};
   exploded.year = year;
   exploded.month = month;
   exploded.day_of_month = day;
@@ -16,8 +16,8 @@ scada::DateTime MakeUTCTime(int year, int month, int day, int hour, int minute,
   exploded.minute = minute;
   exploded.second = second;
   exploded.millisecond = millisecond;
-  base::Time time;
-  EXPECT_TRUE(base::Time::FromUTCExploded(exploded, &time));
+  scada::base::Time time;
+  EXPECT_TRUE(scada::base::Time::FromUTCExploded(exploded, &time));
   return time;
 }
 
@@ -41,7 +41,7 @@ TEST(DateTimeTest, ToStringNotEmpty) {
 }
 
 TEST(DateTimeTest, ToStringNullIsEmpty) {
-  EXPECT_TRUE(ToString(base::Time()).empty());
+  EXPECT_TRUE(ToString(scada::base::Time()).empty());
 }
 
 TEST(DateTimeTest, ToString16NotEmpty) {
@@ -50,7 +50,7 @@ TEST(DateTimeTest, ToString16NotEmpty) {
 }
 
 TEST(DateTimeTest, ToString16NullIsEmpty) {
-  EXPECT_TRUE(ToString16(base::Time()).empty());
+  EXPECT_TRUE(ToString16(scada::base::Time()).empty());
 }
 
 TEST(DateTimeTest, ToString16MatchesToString) {

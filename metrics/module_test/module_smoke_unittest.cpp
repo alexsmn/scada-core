@@ -33,7 +33,8 @@ TEST(ScadaMetricsModuleSmoke, MetricValueAndKind) {
   EXPECT_EQ(std::get<std::int64_t>(value), 42);
   TraceSpanKind kind = TraceSpanKind::kClient;
   EXPECT_NE(kind, TraceSpanKind::kServer);
-  EXPECT_EQ(metrics::NormalizeGrpcEndpoint("http://host:4317"), "host:4317");
+  EXPECT_EQ(scada::metrics::NormalizeGrpcEndpoint("http://host:4317"),
+            "host:4317");
 
   // Transitive scada.base surface via export import.
   EXPECT_EQ(Format(7), "7");

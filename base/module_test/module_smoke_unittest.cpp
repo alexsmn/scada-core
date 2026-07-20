@@ -21,8 +21,8 @@ namespace scada_base_module {
 namespace {
 
 TEST(ScadaBaseModuleSmoke, CheckAndNotReached) {
-  base::Check(true, "module smoke");
-  base::Check(std::make_optional(1), [] { return std::string("lazy"); });
+  scada::base::Check(true, "module smoke");
+  scada::base::Check(std::make_optional(1), [] { return std::string("lazy"); });
   EXPECT_TRUE(true);
 }
 
@@ -40,7 +40,7 @@ struct Observer {
 };
 
 TEST(ScadaBaseModuleSmoke, ObserverList) {
-  base::ObserverList<Observer> observers;
+  scada::base::ObserverList<Observer> observers;
   Observer observer;
   observers.AddObserver(&observer);
   EXPECT_TRUE(observers.HasObserver(&observer));
@@ -55,21 +55,21 @@ TEST(ScadaBaseModuleSmoke, StringUtil) {
 }
 
 TEST(ScadaBaseModuleSmoke, Tier2TimeAndUtilities) {
-  base::TimeDelta delta = base::TimeDelta::FromSeconds(90);
+  scada::base::TimeDelta delta = scada::base::TimeDelta::FromSeconds(90);
   EXPECT_EQ(delta.InMinutes(), 1);
-  base::Time now = base::Time::Now();
+  scada::base::Time now = scada::base::Time::Now();
   EXPECT_FALSE(FormatTime(now).empty());
 
-  EXPECT_EQ(base::MD5String("abc"), "900150983cd24fb0d6963f7d28e17f72");
+  EXPECT_EQ(scada::base::MD5String("abc"), "900150983cd24fb0d6963f7d28e17f72");
 
   std::string encoded;
-  base::Base64Encode("scada", &encoded);
+  scada::base::Base64Encode("scada", &encoded);
   std::string decoded;
-  EXPECT_TRUE(base::Base64Decode(encoded, &decoded));
+  EXPECT_TRUE(scada::base::Base64Decode(encoded, &decoded));
   EXPECT_EQ(decoded, "scada");
 
   std::filesystem::path exe_dir;
-  EXPECT_TRUE(base::PathService::Get(base::DIR_EXE, &exe_dir));
+  EXPECT_TRUE(scada::base::PathService::Get(scada::base::DIR_EXE, &exe_dir));
   EXPECT_FALSE(exe_dir.empty());
 }
 

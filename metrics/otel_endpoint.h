@@ -3,7 +3,6 @@
 #include <string>
 #include <string_view>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 // Strips an http(s):// scheme from an OTLP endpoint: the OTLP/gRPC exporters

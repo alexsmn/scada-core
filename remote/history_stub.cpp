@@ -33,8 +33,8 @@ HistoryStub::~HistoryStub() {
                details = std::move(details)]() mutable -> Awaitable<void> {
                 auto result =
                     co_await service.HistoryReadRaw(std::move(details));
-                base::Check(result.values.empty());
-                base::Check(result.continuation_point.empty());
+                scada::base::Check(result.values.empty());
+                scada::base::Check(result.continuation_point.empty());
               });
     }
   }
@@ -74,11 +74,11 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
     details.node_id = ConvertTo<scada::NodeId>(history_read_raw.node_id());
     details.from =
         history_read_raw.from_time()
-            ? base::DecodeWireTime(history_read_raw.from_time())
-            : base::Time();
+            ? scada::base::DecodeWireTime(history_read_raw.from_time())
+            : scada::base::Time();
     details.to = history_read_raw.to_time()
-                     ? base::DecodeWireTime(history_read_raw.to_time())
-                     : base::Time();
+                     ? scada::base::DecodeWireTime(history_read_raw.to_time())
+                     : scada::base::Time();
     details.max_count = history_read_raw.max_count();
     details.aggregation = history_read_raw.has_aggregate_filter()
                               ? ConvertTo<scada::AggregateFilter>(
@@ -102,11 +102,11 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   auto& history_read_events = request.history_read_events();
   const auto node_id = ConvertTo<scada::NodeId>(history_read_events.node_id());
   auto from = history_read_events.from_time()
-                  ? base::DecodeWireTime(history_read_events.from_time())
-                  : base::Time();
+                  ? scada::base::DecodeWireTime(history_read_events.from_time())
+                  : scada::base::Time();
   auto to = history_read_events.to_time()
-                ? base::DecodeWireTime(history_read_events.to_time())
-                : base::Time();
+                ? scada::base::DecodeWireTime(history_read_events.to_time())
+                : scada::base::Time();
   scada::EventFilter filter;
   if (history_read_events.has_filter())
     Convert(history_read_events.filter(), filter);
@@ -164,8 +164,8 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
     unsigned request_id,
     std::string trace_id,
     scada::NodeId node_id,
-    base::Time from,
-    base::Time to,
+    scada::base::Time from,
+    scada::base::Time to,
     scada::EventFilter filter) {
   auto span = tracer_.StartSpan("scada.grpc/HistoryReadEvents",
                                 TraceSpanKind::kServer, trace_id);

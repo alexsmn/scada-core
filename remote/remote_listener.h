@@ -127,8 +127,8 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
   const std::string listener_name_;
   const AcceptHandler accept_handler_;
 
-  base::AsyncCompletion open_completion_;
-  base::AsyncCompletion close_completion_;
+  scada::base::AsyncCompletion open_completion_;
+  scada::base::AsyncCompletion close_completion_;
   bool opened_ = false;
   scada::Status open_status_ = scada::StatusCode::Good;
 };

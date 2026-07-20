@@ -8,7 +8,6 @@
 #include <opentelemetry/logs/logger.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 
-#include "metrics/metrics_compat.h"
 namespace scada::metrics {
 
 // Boost.Log record attribute that carries a W3C traceparent string

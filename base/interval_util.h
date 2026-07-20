@@ -17,8 +17,8 @@ inline bool AreValidIntervals(const std::vector<Interval<T>>& intervals) {
 template <class T>
 inline bool IntervalsContain(const std::vector<Interval<T>>& intervals,
                              const Interval<T>& interval) {
-  base::Check(IsValidInterval(interval));
-  base::Check(AreValidIntervals(intervals));
+  scada::base::Check(IsValidInterval(interval));
+  scada::base::Check(AreValidIntervals(intervals));
 
   auto i = std::ranges::lower_bound(
       intervals, interval.first, std::less{},
@@ -35,8 +35,8 @@ inline bool IntervalsContain(const std::vector<Interval<T>>& intervals,
 template <class T>
 inline bool UnionIntervals(std::vector<Interval<T>>& intervals,
                            const Interval<T>& interval) {
-  base::Check(IsValidInterval(interval));
-  base::Check(AreValidIntervals(intervals));
+  scada::base::Check(IsValidInterval(interval));
+  scada::base::Check(AreValidIntervals(intervals));
 
   // Find the position to remove from. It's the last interval that ends just
   // before the new interval start.
@@ -71,10 +71,10 @@ inline bool UnionIntervals(std::vector<Interval<T>>& intervals,
   i->first = std::min(i->first, interval.first);
   i->second = std::max(std::prev(j)->second, interval.second);
 
-  base::Check(i != j);
+  scada::base::Check(i != j);
   intervals.erase(std::next(i), j);
 
-  base::Check(std::is_sorted(intervals.begin(), intervals.end()));
+  scada::base::Check(std::is_sorted(intervals.begin(), intervals.end()));
   return true;
 }
 

@@ -250,7 +250,7 @@ SessionStub& RemoteSessionManager::CreateNewSession(
 void RemoteSessionManager::DeleteSession(const scada::NodeId& user_id) {
   // Remove session from map.
   auto i = session_map_.find(user_id);
-  base::Check(i != session_map_.end());
+  scada::base::Check(i != session_map_.end());
   auto session = std::move(i->second);
   session_map_.erase(i);
 

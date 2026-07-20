@@ -188,7 +188,7 @@ void ServerConnection::Send(protocol::Message& message) {
 }
 
 void ServerConnection::OnCreateSession(const protocol::Request& request) {
-  base::Check(request.has_create_session());
+  scada::base::Check(request.has_create_session());
   auto self = shared_from_this();
   boost::asio::co_spawn(
       transport_.get_executor(),
@@ -239,7 +239,7 @@ Awaitable<void> ServerConnection::OnCreateSessionAsync(protocol::Request request
 }
 
 void ServerConnection::OnDeleteSession(const protocol::Request& request) {
-  base::Check(request.has_delete_session());
+  scada::base::Check(request.has_delete_session());
   auto self = shared_from_this();
   boost::asio::co_spawn(
       transport_.get_executor(),

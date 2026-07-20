@@ -289,7 +289,7 @@ bool Parse(const std::u16string_view& str, std::u16string& value) {
 }
 
 std::string FormatHexBuffer(const void* buf, size_t len) {
-  base::Check(buf);
+  scada::base::Check(buf);
   if (!len)
     return std::string();
 
