@@ -8,7 +8,7 @@ Related documents:
 - [README.md](./README.md) for the core docs index
 - [services.md](./services.md) for the SCADA service interfaces and coroutine
   adapters used by the remote layer
-- [../../server/docs/remote_module.md](../../server/docs/remote_module.md) for
+- [../../scada-server-framework/docs/remote_module.md](../../scada-server-framework/docs/remote_module.md) for
   the server-side module wiring that hosts `core/remote`
 
 ## Diagrams
