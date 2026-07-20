@@ -27,7 +27,9 @@ inline void CoSpawn(AnyExecutor executor, F&& fn) {
 }
 
 template <class C, class F>
-inline void CoSpawn(AnyExecutor executor, std::weak_ptr<C> cancelation, F&& fn) {
+inline void CoSpawn(AnyExecutor executor,
+                    std::weak_ptr<C> cancelation,
+                    F&& fn) {
   using Fn = std::decay_t<F>;
   boost::asio::co_spawn(
       std::move(executor),
@@ -57,7 +59,6 @@ inline void CoSpawn(AnyExecutor executor,
   CoSpawn(std::move(executor), cancelation.weak_ptr(), std::forward<F>(fn));
 }
 
-
 template <class ExecutionContext, class F>
 auto RunAwaitable(ExecutionContext& context, F&& fn) {
   context.restart();
@@ -65,12 +66,18 @@ auto RunAwaitable(ExecutionContext& context, F&& fn) {
                                       boost::asio::use_future);
   while (result.wait_for(std::chrono::seconds{0}) !=
          std::future_status::ready) {
-    // The scheduler can flip to `stopped` while the awaited coroutine is
-    // still suspended even though a work guard is engaged (outstanding-work
-    // under-accounting, observed once per server startup when a strand-
-    // hopping startup coroutine suspends). Restart so the queued work keeps
-    // draining instead of spinning on a stopped context forever.
-    // TODO: find and fix the work-accounting root cause.
+    // The context can be stopped out from under us while the awaited
+    // coroutine is still suspended, because the coroutine itself can ask the
+    // process to stop: a module that rejects startup (e.g. license) calls
+    // ServerProcess::Stop(), which calls io_context::stop() from inside the
+    // startup coroutine RunAwaitable is driving. A stopped context runs
+    // nothing, so without the restart the remaining startup work never
+    // resumes and this loop spins on `run_one()` returning 0 forever.
+    //
+    // This is an explicit stop, not lost work accounting -- asio's
+    // outstanding-work count is accurate here. ServerProcess::Run() re-reads
+    // the intent from its own `stop_requested_` flag precisely because this
+    // restart clears io_context::stopped().
     if (context.stopped())
       context.restart();
     context.run_one();

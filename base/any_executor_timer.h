@@ -4,6 +4,7 @@
 #include "base/common_types.h"
 #include "base/debug_holder.h"
 
+#include <boost/asio/steady_timer.hpp>
 #include <functional>
 #include <memory>
 #include <source_location>
@@ -55,24 +56,31 @@ class AnyExecutorTimer {
           callback_{std::move(callback)} {
     }
 
+    // Cancels the armed wait so the timer stops holding outstanding work on
+    // the executor's io_context. Without this, dropping the Core (via Stop()
+    // or destruction) leaves the pending wait behind: it keeps the context
+    // "busy" with nothing runnable until the full period elapses, which
+    // stalls ServerProcess's shutdown drain.
+    ~Core() {
+      if (timer_)
+        timer_->cancel();
+    }
+
     template <bool kRepeating>
     void Start() {
-      PostDelayedTask(
-          executor_, period_,
-          [weak_core = weak_from_this()] {
-            if (auto core = weak_core.lock())
-              core->callback_();
-            if (kRepeating) {
-              if (auto core = weak_core.lock())
-                core->Start<kRepeating>();
-            }
-          },
-#ifdef NDEBUG
-          {}
-#else
-          location_
-#endif
-      );
+      timer_ = std::make_shared<boost::asio::steady_timer>(executor_);
+      timer_->expires_after(period_);
+      timer_->async_wait([weak_core = weak_from_this(),
+                          timer = timer_](boost::system::error_code ec) {
+        if (ec == boost::asio::error::operation_aborted)
+          return;
+        if (auto core = weak_core.lock())
+          core->callback_();
+        if constexpr (kRepeating) {
+          if (auto core = weak_core.lock())
+            core->Start<kRepeating>();
+        }
+      });
     }
 
    private:
@@ -82,6 +90,8 @@ class AnyExecutorTimer {
 #ifndef NDEBUG
     const std::source_location location_;
 #endif
+    // Kept so the Core can cancel an armed wait when it goes away.
+    std::shared_ptr<boost::asio::steady_timer> timer_;
   };
 
   AnyExecutor executor_;
