@@ -44,8 +44,12 @@ class OpenTelemetryTraces::Impl {
         trace_sdk::TraceIdRatioBasedSamplerFactory::Create(
             std::clamp(options.sampling_ratio, 0.0, 1.0)));
 
-    const resource::ResourceAttributes resource_attributes = {
+    resource::ResourceAttributes resource_attributes = {
         {"service.name", options.service_name}};
+    if (!options.service_version.empty()) {
+      resource_attributes.SetAttribute("service.version",
+                                       options.service_version);
+    }
 
     provider_ = trace_sdk::TracerProviderFactory::Create(
         std::move(processor), resource::Resource::Create(resource_attributes),

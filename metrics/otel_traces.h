@@ -14,6 +14,11 @@ namespace scada::metrics {
 // OTLP destination and one resource identity per tier.
 struct OpenTelemetryTracesOptions {
   std::string service_name;
+  // Build identity of this process, exported as the `service.version` resource
+  // attribute. Traces from a stale binary are otherwise indistinguishable from
+  // traces from a freshly built one, which makes a partially rebuilt tree look
+  // like a code regression. Omitted from the resource when empty.
+  std::string service_version;
   std::string endpoint;
   // ParentBased(TraceIdRatioBased) root sampling ratio in [0, 1]. Downstream
   // tiers honor the caller's sampling decision from the propagated
