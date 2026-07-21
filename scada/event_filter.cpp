@@ -12,8 +12,8 @@ std::ostream& operator<<(std::ostream& stream,
 
   StructWriter{stream}
       .AddBitMaskField("types", event_filter.types, kTypeBitStrings)
-      .AddField("of_type", event_filter.of_type)
-      .AddField("child_of", event_filter.child_of);
+      .AddField("of_type", base::AsList(event_filter.of_type))
+      .AddField("child_of", base::AsList(event_filter.child_of));
 
   return stream;
 }

@@ -39,9 +39,8 @@ std::ostream& operator<<(std::ostream& stream, const ReferenceDescription& v) {
 }
 
 std::ostream& operator<<(std::ostream& stream, const BrowseResult& v) {
-  using ::operator<<;
   return stream << "{status_code: " << v.status_code
-                << ", references: " << v.references << "}";
+                << ", references: " << base::AsList(v.references) << "}";
 }
 
 std::ostream& operator<<(std::ostream& stream, const RelativePathElement& v) {
@@ -52,9 +51,8 @@ std::ostream& operator<<(std::ostream& stream, const RelativePathElement& v) {
 }
 
 std::ostream& operator<<(std::ostream& stream, const BrowsePath& v) {
-  using ::operator<<;
   return stream << "{node_id: " << v.node_id
-                << ", relative_path: " << v.relative_path << "}";
+                << ", relative_path: " << base::AsList(v.relative_path) << "}";
 }
 
 std::ostream& operator<<(std::ostream& stream, const BrowsePathTarget& v) {
@@ -63,9 +61,8 @@ std::ostream& operator<<(std::ostream& stream, const BrowsePathTarget& v) {
 }
 
 std::ostream& operator<<(std::ostream& stream, const BrowsePathResult& v) {
-  using ::operator<<;
   return stream << "{status_code: " << v.status_code
-                << ", targets: " << v.targets << "}";
+                << ", targets: " << base::AsList(v.targets) << "}";
 }
 
 }  // namespace scada

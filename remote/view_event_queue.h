@@ -1,9 +1,11 @@
 #pragma once
 
 #include "base/check.h"
+#include "base/struct_format.h"
 #include "scada/event.h"
 
 #include <format>
+#include <variant>
 
 class ViewEventQueue {
  public:
@@ -17,6 +19,18 @@ class ViewEventQueue {
 
  private:
   std::vector<Event> queue_;
+};
+
+// std::format support for the queued event variant (both alternatives are
+// std::format-native), so event lists render via base::AsList.
+template <>
+struct std::formatter<ViewEventQueue::Event> : EmptyFormatSpec {
+  template <class FormatContext>
+  auto format(const ViewEventQueue::Event& event, FormatContext& ctx) const {
+    return std::visit(
+        [&](const auto& e) { return std::format_to(ctx.out(), "{}", e); },
+        event);
+  }
 };
 
 inline void ViewEventQueue::AddModelChange(

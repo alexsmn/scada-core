@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
+#include "base/ostream_formatter.h"
 #include "base/any_executor.h"
 #include "base/check.h"
 #include "scada/callback_awaitable.h"
@@ -174,3 +175,22 @@ std::ostream& operator<<(std::ostream& stream, const BrowsePathTarget& v);
 std::ostream& operator<<(std::ostream& stream, const BrowsePathResult& v);
 
 }  // namespace scada
+
+// std::format support (used by base::AsList / AsDict element rendering),
+// delegating to the operator<< overloads above.
+template <>
+struct std::formatter<scada::BrowseDirection> : OStreamFormatter {};
+template <>
+struct std::formatter<scada::BrowseDescription> : OStreamFormatter {};
+template <>
+struct std::formatter<scada::ReferenceDescription> : OStreamFormatter {};
+template <>
+struct std::formatter<scada::BrowseResult> : OStreamFormatter {};
+template <>
+struct std::formatter<scada::RelativePathElement> : OStreamFormatter {};
+template <>
+struct std::formatter<scada::BrowsePath> : OStreamFormatter {};
+template <>
+struct std::formatter<scada::BrowsePathTarget> : OStreamFormatter {};
+template <>
+struct std::formatter<scada::BrowsePathResult> : OStreamFormatter {};

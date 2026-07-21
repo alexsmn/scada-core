@@ -12,6 +12,8 @@
 
 #include <stdint.h>
 
+#include "base/ostream_formatter.h"
+
 #include <cassert>
 #include <iosfwd>
 #include <limits>
@@ -444,3 +446,14 @@ class TimeTicks : public time_internal::TimeBase<TimeTicks> {
 std::ostream& operator<<(std::ostream& os, TimeTicks time_ticks);
 
 }  // namespace scada::base
+
+// std::format support (used by base::AsList / AsPair element rendering),
+// delegating to the operator<< overloads above.
+template <>
+struct std::formatter<scada::base::TimeDelta> : OStreamFormatter {};
+
+template <>
+struct std::formatter<scada::base::Time> : OStreamFormatter {};
+
+template <>
+struct std::formatter<scada::base::TimeTicks> : OStreamFormatter {};

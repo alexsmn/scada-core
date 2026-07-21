@@ -5,10 +5,9 @@
 // std::format-native counterpart is StructFormatter in struct_format.h).
 #include "base/debug_util.h"
 #include "base/lifetime.h"
+#include "base/ostream_formatter.h"  // IWYU pragma: export
 
-#include <format>
 #include <ostream>
-#include <sstream>
 #include <string_view>
 
 // Usage:
@@ -94,30 +93,7 @@ void StructWriter::AddValue(const std::wstring& value);
 template <>
 void StructWriter::AddValue(const std::u16string& value);
 
-// std::formatter adapter that renders a type through its
-// operator<<(std::ostream&, const T&) — typically one written with
-// StructWriter. Opt a type in by deriving its std::formatter specialization
-// from this:
-//
-//   template <>
-//   struct std::formatter<MyType> : OStreamFormatter {};
-//
-// MyType then works directly with std::format, std::print, Logger::WriteF, and
-// any other std::format-based sink. Only the default "{}" format spec is
-// accepted; a non-empty spec is rejected with std::format_error.
-struct OStreamFormatter {
-  constexpr std::format_parse_context::iterator parse(
-      std::format_parse_context& ctx) const {
-    const std::format_parse_context::iterator it = ctx.begin();
-    if (it != ctx.end() && *it != '}')
-      throw std::format_error{"OStreamFormatter does not accept a format spec"};
-    return it;
-  }
-
-  template <class T, class FormatContext>
-  auto format(const T& value, FormatContext& ctx) const {
-    std::ostringstream stream;
-    stream << value;
-    return std::format_to(ctx.out(), "{}", std::move(stream).str());
-  }
-};
+// OStreamFormatter (the std::formatter adapter for operator<<-only types)
+// moved to its own header so type headers can include it cheaply; re-exported
+// here because StructWriter-written types are its typical users.
+// (Include is at the top of this file.)

@@ -6,6 +6,7 @@
 
 #include <concepts>
 #include <expected>
+#include <optional>
 #include <ostream>
 #include <source_location>
 #include <type_traits>
@@ -147,4 +148,14 @@ template <class T>
 inline std::ostream& operator<<(std::ostream& os,
                                 const scada::StatusOr<T>& st) {
   return st.ok() ? (os << *st) : (os << st.status());
+}
+
+// std::optional payloads render as the contained value or `nullopt`; a raw
+// std::optional itself has no operator<<.
+template <class T>
+inline std::ostream& operator<<(std::ostream& os,
+                                const scada::StatusOr<std::optional<T>>& st) {
+  if (!st.ok())
+    return os << st.status();
+  return st->has_value() ? (os << **st) : (os << "nullopt");
 }

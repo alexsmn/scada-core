@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/lifetime.h"
+#include "base/ostream_formatter.h"
 #include "scada/basic_types.h"
 #include "scada/date_time.h"
 #include "scada/expanded_node_id.h"
@@ -10,6 +11,7 @@
 #include "scada/qualified_name.h"
 #include "scada/string.h"
 
+#include <concepts>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -18,6 +20,46 @@
 namespace scada {
 
 class Variant {
+  // Declared before the constructors so the std::vector converting constructor
+  // can be constrained on it (see below).
+  using Data = std::variant<std::monostate,
+                            bool,
+                            Int8,
+                            UInt8,
+                            Int16,
+                            UInt16,
+                            Int32,
+                            UInt32,
+                            Int64,
+                            UInt64,
+                            double,
+                            ByteString,
+                            String,
+                            QualifiedName,
+                            LocalizedText,
+                            NodeId,
+                            ExpandedNodeId,
+                            ExtensionObject,
+                            DateTime,
+                            std::vector<std::monostate>,
+                            std::vector<bool>,
+                            std::vector<Int8>,
+                            std::vector<UInt8>,
+                            std::vector<Int16>,
+                            std::vector<UInt16>,
+                            std::vector<Int32>,
+                            std::vector<UInt32>,
+                            std::vector<Int64>,
+                            std::vector<UInt64>,
+                            std::vector<Double>,
+                            std::vector<ByteString>,
+                            std::vector<String>,
+                            std::vector<QualifiedName>,
+                            std::vector<LocalizedText>,
+                            std::vector<NodeId>,
+                            std::vector<ExpandedNodeId>,
+                            std::vector<ExtensionObject> >;
+
  public:
   enum Type {
     EMPTY,
@@ -64,7 +106,13 @@ class Variant {
   Variant(NodeId node_id) noexcept : data_{std::move(node_id)} {}
   Variant(ExpandedNodeId node_id) noexcept : data_{std::move(node_id)} {}
   Variant(ExtensionObject source) noexcept : data_{std::move(source)} {}
+  // Constrained to the array alternatives Data actually holds. Without the
+  // constraint this constructor makes Variant implicitly constructible from
+  // ANY std::vector, so overload resolution (e.g. a stream << vector<X> probe,
+  // or gtest's universal printer) instantiates the member init and fails with
+  // a hard error instead of discarding the candidate.
   template <class T>
+    requires std::constructible_from<Data, std::vector<T>>
   Variant(std::vector<T> value) noexcept : data_{std::move(value)} {}
 
   Variant(const Variant& source) = default;
@@ -158,44 +206,7 @@ class Variant {
   template <class String>
   bool ToStringHelper(String& string_value) const;
 
-  std::variant<std::monostate,
-               bool,
-               Int8,
-               UInt8,
-               Int16,
-               UInt16,
-               Int32,
-               UInt32,
-               Int64,
-               UInt64,
-               double,
-               ByteString,
-               String,
-               QualifiedName,
-               LocalizedText,
-               NodeId,
-               ExpandedNodeId,
-               ExtensionObject,
-               DateTime,
-               std::vector<std::monostate>,
-               std::vector<bool>,
-               std::vector<Int8>,
-               std::vector<UInt8>,
-               std::vector<Int16>,
-               std::vector<UInt16>,
-               std::vector<Int32>,
-               std::vector<UInt32>,
-               std::vector<Int64>,
-               std::vector<UInt64>,
-               std::vector<Double>,
-               std::vector<ByteString>,
-               std::vector<String>,
-               std::vector<QualifiedName>,
-               std::vector<LocalizedText>,
-               std::vector<NodeId>,
-               std::vector<ExpandedNodeId>,
-               std::vector<ExtensionObject> >
-      data_;
+  Data data_;
 };
 
 inline constexpr Variant::Type Variant::type() const noexcept {
@@ -288,3 +299,11 @@ inline std::ostream& operator<<(std::ostream& stream, Variant::Type type) {
 }
 
 }  // namespace scada
+
+// std::format support (used by base::AsList / AsDict element rendering),
+// delegating to the operator<< overloads above.
+template <>
+struct std::formatter<scada::Variant> : OStreamFormatter {};
+
+template <>
+struct std::formatter<scada::Variant::Type> : OStreamFormatter {};

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/ostream_formatter.h"
+
 #include <cstdint>
 #include <ostream>
 #include <string>
@@ -241,3 +243,11 @@ inline std::ostream& operator<<(std::ostream& stream, const Status& status) {
 }
 
 }  // namespace scada
+
+// std::format support (used by base::AsList / AsDict element rendering),
+// delegating to the operator<< overloads above.
+template <>
+struct std::formatter<scada::StatusCode> : OStreamFormatter {};
+
+template <>
+struct std::formatter<scada::Status> : OStreamFormatter {};

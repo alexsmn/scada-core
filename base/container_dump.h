@@ -49,6 +49,14 @@ struct OptDump : DumpTag {
   const std::optional<T>& opt;
 };
 
+// Renders a pair as `{first, second}`. Provided because std::formatter for
+// std::pair (P2286) is not available on every supported standard library, and
+// a std:: pair of std:: types cannot legally be given one by the program.
+template <class A, class B>
+struct PairDump : DumpTag {
+  const std::pair<A, B>& pair;
+};
+
 // Factories. The wrapper borrows its argument for the duration of the enclosing
 // full-expression; SCADA_LIFETIME_BOUND flags callers that outlive it.
 template <class R>
@@ -64,6 +72,12 @@ template <class M>
 template <class T>
 [[nodiscard]] OptDump<T> AsOpt(const std::optional<T>& opt SCADA_LIFETIME_BOUND) {
   return {{}, opt};
+}
+
+template <class A, class B>
+[[nodiscard]] PairDump<A, B> AsPair(
+    const std::pair<A, B>& pair SCADA_LIFETIME_BOUND) {
+  return {{}, pair};
 }
 
 namespace internal {
@@ -132,6 +146,15 @@ struct std::formatter<scada::base::DictDump<M>>
     }
     *out++ = '}';
     return out;
+  }
+};
+
+template <class A, class B>
+struct std::formatter<scada::base::PairDump<A, B>>
+    : scada::base::internal::DumpParse {
+  template <class FormatContext>
+  auto format(const scada::base::PairDump<A, B>& w, FormatContext& ctx) const {
+    return std::format_to(ctx.out(), "{{{}, {}}}", w.pair.first, w.pair.second);
   }
 };
 
