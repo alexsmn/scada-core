@@ -108,15 +108,18 @@ inline auto Group(Range&& range, const Mapper& mapper) {
 
 namespace detail {
 struct to_set_forwarder {};
-};  // namespace detail
 
-// Takes a forwarding reference: std::ranges views (e.g. filter_view) are not
-// const-iterable, so `const R&` would reject them.
+// Declared beside the forwarder so ADL finds the operator from ANY namespace
+// (a global operator| is invisible inside a namespace that declares its own
+// operator| overloads). Takes a forwarding reference: std::ranges views
+// (e.g. filter_view) are not const-iterable, so `const R&` would reject them.
 template <class R>
-inline auto operator|(R&& r, ::detail::to_set_forwarder) {
+inline auto operator|(R&& r, to_set_forwarder) {
   return std::set<std::ranges::range_value_t<R>>(std::ranges::begin(r),
                                                  std::ranges::end(r));
 }
+
+};  // namespace detail
 
 inline static const auto to_set = ::detail::to_set_forwarder();
 
@@ -124,15 +127,15 @@ inline static const auto to_set = ::detail::to_set_forwarder();
 
 namespace detail {
 struct to_vector_forwarder {};
-};  // namespace detail
 
-// Takes a forwarding reference: std::ranges views (e.g. filter_view) are not
-// const-iterable, so `const R&` would reject them.
+// See to_set_forwarder: in detail so ADL finds it from any namespace.
 template <class R>
-inline auto operator|(R&& r, ::detail::to_vector_forwarder) {
+inline auto operator|(R&& r, to_vector_forwarder) {
   return std::vector<std::ranges::range_value_t<R>>(std::ranges::begin(r),
                                                     std::ranges::end(r));
 }
+
+};  // namespace detail
 
 inline static const auto to_vector = ::detail::to_vector_forwarder();
 
@@ -140,12 +143,14 @@ inline static const auto to_vector = ::detail::to_vector_forwarder();
 
 namespace detail {
 struct flattened_forwarder {};
-};  // namespace detail
 
+// See to_set_forwarder: in detail so ADL finds it from any namespace.
 template <class R>
-inline auto operator|(const R& r, ::detail::flattened_forwarder) {
+inline auto operator|(const R& r, flattened_forwarder) {
   return Join(r);
 }
+
+};  // namespace detail
 
 inline static const auto flattened = ::detail::flattened_forwarder();
 
@@ -159,14 +164,14 @@ struct grouped_forwarder {
   Transformer transformer;
 };
 
-};  // namespace detail
-
+// See to_set_forwarder: in detail so ADL finds it from any namespace.
 template <class R, class Mapper, class Transformer>
-inline auto operator|(
-    const R& r,
-    const ::detail::grouped_forwarder<Mapper, Transformer>& forwarder) {
+inline auto operator|(const R& r,
+                      const grouped_forwarder<Mapper, Transformer>& forwarder) {
   return Group(r, forwarder.mapper, forwarder.transformer);
 }
+
+};  // namespace detail
 
 template <class Mapper, class Transformer>
 inline auto grouped(Mapper&& mapper, Transformer&& transformer) {
