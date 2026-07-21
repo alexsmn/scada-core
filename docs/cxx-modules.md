@@ -1,6 +1,9 @@
 # C++20 Modules: the core/ facade modules
 
 Status: experimental, opt-in via `-DSCADA_CXX_MODULES=ON` (default OFF).
+Last verified against code: 2026-07-20 (macOS; AppleClang 21, Homebrew LLVM
+22 `clang-scan-deps`, CMake 4.3.3 — facade + smoke-test builds green; both
+workarounds below still required as of CMake 4.4 / ccache 4.13).
 When OFF, the build is unchanged — no module targets exist, nothing scans
 for imports, PCH stays enabled.
 
