@@ -242,7 +242,7 @@ TEST(NamespaceRemapperTest, RemapsEventPayloadFields) {
 
   const scada::Event remapped = remapper.ToProxy(event);
   EXPECT_EQ(remapped.event_type_id, scada::NodeId(100, proxy_ns));
-  EXPECT_EQ(remapped.node_id, scada::NodeId(5, proxy_ns));
+  EXPECT_EQ(remapped.source_node_id, scada::NodeId(5, proxy_ns));
   EXPECT_EQ(remapped.user_id, scada::NodeId(6, proxy_ns));
   EXPECT_EQ(remapped.acknowledged_user_id, scada::NodeId(8, proxy_ns));
   EXPECT_EQ(*remapped.value.get_if<scada::NodeId>(),
