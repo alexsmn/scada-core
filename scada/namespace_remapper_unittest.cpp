@@ -1,5 +1,7 @@
 #include "scada/namespace_remapper.h"
 
+#include "scada/event.h"
+
 #include <gtest/gtest.h>
 
 #include <optional>
@@ -210,6 +212,64 @@ TEST(NamespaceRemapperTest, RemapsIdentifierValuesInsideVariant) {
       remapper.ToProxy(scada::Variant{scada::String{"plain"}});
   ASSERT_TRUE(passthrough.get_if<scada::String>());
   EXPECT_EQ(*passthrough.get_if<scada::String>(), "plain");
+}
+
+// Event payloads cross the aggregation boundary as typed structs whose NodeId
+// fields carry downstream indexes (ADR 0003's untranslated-payload hole); the
+// event overloads remap every namespace-sensitive field and leave everything
+// else (id, times, message, ack state) untouched.
+TEST(NamespaceRemapperTest, RemapsEventPayloadFields) {
+  ProxyNamespaceTable table;
+  NamespaceRemapper::Build(std::vector<std::string>{kUa, "urn:other"}, table);
+  const NamespaceRemapper remapper = NamespaceRemapper::Build(
+      std::vector<std::string>{kUa, "urn:server"}, table);
+  const scada::NamespaceIndex proxy_ns =
+      remapper.ToProxy(scada::NodeId{1, 1}).namespace_index();
+  ASSERT_NE(proxy_ns, 1u);
+
+  scada::Event event;
+  event.event_type_id = scada::NodeId{100, 1};
+  event.event_id = 42;
+  event.time = scada::DateTime::Now();
+  event.receive_time = scada::DateTime::Now();
+  event.node_id = scada::NodeId{5, 1};
+  event.user_id = scada::NodeId{6, 1};
+  event.value = scada::Variant{scada::NodeId{7, 1}};
+  event.message = u"message";
+  event.acked = true;
+  event.acknowledged_time = event.time;
+  event.acknowledged_user_id = scada::NodeId{8, 1};
+
+  const scada::Event remapped = remapper.ToProxy(event);
+  EXPECT_EQ(remapped.event_type_id, scada::NodeId(100, proxy_ns));
+  EXPECT_EQ(remapped.node_id, scada::NodeId(5, proxy_ns));
+  EXPECT_EQ(remapped.user_id, scada::NodeId(6, proxy_ns));
+  EXPECT_EQ(remapped.acknowledged_user_id, scada::NodeId(8, proxy_ns));
+  EXPECT_EQ(*remapped.value.get_if<scada::NodeId>(),
+            scada::NodeId(7, proxy_ns));
+  // Identity and payload survive untouched.
+  EXPECT_EQ(remapped.event_id, event.event_id);
+  EXPECT_EQ(remapped.time, event.time);
+  EXPECT_EQ(remapped.receive_time, event.receive_time);
+  EXPECT_EQ(remapped.message, event.message);
+  EXPECT_EQ(remapped.acked, event.acked);
+  EXPECT_EQ(remapped.acknowledged_time, event.acknowledged_time);
+
+  scada::ModelChangeEvent model_change;
+  model_change.node_id = scada::NodeId{9, 1};
+  model_change.type_definition_id = scada::NodeId{10, 1};
+  model_change.verb = scada::ModelChangeEvent::NodeAdded;
+  const scada::ModelChangeEvent remapped_model_change =
+      remapper.ToProxy(model_change);
+  EXPECT_EQ(remapped_model_change.node_id, scada::NodeId(9, proxy_ns));
+  EXPECT_EQ(remapped_model_change.type_definition_id,
+            scada::NodeId(10, proxy_ns));
+  EXPECT_EQ(remapped_model_change.verb, model_change.verb);
+
+  scada::SemanticChangeEvent semantic_change;
+  semantic_change.node_id = scada::NodeId{11, 1};
+  EXPECT_EQ(remapper.ToProxy(semantic_change).node_id,
+            scada::NodeId(11, proxy_ns));
 }
 
 }  // namespace

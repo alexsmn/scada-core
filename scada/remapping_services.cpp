@@ -1,5 +1,8 @@
 #include "scada/remapping_services.h"
 
+#include "scada/event.h"
+
+#include <any>
 #include <memory>
 #include <span>
 #include <utility>
@@ -50,9 +53,8 @@ RemappingViewService::TranslateBrowsePaths(
 }
 
 Awaitable<scada::StatusOr<std::vector<scada::DataValue>>>
-RemappingAttributeService::Read(
-    scada::ServiceContext context,
-    std::vector<scada::ReadValueId> inputs) {
+RemappingAttributeService::Read(scada::ServiceContext context,
+                                std::vector<scada::ReadValueId> inputs) {
   for (auto& read : inputs) {
     read.node_id = remapper_.ToDownstream(read.node_id);
   }
@@ -68,9 +70,8 @@ RemappingAttributeService::Read(
 }
 
 Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
-RemappingAttributeService::Write(
-    scada::ServiceContext context,
-    std::vector<scada::WriteValue> inputs) {
+RemappingAttributeService::Write(scada::ServiceContext context,
+                                 std::vector<scada::WriteValue> inputs) {
   for (auto& write : inputs) {
     write.node_id = remapper_.ToDownstream(write.node_id);
     write.value = remapper_.ToDownstream(write.value);
@@ -82,9 +83,9 @@ Awaitable<scada::HistoryReadRawResult> RemappingHistoryService::HistoryReadRaw(
     scada::HistoryReadRawDetails details) {
   details.node_id = remapper_.ToDownstream(details.node_id);
   auto result = co_await inner_.HistoryReadRaw(std::move(details));
-  // Identifier-typed historical values (e.g. a node reference stored as a value)
-  // come back in downstream namespaces; translate them to proxy-local ones, as
-  // the attribute Read path does.
+  // Identifier-typed historical values (e.g. a node reference stored as a
+  // value) come back in downstream namespaces; translate them to proxy-local
+  // ones, as the attribute Read path does.
   for (auto& data_value : result.values) {
     data_value.value = remapper_.ToProxy(data_value.value);
   }
@@ -157,7 +158,8 @@ RemappingNodeManagementService::AddNodes(
     // carried as the initial value) live in the proxy's namespaces too.
     item.attributes.browse_name =
         remapper_.ToDownstream(item.attributes.browse_name);
-    item.attributes.data_type = remapper_.ToDownstream(item.attributes.data_type);
+    item.attributes.data_type =
+        remapper_.ToDownstream(item.attributes.data_type);
     if (item.attributes.value) {
       item.attributes.value = remapper_.ToDownstream(*item.attributes.value);
     }
@@ -209,9 +211,30 @@ RemappingNodeManagementService::DeleteReferences(
 
 namespace {
 
-// A subscription that remaps each added item's target NodeId proxy -> downstream
-// and otherwise delegates to the downstream subscription. Removals and reads key
-// on item id / client handle, so they need no translation.
+// Remaps an event payload's namespace-sensitive fields downstream -> proxy.
+// The payload is the std::any surface shared by every event path; unknown
+// payload kinds pass through unchanged (there is nothing to translate
+// without knowing the shape).
+std::any RemapEventPayloadToProxy(const NamespaceRemapper& remapper,
+                                  const std::any& payload) {
+  if (const auto* event = std::any_cast<scada::Event>(&payload)) {
+    return remapper.ToProxy(*event);
+  }
+  if (const auto* model_change =
+          std::any_cast<scada::ModelChangeEvent>(&payload)) {
+    return remapper.ToProxy(*model_change);
+  }
+  if (const auto* semantic_change =
+          std::any_cast<scada::SemanticChangeEvent>(&payload)) {
+    return remapper.ToProxy(*semantic_change);
+  }
+  return payload;
+}
+
+// A subscription that remaps each added item's target NodeId (and any event
+// filter's type/node selectors) proxy -> downstream, and each notification's
+// identifier-carrying values downstream -> proxy. Removals key on item id /
+// client handle, so they need no translation.
 class RemappingMonitoredItemSubscription final
     : public scada::MonitoredItemSubscription {
  public:
@@ -225,6 +248,17 @@ class RemappingMonitoredItemSubscription final
     for (auto& request : requests) {
       request.item_to_monitor.node_id =
           remapper_.ToDownstream(request.item_to_monitor.node_id);
+      // Event filters select by type/ancestor NodeIds, which are the local
+      // side's indexes and must cross in the downstream's.
+      if (auto* event_filter =
+              std::get_if<scada::EventFilter>(&request.parameters.filter)) {
+        for (auto& id : event_filter->of_type) {
+          id = remapper_.ToDownstream(id);
+        }
+        for (auto& id : event_filter->child_of) {
+          id = remapper_.ToDownstream(id);
+        }
+      }
     }
     co_return co_await inner_->AddItems(std::move(requests));
   }
@@ -238,12 +272,17 @@ class RemappingMonitoredItemSubscription final
   ReadNext(std::size_t max_count) override {
     auto result = co_await inner_->ReadNext(max_count);
     if (result.ok()) {
-      // Data-change values may themselves be identifiers; translate them to
-      // proxy-local namespaces. Event payloads (std::any) are not yet remapped.
+      // Data-change values may themselves be identifiers, and event payloads
+      // carry type/source/user NodeIds; translate both to proxy-local
+      // namespaces (the event payload was ADR 0003's untranslated-payload
+      // hole, closed per ADR 0004).
       for (auto& notification : *result) {
         if (auto* change =
                 std::get_if<scada::DataChangeNotification>(&notification)) {
           change->value.value = remapper_.ToProxy(change->value.value);
+        } else if (auto* event =
+                       std::get_if<scada::EventNotification>(&notification)) {
+          event->event = RemapEventPayloadToProxy(remapper_, event->event);
         }
       }
     }

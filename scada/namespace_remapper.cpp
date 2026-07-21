@@ -1,8 +1,8 @@
 #include "scada/namespace_remapper.h"
 
 #include "base/boost_log.h"
+#include "scada/event.h"
 
-#include <algorithm>
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -80,15 +80,15 @@ NamespaceRemapper NamespaceRemapper::BuildFromPairs(
 NamespaceRemapper NamespaceRemapper::BuildByUri(
     std::span<const std::string> local_uris,
     std::span<const std::string> remote_uris) {
-  // (downstream, proxy) = (remote, local): the server's published index space is
-  // the "downstream" side and the client's own is the "proxy" side.
+  // (downstream, proxy) = (remote, local): the server's published index space
+  // is the "downstream" side and the client's own is the "proxy" side.
   std::vector<std::pair<scada::NamespaceIndex, scada::NamespaceIndex>> pairs;
   for (std::size_t remote = 0; remote < remote_uris.size(); ++remote) {
     if (remote_uris[remote].empty()) {
       continue;
     }
-    const auto local = std::find(local_uris.begin(), local_uris.end(),
-                                 remote_uris[remote]);
+    const auto local =
+        std::find(local_uris.begin(), local_uris.end(), remote_uris[remote]);
     if (local == local_uris.end()) {
       // A namespace the client does not know: leave it untranslated rather than
       // guess an index for it.
@@ -237,6 +237,32 @@ scada::Variant NamespaceRemapper::ToDownstream(
     const scada::Variant& value) const {
   return RemapVariant(value,
                       [this](const auto& id) { return ToDownstream(id); });
+}
+
+scada::Event NamespaceRemapper::ToProxy(const scada::Event& event) const {
+  scada::Event result = event;
+  result.event_type_id = ToProxy(event.event_type_id);
+  result.node_id = ToProxy(event.node_id);
+  result.user_id = ToProxy(event.user_id);
+  result.acknowledged_user_id = ToProxy(event.acknowledged_user_id);
+  result.value = ToProxy(event.value);
+  return result;
+}
+
+scada::ModelChangeEvent NamespaceRemapper::ToProxy(
+    const scada::ModelChangeEvent& event) const {
+  // event_type_id is a class constant (ns0), never remapped.
+  scada::ModelChangeEvent result = event;
+  result.node_id = ToProxy(event.node_id);
+  result.type_definition_id = ToProxy(event.type_definition_id);
+  return result;
+}
+
+scada::SemanticChangeEvent NamespaceRemapper::ToProxy(
+    const scada::SemanticChangeEvent& event) const {
+  scada::SemanticChangeEvent result = event;
+  result.node_id = ToProxy(event.node_id);
+  return result;
 }
 
 }  // namespace scada::aggregation

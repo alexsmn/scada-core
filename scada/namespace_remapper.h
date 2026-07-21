@@ -8,8 +8,8 @@
 // indexes. Anything carrying NodeIds across that divide must translate them.
 //
 // This lives in the core scada layer, not in the OPC UA bridge, because it is
-// pure NodeId/QualifiedName/Variant vocabulary with no dependency on the opcua::
-// type universe. It has three consumers:
+// pure NodeId/QualifiedName/Variant vocabulary with no dependency on the
+// opcua:: type universe. It has three consumers:
 //   - an Aggregating Server re-exposing several Aggregated Servers behind one
 //     address space (Build, against a growing ProxyNamespaceTable);
 //   - a tier translating at its own serving boundary so it can publish only the
@@ -37,6 +37,12 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+namespace scada {
+struct Event;
+struct ModelChangeEvent;
+struct SemanticChangeEvent;
+}  // namespace scada
 
 namespace scada::aggregation {
 
@@ -110,6 +116,15 @@ class NamespaceRemapper {
   // Translates identifier-typed attribute/notification values and method
   // arguments across the proxy boundary.
   scada::Variant ToProxy(const scada::Variant& value) const;
+
+  // Remaps the namespace-sensitive fields of an event payload crossing the
+  // proxy boundary (ADR 0003's untranslated-event-payload hole; used by the
+  // aggregation event tap, ADR 0004). For scada::Event these are the event
+  // type, source/user node ids, and any identifier carried in the value.
+  scada::Event ToProxy(const scada::Event& event) const;
+  scada::ModelChangeEvent ToProxy(const scada::ModelChangeEvent& event) const;
+  scada::SemanticChangeEvent ToProxy(
+      const scada::SemanticChangeEvent& event) const;
 
   // proxy -> downstream
   scada::NodeId ToDownstream(const scada::NodeId& node_id) const;

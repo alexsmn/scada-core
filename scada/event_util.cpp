@@ -5,10 +5,16 @@
 
 namespace scada {
 
-scada::Event AssembleSystemEvent(std::span<const scada::Variant> fields) {
+// Field count of the scada::Event wire layout (see DisassembleEvent). The
+// layout serves every scada::Event-carried type (SystemEventType and its
+// subtypes, DeviceWatchEventType), so assembly dispatches on it rather than
+// on an enumerated type-id list.
+constexpr size_t kEventFieldCount = 14;
+
+scada::Event AssembleBaseEvent(std::span<const scada::Variant> fields) {
   scada::Event event;
-  fields[0].get(event.event_id);
-  fields[1].get(event.event_type_id);
+  fields[0].get(event.event_type_id);
+  fields[1].get(event.event_id);
   fields[2].get(event.time);
   fields[3].get(event.change_mask);
   fields[4].get(event.severity);
@@ -20,6 +26,7 @@ scada::Event AssembleSystemEvent(std::span<const scada::Variant> fields) {
   fields[10].get(event.acked);
   fields[11].get(event.acknowledged_time);
   fields[12].get(event.acknowledged_user_id);
+  fields[13].get(event.receive_time);
   return event;
 }
 
@@ -44,24 +51,36 @@ std::any AssembleEvent(std::span<const scada::Variant> fields) {
   if (fields.empty())
     return {};
 
+  // Every layout carries the event type id at field 0 (see the
+  // DisassembleEvent overloads). The two model-notification types have
+  // dedicated layouts; any other type id with the scada::Event field count
+  // assembles as a scada::Event, so subtypes (and DeviceWatchEventType,
+  // which core cannot name) survive the wire without core enumerating them.
+  // Field counts are checked before indexing — the fields arrive from the
+  // wire, and a malformed layout must degrade to an empty event, not panic
+  // or read out of bounds.
   auto event_type_id = fields[0].get_or<scada::NodeId>({});
-  if (event_type_id == scada::id::SystemEventType) {
-    return AssembleSystemEvent(fields);
-  } else if (event_type_id == scada::id::GeneralModelChangeEventType) {
+  if (event_type_id == scada::id::GeneralModelChangeEventType &&
+      fields.size() == 4) {
     return AssembleModelChangeEvent(fields);
-  } else if (event_type_id == scada::id::SemanticChangeEventType) {
+  } else if (event_type_id == scada::id::SemanticChangeEventType &&
+             fields.size() == 2) {
     return AssembleSemanticChangeEvent(fields);
+  } else if (!event_type_id.is_null() && fields.size() == kEventFieldCount) {
+    return AssembleBaseEvent(fields);
   } else {
-    // The event type id arrives with the event fields from the wire -
-    // degrade unknown event types to an empty event.
     return {};
   }
 }
 
 std::vector<scada::Variant> DisassembleEvent(const scada::Event& event) {
+  // Field 0 is the event type id in EVERY layout — AssembleEvent dispatches
+  // on it. (It historically held event_id here, which made system events
+  // unassemblable on the receiving side; both bridge ends ship together, so
+  // the layouts stay symmetric within a deployment.)
   return {
-      event.event_id,
       event.event_type_id,
+      event.event_id,
       event.time,
       event.change_mask,
       event.severity,
@@ -73,6 +92,7 @@ std::vector<scada::Variant> DisassembleEvent(const scada::Event& event) {
       event.acked,
       event.acknowledged_time,
       event.acknowledged_user_id,
+      event.receive_time,
   };
 }
 
