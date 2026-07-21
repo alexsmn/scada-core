@@ -8,8 +8,10 @@ namespace scada {
 // Field count of the scada::Event wire layout (see DisassembleEvent). The
 // layout serves every scada::Event-carried type (SystemEventType and its
 // subtypes, DeviceWatchEventType), so assembly dispatches on it rather than
-// on an enumerated type-id list.
-constexpr size_t kEventFieldCount = 14;
+// on an enumerated type-id list. The pre-ADR-0005 layout had no source_name
+// (14 fields); assembly accepts both counts for the rollout window.
+constexpr size_t kEventFieldCount = 15;
+constexpr size_t kEventFieldCountV1 = 14;
 
 scada::Event AssembleBaseEvent(std::span<const scada::Variant> fields) {
   scada::Event event;
@@ -27,6 +29,9 @@ scada::Event AssembleBaseEvent(std::span<const scada::Variant> fields) {
   fields[11].get(event.acknowledged_time);
   fields[12].get(event.acknowledged_user_id);
   fields[13].get(event.receive_time);
+  if (fields.size() > 14) {
+    fields[14].get(event.source_name);
+  }
   return event;
 }
 
@@ -66,7 +71,8 @@ std::any AssembleEvent(std::span<const scada::Variant> fields) {
   } else if (event_type_id == scada::id::SemanticChangeEventType &&
              fields.size() == 2) {
     return AssembleSemanticChangeEvent(fields);
-  } else if (!event_type_id.is_null() && fields.size() == kEventFieldCount) {
+  } else if (!event_type_id.is_null() && (fields.size() == kEventFieldCount ||
+                                          fields.size() == kEventFieldCountV1)) {
     return AssembleBaseEvent(fields);
   } else {
     return {};
@@ -93,6 +99,7 @@ std::vector<scada::Variant> DisassembleEvent(const scada::Event& event) {
       event.acknowledged_time,
       event.acknowledged_user_id,
       event.receive_time,
+      event.source_name,
   };
 }
 

@@ -17,6 +17,7 @@ Event MakeEvent(NodeId event_type_id) {
   event.change_mask = Event::EVT_VAL;
   event.severity = kSeverityWarning;
   event.source_node_id = NodeId{42, 2};
+  event.source_name = "Pump 42";
   event.user_id = NodeId{7, 3};
   event.value = Variant{123};
   event.message = u"message";
@@ -32,6 +33,23 @@ TEST(EventUtilTest, SystemEventRoundTrips) {
   const auto* result = std::any_cast<Event>(&assembled);
   ASSERT_NE(result, nullptr);
   EXPECT_EQ(*result, event);
+}
+
+TEST(EventUtilTest, LegacyFourteenFieldLayoutAssemblesWithoutSourceName) {
+  // Pre-ADR-0005 peers send the 14-field layout (no source_name); assembly
+  // must accept it during the rollout window.
+  const Event event = MakeEvent(NodeId{id::SystemEventType});
+  std::vector<Variant> fields = DisassembleEvent(std::any{event});
+  ASSERT_EQ(fields.size(), 15u);
+  fields.pop_back();
+
+  const std::any assembled = AssembleEvent(fields);
+  const auto* result = std::any_cast<Event>(&assembled);
+  ASSERT_NE(result, nullptr);
+  EXPECT_TRUE(result->source_name.empty());
+  Event expected = event;
+  expected.source_name.clear();
+  EXPECT_EQ(*result, expected);
 }
 
 TEST(EventUtilTest, NonCoreEventTypeRoundTripsAsEvent) {

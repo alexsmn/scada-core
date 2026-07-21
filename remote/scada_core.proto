@@ -213,4 +213,6 @@ message Event {
   bool acknowledged = 9;
   uint64 acknowledge_time = 11;
   NodeId acknowledge_user_id = 12;
+  // BaseEventType SourceName (resolved DisplayName of source_node_id).
+  string source_name = 13;
 }

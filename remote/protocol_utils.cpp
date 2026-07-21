@@ -450,6 +450,7 @@ void Convert(const protocol::Event& source, scada::Event& target) {
   target.severity = source.severity();
   if (source.has_source_node_id())
     Convert(source.source_node_id(), target.source_node_id);
+  target.source_name = source.source_name();
   if (source.has_user_node_id())
     Convert(source.user_node_id(), target.user_id);
   if (source.has_value())
@@ -473,6 +474,8 @@ void Convert(const scada::Event& source, protocol::Event& target) {
   target.set_severity(source.severity);
   if (!source.source_node_id.is_null())
     Convert(source.source_node_id, *target.mutable_source_node_id());
+  if (!source.source_name.empty())
+    target.set_source_name(source.source_name);
   if (!source.user_id.is_null())
     Convert(source.user_id, *target.mutable_user_node_id());
   if (!source.value.is_null())
