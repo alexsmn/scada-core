@@ -22,7 +22,7 @@ struct event_awaiter {
 
   Awaitable<scada::Event> when_node(const scada::NodeId& node_id) {
     return state_->when([node_id](const scada::Event& event) {
-      return event.node_id == node_id;
+      return event.source_node_id == node_id;
     });
   }
 

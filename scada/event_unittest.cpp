@@ -9,7 +9,7 @@ namespace {
 
 TEST(ModelChangeEventTest, FormatNative) {
   ModelChangeEvent e;
-  e.node_id = NodeId{33, 2};
+  e.source_node_id = NodeId{33, 2};
   e.type_definition_id = NodeId{40, 0};
   e.set_verb(ModelChangeEvent::NodeAdded | ModelChangeEvent::ReferenceAdded);
 
@@ -20,7 +20,7 @@ TEST(ModelChangeEventTest, FormatNative) {
 
 TEST(ModelChangeEventTest, FormatEmptyVerb) {
   ModelChangeEvent e;
-  e.node_id = NodeId{1, 0};
+  e.source_node_id = NodeId{1, 0};
 
   EXPECT_EQ(std::format("{}", e),
             "{node_id: \"i=1\", type_definition_id: \"i=0\", verb: []}");
@@ -28,7 +28,7 @@ TEST(ModelChangeEventTest, FormatEmptyVerb) {
 
 TEST(SemanticChangeEventTest, FormatNative) {
   SemanticChangeEvent e;
-  e.node_id = NodeId{7, 1};
+  e.source_node_id = NodeId{7, 1};
 
   EXPECT_EQ(std::format("{}", e), "{node_id: \"ns=1;i=7\"}");
 }

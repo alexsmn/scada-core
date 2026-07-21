@@ -232,7 +232,7 @@ TEST(NamespaceRemapperTest, RemapsEventPayloadFields) {
   event.event_id = 42;
   event.time = scada::DateTime::Now();
   event.receive_time = scada::DateTime::Now();
-  event.node_id = scada::NodeId{5, 1};
+  event.source_node_id = scada::NodeId{5, 1};
   event.user_id = scada::NodeId{6, 1};
   event.value = scada::Variant{scada::NodeId{7, 1}};
   event.message = u"message";

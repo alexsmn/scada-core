@@ -18,7 +18,7 @@ scada::Event AssembleBaseEvent(std::span<const scada::Variant> fields) {
   fields[2].get(event.time);
   fields[3].get(event.change_mask);
   fields[4].get(event.severity);
-  fields[5].get(event.node_id);
+  fields[5].get(event.source_node_id);
   fields[6].get(event.user_id);
   event.value = fields[7];
   event.qualifier = scada::Qualifier{fields[8].get_or<unsigned>(0)};
@@ -84,7 +84,7 @@ std::vector<scada::Variant> DisassembleEvent(const scada::Event& event) {
       event.time,
       event.change_mask,
       event.severity,
-      event.node_id,
+      event.source_node_id,
       event.user_id,
       event.value,
       event.qualifier.raw(),

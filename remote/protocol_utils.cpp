@@ -449,7 +449,7 @@ void Convert(const protocol::Event& source, scada::Event& target) {
   target.time = scada::base::DecodeWireTime(source.time());
   target.severity = source.severity();
   if (source.has_source_node_id())
-    Convert(source.source_node_id(), target.node_id);
+    Convert(source.source_node_id(), target.source_node_id);
   if (source.has_user_node_id())
     Convert(source.user_node_id(), target.user_id);
   if (source.has_value())
@@ -472,7 +472,7 @@ void Convert(const scada::Event& source, protocol::Event& target) {
   target.set_time(scada::base::EncodeWireMicroseconds(source.time));
   target.set_severity(source.severity);
   if (!source.node_id.is_null())
-    Convert(source.node_id, *target.mutable_source_node_id());
+    Convert(source.source_node_id, *target.mutable_source_node_id());
   if (!source.user_id.is_null())
     Convert(source.user_id, *target.mutable_user_node_id());
   if (!source.value.is_null())

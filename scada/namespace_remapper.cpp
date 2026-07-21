@@ -242,7 +242,7 @@ scada::Variant NamespaceRemapper::ToDownstream(
 scada::Event NamespaceRemapper::ToProxy(const scada::Event& event) const {
   scada::Event result = event;
   result.event_type_id = ToProxy(event.event_type_id);
-  result.node_id = ToProxy(event.node_id);
+  result.source_node_id = ToProxy(event.source_node_id);
   result.user_id = ToProxy(event.user_id);
   result.acknowledged_user_id = ToProxy(event.acknowledged_user_id);
   result.value = ToProxy(event.value);

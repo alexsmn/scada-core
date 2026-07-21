@@ -16,7 +16,7 @@ Event MakeEvent(NodeId event_type_id) {
   event.receive_time = DateTime::Now();
   event.change_mask = Event::EVT_VAL;
   event.severity = kSeverityWarning;
-  event.node_id = NodeId{42, 2};
+  event.source_node_id = NodeId{42, 2};
   event.user_id = NodeId{7, 3};
   event.value = Variant{123};
   event.message = u"message";
