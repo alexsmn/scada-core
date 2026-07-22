@@ -72,6 +72,17 @@ constexpr NumericId Server_ServerCapabilities_MinSupportedSampleRate = 2272;
 constexpr NumericId Server_ServerCapabilities_MaxBrowseContinuationPoints =
     2735;
 constexpr NumericId Server_ServerCapabilities_OperationLimits = 11704;
+// Server.ServerCapabilities.HistoryServerCapabilities: advertises whether the
+// server serves historical data/event reads (OPC UA Part 11 §5.3,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/5.3). These are
+// the standard INSTANCE ids (the HistoryServerCapabilitiesType member ids
+// 2331/2332 are the type's InstanceDeclarations, not these nodes).
+constexpr NumericId Server_ServerCapabilities_HistoryServerCapabilities =
+    11192;
+constexpr NumericId HistoryServerCapabilities_AccessHistoryDataCapability =
+    11193;
+constexpr NumericId HistoryServerCapabilities_AccessHistoryEventsCapability =
+    11242;
 // RoleSet: the roles the server supports, published under ServerCapabilities
 // (OPC UA Part 18 §4.3,
 // https://reference.opcfoundation.org/Core/Part18/v105/docs/4.3). Ids per the
