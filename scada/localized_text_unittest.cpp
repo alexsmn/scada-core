@@ -4,14 +4,15 @@
 
 TEST(LocalizedTextTest, ToLocalizedTextFromAscii) {
   auto text = scada::ToLocalizedText("hello");
-  EXPECT_EQ(u"hello", text);
+  EXPECT_EQ(scada::LocalizedText{u"hello"}, text);
+  EXPECT_TRUE(text.locale.empty());
 }
 
 TEST(LocalizedTextTest, ToLocalizedTextFromUtf8) {
   // "Привет" in UTF-8
   auto text = scada::ToLocalizedText(
       "\xd0\x9f\xd1\x80\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82");
-  EXPECT_EQ(u"\u041F\u0440\u0438\u0432\u0435\u0442", text);
+  EXPECT_EQ(u"Привет", text.text);
 }
 
 TEST(LocalizedTextTest, ToLocalizedTextFromEmpty) {
@@ -21,20 +22,19 @@ TEST(LocalizedTextTest, ToLocalizedTextFromEmpty) {
 
 TEST(LocalizedTextTest, ToLocalizedTextFromU16StringView) {
   auto text = scada::ToLocalizedText(std::u16string_view(u"world"));
-  EXPECT_EQ(u"world", text);
+  EXPECT_EQ(u"world", text.text);
 }
 
 TEST(LocalizedTextTest, ToLocalizedTextFromU16String) {
   std::u16string input = u"test";
-  const auto& text = scada::ToLocalizedText(input);
-  EXPECT_EQ(u"test", text);
-  // Identity: should return reference to the same string.
-  EXPECT_EQ(&input, &text);
+  auto text = scada::ToLocalizedText(input);
+  EXPECT_EQ(u"test", text.text);
+  EXPECT_TRUE(text.locale.empty());
 }
 
 TEST(LocalizedTextTest, ToLocalizedTextFromU16StringMove) {
   auto text = scada::ToLocalizedText(std::u16string(u"moved"));
-  EXPECT_EQ(u"moved", text);
+  EXPECT_EQ(u"moved", text.text);
 }
 
 TEST(LocalizedTextTest, ToStringAscii) {
@@ -42,9 +42,9 @@ TEST(LocalizedTextTest, ToStringAscii) {
   EXPECT_FALSE(str.empty());
 }
 
-TEST(LocalizedTextTest, ToString16Identity) {
+TEST(LocalizedTextTest, ToString16ReturnsTextField) {
   scada::LocalizedText text = u"test";
-  EXPECT_EQ(&text, &ToString16(text));
+  EXPECT_EQ(&text.text, &ToString16(text));
 }
 
 TEST(LocalizedTextTest, RoundTripAscii) {
@@ -52,4 +52,34 @@ TEST(LocalizedTextTest, RoundTripAscii) {
   auto str = ToString(text);
   // Native MB encoding of ASCII should produce "hello world".
   EXPECT_EQ("hello world", str);
+}
+
+TEST(LocalizedTextTest, LocaleParticipatesInEquality) {
+  scada::LocalizedText plain{u"text"};
+  scada::LocalizedText localized{"ru", u"text"};
+  EXPECT_NE(plain, localized);
+  EXPECT_EQ(localized, (scada::LocalizedText{"ru", u"text"}));
+}
+
+TEST(LocalizedTextTest, EmptyRequiresBothFieldsEmpty) {
+  EXPECT_TRUE(scada::LocalizedText{}.empty());
+  EXPECT_FALSE(scada::LocalizedText{u"text"}.empty());
+  // A locale-only value is not null: it must survive a codec round-trip.
+  EXPECT_FALSE((scada::LocalizedText{"ru", {}}).empty());
+}
+
+TEST(LocalizedTextTest, AppendKeepsLocale) {
+  scada::LocalizedText text{"ru", u"a"};
+  text += u" - ";
+  text += std::u16string{u"b"};
+  text += char16_t{u'c'};
+  text += scada::LocalizedText{"en", u"d"};
+  EXPECT_EQ(u"a - bcd", text.text);
+  EXPECT_EQ("ru", text.locale);
+}
+
+TEST(LocalizedTextTest, ComparisonAgainstLiteralCompiles) {
+  scada::LocalizedText text{u"abc"};
+  EXPECT_EQ(text, u"abc");
+  EXPECT_NE(text, u"abd");
 }

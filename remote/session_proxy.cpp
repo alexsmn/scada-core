@@ -298,8 +298,8 @@ Awaitable<protocol::Response> SessionProxy::RequestAsync(
 Awaitable<void> SessionProxy::AwaitCreateSessionAsync() {
   protocol::Request request;
   auto& create_session = *request.mutable_create_session();
-  create_session.set_user_name_utf8(UtfConvert<char>(user_name_));
-  create_session.set_password_utf8(UtfConvert<char>(password_));
+  create_session.set_user_name_utf8(UtfConvert<char>(user_name_.text));
+  create_session.set_password_utf8(UtfConvert<char>(password_.text));
   create_session.set_protocol_version_major(protocol::PROTOCOL_VERSION_MAJOR);
   create_session.set_protocol_version_minor(protocol::PROTOCOL_VERSION_MINOR);
   if (allow_remote_logoff_)
@@ -555,7 +555,8 @@ transport::awaitable<void> SessionProxy::Connect() {
       }
 
       // The framed Scada protocol has no chunking, so the buffer must fit the
-      // largest single message the server sends (see protocol::kMaxMessageSize).
+      // largest single message the server sends (see
+      // protocol::kMaxMessageSize).
       buffer.resize(protocol::kMaxMessageSize);
       auto bytes_read = co_await transport_.read(buffer);
 

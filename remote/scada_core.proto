@@ -215,4 +215,7 @@ message Event {
   NodeId acknowledge_user_id = 12;
   // BaseEventType SourceName (resolved DisplayName of source_node_id).
   string source_name = 13;
+  // Locale of `message_utf8` (RFC 3066 id, e.g. "en"/"ru"); empty when
+  // unspecified. Mirrors the OPC UA LocalizedText Locale field.
+  string message_locale = 14;
 }

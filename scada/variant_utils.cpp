@@ -9,7 +9,7 @@ bool ConvertVariant(const Variant& source, std::wstring& target) {
   scada::LocalizedText localized_text;
   if (!ConvertVariant(source, localized_text))
     return false;
-  target = UtfConvert<wchar_t>(localized_text);
+  target = UtfConvert<wchar_t>(localized_text.text);
   return true;
 }
 

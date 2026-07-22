@@ -13,5 +13,5 @@ LocalizedText ToLocalizedText(std::string_view string) {
 std::string ToString(const scada::LocalizedText& text) {
   // E.g. see `AuthenticationTask` on how login user name is translated to the
   // qualified name.
-  return UtfConvert<char>(text);
+  return UtfConvert<char>(text.text);
 }

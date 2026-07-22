@@ -456,7 +456,8 @@ void Convert(const protocol::Event& source, scada::Event& target) {
   if (source.has_value())
     Convert(source.value(), target.value);
   target.qualifier = scada::Qualifier(source.qualifier());
-  target.message = UtfConvert<char16_t>(source.message_utf8());
+  target.message = scada::LocalizedText{
+      source.message_locale(), UtfConvert<char16_t>(source.message_utf8())};
   target.acked = source.acknowledged();
   if (source.acknowledge_time()) {
     target.acknowledged_time =
@@ -482,8 +483,11 @@ void Convert(const scada::Event& source, protocol::Event& target) {
     Convert(source.value, *target.mutable_value());
   if (source.qualifier != scada::Qualifier())
     target.set_qualifier(source.qualifier.raw());
-  if (!source.message.empty())
-    target.set_message_utf8(UtfConvert<char>(source.message));
+  if (!source.message.empty()) {
+    target.set_message_utf8(UtfConvert<char>(source.message.text));
+    if (!source.message.locale.empty())
+      target.set_message_locale(source.message.locale);
+  }
   if (source.acked)
     target.set_acknowledged(true);
   if (!source.acknowledged_time.is_null())
