@@ -117,8 +117,11 @@ constexpr NumericId ModellingRule_MandatoryPlaceholder = 11510;
 
 constexpr NumericId BaseEventType = 2041;
 constexpr NumericId SystemEventType = 2130;
+constexpr NumericId DeviceFailureEventType = 2131;
+constexpr NumericId BaseModelChangeEventType = 2132;
 constexpr NumericId GeneralModelChangeEventType = 2133;
 constexpr NumericId SemanticChangeEventType = 2738;
+constexpr NumericId EventQueueOverflowEventType = 3035;
 
 // Audit event types (OPC UA Part 5 §6.4). Emitted for security-relevant actions
 // per the auditability objective (Part 2 §4.14),
@@ -128,7 +131,9 @@ constexpr NumericId AuditSecurityEventType = 2058;
 constexpr NumericId AuditSessionEventType = 2069;
 constexpr NumericId AuditCreateSessionEventType = 2071;
 constexpr NumericId AuditActivateSessionEventType = 2075;
+constexpr NumericId AuditUpdateEventType = 2099;
 constexpr NumericId AuditWriteUpdateEventType = 2100;
+constexpr NumericId AuditUpdateMethodEventType = 2127;
 
 constexpr NumericId AggregateFunction_Average = 2342;
 constexpr NumericId AggregateFunction_Total = 2344;
