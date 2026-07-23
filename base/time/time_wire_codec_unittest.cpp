@@ -37,10 +37,10 @@ TEST(TimeWireCodecTest, WireDurationRoundTrips) {
   EXPECT_EQ(DecodeWireDelta(5'000'000), std::chrono::seconds{5});
 
   // Sentinels survive the round-trip (used as "unbounded" range/timeout).
-  EXPECT_EQ(DecodeWireDelta(EncodeWireMicroseconds(TimeDelta::max())),
-            TimeDelta::max());
-  EXPECT_EQ(DecodeWireDelta(EncodeWireMicroseconds(TimeDelta::min())),
-            TimeDelta::min());
+  EXPECT_EQ(DecodeWireDelta(EncodeWireMicroseconds(Duration::max())),
+            Duration::max());
+  EXPECT_EQ(DecodeWireDelta(EncodeWireMicroseconds(Duration::min())),
+            Duration::min());
 }
 
 TEST(TimeWireCodecTest, WireMicrosecondsPinsGoldenValues) {

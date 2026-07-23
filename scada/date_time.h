@@ -7,12 +7,10 @@
 
 namespace scada {
 
-// OPC UA domain vocabulary for the base time types. Higher-layer (non-base)
-// code spells time in scada:: terms; the underlying definitions and the
-// low-level wire/calendar helpers stay in scada::base (the foundation layer,
-// which cannot depend on this header).
-using Time = base::Time;      // std::chrono::sys_time<microseconds>
-using Duration = base::TimeDelta;  // std::chrono::microseconds
+// OPC UA "now"/null vocabulary over the base time types. scada::Time and
+// scada::Duration themselves are defined in base/time/time.h (the single
+// spelling used everywhere); this header adds the domain helpers that the
+// higher layers use. The low-level wire/calendar helpers stay in scada::base.
 
 // The "no timestamp" sentinel (0 ticks since the 1601 Windows epoch) and the
 // unbounded-range sentinels, in scada:: spelling. Distinct from a

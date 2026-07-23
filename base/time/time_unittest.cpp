@@ -9,7 +9,7 @@
 namespace scada::base {
 namespace {
 
-// Time / TimeDelta are std::chrono aliases, so their arithmetic, factories and
+// Time / Duration are std::chrono aliases, so their arithmetic, factories and
 // comparisons are exercised by the standard library. These tests cover the
 // scada-owned behavior layered on top: the null/sentinel vocabulary and the
 // calendar / string conversions.

@@ -4,7 +4,7 @@
 #include "base/time/time.h"
 #include <format>
 
-std::string FormatTime(scada::base::Time time, int flags) {
+std::string FormatTime(scada::Time time, int flags) {
   if (scada::base::IsNull(time))
     return {};
 

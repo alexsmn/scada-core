@@ -67,7 +67,7 @@ std::optional<Time> FromUtcExploded(const Exploded& exploded) {
   const auto time_of_day = hours{exploded.hour} + minutes{exploded.minute} +
                            seconds{exploded.second} +
                            milliseconds{exploded.millisecond};
-  const Time result = time_point_cast<TimeDelta>(sys_days{ymd} + time_of_day);
+  const Time result = time_point_cast<Duration>(sys_days{ymd} + time_of_day);
 
   // Reject component combinations that don't round-trip (parity with the old
   // implementation, e.g. hour == 25 or a normalised out-of-range field).

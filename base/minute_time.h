@@ -15,14 +15,14 @@ constexpr int64_t MinsEpoch =
     0x01c07385c89dc000LL;  // 2001, 1 Jan, 00:00:00.000
 }  // namespace minute_time_internal
 
-inline unsigned TimeToMins(const scada::base::Time& time) {
+inline unsigned TimeToMins(const scada::Time& time) {
   return static_cast<unsigned>(
       (scada::base::EncodeWireMicroseconds(time) -
        minute_time_internal::MinsEpoch) /
       60e7);
 }
 
-inline scada::base::Time MinsToTime(unsigned mins) {
+inline scada::Time MinsToTime(unsigned mins) {
   int64_t time =
       static_cast<int64_t>(mins * 60e7) + minute_time_internal::MinsEpoch;
   return scada::base::DecodeWireTime(time);

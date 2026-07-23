@@ -55,9 +55,9 @@ TEST(ScadaBaseModuleSmoke, StringUtil) {
 }
 
 TEST(ScadaBaseModuleSmoke, Tier2TimeAndUtilities) {
-  scada::base::TimeDelta delta = scada::base::TimeDelta::FromSeconds(90);
-  EXPECT_EQ(delta.InMinutes(), 1);
-  scada::base::Time now = scada::base::NowUtc();
+  scada::Duration delta = std::chrono::seconds(90);
+  EXPECT_EQ(std::chrono::duration_cast<std::chrono::minutes>(delta).count(), 1);
+  scada::Time now = scada::base::NowUtc();
   EXPECT_FALSE(FormatTime(now).empty());
 
   EXPECT_EQ(scada::base::MD5String("abc"), "900150983cd24fb0d6963f7d28e17f72");

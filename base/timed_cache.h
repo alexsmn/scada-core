@@ -36,7 +36,7 @@ class TimedCache {
 
   void OnTimer();
 
-  const scada::base::TimeDelta cache_duration_ =
+  const scada::Duration cache_duration_ =
       std::chrono::seconds{kCacheDurationS};
 
   std::map<Key, CacheEntry> map_;

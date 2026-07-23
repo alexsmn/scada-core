@@ -3,7 +3,7 @@
 // Version-stable codecs for the on-wire / on-disk time encodings.
 //
 // The int64 "microseconds since the Windows 1601-01-01 epoch" value that Time
-// and TimeDelta expose via ToInternalValue()/FromInternalValue() is a de-facto
+// and Duration expose via ToInternalValue()/FromInternalValue() is a de-facto
 // wire and on-disk contract: it is serialized directly into gRPC messages,
 // SQLite history rows, and the history sync resume cursor. Routing every such
 // boundary through these named codecs — instead of calling ToInternalValue()
@@ -52,12 +52,12 @@ inline Time DecodeWireTime(int64_t wire_us) {
 }
 
 // Signed durations (e.g. history read intervals) share the same µs scale.
-inline int64_t EncodeWireMicroseconds(TimeDelta delta) {
+inline int64_t EncodeWireMicroseconds(Duration delta) {
   return delta.count();
 }
 // Decodes an int64 µs wire value back into a signed duration.
-inline TimeDelta DecodeWireDelta(int64_t wire_us) {
-  return TimeDelta{wire_us};
+inline Duration DecodeWireDelta(int64_t wire_us) {
+  return Duration{wire_us};
 }
 
 // --- double seconds since the Unix 1970-01-01 epoch -------------------------

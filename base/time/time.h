@@ -1,12 +1,13 @@
 #pragma once
 
-// Absolute times and signed durations, expressed as std::chrono aliases.
+// The project's absolute-time and signed-duration types, as std::chrono aliases:
 //
-//   TimeDelta = std::chrono::microseconds
-//   Time      = std::chrono::sys_time<microseconds>  (µs since the Unix epoch)
+//   scada::Duration = std::chrono::microseconds
+//   scada::Time     = std::chrono::sys_time<microseconds>  (µs since the Unix epoch)
 //
-// scada::Time / scada::Duration (core/scada/date_time.h) alias these for the
-// higher (non-base) layers.
+// This is the single spelling used everywhere, the base layer included; the OPC
+// UA domain helpers (Now/IsNull, and the scada:: re-exports of the sentinels
+// below) live in core/scada/date_time.h.
 //
 // Null timestamps: the historical "no value" instant is 0 ticks since the
 // Windows 1601 epoch, which is kNullTime here — NOT the default-constructed
@@ -28,15 +29,19 @@
 typedef struct _FILETIME FILETIME;
 #endif
 
-namespace scada::base {
+namespace scada {
 
 // A signed time interval. OPC UA Part 3 §8.13 Duration,
 // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.13
-using TimeDelta = std::chrono::microseconds;
+using Duration = std::chrono::microseconds;
 
 // An absolute UTC instant at microsecond resolution. OPC UA Part 6 §5.2.2.5,
 // https://reference.opcfoundation.org/Core/Part6/v105/docs/5.2.2.5
-using Time = std::chrono::sys_time<TimeDelta>;
+using Time = std::chrono::sys_time<Duration>;
+
+}  // namespace scada
+
+namespace scada::base {
 
 // Time-unit conversion factors, retained for the low-level microsecond math in
 // the time module and its wire/calendar helpers.

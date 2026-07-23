@@ -9,25 +9,25 @@
 // SerializeToString(TimeDelta) / Deserialize(str, TimeDelta&)
 
 TEST(TimeUtilsTimeDelta, SerializeZero) {
-  auto str = SerializeToString(scada::base::TimeDelta{});
+  auto str = SerializeToString(scada::Duration{});
   EXPECT_EQ("0:00:00", str);
 }
 
 TEST(TimeUtilsTimeDelta, SerializeHoursMinutesSeconds) {
-  scada::base::TimeDelta delta =
+  scada::Duration delta =
       std::chrono::hours{2} + std::chrono::minutes{30} + std::chrono::seconds{15};
   EXPECT_EQ("2:30:15", SerializeToString(delta));
 }
 
 TEST(TimeUtilsTimeDelta, SerializeLargeHours) {
-  scada::base::TimeDelta delta = std::chrono::hours{100} +
+  scada::Duration delta = std::chrono::hours{100} +
                                  std::chrono::minutes{5} +
                                  std::chrono::seconds{3};
   EXPECT_EQ("100:05:03", SerializeToString(delta));
 }
 
 TEST(TimeUtilsTimeDelta, DeserializeValid) {
-  scada::base::TimeDelta delta;
+  scada::Duration delta;
   ASSERT_TRUE(Deserialize("1:02:03", delta));
   EXPECT_EQ(std::chrono::hours{1} + std::chrono::minutes{2} +
                 std::chrono::seconds{3},
@@ -35,13 +35,13 @@ TEST(TimeUtilsTimeDelta, DeserializeValid) {
 }
 
 TEST(TimeUtilsTimeDelta, DeserializeZero) {
-  scada::base::TimeDelta delta;
+  scada::Duration delta;
   ASSERT_TRUE(Deserialize("0:00:00", delta));
-  EXPECT_EQ(scada::base::TimeDelta{}, delta);
+  EXPECT_EQ(scada::Duration{}, delta);
 }
 
 TEST(TimeUtilsTimeDelta, DeserializeInvalidFormat) {
-  scada::base::TimeDelta delta;
+  scada::Duration delta;
   EXPECT_FALSE(Deserialize("", delta));
   EXPECT_FALSE(Deserialize("1:02", delta));
   EXPECT_FALSE(Deserialize("1:02:03:04", delta));
@@ -49,18 +49,18 @@ TEST(TimeUtilsTimeDelta, DeserializeInvalidFormat) {
 }
 
 TEST(TimeUtilsTimeDelta, DeserializeInvalidValues) {
-  scada::base::TimeDelta delta;
+  scada::Duration delta;
   EXPECT_FALSE(Deserialize("a:02:03", delta));
   EXPECT_FALSE(Deserialize("1:bb:03", delta));
   EXPECT_FALSE(Deserialize("1:02:cc", delta));
 }
 
 TEST(TimeUtilsTimeDelta, RoundTrip) {
-  scada::base::TimeDelta original = std::chrono::hours{5} +
+  scada::Duration original = std::chrono::hours{5} +
                                     std::chrono::minutes{45} +
                                     std::chrono::seconds{30};
   auto str = SerializeToString(original);
-  scada::base::TimeDelta parsed;
+  scada::Duration parsed;
   ASSERT_TRUE(Deserialize(str, parsed));
   EXPECT_EQ(original, parsed);
 }
@@ -72,7 +72,7 @@ TEST(TimeUtilsTime, SerializeAndDeserialize) {
   auto str = SerializeToString(time);
   EXPECT_EQ("1994-11-15 12:45:26", str);
 
-  scada::base::Time parsed;
+  scada::Time parsed;
   ASSERT_TRUE(Deserialize(str, parsed));
   // Compare at second granularity (serialization truncates to seconds when
   // milliseconds are zero).
@@ -87,7 +87,7 @@ TEST(TimeUtilsTime, SerializeWithMilliseconds) {
 }
 
 TEST(TimeUtilsTime, DeserializeInvalid) {
-  scada::base::Time time;
+  scada::Time time;
   EXPECT_FALSE(Deserialize("not-a-date", time));
 }
 

@@ -3,11 +3,11 @@
 #include "base/time/time.h"
 #include <chrono>
 
-std::string SerializeToString(scada::base::TimeDelta delta);
-bool Deserialize(std::string_view str, scada::base::TimeDelta& delta);
+std::string SerializeToString(scada::Duration delta);
+bool Deserialize(std::string_view str, scada::Duration& delta);
 
-std::string SerializeToString(scada::base::Time time);
-bool Deserialize(std::string_view str, scada::base::Time& time);
+std::string SerializeToString(scada::Time time);
+bool Deserialize(std::string_view str, scada::Time& time);
 
 template <class Rep, class Period>
 inline auto InMilliseconds(const std::chrono::duration<Rep, Period>& duration) {
@@ -27,7 +27,7 @@ inline auto InMicroseconds(const std::chrono::duration<Rep, Period>& duration) {
 
 // Truncates `time` down to a multiple of `interval` measured from the Unix
 // epoch. Example: TruncateTimeTo(base::NowUtc(), std::chrono::seconds{1}).
-inline scada::base::Time TruncateTimeTo(scada::base::Time time,
-                                        scada::base::TimeDelta interval) {
+inline scada::Time TruncateTimeTo(scada::Time time,
+                                        scada::Duration interval) {
   return time - (time.time_since_epoch() % interval);
 }

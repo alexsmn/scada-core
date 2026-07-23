@@ -15,7 +15,7 @@ class ScopedMockClockOverride {
 
   ~ScopedMockClockOverride() { current_ = nullptr; }
 
-  void Advance(TimeDelta delta) { now_ += delta; }
+  void Advance(Duration delta) { now_ += delta; }
 
   Time Now() const { return now_; }
 

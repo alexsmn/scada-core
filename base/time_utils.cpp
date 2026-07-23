@@ -10,14 +10,14 @@
 namespace {
 
 #ifndef NDEBUG
-scada::base::Time FloorToMilliseconds(scada::base::Time time) {
+scada::Time FloorToMilliseconds(scada::Time time) {
   return std::chrono::floor<std::chrono::milliseconds>(time);
 }
 #endif
 
 }  // namespace
 
-std::string SerializeToString(scada::base::TimeDelta delta) {
+std::string SerializeToString(scada::Duration delta) {
   int64_t s = InSeconds(delta);
   int64_t m = s / 60;
   s = s % 60;
@@ -26,7 +26,7 @@ std::string SerializeToString(scada::base::TimeDelta delta) {
   return std::format("{}:{:02}:{:02}", h, m, s);
 }
 
-bool Deserialize(std::string_view str, scada::base::TimeDelta& delta) {
+bool Deserialize(std::string_view str, scada::Duration& delta) {
   auto parts = SplitString(str, ":");
   if (parts.size() != 3)
     return false;
@@ -41,7 +41,7 @@ bool Deserialize(std::string_view str, scada::base::TimeDelta& delta) {
   return true;
 }
 
-std::string SerializeToString(scada::base::Time time) {
+std::string SerializeToString(scada::Time time) {
   scada::base::Exploded e = scada::base::UtcExplode(time);
   auto str = std::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}", e.year, e.month,
                          e.day_of_month, e.hour, e.minute, e.second);
@@ -50,7 +50,7 @@ std::string SerializeToString(scada::base::Time time) {
     str += std::format(".{:03}", e.millisecond);
 
 #ifndef NDEBUG
-  scada::base::Time parsed_time;
+  scada::Time parsed_time;
   bool parse_result = Deserialize(str, parsed_time);
   scada::base::Check(parse_result);
   scada::base::Check(FloorToMilliseconds(time) == parsed_time);
@@ -59,7 +59,7 @@ std::string SerializeToString(scada::base::Time time) {
   return str;
 }
 
-bool Deserialize(std::string_view str, scada::base::Time& time) {
+bool Deserialize(std::string_view str, scada::Time& time) {
   if (auto parsed = scada::base::TimeFromUtcString(str)) {
     time = *parsed;
     return true;
