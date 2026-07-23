@@ -11,7 +11,7 @@ class DataValue {
  public:
   constexpr DataValue() = default;
 
-  constexpr DataValue(StatusCode status_code, DateTime server_timestamp)
+  constexpr DataValue(StatusCode status_code, Time server_timestamp)
       : server_timestamp{server_timestamp}, status_code{status_code} {
     base::Check(!IsGood(status_code));
   }
@@ -19,8 +19,8 @@ class DataValue {
   template <class T>
   DataValue(T&& value,
             Qualifier qualifier,
-            DateTime source_timestamp,
-            DateTime server_timestamp)
+            Time source_timestamp,
+            Time server_timestamp)
       : value(std::forward<T>(value)),
         qualifier(std::move(qualifier)),
         source_timestamp(source_timestamp),
@@ -47,8 +47,8 @@ class DataValue {
 
   Variant value;
   Qualifier qualifier;
-  DateTime source_timestamp = scada::kNullTime;
-  DateTime server_timestamp = scada::kNullTime;
+  Time source_timestamp = scada::kNullTime;
+  Time server_timestamp = scada::kNullTime;
   StatusCode status_code = StatusCode::Good;
 };
 

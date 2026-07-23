@@ -108,8 +108,8 @@ class node {
       HistoryReadRawDetails details) const;
 
   struct event_history_details {
-    DateTime from = scada::kNullTime;
-    DateTime to = scada::kNullTime;
+    Time from = scada::kNullTime;
+    Time to = scada::kNullTime;
     EventFilter filter;
   };
 

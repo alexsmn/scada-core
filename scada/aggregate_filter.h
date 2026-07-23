@@ -13,7 +13,7 @@ struct AggregateFilter {
 
   std::strong_ordering operator<=>(const AggregateFilter&) const = default;
 
-  DateTime start_time = scada::kNullTime;
+  Time start_time = scada::kNullTime;
   Duration interval = Duration::zero();
   NodeId aggregate_type;
 };

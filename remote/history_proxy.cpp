@@ -53,8 +53,8 @@ Awaitable<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
 
 Awaitable<scada::HistoryReadEventsResult> HistoryProxy::HistoryReadEvents(
     scada::NodeId node_id,
-    scada::DateTime from,
-    scada::DateTime to,
+    scada::Time from,
+    scada::Time to,
     scada::EventFilter filter) {
   if (!sender_) {
     co_return scada::HistoryReadEventsResult{

@@ -53,10 +53,10 @@ struct Event {
   // zero after that.
   EventId event_id = 0;
   // `time` cannot be null.
-  DateTime time = scada::kNullTime;
+  Time time = scada::kNullTime;
   // `receive_time` is assigned by server. It's null until the event is
   // processed by server.
-  DateTime receive_time = scada::kNullTime;
+  Time receive_time = scada::kNullTime;
   scada::UInt32 change_mask = 0;
   scada::UInt32 severity = kSeverityNormal;
   // The node the event originates from; corresponds to `SourceNode` of
@@ -80,7 +80,7 @@ struct Event {
   scada::LocalizedText message;
   bool acked = false;
   // `acknowledged_time` must be non-null if `acked` is true.
-  DateTime acknowledged_time = scada::kNullTime;
+  Time acknowledged_time = scada::kNullTime;
   // `acknowledged_user_id` can be null if `acked` is true.
   NodeId acknowledged_user_id;
 };
@@ -143,7 +143,7 @@ std::ostream& operator<<(std::ostream& stream, const Event& event);
 
 // Event still renders through operator<< + StructWriter, bridged into
 // std::format by OStreamFormatter (see base/struct_writer.h); its value fields
-// (DateTime, Variant, ...) are not yet std::format-native.
+// (Time, Variant, ...) are not yet std::format-native.
 template <>
 struct std::formatter<scada::Event> : OStreamFormatter {};
 

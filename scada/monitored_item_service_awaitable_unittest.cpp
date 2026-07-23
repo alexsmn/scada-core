@@ -121,10 +121,10 @@ TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
 
   Drain(executor);
   second_item->NotifyDataChange(
-      DataValue{Variant{22}, {}, DateTime{}, DateTime{}});
+      DataValue{Variant{22}, {}, Time{}, Time{}});
   Drain(executor);
   first_item->NotifyDataChange(
-      DataValue{Variant{11}, {}, DateTime{}, DateTime{}});
+      DataValue{Variant{11}, {}, Time{}, Time{}});
 
   EXPECT_THAT(WaitResult(executor, read_result),
               ElementsAre(Field(&DataValue::value, Variant{11}),
@@ -163,7 +163,7 @@ TEST(MonitoredItemServiceAwaitable, ReadInitialValueReturnsFirstDataChange) {
   Drain(executor);
   EXPECT_FALSE(read_result->done);
 
-  item->NotifyDataChange(DataValue{Variant{77}, {}, DateTime{}, DateTime{}});
+  item->NotifyDataChange(DataValue{Variant{77}, {}, Time{}, Time{}});
 
   auto data_value = WaitResult(executor, read_result);
   EXPECT_EQ(data_value.status_code, StatusCode::Good);
@@ -252,7 +252,7 @@ TEST(MonitoredItemSubscription, LegacyAdapterAddsAndReadsDataChanges) {
   EXPECT_EQ(add_results[0].item_id, 1u);
   EXPECT_EQ(add_results[0].client_handle, 42u);
 
-  item->NotifyDataChange(DataValue{Variant{11}, {}, DateTime{}, DateTime{}});
+  item->NotifyDataChange(DataValue{Variant{11}, {}, Time{}, Time{}});
 
   auto notifications = WaitAwaitable(executor, (*subscription)->ReadNext(8));
   ASSERT_TRUE(notifications.ok()) << notifications.status();
@@ -287,7 +287,7 @@ TEST(MonitoredItemSubscription, LegacyAdapterReadNextWaitsForNotification) {
   Drain(executor);
   EXPECT_FALSE(read_result->done);
 
-  item->NotifyDataChange(DataValue{Variant{12}, {}, DateTime{}, DateTime{}});
+  item->NotifyDataChange(DataValue{Variant{12}, {}, Time{}, Time{}});
 
   auto notifications = WaitResult(executor, read_result);
   ASSERT_TRUE(notifications.ok()) << notifications.status();

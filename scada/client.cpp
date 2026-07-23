@@ -80,7 +80,7 @@ Awaitable<StatusOr<scada::node>> client::add_node(AddNodesItem item) const {
 }
 
 Awaitable<Status> client::acknowledge_events(std::vector<EventId> event_ids,
-                                             DateTime acknowledge_time) const {
+                                             Time acknowledge_time) const {
   base::Check(!event_ids.empty());
   co_return co_await server_node().call(
       scada::id::AcknowledgeableConditionType_Acknowledge, std::move(event_ids),

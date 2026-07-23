@@ -5,9 +5,9 @@
 
 namespace scada {
 
-using DateTimeRange = Interval<DateTime>;
+using TimeRange = Interval<Time>;
 
 }  // namespace scada
 
-std::string ToString(scada::DateTime time);
-std::u16string ToString16(scada::DateTime time);
+std::string ToString(scada::Time time);
+std::u16string ToString16(scada::Time time);

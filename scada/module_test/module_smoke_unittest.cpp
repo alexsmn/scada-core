@@ -45,8 +45,8 @@ TEST(ScadaCoreModuleSmoke, StatusAndVariant) {
 
   scada::Variant variant{scada::Int32{7}};
   EXPECT_FALSE(variant.is_null());
-  scada::DataValue value{variant, scada::Qualifier{}, scada::DateTime{},
-                         scada::DateTime{}};
+  scada::DataValue value{variant, scada::Qualifier{}, scada::Time{},
+                         scada::Time{}};
   EXPECT_FALSE(value.value.is_null());
 
   // Global ToString overload set (exported once, spans several headers).

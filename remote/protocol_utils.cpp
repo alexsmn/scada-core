@@ -328,7 +328,7 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
         Convert(source.as_node_id(), *target.mutable_node_id_value());
         break;
       case scada::Variant::DATE_TIME:
-        target.set_time_value_time(scada::base::EncodeWireMicroseconds(source.get<scada::DateTime>()));
+        target.set_time_value_time(scada::base::EncodeWireMicroseconds(source.get<scada::Time>()));
         break;
       case scada::Variant::EXTENSION_OBJECT:
         Convert(source.get<scada::ExtensionObject>(),

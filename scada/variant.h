@@ -40,7 +40,7 @@ class Variant {
                             NodeId,
                             ExpandedNodeId,
                             ExtensionObject,
-                            DateTime,
+                            Time,
                             std::vector<std::monostate>,
                             std::vector<bool>,
                             std::vector<Int8>,
@@ -99,7 +99,7 @@ class Variant {
   Variant(String str) noexcept : data_{std::move(str)} {}
   Variant(QualifiedName value) noexcept : data_{std::move(value)} {}
   Variant(LocalizedText str) noexcept : data_{std::move(str)} {}
-  constexpr Variant(DateTime value) noexcept : data_{value} {}
+  constexpr Variant(Time value) noexcept : data_{value} {}
   Variant(const char* str) : data_{str ? String{str} : String{}} {}
   Variant(const char16_t* str)
       : data_{str ? LocalizedText{str} : LocalizedText{}} {}

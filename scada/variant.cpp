@@ -195,15 +195,15 @@ struct FormatHelperT<LocalizedText, LocalizedText> {
 };
 
 template <>
-struct FormatHelperT<String, DateTime> {
-  static inline String Format(const DateTime& value) {
+struct FormatHelperT<String, Time> {
+  static inline String Format(const Time& value) {
     return FormatTime(value);
   }
 };
 
 template <>
-struct FormatHelperT<LocalizedText, DateTime> {
-  static inline LocalizedText Format(const DateTime& value) {
+struct FormatHelperT<LocalizedText, Time> {
+  static inline LocalizedText Format(const Time& value) {
     return ToLocalizedText(FormatTime(value));
   }
 };
@@ -256,7 +256,7 @@ bool Variant::ToStringHelper(String& string_value) const {
       string_value = FormatHelper<String>(as_node_id().ToString());
       return true;
     case DATE_TIME:
-      string_value = FormatHelper<String>(get<DateTime>());
+      string_value = FormatHelper<String>(get<Time>());
       return true;
     default: {
       Int64 int64_value;

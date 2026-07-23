@@ -39,10 +39,10 @@ class client {
   Awaitable<StatusOr<scada::node>> add_node(AddNodesItem item) const;
 
   Awaitable<Status> acknowledge_events(std::vector<EventId> event_ids,
-                                       DateTime acknowledge_time) const;
+                                       Time acknowledge_time) const;
 
   Awaitable<Status> acknowledge_event(EventId event_id,
-                                      DateTime acknowledge_time) const {
+                                      Time acknowledge_time) const {
     return acknowledge_events({event_id}, acknowledge_time);
   }
 

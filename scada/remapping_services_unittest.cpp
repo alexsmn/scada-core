@@ -93,8 +93,8 @@ class FakeHistoryService : public scada::HistoryService {
 
   Awaitable<scada::HistoryReadEventsResult> HistoryReadEvents(
       scada::NodeId node_id,
-      scada::DateTime,
-      scada::DateTime,
+      scada::Time,
+      scada::Time,
       scada::EventFilter) override {
     recorded_events_node = node_id;
     co_return scada::HistoryReadEventsResult{};
@@ -370,7 +370,7 @@ TEST(RemappingHistoryServiceTest, RemapsReadEventsSourceNode) {
 
   WaitAwaitable(executor,
                 service.HistoryReadEvents(scada::NodeId{5, fixture.proxy_ns},
-                                          scada::DateTime{}, scada::DateTime{},
+                                          scada::Time{}, scada::Time{},
                                           scada::EventFilter{}));
   EXPECT_EQ(inner.recorded_events_node,
             scada::NodeId(5, fixture.downstream_ns));

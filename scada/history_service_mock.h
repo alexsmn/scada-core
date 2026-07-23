@@ -15,7 +15,7 @@ class MockHistoryService : public HistoryService {
           co_return HistoryReadRawResult{};
         });
     ON_CALL(*this, HistoryReadEvents(_, _, _, _))
-        .WillByDefault([](NodeId, scada::DateTime, scada::DateTime,
+        .WillByDefault([](NodeId, scada::Time, scada::Time,
                           EventFilter) -> Awaitable<HistoryReadEventsResult> {
           co_return HistoryReadEventsResult{};
         });
@@ -29,8 +29,8 @@ class MockHistoryService : public HistoryService {
   MOCK_METHOD(Awaitable<HistoryReadEventsResult>,
               HistoryReadEvents,
               (NodeId node_id,
-               scada::DateTime from,
-               scada::DateTime to,
+               scada::Time from,
+               scada::Time to,
                EventFilter filter),
               (override));
 };

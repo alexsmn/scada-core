@@ -15,8 +15,8 @@ class HistoryService {
 
   virtual Awaitable<HistoryReadEventsResult> HistoryReadEvents(
       NodeId node_id,
-      scada::DateTime from,
-      scada::DateTime to,
+      scada::Time from,
+      scada::Time to,
       EventFilter filter) = 0;
 };
 

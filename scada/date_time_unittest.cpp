@@ -7,7 +7,7 @@
 
 namespace {
 
-scada::DateTime MakeUTCTime(int year, int month, int day, int hour, int minute,
+scada::Time MakeUTCTime(int year, int month, int day, int hour, int minute,
                             int second, int millisecond = 0) {
   scada::base::Exploded exploded = {};
   exploded.year = year;
@@ -17,7 +17,7 @@ scada::DateTime MakeUTCTime(int year, int month, int day, int hour, int minute,
   exploded.minute = minute;
   exploded.second = second;
   exploded.millisecond = millisecond;
-  std::optional<scada::DateTime> time = scada::base::FromUtcExploded(exploded);
+  std::optional<scada::Time> time = scada::base::FromUtcExploded(exploded);
   EXPECT_TRUE(time.has_value());
   return time.value_or(scada::kNullTime);
 }

@@ -15,8 +15,8 @@ struct HistoryReadRawDetails {
   bool forward() const { return scada::IsNull(to) || from <= to; }
 
   NodeId node_id;
-  scada::DateTime from = scada::kNullTime;
-  scada::DateTime to = scada::kNullTime;
+  scada::Time from = scada::kNullTime;
+  scada::Time to = scada::kNullTime;
   size_t max_count = 0;
   AggregateFilter aggregation;
   bool release_continuation_point = false;
@@ -26,8 +26,8 @@ struct HistoryReadRawDetails {
 struct HistoryReadEventsDetails {
   // Defines the root source node.
   NodeId node_id;
-  scada::DateTime from = scada::kNullTime;
-  scada::DateTime to = scada::kNullTime;
+  scada::Time from = scada::kNullTime;
+  scada::Time to = scada::kNullTime;
   EventFilter filter;
 };
 

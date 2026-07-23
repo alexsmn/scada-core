@@ -5,8 +5,8 @@
 //   TimeDelta = std::chrono::microseconds
 //   Time      = std::chrono::sys_time<microseconds>  (µs since the Unix epoch)
 //
-// scada::DateTime / scada::Duration (core/scada/date_time.h) alias these and
-// carry the OPC UA DataType vocabulary.
+// scada::Time / scada::Duration (core/scada/date_time.h) alias these for the
+// higher (non-base) layers.
 //
 // Null timestamps: the historical "no value" instant is 0 ticks since the
 // Windows 1601 epoch, which is kNullTime here — NOT the default-constructed

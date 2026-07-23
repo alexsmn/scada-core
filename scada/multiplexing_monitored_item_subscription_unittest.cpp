@@ -216,7 +216,7 @@ TEST(MultiplexingSubscriptionServingGate, RewritesBackendSampleWhileBlocked) {
       DataChangeNotification{.item_id = 1,
                              .client_handle = 1,
                              .value = DataValue{Variant{42}, Qualifier{},
-                                                DateTime{}, DateTime{}}}});
+                                                Time{}, Time{}}}});
   FakeBackendService service{backend_state};
 
   StatusOr<std::unique_ptr<MonitoredItemSubscription>> subscription =
