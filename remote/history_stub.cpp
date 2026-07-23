@@ -75,10 +75,10 @@ void HistoryStub::OnHistoryReadRaw(const protocol::Request& request) {
     details.from =
         history_read_raw.from_time()
             ? scada::base::DecodeWireTime(history_read_raw.from_time())
-            : scada::base::Time();
+            : scada::DateTime();
     details.to = history_read_raw.to_time()
                      ? scada::base::DecodeWireTime(history_read_raw.to_time())
-                     : scada::base::Time();
+                     : scada::DateTime();
     details.max_count = history_read_raw.max_count();
     details.aggregation = history_read_raw.has_aggregate_filter()
                               ? ConvertTo<scada::AggregateFilter>(
@@ -103,10 +103,10 @@ void HistoryStub::OnHistoryReadEvents(const protocol::Request& request) {
   const auto node_id = ConvertTo<scada::NodeId>(history_read_events.node_id());
   auto from = history_read_events.from_time()
                   ? scada::base::DecodeWireTime(history_read_events.from_time())
-                  : scada::base::Time();
+                  : scada::DateTime();
   auto to = history_read_events.to_time()
                 ? scada::base::DecodeWireTime(history_read_events.to_time())
-                : scada::base::Time();
+                : scada::DateTime();
   scada::EventFilter filter;
   if (history_read_events.has_filter())
     Convert(history_read_events.filter(), filter);
@@ -164,8 +164,8 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
     unsigned request_id,
     std::string trace_id,
     scada::NodeId node_id,
-    scada::base::Time from,
-    scada::base::Time to,
+    scada::DateTime from,
+    scada::DateTime to,
     scada::EventFilter filter) {
   auto span = tracer_.StartSpan("scada.grpc/HistoryReadEvents",
                                 TraceSpanKind::kServer, trace_id);

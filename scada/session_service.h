@@ -2,6 +2,7 @@
 
 #include "base/awaitable.h"
 #include "base/time/time.h"
+#include "scada/date_time.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
 #include "scada/privileges.h"
@@ -70,7 +71,7 @@ class SessionService {
 
   virtual Awaitable<void> Disconnect() = 0;
 
-  virtual bool IsConnected(base::TimeDelta* ping_delay = nullptr) const = 0;
+  virtual bool IsConnected(scada::Duration* ping_delay = nullptr) const = 0;
 
   virtual NodeId GetUserId() const = 0;
   virtual bool HasPrivilege(Privilege privilege) const = 0;

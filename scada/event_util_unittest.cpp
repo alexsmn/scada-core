@@ -12,8 +12,8 @@ Event MakeEvent(NodeId event_type_id) {
   Event event;
   event.event_type_id = std::move(event_type_id);
   event.event_id = 0x1234567;
-  event.time = base::NowUtc();
-  event.receive_time = base::NowUtc();
+  event.time = scada::Now();
+  event.receive_time = scada::Now();
   event.change_mask = Event::EVT_VAL;
   event.severity = kSeverityWarning;
   event.source_node_id = NodeId{42, 2};

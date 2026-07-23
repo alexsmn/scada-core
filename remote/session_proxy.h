@@ -63,7 +63,7 @@ class SessionProxy : private SessionProxyContext,
       scada::SessionConnectParams params) override;
   virtual Awaitable<void> Reconnect() override;
   virtual Awaitable<void> Disconnect() override;
-  virtual bool IsConnected(scada::base::TimeDelta* ping_delay) const override;
+  virtual bool IsConnected(scada::Duration* ping_delay) const override;
   virtual bool HasPrivilege(scada::Privilege privilege) const override;
   virtual bool IsScada() const override { return false; }
   virtual scada::NodeId GetUserId() const override;
@@ -168,7 +168,7 @@ class SessionProxy : private SessionProxyContext,
   // Ping.
   AnyExecutorTimer ping_timer_;
   std::chrono::steady_clock::time_point ping_time_;
-  scada::base::TimeDelta last_ping_delay_ = scada::base::TimeDelta::zero();
+  scada::Duration last_ping_delay_ = scada::Duration::zero();
 
   std::optional<transport::WriteQueue> write_queue_;
 

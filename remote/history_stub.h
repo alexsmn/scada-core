@@ -47,8 +47,8 @@ class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
       unsigned request_id,
       std::string trace_id,
       scada::NodeId node_id,
-      scada::base::Time from,
-      scada::base::Time to,
+      scada::DateTime from,
+      scada::DateTime to,
       scada::EventFilter filter);
 
   scada::HistoryService& service_;

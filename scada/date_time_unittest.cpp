@@ -17,9 +17,9 @@ scada::DateTime MakeUTCTime(int year, int month, int day, int hour, int minute,
   exploded.minute = minute;
   exploded.second = second;
   exploded.millisecond = millisecond;
-  std::optional<scada::base::Time> time = scada::base::FromUtcExploded(exploded);
+  std::optional<scada::DateTime> time = scada::base::FromUtcExploded(exploded);
   EXPECT_TRUE(time.has_value());
-  return time.value_or(scada::base::kNullTime);
+  return time.value_or(scada::kNullTime);
 }
 
 }  // namespace
@@ -42,7 +42,7 @@ TEST(DateTimeTest, ToStringNotEmpty) {
 }
 
 TEST(DateTimeTest, ToStringNullIsEmpty) {
-  EXPECT_TRUE(ToString(scada::base::kNullTime).empty());
+  EXPECT_TRUE(ToString(scada::kNullTime).empty());
 }
 
 TEST(DateTimeTest, ToString16NotEmpty) {
@@ -51,7 +51,7 @@ TEST(DateTimeTest, ToString16NotEmpty) {
 }
 
 TEST(DateTimeTest, ToString16NullIsEmpty) {
-  EXPECT_TRUE(ToString16(scada::base::kNullTime).empty());
+  EXPECT_TRUE(ToString16(scada::kNullTime).empty());
 }
 
 TEST(DateTimeTest, ToString16MatchesToString) {

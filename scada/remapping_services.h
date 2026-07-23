@@ -81,8 +81,8 @@ class RemappingHistoryService : public scada::HistoryService {
 
   Awaitable<scada::HistoryReadEventsResult> HistoryReadEvents(
       scada::NodeId node_id,
-      base::Time from,
-      base::Time to,
+      scada::DateTime from,
+      scada::DateTime to,
       scada::EventFilter filter) override;
 
  private:

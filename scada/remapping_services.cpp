@@ -94,8 +94,8 @@ Awaitable<scada::HistoryReadRawResult> RemappingHistoryService::HistoryReadRaw(
 
 Awaitable<scada::HistoryReadEventsResult>
 RemappingHistoryService::HistoryReadEvents(scada::NodeId node_id,
-                                           base::Time from,
-                                           base::Time to,
+                                           scada::DateTime from,
+                                           scada::DateTime to,
                                            scada::EventFilter filter) {
   // Only the source NodeId lives in the downstream's namespaces here. Event
   // payloads (std::any) are not yet remapped — the same untranslated surface as

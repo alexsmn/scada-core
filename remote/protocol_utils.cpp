@@ -487,7 +487,7 @@ void Convert(const scada::Event& source, protocol::Event& target) {
   }
   if (source.acked)
     target.set_acknowledged(true);
-  if (!scada::base::IsNull(source.acknowledged_time))
+  if (!scada::IsNull(source.acknowledged_time))
     target.set_acknowledge_time(
         scada::base::EncodeWireMicroseconds(source.acknowledged_time));
   if (!source.acknowledged_user_id.is_null())

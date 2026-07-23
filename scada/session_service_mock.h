@@ -24,7 +24,7 @@ class MockSessionService : public SessionService {
 
   MOCK_METHOD(bool,
               IsConnected,
-              (base::TimeDelta * ping_delay),
+              (scada::Duration * ping_delay),
               (const override));
 
   MOCK_METHOD(NodeId, GetUserId, (), (const override));

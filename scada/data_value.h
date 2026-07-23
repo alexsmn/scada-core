@@ -47,13 +47,13 @@ class DataValue {
 
   Variant value;
   Qualifier qualifier;
-  DateTime source_timestamp = base::kNullTime;
-  DateTime server_timestamp = base::kNullTime;
+  DateTime source_timestamp = scada::kNullTime;
+  DateTime server_timestamp = scada::kNullTime;
   StatusCode status_code = StatusCode::Good;
 };
 
 inline bool IsUpdate(const DataValue& current_data, const DataValue& new_data) {
-  return base::IsNull(current_data.source_timestamp) ||
+  return scada::IsNull(current_data.source_timestamp) ||
          (current_data.source_timestamp < new_data.source_timestamp) ||
          (current_data.source_timestamp == new_data.source_timestamp &&
           current_data.server_timestamp <= new_data.server_timestamp);

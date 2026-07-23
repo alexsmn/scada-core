@@ -201,7 +201,7 @@ void LegacyMonitoredItemAdapter::AddItem(
               }
               if (data_change_handler)
                 data_change_handler(
-                    DataValue{result_status.code(), base::NowUtc()});
+                    DataValue{result_status.code(), scada::Now()});
               else if (event_handler)
                 event_handler(result_status, {});
               CloseItem(item_state);
@@ -286,7 +286,7 @@ void LegacyMonitoredItemAdapter::OnNotifications(
       }
       if (data_change_handler)
         data_change_handler(
-            DataValue{item_status->status.code(), base::NowUtc()});
+            DataValue{item_status->status.code(), scada::Now()});
       else if (event_handler)
         event_handler(item_status->status, {});
     }

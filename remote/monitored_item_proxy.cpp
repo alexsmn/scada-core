@@ -126,7 +126,7 @@ void MonitoredItemProxy::OnChannelOpened(MonitoredItemRouter& router,
 
   if (data_change_handler_) {
     auto tvq = current_data_;
-    tvq.server_timestamp = scada::base::NowUtc();
+    tvq.server_timestamp = scada::Now();
     tvq.qualifier = scada::Qualifier::OFFLINE;
     current_data_ = tvq;
     data_change_handler_(tvq);

@@ -737,7 +737,7 @@ Awaitable<void> SessionProxy::ReconnectAsync() {
   co_await connect_completion_.Wait();
 }
 
-bool SessionProxy::IsConnected(scada::base::TimeDelta* ping_delay) const {
+bool SessionProxy::IsConnected(scada::Duration* ping_delay) const {
   if (ping_delay) {
     *ping_delay = last_ping_delay_;
     if (ping_time_ != std::chrono::steady_clock::time_point{})
