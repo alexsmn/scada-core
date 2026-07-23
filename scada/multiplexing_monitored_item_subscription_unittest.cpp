@@ -53,6 +53,47 @@ TEST(ServingGate, DroppedRegistrationIsNotSwept) {
   EXPECT_EQ(calls, 0);
 }
 
+// Regression: a Registration that outlives its ServingGate must destroy
+// cleanly. Previously the Registration held a raw ServingGate* and unregistered
+// from the gate's mutex in its destructor, so a subscription State torn down
+// after the RootNodeManager that owns the gate locked a destroyed std::mutex and
+// aborted with "mutex lock failed: Invalid argument". The registry is now a
+// shared control block referenced weakly, so the late unregister is a no-op.
+TEST(ServingGate, RegistrationOutlivingGateDestroysSafely) {
+  ServingGate::Registration registration;
+  {
+    ServingGate gate;
+    registration = gate.Register([](StatusCode) {});
+  }
+  // `registration` destroyed here, after `gate`: must not touch the destroyed
+  // gate. Reaching this point without aborting is the assertion.
+  SUCCEED();
+}
+
+// A View is a strong handle to the shared block/allow state, so it stays
+// readable after the gate is destroyed (previously the subscription held a raw
+// ServingGate* and read it at notification time — a use-after-free once the
+// subscription outlived the gate). The View freezes on the last published
+// state.
+TEST(ServingGate, ViewOutlivingGateReadsSafely) {
+  ServingGate::View view;
+  {
+    ServingGate gate;
+    gate.SetBlocked(StatusCode::Bad_LicenseExpired);
+    view = gate.view();
+  }
+  // Reads the last published state through the destroyed gate's shared block.
+  EXPECT_FALSE(view.allowed());
+  EXPECT_EQ(view.blocked_status(), StatusCode::Bad_LicenseExpired);
+}
+
+// A default-constructed View means "no gate": always allowed.
+TEST(ServingGate, DefaultViewIsAllowed) {
+  ServingGate::View view;
+  EXPECT_TRUE(view.allowed());
+  EXPECT_EQ(view.blocked_status(), StatusCode::Good);
+}
+
 // --- Multiplexing subscription honoring the gate ----------------------------
 
 // A backend subscription seeded with fixed add/read results, mirroring the pump

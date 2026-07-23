@@ -41,8 +41,8 @@ class MultiplexingMonitoredItemSubscription final
       : state_{std::make_shared<State>(std::move(executor),
                                        std::move(router),
                                        options)} {
-    state_->gate = gate;
     if (gate) {
+      state_->gate_view = gate->view();
       // Registered while blocked delivery is off: a new subscription cannot be
       // created while the gate is blocked (CreateSubscription is refused), so
       // it never misses a sweep. The registration auto-unregisters when
@@ -182,7 +182,11 @@ class MultiplexingMonitoredItemSubscription final
 
     // Optional serving gate: while blocked, delivered notifications are
     // rewritten to its blocked status and `registration` drives the item sweep.
-    ServingGate* gate = nullptr;
+    // `gate_view` is a lifetime-safe read handle (a default-constructed view
+    // means "no gate": always allowed), so the notification-time read stays
+    // valid even when this State outlives the gate. `registration` unregisters
+    // the sweep callback and is likewise safe to destroy after the gate.
+    ServingGate::View gate_view;
     ServingGate::Registration registration;
 
     std::mutex mutex;
@@ -232,8 +236,8 @@ class MultiplexingMonitoredItemSubscription final
     // While the serving gate is blocked, do not leak a live backend sample:
     // rewrite the notification's status to the blocked status so the client
     // sees the outage even for items that keep updating.
-    if (state->gate && !state->gate->allowed()) {
-      const StatusCode blocked = state->gate->blocked_status();
+    if (!state->gate_view.allowed()) {
+      const StatusCode blocked = state->gate_view.blocked_status();
       if (auto* data_change =
               std::get_if<DataChangeNotification>(&notification)) {
         data_change->value.status_code = blocked;
