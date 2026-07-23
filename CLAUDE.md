@@ -285,8 +285,21 @@ chromium-heritage `base/...` headers under `base/` (`at_exit.h`,
 reimplementations in `namespace scada::base`. The replacements were:
 `std::filesystem` (paths/files), `boost::json` (for `base::Value`),
 `boost::program_options` (for `base::CommandLine`), `std::to_chars`
-(for `dmg_fp::g_fmt`), and local API-compatible `base::PathService`,
-`base::win::ScopedHandle`, and `base/time/time.h`.
+(for `dmg_fp::g_fmt`), and local API-compatible `base::PathService`
+and `base::win::ScopedHandle`.
+
+The former chromium `base/time/time.h` (`base::Time` / `base::TimeDelta` /
+`base::TimeTicks`) is now thin `std::chrono` aliases: `base::Time =
+std::chrono::sys_time<std::chrono::microseconds>` (also `scada::DateTime`),
+`base::TimeDelta = std::chrono::microseconds` (also `scada::Duration`), and
+monotonic timing uses `std::chrono::steady_clock` directly. The "null"
+timestamp (0 ticks since the 1601 Windows epoch) is `base::kNullTime` —
+distinct from the default-constructed value (the Unix epoch) — tested with
+`base::IsNull()`; range sentinels are `base::kMaxTime`/`kMinTime`. The
+µs-since-1601 wire/on-disk encoding is preserved behind
+`base/time/time_wire_codec.h`, and calendar/string conversions are the free
+functions in `base/time/calendar.h` (UTC via `std::chrono`, local time via the
+OS since libc++ ships no tzdb).
 
 ## Important Files Reference
 
