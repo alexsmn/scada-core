@@ -129,6 +129,8 @@ const Entry kEntries[] = {
      L"Недостаточно прав для выполнения операции"},
     {scada::StatusCode::Bad_NotSupported, "Bad_NotSupported",
      L"Операция не поддерживается"},
+    {scada::StatusCode::Bad_LicenseExpired, "Bad_LicenseExpired",
+     L"Срок действия лицензии истёк"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {

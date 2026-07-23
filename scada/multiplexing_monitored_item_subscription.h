@@ -12,6 +12,7 @@
 namespace scada {
 
 class MonitoredItemService;
+class ServingGate;
 
 // One destination for a monitored item: the backend service to monitor through
 // and the (possibly translated) value id to monitor on that backend.
@@ -29,16 +30,23 @@ using MonitoredItemRouter = std::function<std::vector<MonitoredItemRoute>(
     const ReadValueId& value_id,
     const MonitoringParameters& params)>;
 
-// Builds a `MonitoredItemSubscription` that, for each added item, calls `router`
-// to find the backend service(s), drives each backend through its own
+// Builds a `MonitoredItemSubscription` that, for each added item, calls
+// `router` to find the backend service(s), drives each backend through its own
 // `MonitoredItemSubscriptionPump` on `executor`, and merges all backends'
 // notifications into one stream. This keeps services that delegate or route to
 // other services on the proper subscription API instead of the legacy
 // single-item adapter.
+//
+// When `gate` is non-null the subscription honors it: while the gate is
+// blocked, delivered notifications are rewritten to the gate's blocked status
+// and the subscription's active items are swept to that status on the
+// transition (see ServingGate). Null (the default) delivers notifications
+// unchanged. The pointee must outlive the returned subscription.
 StatusOr<std::unique_ptr<MonitoredItemSubscription>>
 MakeMultiplexingMonitoredItemSubscription(
     AnyExecutor executor,
     MonitoredItemRouter router,
-    MonitoredItemSubscriptionOptions options);
+    MonitoredItemSubscriptionOptions options,
+    ServingGate* gate = nullptr);
 
 }  // namespace scada

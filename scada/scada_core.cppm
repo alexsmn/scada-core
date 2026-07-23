@@ -69,6 +69,7 @@ module;
 #include "scada/role_permission_encoding.h"
 #include "scada/service_context.h"
 #include "scada/services.h"
+#include "scada/serving_gate.h"
 #include "scada/session.h"
 #include "scada/session_debugger.h"
 #include "scada/session_service.h"
@@ -313,6 +314,7 @@ using scada::MonitoredItemRouter;
 using scada::MonitoredItemSubscriptionPump;
 using scada::ReadInitialValueAsync;
 using scada::ReadInitialValuesAsync;
+using scada::ServingGate;
 
 // Free operator sets at scada namespace scope, picked up across all
 // included headers: NodeId/NumericId comparisons (node_id.h) and the

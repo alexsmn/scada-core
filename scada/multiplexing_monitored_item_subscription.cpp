@@ -3,6 +3,7 @@
 #include "scada/attribute_ids.h"
 #include "scada/monitored_item_service.h"
 #include "scada/monitored_item_subscription_pump.h"
+#include "scada/serving_gate.h"
 
 #include <algorithm>
 #include <boost/asio/redirect_error.hpp>
@@ -35,10 +36,24 @@ class MultiplexingMonitoredItemSubscription final
   MultiplexingMonitoredItemSubscription(
       AnyExecutor executor,
       MonitoredItemRouter router,
-      MonitoredItemSubscriptionOptions options)
+      MonitoredItemSubscriptionOptions options,
+      ServingGate* gate)
       : state_{std::make_shared<State>(std::move(executor),
                                        std::move(router),
-                                       options)} {}
+                                       options)} {
+    state_->gate = gate;
+    if (gate) {
+      // Registered while blocked delivery is off: a new subscription cannot be
+      // created while the gate is blocked (CreateSubscription is refused), so
+      // it never misses a sweep. The registration auto-unregisters when
+      // `state_` (and thus its member) is destroyed.
+      std::weak_ptr<State> weak_state = state_;
+      state_->registration =
+          gate->Register([weak_state](StatusCode blocked_status) {
+            SweepBlocked(weak_state, blocked_status);
+          });
+    }
+  }
 
   ~MultiplexingMonitoredItemSubscription() override {
     Close(StatusCode::Bad_Disconnected);
@@ -77,8 +92,9 @@ class MultiplexingMonitoredItemSubscription final
         if (state_->closed) {
           co_return state_->close_status;
         }
-        const std::size_t count = std::min(
-            {max_count, state_->options.max_batch_size, state_->pending.size()});
+        const std::size_t count =
+            std::min({max_count, state_->options.max_batch_size,
+                      state_->pending.size()});
         if (count != 0) {
           result.reserve(count);
           for (std::size_t i = 0; i < count; ++i) {
@@ -164,6 +180,11 @@ class MultiplexingMonitoredItemSubscription final
     MonitoredItemRouter router;
     MonitoredItemSubscriptionOptions options;
 
+    // Optional serving gate: while blocked, delivered notifications are
+    // rewritten to its blocked status and `registration` drives the item sweep.
+    ServingGate* gate = nullptr;
+    ServingGate::Registration registration;
+
     std::mutex mutex;
     MonitoredItemId next_item_id = 1;
     std::unordered_map<MonitoredItemId, Item> items;
@@ -198,13 +219,30 @@ class MultiplexingMonitoredItemSubscription final
       client_handle = it != state->items.end() ? it->second.client_handle : 0;
     };
 
-    if (auto* data_change = std::get_if<DataChangeNotification>(&notification)) {
+    if (auto* data_change =
+            std::get_if<DataChangeNotification>(&notification)) {
       remap(data_change->item_id, data_change->client_handle);
     } else if (auto* event = std::get_if<EventNotification>(&notification)) {
       remap(event->item_id, event->client_handle);
     } else if (auto* item_status =
                    std::get_if<ItemStatusNotification>(&notification)) {
       remap(item_status->item_id, item_status->client_handle);
+    }
+
+    // While the serving gate is blocked, do not leak a live backend sample:
+    // rewrite the notification's status to the blocked status so the client
+    // sees the outage even for items that keep updating.
+    if (state->gate && !state->gate->allowed()) {
+      const StatusCode blocked = state->gate->blocked_status();
+      if (auto* data_change =
+              std::get_if<DataChangeNotification>(&notification)) {
+        data_change->value.status_code = blocked;
+      } else if (auto* event = std::get_if<EventNotification>(&notification)) {
+        event->status = blocked;
+      } else if (auto* item_status =
+                     std::get_if<ItemStatusNotification>(&notification)) {
+        item_status->status = blocked;
+      }
     }
 
     if (state->pending.size() >= state->options.max_pending_notifications) {
@@ -217,6 +255,44 @@ class MultiplexingMonitoredItemSubscription final
     }
 
     state->pending.emplace_back(std::move(notification));
+    if (state->read_waiter) {
+      state->read_waiter->cancel();
+      state->read_waiter.reset();
+    }
+  }
+
+  // Pushes `blocked_status` to every active item, so items whose backend value
+  // does not change during the block still report the outage. Invoked by the
+  // ServingGate on the transition into blocked (never with the gate lock held).
+  // Mirrors PushNotification's queueing/wake, but sets item_id/client_handle
+  // directly rather than remapping a backend client_handle.
+  static void SweepBlocked(std::weak_ptr<State> weak_state,
+                           StatusCode blocked_status) {
+    auto state = weak_state.lock();
+    if (!state) {
+      return;
+    }
+
+    std::lock_guard lock{state->mutex};
+    if (state->closed) {
+      return;
+    }
+
+    for (const auto& [item_id, item] : state->items) {
+      if (state->pending.size() >= state->options.max_pending_notifications) {
+        if (!state->overflow_reported) {
+          state->overflow_reported = true;
+          state->pending.emplace_back(
+              OverflowNotification{StatusCode::Bad_ObjectIsBusy});
+        }
+        break;
+      }
+      state->pending.emplace_back(
+          ItemStatusNotification{.item_id = item_id,
+                                 .client_handle = item.client_handle,
+                                 .status = blocked_status});
+    }
+
     if (state->read_waiter) {
       state->read_waiter->cancel();
       state->read_waiter.reset();
@@ -360,10 +436,11 @@ StatusOr<std::unique_ptr<MonitoredItemSubscription>>
 MakeMultiplexingMonitoredItemSubscription(
     AnyExecutor executor,
     MonitoredItemRouter router,
-    MonitoredItemSubscriptionOptions options) {
+    MonitoredItemSubscriptionOptions options,
+    ServingGate* gate) {
   return std::unique_ptr<MonitoredItemSubscription>{
       std::make_unique<MultiplexingMonitoredItemSubscription>(
-          std::move(executor), std::move(router), options)};
+          std::move(executor), std::move(router), options, gate)};
 }
 
 }  // namespace scada

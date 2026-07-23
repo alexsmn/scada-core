@@ -105,8 +105,8 @@ enum class StatusCode : unsigned {
   // OPC UA Part 4 §5.8.2 Browse,
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.2
   Bad_ViewIdUnknown = Bad | 45,
-  // The HistoryRead details parameter is not valid (e.g. a raw read with no time
-  // range and no continuation point) — OPC UA Part 11 §6.4 HistoryRead,
+  // The HistoryRead details parameter is not valid (e.g. a raw read with no
+  // time range and no continuation point) — OPC UA Part 11 §6.4 HistoryRead,
   // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.4
   Bad_HistoryOperationInvalid = Bad | 46,
   // There is no subscription available for this session — OPC UA Part 4 §5.13.5
@@ -121,6 +121,12 @@ enum class StatusCode : unsigned {
   // the OPC UA Bad_NotSupported concept — OPC UA Part 4 §7.39 Common
   // StatusCodes, https://reference.opcfoundation.org/Core/Part4/v105/docs/7.39
   Bad_NotSupported = Bad | 49,
+  // The server requires a valid license to serve requests but its license has
+  // expired: the process and its listeners stay up, but service requests are
+  // refused until the license is renewed. Maps to the OPC UA Bad_LicenseExpired
+  // code (0x810E0000) — OPC UA Part 4 §7.39 Common StatusCodes,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.39
+  Bad_LicenseExpired = Bad | 50,
 };
 
 enum class StatusLimit {
