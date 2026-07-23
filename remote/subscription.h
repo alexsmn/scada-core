@@ -9,7 +9,7 @@
 typedef int MonitoredItemId;
 
 struct SubscriptionParams {
-  scada::base::TimeDelta update_rate;
+  scada::base::TimeDelta update_rate = scada::base::TimeDelta::zero();
 };
 
 struct MonitoredItemParams {

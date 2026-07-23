@@ -1,10 +1,8 @@
 #pragma once
 
-#include <string>
+#include "base/time/time.h"
 
-namespace scada::base {
-class Time;
-}
+#include <string>
 
 enum TimeFormatFlags {
 	TIME_FORMAT_DATE = 0x0100,

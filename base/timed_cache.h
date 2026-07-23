@@ -4,7 +4,9 @@
 #include "base/any_executor_timer.h"
 #include "base/check.h"
 #include "base/time/time.h"
+#include "base/time_utils.h"
 
+#include <chrono>
 #include <concepts>
 #include <map>
 #include <memory>
@@ -29,22 +31,22 @@ class TimedCache {
     explicit CacheEntry(T&& value) : value{std::forward<T>(value)} {}
 
     Value value;
-    scada::base::TimeTicks expiration_time;
+    std::chrono::steady_clock::time_point expiration_time;
   };
 
   void OnTimer();
 
   const scada::base::TimeDelta cache_duration_ =
-      scada::base::TimeDelta::FromSeconds(kCacheDurationS);
+      std::chrono::seconds{kCacheDurationS};
 
   std::map<Key, CacheEntry> map_;
 
   AnyExecutorTimer timer_;
 
 #ifdef _DEBUG
-  static const unsigned kCacheDurationS = 10;
+  static constexpr unsigned kCacheDurationS = 10;
 #else
-  static const unsigned kCacheDurationS = 60;
+  static constexpr unsigned kCacheDurationS = 60;
 #endif
 };
 
@@ -75,13 +77,14 @@ inline void TimedCache<Key, Value>::Add(const Key& key, T&& value) {
 template <class Key, class Value>
   requires std::totally_ordered<Key>
 inline void TimedCache<Key, Value>::OnTimer() {
-  scada::base::TimeTicks time = scada::base::TimeTicks::Now();
+  std::chrono::steady_clock::time_point time =
+      std::chrono::steady_clock::now();
   for (auto i = map_.begin(); i != map_.end();) {
     auto& entry = i->second;
     if (IsTimedCacheExpired(entry.value)) {
-      if (entry.expiration_time.is_null()) {
+      if (entry.expiration_time == std::chrono::steady_clock::time_point{}) {
         // Expiration timer started.
-        entry.expiration_time = scada::base::TimeTicks::Now();
+        entry.expiration_time = std::chrono::steady_clock::now();
       } else if (time - entry.expiration_time >= cache_duration_) {
         // Expired.
         map_.erase(i++);

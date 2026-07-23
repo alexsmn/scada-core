@@ -200,8 +200,7 @@ void Convert(const protocol::Variant& source, scada::Variant& target) {
         target = ConvertTo<scada::NodeId>(source.node_id_value());
         break;
       case scada::Variant::DATE_TIME:
-        target = scada::DateTime::FromDeltaSinceWindowsEpoch(
-            scada::base::TimeDelta::FromMicroseconds(source.time_value_time()));
+        target = scada::base::DecodeWireTime(source.time_value_time());
         break;
       case scada::Variant::EXTENSION_OBJECT:
         target =
@@ -329,9 +328,7 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
         Convert(source.as_node_id(), *target.mutable_node_id_value());
         break;
       case scada::Variant::DATE_TIME:
-        target.set_time_value_time(source.get<scada::DateTime>()
-                                       .ToDeltaSinceWindowsEpoch()
-                                       .InMicroseconds());
+        target.set_time_value_time(scada::base::EncodeWireMicroseconds(source.get<scada::DateTime>()));
         break;
       case scada::Variant::EXTENSION_OBJECT:
         Convert(source.get<scada::ExtensionObject>(),
@@ -490,7 +487,7 @@ void Convert(const scada::Event& source, protocol::Event& target) {
   }
   if (source.acked)
     target.set_acknowledged(true);
-  if (!source.acknowledged_time.is_null())
+  if (!scada::base::IsNull(source.acknowledged_time))
     target.set_acknowledge_time(
         scada::base::EncodeWireMicroseconds(source.acknowledged_time));
   if (!source.acknowledged_user_id.is_null())

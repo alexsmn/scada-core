@@ -1,6 +1,7 @@
 #include "scada/date_time.h"
 
 #include "base/format_time.h"
+#include "base/time/calendar.h"
 
 #include <gtest/gtest.h>
 
@@ -8,7 +9,7 @@ namespace {
 
 scada::DateTime MakeUTCTime(int year, int month, int day, int hour, int minute,
                             int second, int millisecond = 0) {
-  scada::base::Time::Exploded exploded = {};
+  scada::base::Exploded exploded = {};
   exploded.year = year;
   exploded.month = month;
   exploded.day_of_month = day;
@@ -16,9 +17,9 @@ scada::DateTime MakeUTCTime(int year, int month, int day, int hour, int minute,
   exploded.minute = minute;
   exploded.second = second;
   exploded.millisecond = millisecond;
-  scada::base::Time time;
-  EXPECT_TRUE(scada::base::Time::FromUTCExploded(exploded, &time));
-  return time;
+  std::optional<scada::base::Time> time = scada::base::FromUtcExploded(exploded);
+  EXPECT_TRUE(time.has_value());
+  return time.value_or(scada::base::kNullTime);
 }
 
 }  // namespace
@@ -41,7 +42,7 @@ TEST(DateTimeTest, ToStringNotEmpty) {
 }
 
 TEST(DateTimeTest, ToStringNullIsEmpty) {
-  EXPECT_TRUE(ToString(scada::base::Time()).empty());
+  EXPECT_TRUE(ToString(scada::base::kNullTime).empty());
 }
 
 TEST(DateTimeTest, ToString16NotEmpty) {
@@ -50,7 +51,7 @@ TEST(DateTimeTest, ToString16NotEmpty) {
 }
 
 TEST(DateTimeTest, ToString16NullIsEmpty) {
-  EXPECT_TRUE(ToString16(scada::base::Time()).empty());
+  EXPECT_TRUE(ToString16(scada::base::kNullTime).empty());
 }
 
 TEST(DateTimeTest, ToString16MatchesToString) {

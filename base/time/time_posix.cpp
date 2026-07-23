@@ -2,13 +2,17 @@
 
 #include "base/time/time.h"
 
+#include "base/time/calendar.h"
 #include "base/test/scoped_mock_clock_override.h"
 
-#include <cassert>
+#include <algorithm>
+#include <chrono>
 #include <cstring>
+#include <ctime>
+#include <limits>
 #include <mutex>
+#include <optional>
 #include <sys/time.h>
-#include <time.h>
 
 namespace {
 
@@ -17,45 +21,34 @@ std::mutex& GetTimeStructLock() {
   return lock;
 }
 
-time_t SysTimeFromTimeStruct(struct tm* timestruct, bool is_local) {
+// Local-time <-> struct tm. libc++ has no tzdb, so local conversions stay on
+// the C library; UTC conversions are pure std::chrono in time.cpp.
+time_t LocalTimeFromTimeStruct(struct tm* timestruct) {
   std::lock_guard guard(GetTimeStructLock());
-  return is_local ? mktime(timestruct) : timegm(timestruct);
+  return mktime(timestruct);
 }
 
-void SysTimeToTimeStruct(time_t t, struct tm* timestruct, bool is_local) {
+void LocalTimeToTimeStruct(time_t t, struct tm* timestruct) {
   std::lock_guard guard(GetTimeStructLock());
-  if (is_local)
-    localtime_r(&t, timestruct);
-  else
-    gmtime_r(&t, timestruct);
-}
-
-int64_t ConvertTimespecToMicros(const struct timespec& ts) {
-  int64_t result = ts.tv_sec;
-  result *= scada::base::Time::kMicrosecondsPerSecond;
-  result += (ts.tv_nsec / scada::base::Time::kNanosecondsPerMicrosecond);
-  return result;
+  localtime_r(&t, timestruct);
 }
 
 }  // namespace
 
 namespace scada::base {
 
-// Time -----------------------------------------------------------------------
-
-Time Time::Now() {
+Time NowUtc() {
   if (auto* mock = ScopedMockClockOverride::current())
     return mock->Now();
   struct timeval tv;
   struct timezone tz = {0, 0};
   gettimeofday(&tv, &tz);
-  return Time() + TimeDelta::FromMicroseconds(
-                      (tv.tv_sec * kMicrosecondsPerSecond + tv.tv_usec) +
-                      kTimeTToMicrosecondsOffset);
+  return Time{std::chrono::microseconds{tv.tv_sec * kMicrosecondsPerSecond +
+                                        tv.tv_usec}};
 }
 
-void Time::Explode(bool is_local, Exploded* exploded) const {
-  int64_t microseconds = us_ - kTimeTToMicrosecondsOffset;
+Exploded LocalExplode(Time time) {
+  const int64_t microseconds = time.time_since_epoch().count();
 
   int64_t milliseconds;
   time_t seconds;
@@ -76,32 +69,29 @@ void Time::Explode(bool is_local, Exploded* exploded) const {
   }
 
   struct tm timestruct;
-  SysTimeToTimeStruct(seconds, &timestruct, is_local);
+  LocalTimeToTimeStruct(seconds, &timestruct);
 
-  exploded->year = timestruct.tm_year + 1900;
-  exploded->month = timestruct.tm_mon + 1;
-  exploded->day_of_week = timestruct.tm_wday;
-  exploded->day_of_month = timestruct.tm_mday;
-  exploded->hour = timestruct.tm_hour;
-  exploded->minute = timestruct.tm_min;
-  exploded->second = timestruct.tm_sec;
-  exploded->millisecond = millisecond;
+  Exploded exploded;
+  exploded.year = timestruct.tm_year + 1900;
+  exploded.month = timestruct.tm_mon + 1;
+  exploded.day_of_week = timestruct.tm_wday;
+  exploded.day_of_month = timestruct.tm_mday;
+  exploded.hour = timestruct.tm_hour;
+  exploded.minute = timestruct.tm_min;
+  exploded.second = timestruct.tm_sec;
+  exploded.millisecond = millisecond;
+  return exploded;
 }
 
-bool Time::FromExploded(bool is_local,
-                        const Exploded& exploded,
-                        Time* time) {
-  int month = exploded.month - 1;
-  int year = exploded.year - 1900;
-
+std::optional<Time> FromLocalExploded(const Exploded& exploded) {
   struct tm timestruct;
   std::memset(&timestruct, 0, sizeof(timestruct));
   timestruct.tm_sec = exploded.second;
   timestruct.tm_min = exploded.minute;
   timestruct.tm_hour = exploded.hour;
   timestruct.tm_mday = exploded.day_of_month;
-  timestruct.tm_mon = month;
-  timestruct.tm_year = year;
+  timestruct.tm_mon = exploded.month - 1;
+  timestruct.tm_year = exploded.year - 1900;
   timestruct.tm_wday = exploded.day_of_week;
   timestruct.tm_yday = 0;
   timestruct.tm_isdst = -1;
@@ -111,16 +101,16 @@ bool Time::FromExploded(bool is_local,
 #endif
 
   struct tm timestruct0 = timestruct;
-  time_t seconds = SysTimeFromTimeStruct(&timestruct, is_local);
+  time_t seconds = LocalTimeFromTimeStruct(&timestruct);
 
   if (seconds == -1) {
     timestruct = timestruct0;
     timestruct.tm_isdst = 0;
-    int64_t seconds_isdst0 = SysTimeFromTimeStruct(&timestruct, is_local);
+    int64_t seconds_isdst0 = LocalTimeFromTimeStruct(&timestruct);
 
     timestruct = timestruct0;
     timestruct.tm_isdst = 1;
-    int64_t seconds_isdst1 = SysTimeFromTimeStruct(&timestruct, is_local);
+    int64_t seconds_isdst1 = LocalTimeFromTimeStruct(&timestruct);
 
     if (seconds_isdst0 < 0)
       seconds = static_cast<time_t>(seconds_isdst1);
@@ -143,37 +133,16 @@ bool Time::FromExploded(bool is_local,
           (kMillisecondsPerSecond - 1);
     }
   } else {
-    milliseconds =
-        static_cast<int64_t>(seconds) * kMillisecondsPerSecond +
-        exploded.millisecond;
+    milliseconds = static_cast<int64_t>(seconds) * kMillisecondsPerSecond +
+                   exploded.millisecond;
   }
 
-  int64_t microseconds_win_epoch =
-      milliseconds * kMicrosecondsPerMillisecond + kTimeTToMicrosecondsOffset;
+  const Time result{
+      std::chrono::microseconds{milliseconds * kMicrosecondsPerMillisecond}};
 
-  Time converted_time(microseconds_win_epoch);
-
-  Exploded to_exploded;
-  if (!is_local)
-    converted_time.UTCExplode(&to_exploded);
-  else
-    converted_time.LocalExplode(&to_exploded);
-
-  if (ExplodedMostlyEquals(to_exploded, exploded)) {
-    *time = converted_time;
-    return true;
-  }
-
-  *time = Time(0);
-  return false;
-}
-
-// TimeTicks ------------------------------------------------------------------
-
-TimeTicks TimeTicks::Now() {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return TimeTicks(ConvertTimespecToMicros(ts));
+  if (ExplodedMostlyEquals(LocalExplode(result), exploded))
+    return result;
+  return std::nullopt;
 }
 
 }  // namespace scada::base

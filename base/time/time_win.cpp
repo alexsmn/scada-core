@@ -1,27 +1,45 @@
 #ifdef _WIN32
 
 #include "base/check.h"
+#include "base/time/calendar.h"
 #include "base/time/time.h"
+#include "base/time/time_wire_codec.h"
 
 #include "base/test/scoped_mock_clock_override.h"
 
 #include <windows.h>
 
+#include <chrono>
 #include <cstring>
+#include <limits>
+#include <optional>
+
+namespace scada::base {
 
 namespace {
 
-int64_t FileTimeToMicroseconds(const FILETIME& ft) {
+// FILETIME is 100-ns ticks since the Windows 1601 epoch; these convert to/from
+// microseconds since that same 1601 epoch.
+int64_t FileTimeToMicroseconds1601(const FILETIME& ft) {
   int64_t result;
   static_assert(sizeof(result) == sizeof(ft));
   std::memcpy(&result, &ft, sizeof(result));
   return result / 10;  // 100-nanoseconds to microseconds.
 }
 
-void MicrosecondsToFileTime(int64_t us, FILETIME* ft) {
+void MicrosecondsToFileTime1601(int64_t us, FILETIME* ft) {
   scada::base::Check(us >= 0);
   int64_t val = us * 10;
   std::memcpy(ft, &val, sizeof(*ft));
+}
+
+// Microseconds since the Windows 1601 epoch for an absolute time.
+int64_t ToMicroseconds1601(Time time) {
+  return time.time_since_epoch().count() + kTimeTToMicrosecondsOffset;
+}
+
+Time FromMicroseconds1601(int64_t us_1601) {
+  return Time{std::chrono::microseconds{us_1601 - kTimeTToMicrosecondsOffset}};
 }
 
 bool SafeConvertToWord(int in, WORD* out) {
@@ -35,64 +53,44 @@ bool SafeConvertToWord(int in, WORD* out) {
 
 }  // namespace
 
-namespace scada::base {
-
-// Time -----------------------------------------------------------------------
-
-Time Time::FromFileTime(FILETIME ft) {
-  return Time(FileTimeToMicroseconds(ft));
-}
-
-FILETIME Time::ToFileTime() const {
-  FILETIME ft;
-  MicrosecondsToFileTime(us_, &ft);
-  return ft;
-}
-
-Time Time::Now() {
+Time NowUtc() {
   if (auto* mock = ScopedMockClockOverride::current())
     return mock->Now();
   FILETIME ft;
   ::GetSystemTimePreciseAsFileTime(&ft);
-  return Time(FileTimeToMicroseconds(ft));
+  return FromMicroseconds1601(FileTimeToMicroseconds1601(ft));
 }
 
-void Time::Explode(bool is_local, Exploded* exploded) const {
-  if (us_ < 0LL) {
-    ZeroMemory(exploded, sizeof(*exploded));
-    return;
-  }
+Exploded LocalExplode(Time time) {
+  Exploded exploded = {};
+  const int64_t us_1601 = ToMicroseconds1601(time);
+  if (us_1601 < 0LL)
+    return exploded;
 
   FILETIME utc_ft;
-  MicrosecondsToFileTime(us_, &utc_ft);
+  MicrosecondsToFileTime1601(us_1601, &utc_ft);
 
   SYSTEMTIME st = {0};
-  bool success = true;
-  if (is_local) {
-    SYSTEMTIME utc_st;
-    success = FileTimeToSystemTime(&utc_ft, &utc_st) &&
-              SystemTimeToTzSpecificLocalTime(nullptr, &utc_st, &st);
-  } else {
-    success = !!FileTimeToSystemTime(&utc_ft, &st);
-  }
-
+  SYSTEMTIME utc_st;
+  const bool success = FileTimeToSystemTime(&utc_ft, &utc_st) &&
+                       SystemTimeToTzSpecificLocalTime(nullptr, &utc_st, &st);
   if (!success) {
-    base::Check(false && "Unable to convert time");
-    ZeroMemory(exploded, sizeof(*exploded));
-    return;
+    base::Check(false, "Unable to convert time");
+    return exploded;
   }
 
-  exploded->year = st.wYear;
-  exploded->month = st.wMonth;
-  exploded->day_of_week = st.wDayOfWeek;
-  exploded->day_of_month = st.wDay;
-  exploded->hour = st.wHour;
-  exploded->minute = st.wMinute;
-  exploded->second = st.wSecond;
-  exploded->millisecond = st.wMilliseconds;
+  exploded.year = st.wYear;
+  exploded.month = st.wMonth;
+  exploded.day_of_week = st.wDayOfWeek;
+  exploded.day_of_month = st.wDay;
+  exploded.hour = st.wHour;
+  exploded.minute = st.wMinute;
+  exploded.second = st.wSecond;
+  exploded.millisecond = st.wMilliseconds;
+  return exploded;
 }
 
-bool Time::FromExploded(bool is_local, const Exploded& exploded, Time* time) {
+std::optional<Time> FromLocalExploded(const Exploded& exploded) {
   SYSTEMTIME st;
   if (!SafeConvertToWord(exploded.year, &st.wYear) ||
       !SafeConvertToWord(exploded.month, &st.wMonth) ||
@@ -102,57 +100,28 @@ bool Time::FromExploded(bool is_local, const Exploded& exploded, Time* time) {
       !SafeConvertToWord(exploded.minute, &st.wMinute) ||
       !SafeConvertToWord(exploded.second, &st.wSecond) ||
       !SafeConvertToWord(exploded.millisecond, &st.wMilliseconds)) {
-    *time = Time(0);
-    return false;
+    return std::nullopt;
   }
 
   FILETIME ft;
-  bool success = true;
-  if (is_local) {
-    SYSTEMTIME utc_st;
-    success = TzSpecificLocalTimeToSystemTime(nullptr, &st, &utc_st) &&
-              SystemTimeToFileTime(&utc_st, &ft);
-  } else {
-    success = !!SystemTimeToFileTime(&st, &ft);
-  }
+  SYSTEMTIME utc_st;
+  const bool success = TzSpecificLocalTimeToSystemTime(nullptr, &st, &utc_st) &&
+                       SystemTimeToFileTime(&utc_st, &ft);
+  if (!success)
+    return std::nullopt;
 
-  if (!success) {
-    *time = Time(0);
-    return false;
-  }
-
-  *time = Time(FileTimeToMicroseconds(ft));
-  return true;
+  return FromMicroseconds1601(FileTimeToMicroseconds1601(ft));
 }
 
-// TimeTicks ------------------------------------------------------------------
-
-namespace {
-
-int64_t QPCFrequency() {
-  static LARGE_INTEGER freq = [] {
-    LARGE_INTEGER f;
-    ::QueryPerformanceFrequency(&f);
-    return f;
-  }();
-  return freq.QuadPart;
+// FILETIME wire codec (declared in base/time/time_wire_codec.h).
+FILETIME EncodeFileTime(Time time) {
+  FILETIME ft;
+  MicrosecondsToFileTime1601(ToMicroseconds1601(time), &ft);
+  return ft;
 }
 
-}  // namespace
-
-TimeTicks TimeTicks::Now() {
-  LARGE_INTEGER now;
-  ::QueryPerformanceCounter(&now);
-  int64_t freq = QPCFrequency();
-  // Avoid overflow: if count is small, multiply first; otherwise divide first.
-  constexpr int64_t kOverflowThreshold = INT64_C(0x8637BD05AF7);
-  if (now.QuadPart < kOverflowThreshold) {
-    return TimeTicks(now.QuadPart * Time::kMicrosecondsPerSecond / freq);
-  }
-  int64_t whole_seconds = now.QuadPart / freq;
-  int64_t leftover = now.QuadPart - (whole_seconds * freq);
-  return TimeTicks(whole_seconds * Time::kMicrosecondsPerSecond +
-                   leftover * Time::kMicrosecondsPerSecond / freq);
+Time DecodeFileTime(FILETIME ft) {
+  return FromMicroseconds1601(FileTimeToMicroseconds1601(ft));
 }
 
 }  // namespace scada::base

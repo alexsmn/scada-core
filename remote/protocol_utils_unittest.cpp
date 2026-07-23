@@ -125,7 +125,7 @@ TEST(ProtocolUtils, ConvertLocalizedTextRoundTripUtf8) {
 TEST(ProtocolUtils, ConvertEventPreservesMessage) {
   scada::Event source;
   source.event_id = 1;
-  source.time = scada::base::Time::Now();
+  source.time = scada::base::NowUtc();
   source.severity = 100;
   source.message = u"Test event message";
 
@@ -141,7 +141,7 @@ TEST(ProtocolUtils, ConvertEventPreservesMessage) {
 TEST(ProtocolUtils, ConvertEventEmptyMessage) {
   scada::Event source;
   source.event_id = 2;
-  source.time = scada::base::Time::Now();
+  source.time = scada::base::NowUtc();
   source.severity = 0;
 
   protocol::Event proto;

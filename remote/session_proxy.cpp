@@ -3,6 +3,9 @@
 #include "base/awaitable.h"
 #include "base/callback_awaitable.h"
 #include "base/check.h"
+#include "base/time_utils.h"
+
+#include <chrono>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -737,9 +740,10 @@ Awaitable<void> SessionProxy::ReconnectAsync() {
 bool SessionProxy::IsConnected(scada::base::TimeDelta* ping_delay) const {
   if (ping_delay) {
     *ping_delay = last_ping_delay_;
-    if (!ping_time_.is_null())
-      *ping_delay =
-          std::max(*ping_delay, scada::base::TimeTicks::Now() - ping_time_);
+    if (ping_time_ != std::chrono::steady_clock::time_point{})
+      *ping_delay = std::max(
+          *ping_delay, std::chrono::duration_cast<std::chrono::microseconds>(
+                           std::chrono::steady_clock::now() - ping_time_));
   }
   return session_created_;
 }
@@ -757,9 +761,9 @@ void SessionProxy::SchedulePing() {
 }
 
 void SessionProxy::Ping() {
-  scada::base::Check(ping_time_.is_null());
+  scada::base::Check(ping_time_ == std::chrono::steady_clock::time_point{});
 
-  ping_time_ = scada::base::TimeTicks::Now();
+  ping_time_ = std::chrono::steady_clock::now();
   ping_completion_ = scada::base::AsyncCompletion{executor_};
   auto lifetime = std::weak_ptr<void>{lifetime_};
   boost::asio::co_spawn(
@@ -790,7 +794,8 @@ Awaitable<void> SessionProxy::PingAsync() {
   if (!transport_)
     co_return;
 
-  last_ping_delay_ = scada::base::TimeTicks::Now() - ping_time_;
+  last_ping_delay_ = std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::steady_clock::now() - ping_time_);
   ping_time_ = {};
   SchedulePing();
 }

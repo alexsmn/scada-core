@@ -4,7 +4,7 @@
 
 namespace scada::base {
 
-// Default clock implementation using base::Time::Now().
+// Default clock implementation using base::NowUtc().
 class DefaultClock : public Clock {
  public:
   static DefaultClock* GetInstance() {
@@ -12,7 +12,7 @@ class DefaultClock : public Clock {
     return &instance;
   }
 
-  Time Now() const override { return Time::Now(); }
+  Time Now() const override { return NowUtc(); }
 };
 
 }  // namespace scada::base

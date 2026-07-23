@@ -47,13 +47,13 @@ class DataValue {
 
   Variant value;
   Qualifier qualifier;
-  DateTime source_timestamp;
-  DateTime server_timestamp;
+  DateTime source_timestamp = base::kNullTime;
+  DateTime server_timestamp = base::kNullTime;
   StatusCode status_code = StatusCode::Good;
 };
 
 inline bool IsUpdate(const DataValue& current_data, const DataValue& new_data) {
-  return current_data.source_timestamp.is_null() ||
+  return base::IsNull(current_data.source_timestamp) ||
          (current_data.source_timestamp < new_data.source_timestamp) ||
          (current_data.source_timestamp == new_data.source_timestamp &&
           current_data.server_timestamp <= new_data.server_timestamp);

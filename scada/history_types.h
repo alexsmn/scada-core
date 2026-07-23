@@ -12,11 +12,11 @@
 namespace scada {
 
 struct HistoryReadRawDetails {
-  bool forward() const { return to.is_null() || from <= to; }
+  bool forward() const { return base::IsNull(to) || from <= to; }
 
   NodeId node_id;
-  base::Time from;
-  base::Time to;
+  base::Time from = base::kNullTime;
+  base::Time to = base::kNullTime;
   size_t max_count = 0;
   AggregateFilter aggregation;
   bool release_continuation_point = false;
@@ -26,8 +26,8 @@ struct HistoryReadRawDetails {
 struct HistoryReadEventsDetails {
   // Defines the root source node.
   NodeId node_id;
-  base::Time from;
-  base::Time to;
+  base::Time from = base::kNullTime;
+  base::Time to = base::kNullTime;
   EventFilter filter;
 };
 

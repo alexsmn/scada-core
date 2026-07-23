@@ -4,14 +4,14 @@
 
 namespace scada::base {
 
-// Overrides base::Time::Now() in tests. When constructed, sets a fixed time
+// Overrides base::NowUtc() in tests. When constructed, sets a fixed time
 // point. Call Advance() to move time forward.
 //
 // NOTE: This uses a thread-local override. Only one instance should be active
 // at a time per thread.
 class ScopedMockClockOverride {
  public:
-  ScopedMockClockOverride() : now_{Time::Now()} { current_ = this; }
+  ScopedMockClockOverride() : now_{NowUtc()} { current_ = this; }
 
   ~ScopedMockClockOverride() { current_ = nullptr; }
 

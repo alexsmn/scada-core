@@ -43,7 +43,7 @@ class AttributeService {
 
 template <class T>
 inline DataValue MakeReadResult(T&& value) {
-  const auto timestamp = base::Time::Now();
+  const auto timestamp = base::NowUtc();
   return DataValue{std::forward<T>(value), {}, timestamp, timestamp};
 }
 
@@ -53,7 +53,7 @@ inline DataValue MakeReadResult(NodeClass node_class) {
 
 inline DataValue MakeReadError(StatusCode status_code) {
   base::Check(IsBad(status_code));
-  const auto timestamp = base::Time::Now();
+  const auto timestamp = base::NowUtc();
   return DataValue{status_code, timestamp};
 }
 

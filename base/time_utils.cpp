@@ -3,21 +3,22 @@
 #include "base/check.h"
 #include "base/format.h"
 #include "base/string_util.h"
+#include "base/time/calendar.h"
+
+#include <chrono>
 
 namespace {
 
 #ifndef NDEBUG
 scada::base::Time FloorToMilliseconds(scada::base::Time time) {
-  return scada::base::Time::FromDeltaSinceWindowsEpoch(
-      scada::base::TimeDelta::FromMilliseconds(
-          time.ToDeltaSinceWindowsEpoch().InMilliseconds()));
+  return std::chrono::floor<std::chrono::milliseconds>(time);
 }
 #endif
 
 }  // namespace
 
 std::string SerializeToString(scada::base::TimeDelta delta) {
-  int64_t s = delta.InSeconds();
+  int64_t s = InSeconds(delta);
   int64_t m = s / 60;
   s = s % 60;
   int64_t h = m / 60;
@@ -35,15 +36,13 @@ bool Deserialize(std::string_view str, scada::base::TimeDelta& delta) {
     return false;
   }
 
-  delta = scada::base::TimeDelta::FromHours(h) +
-          scada::base::TimeDelta::FromMinutes(m) +
-          scada::base::TimeDelta::FromSeconds(s);
+  delta = std::chrono::hours{h} + std::chrono::minutes{m} +
+          std::chrono::seconds{s};
   return true;
 }
 
 std::string SerializeToString(scada::base::Time time) {
-  scada::base::Time::Exploded e = {0};
-  time.UTCExplode(&e);
+  scada::base::Exploded e = scada::base::UtcExplode(time);
   auto str = std::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}", e.year, e.month,
                          e.day_of_month, e.hour, e.minute, e.second);
 
@@ -61,5 +60,9 @@ std::string SerializeToString(scada::base::Time time) {
 }
 
 bool Deserialize(std::string_view str, scada::base::Time& time) {
-  return scada::base::Time::FromUTCString(std::string{str}.c_str(), &time);
+  if (auto parsed = scada::base::TimeFromUtcString(str)) {
+    time = *parsed;
+    return true;
+  }
+  return false;
 }

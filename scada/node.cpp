@@ -220,4 +220,8 @@ Awaitable<StatusOr<std::vector<Event>>> node::read_event_history(
   co_return std::move(result.events);
 }
 
+Awaitable<StatusOr<std::vector<Event>>> node::read_event_history() const {
+  return read_event_history(event_history_details{});
+}
+
 }  // namespace scada

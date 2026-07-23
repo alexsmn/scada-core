@@ -1,23 +1,22 @@
 #include "base/format_time.h"
 
+#include "base/time/calendar.h"
 #include "base/time/time.h"
 #include <format>
 
 std::string FormatTime(scada::base::Time time, int flags) {
-  if (time.is_null())
+  if (scada::base::IsNull(time))
     return {};
 
-  if (time.is_min())
+  if (time == scada::base::kMinTime)
     return "min";
 
-  if (time.is_max())
+  if (time == scada::base::kMaxTime)
     return "max";
 
-  scada::base::Time::Exploded e = {0};
-  if (flags & TIME_FORMAT_UTC)
-    time.UTCExplode(&e);
-  else
-    time.LocalExplode(&e);
+  scada::base::Exploded e = (flags & TIME_FORMAT_UTC)
+                                ? scada::base::UtcExplode(time)
+                                : scada::base::LocalExplode(time);
 
   std::string text;
 

@@ -1,177 +1,96 @@
 #include "base/time/time.h"
 
 #include "base/check.h"
-#include <cmath>
-#include <format>
+#include "base/time/calendar.h"
+
+#include <chrono>
 #include <iomanip>
-#include <limits>
-#include <ostream>
+#include <optional>
 #include <sstream>
+#include <string>
 #include <string_view>
 
 namespace scada::base {
 
-// TimeDelta ------------------------------------------------------------------
+namespace {
 
-int TimeDelta::InDays() const {
-  if (is_max())
-    return std::numeric_limits<int>::max();
-  return static_cast<int>(delta_ / Time::kMicrosecondsPerDay);
+bool is_in_range(int value, int lo, int hi) {
+  return lo <= value && value <= hi;
 }
 
-int TimeDelta::InDaysFloored() const {
-  if (is_max())
-    return std::numeric_limits<int>::max();
-  int result = static_cast<int>(delta_ / Time::kMicrosecondsPerDay);
-  int64_t remainder = delta_ - (result * Time::kMicrosecondsPerDay);
-  if (remainder < 0)
-    --result;
-  return result;
+}  // namespace
+
+bool Exploded::HasValidValues() const {
+  return is_in_range(month, 1, 12) && is_in_range(day_of_week, 0, 6) &&
+         is_in_range(day_of_month, 1, 31) && is_in_range(hour, 0, 23) &&
+         is_in_range(minute, 0, 59) && is_in_range(second, 0, 60) &&
+         is_in_range(millisecond, 0, 999);
 }
 
-int TimeDelta::InHours() const {
-  if (is_max())
-    return std::numeric_limits<int>::max();
-  return static_cast<int>(delta_ / Time::kMicrosecondsPerHour);
+bool ExplodedMostlyEquals(const Exploded& lhs, const Exploded& rhs) {
+  return lhs.year == rhs.year && lhs.month == rhs.month &&
+         lhs.day_of_month == rhs.day_of_month && lhs.hour == rhs.hour &&
+         lhs.minute == rhs.minute && lhs.second == rhs.second &&
+         lhs.millisecond == rhs.millisecond;
 }
 
-int TimeDelta::InMinutes() const {
-  if (is_max())
-    return std::numeric_limits<int>::max();
-  return static_cast<int>(delta_ / Time::kMicrosecondsPerMinute);
-}
+// UTC calendar conversions — pure std::chrono, no tzdb required. libc++ ships no
+// time-zone database, so only these UTC paths can be portable; the local-time
+// paths (LocalExplode/FromLocalExploded) stay on the OS in the platform sources.
 
-double TimeDelta::InSecondsF() const {
-  if (is_max())
-    return std::numeric_limits<double>::infinity();
-  return static_cast<double>(delta_) / Time::kMicrosecondsPerSecond;
-}
+Exploded UtcExplode(Time time) {
+  using namespace std::chrono;
+  const sys_days days = floor<::std::chrono::days>(time);
+  const year_month_day ymd{days};
+  const hh_mm_ss hms{floor<milliseconds>(time - days)};
 
-int64_t TimeDelta::InSeconds() const {
-  if (is_max())
-    return std::numeric_limits<int64_t>::max();
-  return delta_ / Time::kMicrosecondsPerSecond;
-}
-
-double TimeDelta::InMillisecondsF() const {
-  if (is_max())
-    return std::numeric_limits<double>::infinity();
-  return static_cast<double>(delta_) / Time::kMicrosecondsPerMillisecond;
-}
-
-int64_t TimeDelta::InMilliseconds() const {
-  if (is_max())
-    return std::numeric_limits<int64_t>::max();
-  return delta_ / Time::kMicrosecondsPerMillisecond;
-}
-
-int64_t TimeDelta::InMillisecondsRoundedUp() const {
-  if (is_max())
-    return std::numeric_limits<int64_t>::max();
-  int64_t result = delta_ / Time::kMicrosecondsPerMillisecond;
-  int64_t remainder = delta_ - (result * Time::kMicrosecondsPerMillisecond);
-  if (remainder > 0)
-    ++result;
-  return result;
-}
-
-int64_t TimeDelta::InMicroseconds() const {
-  if (is_max())
-    return std::numeric_limits<int64_t>::max();
-  return delta_;
-}
-
-double TimeDelta::InMicrosecondsF() const {
-  if (is_max())
-    return std::numeric_limits<double>::infinity();
-  return static_cast<double>(delta_);
-}
-
-int64_t TimeDelta::InNanoseconds() const {
-  if (is_max())
-    return std::numeric_limits<int64_t>::max();
-  return delta_ * Time::kNanosecondsPerMicrosecond;
-}
-
-namespace time_internal {
-
-int64_t SaturatedAdd(TimeDelta delta, int64_t value) {
-  int64_t a = delta.delta_;
-  // Check for overflow: both positive and sum wraps negative.
-  if (a > 0 && value > 0 && a > std::numeric_limits<int64_t>::max() - value)
-    return std::numeric_limits<int64_t>::max();
-  // Check for underflow: both negative and sum wraps positive.
-  if (a < 0 && value < 0 && a < std::numeric_limits<int64_t>::min() - value)
-    return std::numeric_limits<int64_t>::min();
-  return a + value;
-}
-
-int64_t SaturatedSub(TimeDelta delta, int64_t value) {
-  int64_t a = delta.delta_;
-  // Check for overflow: a positive, value negative, result wraps.
-  if (a > 0 && value < 0 && a > std::numeric_limits<int64_t>::max() + value)
-    return std::numeric_limits<int64_t>::max();
-  // Check for underflow: a negative, value positive, result wraps.
-  if (a < 0 && value > 0 && a < std::numeric_limits<int64_t>::min() + value)
-    return std::numeric_limits<int64_t>::min();
-  return a - value;
-}
-
-}  // namespace time_internal
-
-std::ostream& operator<<(std::ostream& os, TimeDelta time_delta) {
-  return os << time_delta.InSecondsF() << " s";
-}
-
-// Time -----------------------------------------------------------------------
-
-Time Time::FromDeltaSinceWindowsEpoch(TimeDelta delta) {
-  return Time(delta.InMicroseconds());
-}
-
-TimeDelta Time::ToDeltaSinceWindowsEpoch() const {
-  return TimeDelta::FromMicroseconds(us_);
-}
-
-Time Time::FromDoubleT(double dt) {
-  if (dt == 0 || std::isnan(dt))
-    return Time();
-  return Time(static_cast<int64_t>(dt * kMicrosecondsPerSecond) +
-              kTimeTToMicrosecondsOffset);
-}
-
-double Time::ToDoubleT() const {
-  if (is_null())
-    return 0;
-  return static_cast<double>(us_ - kTimeTToMicrosecondsOffset) /
-         kMicrosecondsPerSecond;
-}
-
-Time Time::UnixEpoch() {
-  Time time;
-  time.us_ = kTimeTToMicrosecondsOffset;
-  return time;
-}
-
-Time Time::LocalMidnight() const {
   Exploded exploded;
-  LocalExplode(&exploded);
+  exploded.year = static_cast<int>(ymd.year());
+  exploded.month = static_cast<int>(static_cast<unsigned>(ymd.month()));
+  exploded.day_of_month = static_cast<int>(static_cast<unsigned>(ymd.day()));
+  exploded.day_of_week = static_cast<int>(weekday{days}.c_encoding());
+  exploded.hour = static_cast<int>(hms.hours().count());
+  exploded.minute = static_cast<int>(hms.minutes().count());
+  exploded.second = static_cast<int>(hms.seconds().count());
+  exploded.millisecond = static_cast<int>(hms.subseconds().count());
+  return exploded;
+}
+
+std::optional<Time> FromUtcExploded(const Exploded& exploded) {
+  using namespace std::chrono;
+  const year_month_day ymd{year{exploded.year},
+                           month{static_cast<unsigned>(exploded.month)},
+                           day{static_cast<unsigned>(exploded.day_of_month)}};
+  if (!ymd.ok())
+    return std::nullopt;
+
+  const auto time_of_day = hours{exploded.hour} + minutes{exploded.minute} +
+                           seconds{exploded.second} +
+                           milliseconds{exploded.millisecond};
+  const Time result = time_point_cast<TimeDelta>(sys_days{ymd} + time_of_day);
+
+  // Reject component combinations that don't round-trip (parity with the old
+  // implementation, e.g. hour == 25 or a normalised out-of-range field).
+  if (!ExplodedMostlyEquals(UtcExplode(result), exploded))
+    return std::nullopt;
+  return result;
+}
+
+Time LocalMidnight(Time time) {
+  Exploded exploded = LocalExplode(time);
   exploded.hour = 0;
   exploded.minute = 0;
   exploded.second = 0;
   exploded.millisecond = 0;
-  Time out_time;
-  if (FromLocalExploded(exploded, &out_time))
-    return out_time;
-  base::Check(false && "LocalMidnight failed");
-  return Time();
+  if (std::optional<Time> midnight = FromLocalExploded(exploded))
+    return *midnight;
+  base::Check(false, "LocalMidnight failed");
+  return kNullTime;
 }
 
-bool Time::FromStringInternal(const char* time_string,
-                              bool is_local,
-                              Time* parsed_time) {
+std::optional<Time> TimeFromString(std::string_view str, bool is_local) {
   std::tm tm = {};
-  std::string_view input(time_string);
+  std::string_view input(str);
   bool has_timezone = false;
   bool is_utc = false;
 
@@ -200,7 +119,7 @@ bool Time::FromStringInternal(const char* time_string,
   }
 
   if (ss.fail())
-    return false;
+    return std::nullopt;
 
   // Parse optional fractional seconds: ".500"
   int millisecond = 0;
@@ -229,10 +148,9 @@ bool Time::FromStringInternal(const char* time_string,
     is_utc = true;
   }
 
-  // Determine if this should be treated as UTC.
-  // If is_local is false (FromUTCString), always treat as UTC.
-  // If is_local is true (FromString), treat as UTC only if timezone says so.
-  bool treat_as_utc = !is_local || (has_timezone && is_utc);
+  // Determine if this should be treated as UTC. When is_local is false always
+  // treat as UTC; otherwise treat as UTC only if the timezone suffix says so.
+  const bool treat_as_utc = !is_local || (has_timezone && is_utc);
 
   Exploded exploded = {};
   exploded.year = tm.tm_year + 1900;
@@ -243,44 +161,7 @@ bool Time::FromStringInternal(const char* time_string,
   exploded.second = tm.tm_sec;
   exploded.millisecond = millisecond;
 
-  if (treat_as_utc)
-    return FromUTCExploded(exploded, parsed_time);
-  else
-    return FromLocalExploded(exploded, parsed_time);
-}
-
-bool Time::ExplodedMostlyEquals(const Exploded& lhs, const Exploded& rhs) {
-  return lhs.year == rhs.year && lhs.month == rhs.month &&
-         lhs.day_of_month == rhs.day_of_month && lhs.hour == rhs.hour &&
-         lhs.minute == rhs.minute && lhs.second == rhs.second &&
-         lhs.millisecond == rhs.millisecond;
-}
-
-std::ostream& operator<<(std::ostream& os, Time time) {
-  Time::Exploded exploded;
-  time.UTCExplode(&exploded);
-  return os << std::format("{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03} UTC",
-                           exploded.year, exploded.month, exploded.day_of_month,
-                           exploded.hour, exploded.minute, exploded.second,
-                           exploded.millisecond);
-}
-
-inline bool is_in_range(int value, int lo, int hi) {
-  return lo <= value && value <= hi;
-}
-
-bool Time::Exploded::HasValidValues() const {
-  return is_in_range(month, 1, 12) && is_in_range(day_of_week, 0, 6) &&
-         is_in_range(day_of_month, 1, 31) && is_in_range(hour, 0, 23) &&
-         is_in_range(minute, 0, 59) && is_in_range(second, 0, 60) &&
-         is_in_range(millisecond, 0, 999);
-}
-
-// TimeTicks ------------------------------------------------------------------
-
-std::ostream& operator<<(std::ostream& os, TimeTicks time_ticks) {
-  const TimeDelta as_time_delta = time_ticks - TimeTicks();
-  return os << as_time_delta.InMicroseconds() << " bogo-microseconds";
+  return treat_as_utc ? FromUtcExploded(exploded) : FromLocalExploded(exploded);
 }
 
 }  // namespace scada::base

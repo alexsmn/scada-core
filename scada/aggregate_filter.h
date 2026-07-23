@@ -9,12 +9,12 @@
 namespace scada {
 
 struct AggregateFilter {
-  bool is_null() const { return interval.is_zero(); }
+  bool is_null() const { return interval == Duration::zero(); }
 
   std::strong_ordering operator<=>(const AggregateFilter&) const = default;
 
-  DateTime start_time;
-  Duration interval;
+  DateTime start_time = base::kNullTime;
+  Duration interval = Duration::zero();
   NodeId aggregate_type;
 };
 

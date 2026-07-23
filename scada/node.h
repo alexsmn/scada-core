@@ -108,13 +108,17 @@ class node {
       HistoryReadRawDetails details) const;
 
   struct event_history_details {
-    DateTime from;
-    DateTime to;
+    DateTime from = base::kNullTime;
+    DateTime to = base::kNullTime;
     EventFilter filter;
   };
 
   Awaitable<StatusOr<std::vector<Event>>> read_event_history(
-      event_history_details details = {}) const;
+      event_history_details details) const;
+  // Convenience overload for an unbounded query (from/to default to the null
+  // sentinel). A defaulted argument cannot be used here because the nested
+  // struct carries default member initializers.
+  Awaitable<StatusOr<std::vector<Event>>> read_event_history() const;
 
  private:
   node(const services& services,

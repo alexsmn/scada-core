@@ -1,11 +1,10 @@
 #pragma once
 
+#include "base/time/calendar.h"
 #include "base/time/time.h"
-#include <cassert>
 
 // Example: "Tue, 15 Nov 1994 12:45:26 GMT"
 inline scada::base::Time TestTimeFromString(const char* time_string) {
-  scada::base::Time time;
-  scada::base::Time::FromString(time_string, &time);
-  return time;
+  return scada::base::TimeFromString(time_string, /*is_local=*/true)
+      .value_or(scada::base::kNullTime);
 }

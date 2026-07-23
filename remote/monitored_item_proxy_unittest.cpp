@@ -36,7 +36,7 @@ class MonitoredItemProxyTest : public Test {
   inline static const scada::NodeId kNodeId{12, 34};
   static const int kSubscriptionId = 567;
   static const MonitoredItemId kMonitoredItemId = 11122;
-  inline static const scada::DateTime kTimeStamp = scada::DateTime::Now();
+  inline static const scada::DateTime kTimeStamp = scada::base::NowUtc();
   inline static const scada::DataValue kDataValue{123,
                                                   {},
                                                   kTimeStamp,
@@ -291,7 +291,7 @@ TEST_F(
 
   // Data change
 
-  const scada::DateTime kTimeStamp3 = scada::DateTime::Now();
+  const scada::DateTime kTimeStamp3 = scada::base::NowUtc();
   const scada::DataValue kDataValue3{321, {}, kTimeStamp3, kTimeStamp3};
   EXPECT_CALL(data_change_handler_, OnDataChange(kDataValue3));
 

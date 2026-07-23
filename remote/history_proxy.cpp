@@ -19,10 +19,10 @@ Awaitable<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
   protocol::Request request;
   auto& history_read_raw = *request.mutable_history_read_raw();
   Convert(details.node_id, *history_read_raw.mutable_node_id());
-  if (!details.from.is_null())
+  if (!scada::base::IsNull(details.from))
     history_read_raw.set_from_time(
         scada::base::EncodeWireMicroseconds(details.from));
-  if (!details.to.is_null())
+  if (!scada::base::IsNull(details.to))
     history_read_raw.set_to_time(
         scada::base::EncodeWireMicroseconds(details.to));
   if (details.max_count != 0)
@@ -64,10 +64,10 @@ Awaitable<scada::HistoryReadEventsResult> HistoryProxy::HistoryReadEvents(
   protocol::Request request;
   auto& history_read_events = *request.mutable_history_read_events();
   Convert(node_id, *history_read_events.mutable_node_id());
-  if (!from.is_null())
+  if (!scada::base::IsNull(from))
     history_read_events.set_from_time(
         scada::base::EncodeWireMicroseconds(from));
-  if (!to.is_null())
+  if (!scada::base::IsNull(to))
     history_read_events.set_to_time(scada::base::EncodeWireMicroseconds(to));
   Convert(filter, *history_read_events.mutable_filter());
 

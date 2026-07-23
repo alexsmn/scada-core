@@ -1,7 +1,9 @@
 #pragma once
 
 #include "base/time/time.h"
+#include "base/time_utils.h"
 
+#include <chrono>
 #include <memory>
 
 #ifdef _WIN32
@@ -76,12 +78,12 @@ class ProcessMetrics {
 
     int64_t cpu_time =
         FileTimeToInt64(kernel_time) + FileTimeToInt64(user_time);
-    auto now = TimeTicks::Now();
+    auto now = std::chrono::steady_clock::now();
 
     double cpu_usage = 0.0;
-    if (!last_cpu_time_.is_null()) {
+    if (last_cpu_time_ != std::chrono::steady_clock::time_point{}) {
       int64_t cpu_time_delta = cpu_time - last_cpu_time_value_;
-      int64_t time_delta = (now - last_cpu_time_).InMicroseconds() * 10;
+      int64_t time_delta = InMicroseconds(now - last_cpu_time_) * 10;
       if (time_delta > 0)
         cpu_usage = cpu_time_delta * 100.0 / time_delta;
     }
@@ -101,12 +103,12 @@ class ProcessMetrics {
          static_cast<int64_t>(usage.ru_stime.tv_sec)) *
             1000000 +
         usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
-    const auto now = TimeTicks::Now();
+    const auto now = std::chrono::steady_clock::now();
 
     double cpu_usage = 0.0;
-    if (!last_cpu_time_.is_null()) {
+    if (last_cpu_time_ != std::chrono::steady_clock::time_point{}) {
       const int64_t cpu_time_delta = cpu_time - last_cpu_time_value_;
-      const int64_t time_delta = (now - last_cpu_time_).InMicroseconds();
+      const int64_t time_delta = InMicroseconds(now - last_cpu_time_);
       if (time_delta > 0)
         cpu_usage = cpu_time_delta * 100.0 / time_delta;
     }
@@ -121,7 +123,7 @@ class ProcessMetrics {
   explicit ProcessMetrics(ProcessHandle process) : process_(process) {}
 
   ProcessHandle process_;
-  TimeTicks last_cpu_time_;
+  std::chrono::steady_clock::time_point last_cpu_time_;
   int64_t last_cpu_time_value_ = 0;
 };
 

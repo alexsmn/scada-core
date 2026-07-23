@@ -17,6 +17,7 @@
 #include "scada/status.h"
 
 #include <boost/signals2/signal.hpp>
+#include <chrono>
 #include <optional>
 #include <transport/any_transport.h>
 #include <transport/write_queue.h>
@@ -166,8 +167,8 @@ class SessionProxy : private SessionProxyContext,
 
   // Ping.
   AnyExecutorTimer ping_timer_;
-  scada::base::TimeTicks ping_time_;
-  scada::base::TimeDelta last_ping_delay_;
+  std::chrono::steady_clock::time_point ping_time_;
+  scada::base::TimeDelta last_ping_delay_ = scada::base::TimeDelta::zero();
 
   std::optional<transport::WriteQueue> write_queue_;
 

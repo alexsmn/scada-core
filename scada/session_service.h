@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
+#include "base/time/time.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
 #include "scada/privileges.h"
@@ -10,10 +11,6 @@
 #include <functional>
 #include <string>
 #include <utility>
-
-namespace scada::base {
-class TimeDelta;
-}
 
 namespace scada {
 

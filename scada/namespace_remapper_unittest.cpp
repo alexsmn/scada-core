@@ -230,8 +230,8 @@ TEST(NamespaceRemapperTest, RemapsEventPayloadFields) {
   scada::Event event;
   event.event_type_id = scada::NodeId{100, 1};
   event.event_id = 42;
-  event.time = scada::DateTime::Now();
-  event.receive_time = scada::DateTime::Now();
+  event.time = scada::base::NowUtc();
+  event.receive_time = scada::base::NowUtc();
   event.source_node_id = scada::NodeId{5, 1};
   event.user_id = scada::NodeId{6, 1};
   event.value = scada::Variant{scada::NodeId{7, 1}};

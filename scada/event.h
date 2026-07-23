@@ -53,10 +53,10 @@ struct Event {
   // zero after that.
   EventId event_id = 0;
   // `time` cannot be null.
-  DateTime time;
+  DateTime time = base::kNullTime;
   // `receive_time` is assigned by server. It's null until the event is
   // processed by server.
-  DateTime receive_time;
+  DateTime receive_time = base::kNullTime;
   scada::UInt32 change_mask = 0;
   scada::UInt32 severity = kSeverityNormal;
   // The node the event originates from; corresponds to `SourceNode` of
@@ -80,7 +80,7 @@ struct Event {
   scada::LocalizedText message;
   bool acked = false;
   // `acknowledged_time` must be non-null if `acked` is true.
-  DateTime acknowledged_time;
+  DateTime acknowledged_time = base::kNullTime;
   // `acknowledged_user_id` can be null if `acked` is true.
   NodeId acknowledged_user_id;
 };
@@ -120,16 +120,16 @@ struct SemanticChangeEvent {
 };
 
 inline bool Event::is_valid() const {
-  if (event_id == 0 || time.is_null() || receive_time.is_null()) {
+  if (event_id == 0 || base::IsNull(time) || base::IsNull(receive_time)) {
     return false;
   }
 
   if (acked) {
-    if (acknowledged_time.is_null()) {
+    if (base::IsNull(acknowledged_time)) {
       return false;
     }
   } else {
-    if (!acknowledged_time.is_null() || !acknowledged_user_id.is_null()) {
+    if (!base::IsNull(acknowledged_time) || !acknowledged_user_id.is_null()) {
       return false;
     }
   }

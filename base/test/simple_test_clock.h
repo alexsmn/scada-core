@@ -14,7 +14,7 @@ class SimpleTestClock : public Clock {
   void Advance(TimeDelta delta) { now_ += delta; }
 
  private:
-  Time now_;
+  Time now_ = scada::base::kNullTime;
 };
 
 }  // namespace scada::base
