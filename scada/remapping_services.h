@@ -1,18 +1,18 @@
 #pragma once
 
 // Service-boundary wrappers that apply NamespaceRemapper translation around a
-// service belonging to another server's index space: every NodeId / QualifiedName /
-// ExpandedNodeId in a request is translated proxy -> downstream before the call,
-// and every one in the response is translated downstream -> proxy. This is the
-// per-request half of OPC UA aggregation (Part 1 §5.3.7); the namespace mapping
-// itself lives in NamespaceRemapper (Part 3 §8.2.3).
+// service belonging to another server's index space: every NodeId /
+// QualifiedName / ExpandedNodeId in a request is translated proxy -> downstream
+// before the call, and every one in the response is translated downstream ->
+// proxy. This is the per-request half of OPC UA aggregation (Part 1 §5.3.7);
+// the namespace mapping itself lives in NamespaceRemapper (Part 3 §8.2.3).
 //
-// Scope: structural identifiers (request targets, Browse reference descriptions,
-// browse-path targets, monitored-item targets, method/object ids) are remapped,
-// as are identifier-typed *values* carried inside read/notification DataValues,
-// write values, and method arguments (NodeId / ExpandedNodeId / QualifiedName,
-// scalar or array). Event-notification payloads (std::any) are the one remaining
-// untranslated surface.
+// Scope: structural identifiers (request targets, Browse reference
+// descriptions, browse-path targets, monitored-item targets, method/object ids)
+// are remapped, as are identifier-typed *values* carried inside
+// read/notification DataValues, write values, and method arguments (NodeId /
+// ExpandedNodeId / QualifiedName, scalar or array). Event-notification payloads
+// (std::any) are the one remaining untranslated surface.
 
 #include "scada/namespace_remapper.h"
 
@@ -76,7 +76,7 @@ class RemappingHistoryService : public scada::HistoryService {
                           const NamespaceRemapper& remapper)
       : inner_{inner}, remapper_{remapper} {}
 
-  Awaitable<scada::HistoryReadRawResult> HistoryReadRaw(
+  Awaitable<scada::StatusOr<scada::HistoryReadRawResult>> HistoryReadRaw(
       scada::HistoryReadRawDetails details) override;
 
   Awaitable<scada::HistoryReadEventsResult> HistoryReadEvents(
@@ -137,11 +137,11 @@ class RemappingMethodService : public scada::MethodService {
   const NamespaceRemapper& remapper_;
 };
 
-// Wraps a downstream MonitoredItemService; the subscriptions it hands back remap
-// each monitored item's target NodeId (proxy -> downstream) as items are added,
-// and translate identifier-typed data-change values (downstream -> proxy) in the
-// notifications they deliver. Event-notification payloads (std::any) are not
-// translated.
+// Wraps a downstream MonitoredItemService; the subscriptions it hands back
+// remap each monitored item's target NodeId (proxy -> downstream) as items are
+// added, and translate identifier-typed data-change values (downstream ->
+// proxy) in the notifications they deliver. Event-notification payloads
+// (std::any) are not translated.
 class RemappingMonitoredItemService : public scada::MonitoredItemService {
  public:
   RemappingMonitoredItemService(scada::MonitoredItemService& inner,

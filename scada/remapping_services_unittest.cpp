@@ -27,8 +27,8 @@ class FakeViewService : public scada::ViewService {
   std::vector<scada::BrowsePathResult> translate_response;
 
   Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>> Browse(
-      scada::ServiceContext, std::vector<scada::BrowseDescription> inputs)
-      override {
+      scada::ServiceContext,
+      std::vector<scada::BrowseDescription> inputs) override {
     recorded_browse = inputs;
     co_return browse_response;
   }
@@ -85,7 +85,7 @@ class FakeHistoryService : public scada::HistoryService {
   std::vector<scada::DataValue> raw_response;
   scada::NodeId recorded_events_node;
 
-  Awaitable<scada::HistoryReadRawResult> HistoryReadRaw(
+  Awaitable<scada::StatusOr<scada::HistoryReadRawResult>> HistoryReadRaw(
       scada::HistoryReadRawDetails details) override {
     recorded_raw = details;
     co_return scada::HistoryReadRawResult{.values = raw_response};
@@ -178,8 +178,8 @@ class FakeMonitoredItemService : public scada::MonitoredItemService {
 };
 
 // Builds a remapper where the downstream's own namespace (downstream index 1)
-// maps to a DIFFERENT proxy index, so the translation is observable. Returns the
-// remapper plus the proxy index that downstream index 1 maps to.
+// maps to a DIFFERENT proxy index, so the translation is observable. Returns
+// the remapper plus the proxy index that downstream index 1 maps to.
 struct Fixture {
   ProxyNamespaceTable table;
   NamespaceRemapper remapper;
@@ -188,9 +188,9 @@ struct Fixture {
 
   Fixture() {
     // A first server claims proxy index 1; this server's URI then gets index 2.
-    NamespaceRemapper::Build(std::vector<std::string>{std::string{kOpcUaNamespaceUri},
-                                                      "urn:other"},
-                             table);
+    NamespaceRemapper::Build(
+        std::vector<std::string>{std::string{kOpcUaNamespaceUri}, "urn:other"},
+        table);
     remapper = NamespaceRemapper::Build(
         std::vector<std::string>{std::string{kOpcUaNamespaceUri}, "urn:server"},
         table);
@@ -214,10 +214,11 @@ TEST(RemappingViewServiceTest, RemapsBrowseRequestAndResponse) {
   RemappingViewService service{inner, fixture.remapper};
   TestExecutor executor;
   auto result = WaitAwaitable(
-      executor, service.Browse(scada::ServiceContext{},
-                               {scada::BrowseDescription{
-                                   .node_id = scada::NodeId{3, fixture.proxy_ns},
-                                   .reference_type_id = scada::NodeId{35, 0}}}));
+      executor,
+      service.Browse(scada::ServiceContext{},
+                     {scada::BrowseDescription{
+                         .node_id = scada::NodeId{3, fixture.proxy_ns},
+                         .reference_type_id = scada::NodeId{35, 0}}}));
 
   // Request: proxy -> downstream.
   ASSERT_EQ(inner.recorded_browse.size(), 1u);
@@ -250,16 +251,16 @@ TEST(RemappingViewServiceTest, RemapsTranslateBrowsePathsRequestAndTargets) {
   path.relative_path = {scada::RelativePathElement{
       .reference_type_id = scada::NodeId{47, 0},
       .target_name = scada::QualifiedName{"y", fixture.proxy_ns}}};
-  auto result =
-      WaitAwaitable(executor, service.TranslateBrowsePaths({path}));
+  auto result = WaitAwaitable(executor, service.TranslateBrowsePaths({path}));
 
   // Request: proxy -> downstream.
   ASSERT_EQ(inner.recorded_paths.size(), 1u);
   EXPECT_EQ(inner.recorded_paths[0].node_id,
             scada::NodeId(3, fixture.downstream_ns));
   ASSERT_EQ(inner.recorded_paths[0].relative_path.size(), 1u);
-  EXPECT_EQ(inner.recorded_paths[0].relative_path[0].target_name.namespace_index(),
-            fixture.downstream_ns);
+  EXPECT_EQ(
+      inner.recorded_paths[0].relative_path[0].target_name.namespace_index(),
+      fixture.downstream_ns);
 
   // Targets: downstream -> proxy.
   ASSERT_TRUE(result.ok());
@@ -356,9 +357,10 @@ TEST(RemappingHistoryServiceTest, RemapsReadRawRequestAndIdentifierValues) {
             scada::NodeId(7, fixture.downstream_ns));
 
   // Identifier-typed historical values: downstream -> proxy.
-  ASSERT_EQ(result.values.size(), 1u);
-  ASSERT_TRUE(result.values[0].value.get_if<scada::NodeId>());
-  EXPECT_EQ(*result.values[0].value.get_if<scada::NodeId>(),
+  ASSERT_TRUE(result.ok()) << result.status();
+  ASSERT_EQ(result->values.size(), 1u);
+  ASSERT_TRUE(result->values[0].value.get_if<scada::NodeId>());
+  EXPECT_EQ(*result->values[0].value.get_if<scada::NodeId>(),
             scada::NodeId(99, fixture.proxy_ns));
 }
 
@@ -368,10 +370,9 @@ TEST(RemappingHistoryServiceTest, RemapsReadEventsSourceNode) {
   RemappingHistoryService service{inner, fixture.remapper};
   TestExecutor executor;
 
-  WaitAwaitable(executor,
-                service.HistoryReadEvents(scada::NodeId{5, fixture.proxy_ns},
-                                          scada::Time{}, scada::Time{},
-                                          scada::EventFilter{}));
+  WaitAwaitable(executor, service.HistoryReadEvents(
+                              scada::NodeId{5, fixture.proxy_ns}, scada::Time{},
+                              scada::Time{}, scada::EventFilter{}));
   EXPECT_EQ(inner.recorded_events_node,
             scada::NodeId(5, fixture.downstream_ns));
 }
@@ -381,8 +382,7 @@ TEST(RemappingMonitoredItemServiceTest, RemapsAddedItemTargets) {
   FakeMonitoredItemService inner;
   RemappingMonitoredItemService service{inner, fixture.remapper};
 
-  auto subscription =
-      service.CreateSubscription(scada::ServiceContext{}, {});
+  auto subscription = service.CreateSubscription(scada::ServiceContext{}, {});
   ASSERT_TRUE(subscription.ok());
 
   TestExecutor executor;
@@ -449,20 +449,19 @@ TEST(RemappingNodeManagementServiceTest, RemapsDeleteAndReferenceTargets) {
   EXPECT_EQ(inner.recorded_delete[0].node_id,
             scada::NodeId("f.txt", fixture.downstream_ns));
 
-  WaitAwaitable(
-      executor,
-      service.AddReferences(
-          scada::ServiceContext{},
-          {scada::AddReferencesItem{
-              .source_node_id = scada::NodeId{1, fixture.proxy_ns},
-              .reference_type_id = scada::NodeId{35, 0},
-              .target_node_id =
-                  scada::ExpandedNodeId{scada::NodeId{2, fixture.proxy_ns}}}}));
+  WaitAwaitable(executor,
+                service.AddReferences(
+                    scada::ServiceContext{},
+                    {scada::AddReferencesItem{
+                        .source_node_id = scada::NodeId{1, fixture.proxy_ns},
+                        .reference_type_id = scada::NodeId{35, 0},
+                        .target_node_id = scada::ExpandedNodeId{
+                            scada::NodeId{2, fixture.proxy_ns}}}}));
   ASSERT_EQ(inner.recorded_add_references.size(), 1u);
   EXPECT_EQ(inner.recorded_add_references[0].source_node_id,
             scada::NodeId(1, fixture.downstream_ns));
-  EXPECT_EQ(inner.recorded_add_references[0].reference_type_id.namespace_index(),
-            0u);
+  EXPECT_EQ(
+      inner.recorded_add_references[0].reference_type_id.namespace_index(), 0u);
   EXPECT_EQ(inner.recorded_add_references[0].target_node_id.node_id(),
             scada::NodeId(2, fixture.downstream_ns));
 }
@@ -470,8 +469,8 @@ TEST(RemappingNodeManagementServiceTest, RemapsDeleteAndReferenceTargets) {
 TEST(MountViewServiceTest, KeepsOnlyDownstreamOwnNamespaceChildren) {
   Fixture fixture;
   FakeViewService inner;
-  // The downstream's Objects-folder children, already namespace-remapped: a ns 0
-  // standard node (its Server) and a node in the downstream's own namespace.
+  // The downstream's Objects-folder children, already namespace-remapped: a ns
+  // 0 standard node (its Server) and a node in the downstream's own namespace.
   scada::ReferenceDescription server_ref;
   server_ref.node_id = scada::NodeId{2253, 0};
   scada::ReferenceDescription own_ref;
@@ -483,10 +482,9 @@ TEST(MountViewServiceTest, KeepsOnlyDownstreamOwnNamespaceChildren) {
   TestExecutor executor;
   auto result = WaitAwaitable(
       executor,
-      service.Browse(
-          scada::ServiceContext{},
-          {scada::BrowseDescription{.node_id = scada::NodeId{
-                                        scada::id::ObjectsFolder}}}));
+      service.Browse(scada::ServiceContext{},
+                     {scada::BrowseDescription{
+                         .node_id = scada::NodeId{scada::id::ObjectsFolder}}}));
   ASSERT_TRUE(result.ok());
   ASSERT_EQ(result->size(), 1u);
   ASSERT_EQ((*result)[0].references.size(), 1u);

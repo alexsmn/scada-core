@@ -104,7 +104,7 @@ class node {
 
   // `details.node_id` is overridden by the node ID and doesn't have
   // to be set.
-  Awaitable<HistoryReadRawResult> read_value_history_chunk(
+  Awaitable<StatusOr<HistoryReadRawResult>> read_value_history_chunk(
       HistoryReadRawDetails details) const;
 
   struct event_history_details {

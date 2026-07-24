@@ -11,7 +11,8 @@ class MockHistoryService : public HistoryService {
   MockHistoryService() {
     using namespace testing;
     ON_CALL(*this, HistoryReadRaw(_))
-        .WillByDefault([](HistoryReadRawDetails) -> Awaitable<HistoryReadRawResult> {
+        .WillByDefault([](HistoryReadRawDetails)
+                           -> Awaitable<StatusOr<HistoryReadRawResult>> {
           co_return HistoryReadRawResult{};
         });
     ON_CALL(*this, HistoryReadEvents(_, _, _, _))
@@ -21,18 +22,16 @@ class MockHistoryService : public HistoryService {
         });
   }
 
-  MOCK_METHOD(Awaitable<HistoryReadRawResult>,
+  MOCK_METHOD(Awaitable<StatusOr<HistoryReadRawResult>>,
               HistoryReadRaw,
               (HistoryReadRawDetails details),
               (override));
 
-  MOCK_METHOD(Awaitable<HistoryReadEventsResult>,
-              HistoryReadEvents,
-              (NodeId node_id,
-               scada::Time from,
-               scada::Time to,
-               EventFilter filter),
-              (override));
+  MOCK_METHOD(
+      Awaitable<HistoryReadEventsResult>,
+      HistoryReadEvents,
+      (NodeId node_id, scada::Time from, scada::Time to, EventFilter filter),
+      (override));
 };
 
 }  // namespace scada

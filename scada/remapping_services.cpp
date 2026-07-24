@@ -79,14 +79,17 @@ RemappingAttributeService::Write(scada::ServiceContext context,
   co_return co_await inner_.Write(std::move(context), std::move(inputs));
 }
 
-Awaitable<scada::HistoryReadRawResult> RemappingHistoryService::HistoryReadRaw(
-    scada::HistoryReadRawDetails details) {
+Awaitable<scada::StatusOr<scada::HistoryReadRawResult>>
+RemappingHistoryService::HistoryReadRaw(scada::HistoryReadRawDetails details) {
   details.node_id = remapper_.ToDownstream(details.node_id);
   auto result = co_await inner_.HistoryReadRaw(std::move(details));
+  if (!result.ok()) {
+    co_return result.status();
+  }
   // Identifier-typed historical values (e.g. a node reference stored as a
   // value) come back in downstream namespaces; translate them to proxy-local
   // ones, as the attribute Read path does.
-  for (auto& data_value : result.values) {
+  for (auto& data_value : result->values) {
     data_value.value = remapper_.ToProxy(data_value.value);
   }
   co_return result;

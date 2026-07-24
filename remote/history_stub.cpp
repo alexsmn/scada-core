@@ -4,11 +4,11 @@
 #include "base/awaitable.h"
 #include "base/check.h"
 #include "base/time/time_wire_codec.h"
-#include "scada/node_id_log.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "scada/history_service.h"
+#include "scada/node_id_log.h"
 
 #include "base/debug_util.h"
 
@@ -33,8 +33,10 @@ HistoryStub::~HistoryStub() {
                details = std::move(details)]() mutable -> Awaitable<void> {
                 auto result =
                     co_await service.HistoryReadRaw(std::move(details));
-                scada::base::Check(result.values.empty());
-                scada::base::Check(result.continuation_point.empty());
+                if (result.ok()) {
+                  scada::base::Check(result->values.empty());
+                  scada::base::Check(result->continuation_point.empty());
+                }
               });
     }
   }
@@ -136,24 +138,28 @@ Awaitable<void> HistoryStub::OnHistoryReadRawAsync(
 
   LOG_INFO(logger_) << "History read raw completed"
                     << LOG_TAG("RequestId", request_id)
-                    << LOG_TAG("Status", ToString(result.status))
-                    << LOG_TAG("ValueCount", ToString(result.values.size()));
+                    << LOG_TAG("Status", ToString(result.status()))
+                    << LOG_TAG("ValueCount",
+                               ToString(result.ok() ? result->values.size()
+                                                    : size_t{0}));
 
-  if (!result.continuation_point.empty())
-    continuation_points_.emplace(result.continuation_point, details);
+  if (result.ok() && !result->continuation_point.empty())
+    continuation_points_.emplace(result->continuation_point, details);
 
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
-  Convert(result.status, *response.mutable_status());
-  if (!result.values.empty()) {
-    Convert(std::move(result.values),
-            *response.mutable_history_read_raw_result()->mutable_value());
-  }
-  if (!result.continuation_point.empty()) {
-    Convert(std::move(result.continuation_point),
-            *response.mutable_history_read_raw_result()
-                 ->mutable_continuation_point());
+  Convert(result.status(), *response.mutable_status());
+  if (result.ok()) {
+    if (!result->values.empty()) {
+      Convert(std::move(result->values),
+              *response.mutable_history_read_raw_result()->mutable_value());
+    }
+    if (!result->continuation_point.empty()) {
+      Convert(std::move(result->continuation_point),
+              *response.mutable_history_read_raw_result()
+                   ->mutable_continuation_point());
+    }
   }
 
   if (auto locked_sender = sender_.lock())

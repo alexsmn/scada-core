@@ -7,13 +7,13 @@
 #include "scada/callback_awaitable.h"
 #include "scada/standard_node_ids.h"
 
-HistoryProxy::HistoryProxy(AnyExecutor executor) : executor_{std::move(executor)} {}
+HistoryProxy::HistoryProxy(AnyExecutor executor)
+    : executor_{std::move(executor)} {}
 
-Awaitable<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
-    scada::HistoryReadRawDetails details) {
+Awaitable<scada::StatusOr<scada::HistoryReadRawResult>>
+HistoryProxy::HistoryReadRaw(scada::HistoryReadRawDetails details) {
   if (!sender_) {
-    co_return scada::HistoryReadRawResult{
-        .status = scada::StatusCode::Bad_Disconnected};
+    co_return scada::StatusCode::Bad_Disconnected;
   }
 
   protocol::Request request;
@@ -36,12 +36,17 @@ Awaitable<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
             *history_read_raw.mutable_continuation_point());
   }
 
-  co_return co_await scada::AwaitCallbackValue<scada::HistoryReadRawResult>(
+  co_return co_await scada::AwaitCallbackValue<
+      scada::StatusOr<scada::HistoryReadRawResult>>(
       executor_, [this, request = std::move(request)](auto callback) mutable {
         sender_->Request(request, [callback = std::move(callback)](
                                       const protocol::Response& response) {
+          auto status = ConvertTo<scada::Status>(response.status());
+          if (!status) {
+            callback(status);
+            return;
+          }
           auto result = scada::HistoryReadRawResult{
-              .status = ConvertTo<scada::Status>(response.status()),
               .values = ConvertTo<std::vector<scada::DataValue>>(
                   response.history_read_raw_result().value()),
               .continuation_point = ConvertTo<scada::ByteString>(
@@ -73,15 +78,14 @@ Awaitable<scada::HistoryReadEventsResult> HistoryProxy::HistoryReadEvents(
 
   co_return co_await scada::AwaitCallbackValue<scada::HistoryReadEventsResult>(
       executor_, [this, request = std::move(request)](auto callback) mutable {
-        sender_->Request(
-            request, [callback = std::move(callback)](
-                         const protocol::Response& response) {
-              auto result = scada::HistoryReadEventsResult{
-                  .status = ConvertTo<scada::Status>(response.status()),
-                  .events = ConvertTo<std::vector<scada::Event>>(
-                      response.history_read_events_result().event())};
-              callback(std::move(result));
-            });
+        sender_->Request(request, [callback = std::move(callback)](
+                                      const protocol::Response& response) {
+          auto result = scada::HistoryReadEventsResult{
+              .status = ConvertTo<scada::Status>(response.status()),
+              .events = ConvertTo<std::vector<scada::Event>>(
+                  response.history_read_events_result().event())};
+          callback(std::move(result));
+        });
       });
 }
 

@@ -13,8 +13,8 @@ class HistoryProxy : public scada::HistoryService {
   void OnChannelClosed();
 
   // scada::HistoryService
-  virtual Awaitable<scada::HistoryReadRawResult> HistoryReadRaw(
-      scada::HistoryReadRawDetails details) override;
+  virtual Awaitable<scada::StatusOr<scada::HistoryReadRawResult>>
+  HistoryReadRaw(scada::HistoryReadRawDetails details) override;
   virtual Awaitable<scada::HistoryReadEventsResult> HistoryReadEvents(
       scada::NodeId node_id,
       scada::Time from,

@@ -31,8 +31,9 @@ struct HistoryReadEventsDetails {
   EventFilter filter;
 };
 
+// The payload of a successful HistoryReadRaw. Operation-level failure is
+// reported by the enclosing `StatusOr`, not by a field here.
 struct HistoryReadRawResult {
-  Status status{StatusCode::Good};
   std::vector<DataValue> values;
   ByteString continuation_point;
 };

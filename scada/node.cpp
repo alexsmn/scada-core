@@ -181,23 +181,23 @@ Awaitable<StatusOr<std::vector<scada::DataValue>>> node::read_value_history(
 
   for (;;) {
     auto result = co_await read_value_history_chunk(next_details);
-    if (!result.status) {
-      co_return result.status;
+    if (!result.ok()) {
+      co_return result.status();
     }
-    values.insert(values.end(), result.values.begin(), result.values.end());
-    if (result.continuation_point.empty()) {
+    values.insert(values.end(), result->values.begin(), result->values.end());
+    if (result->continuation_point.empty()) {
       co_return values;
     }
-    next_details.continuation_point = result.continuation_point;
+    next_details.continuation_point = result->continuation_point;
   }
 }
 
-Awaitable<HistoryReadRawResult> node::read_value_history_chunk(
+Awaitable<StatusOr<HistoryReadRawResult>> node::read_value_history_chunk(
     HistoryReadRawDetails details) const {
   base::Check(details.node_id.is_null());
 
   if (!services_.history_service) {
-    co_return HistoryReadRawResult{.status = StatusCode::Bad_Disconnected};
+    co_return StatusCode::Bad_Disconnected;
   }
 
   auto sanitized_details = std::move(details);
