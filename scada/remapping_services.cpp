@@ -95,7 +95,7 @@ RemappingHistoryService::HistoryReadRaw(scada::HistoryReadRawDetails details) {
   co_return result;
 }
 
-Awaitable<scada::HistoryReadEventsResult>
+Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>>
 RemappingHistoryService::HistoryReadEvents(scada::NodeId node_id,
                                            scada::Time from,
                                            scada::Time to,

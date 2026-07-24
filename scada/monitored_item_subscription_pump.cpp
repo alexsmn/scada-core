@@ -32,13 +32,13 @@ MonitoredItemSubscriptionPump::~MonitoredItemSubscriptionPump() {
   Close(StatusCode::Bad_Disconnected);
 }
 
-Status MonitoredItemSubscriptionPump::Start() {
+Status MonitoredItemSubscriptionPump::Start(ServiceContext context) {
   if (state_) {
     return StatusCode::Good;
   }
 
   StatusOr<std::unique_ptr<MonitoredItemSubscription>> subscription_result =
-      monitored_item_service_.CreateSubscription(ServiceContext{}, options_);
+      monitored_item_service_.CreateSubscription(std::move(context), options_);
   if (!subscription_result.ok()) {
     return subscription_result.status();
   }

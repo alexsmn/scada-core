@@ -38,8 +38,9 @@ struct HistoryReadRawResult {
   ByteString continuation_point;
 };
 
+// The payload of a successful HistoryReadEvents. Operation-level failure is
+// reported by the enclosing `StatusOr`, not by a field here.
 struct HistoryReadEventsResult {
-  Status status{StatusCode::Good};
   std::vector<Event> events;
 };
 

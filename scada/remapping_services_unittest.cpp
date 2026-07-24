@@ -91,7 +91,7 @@ class FakeHistoryService : public scada::HistoryService {
     co_return scada::HistoryReadRawResult{.values = raw_response};
   }
 
-  Awaitable<scada::HistoryReadEventsResult> HistoryReadEvents(
+  Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>> HistoryReadEvents(
       scada::NodeId node_id,
       scada::Time,
       scada::Time,

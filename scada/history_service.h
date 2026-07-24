@@ -14,7 +14,7 @@ class HistoryService {
   virtual Awaitable<StatusOr<HistoryReadRawResult>> HistoryReadRaw(
       HistoryReadRawDetails details) = 0;
 
-  virtual Awaitable<HistoryReadEventsResult> HistoryReadEvents(
+  virtual Awaitable<StatusOr<HistoryReadEventsResult>> HistoryReadEvents(
       NodeId node_id,
       scada::Time from,
       scada::Time to,

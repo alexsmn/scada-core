@@ -37,10 +37,12 @@ class MultiplexingMonitoredItemSubscription final
       AnyExecutor executor,
       MonitoredItemRouter router,
       MonitoredItemSubscriptionOptions options,
-      ServingGate* gate)
+      ServingGate* gate,
+      ServiceContext context)
       : state_{std::make_shared<State>(std::move(executor),
                                        std::move(router),
-                                       options)} {
+                                       options,
+                                       std::move(context))} {
     if (gate) {
       state_->gate_view = gate->view();
       // Registered while blocked delivery is off: a new subscription cannot be
@@ -171,14 +173,19 @@ class MultiplexingMonitoredItemSubscription final
   struct State {
     State(AnyExecutor executor,
           MonitoredItemRouter router,
-          MonitoredItemSubscriptionOptions options)
+          MonitoredItemSubscriptionOptions options,
+          ServiceContext context)
         : executor{std::move(executor)},
           router{std::move(router)},
-          options{options} {}
+          options{options},
+          context{std::move(context)} {}
 
     AnyExecutor executor;
     MonitoredItemRouter router;
     MonitoredItemSubscriptionOptions options;
+    // The context this subscription was created with, handed to each backend's
+    // CreateSubscription so its spans link back to the caller's trace.
+    ServiceContext context;
 
     // Optional serving gate: while blocked, delivered notifications are
     // rewritten to its blocked status and `registration` drives the item sweep.
@@ -319,7 +326,7 @@ class MultiplexingMonitoredItemSubscription final
             }
           },
           [](Status /*status*/) {});
-      if (!pump->Start().good()) {
+      if (!pump->Start(state->context).good()) {
         state->pumps.erase(service);
         return nullptr;
       }
@@ -441,10 +448,12 @@ MakeMultiplexingMonitoredItemSubscription(
     AnyExecutor executor,
     MonitoredItemRouter router,
     MonitoredItemSubscriptionOptions options,
-    ServingGate* gate) {
+    ServingGate* gate,
+    ServiceContext context) {
   return std::unique_ptr<MonitoredItemSubscription>{
       std::make_unique<MultiplexingMonitoredItemSubscription>(
-          std::move(executor), std::move(router), options, gate)};
+          std::move(executor), std::move(router), options, gate,
+          std::move(context))};
 }
 
 }  // namespace scada

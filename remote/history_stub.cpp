@@ -182,15 +182,16 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
 
   LOG_INFO(logger_) << "History read events completed"
                     << LOG_TAG("RequestId", request_id)
-                    << LOG_TAG("Status", ToString(result.status))
-                    << LOG_TAG("EventCount", result.events.size());
+                    << LOG_TAG("Status", ToString(result.status()))
+                    << LOG_TAG("EventCount",
+                               result.ok() ? result->events.size() : size_t{0});
 
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
-  Convert(result.status, *response.mutable_status());
-  if (!result.events.empty()) {
-    Convert(std::move(result.events),
+  Convert(result.status(), *response.mutable_status());
+  if (result.ok() && !result->events.empty()) {
+    Convert(std::move(result->events),
             *response.mutable_history_read_events_result()->mutable_event());
   }
 

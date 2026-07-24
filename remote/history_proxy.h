@@ -15,11 +15,11 @@ class HistoryProxy : public scada::HistoryService {
   // scada::HistoryService
   virtual Awaitable<scada::StatusOr<scada::HistoryReadRawResult>>
   HistoryReadRaw(scada::HistoryReadRawDetails details) override;
-  virtual Awaitable<scada::HistoryReadEventsResult> HistoryReadEvents(
-      scada::NodeId node_id,
-      scada::Time from,
-      scada::Time to,
-      scada::EventFilter filter) override;
+  virtual Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>>
+  HistoryReadEvents(scada::NodeId node_id,
+                    scada::Time from,
+                    scada::Time to,
+                    scada::EventFilter filter) override;
 
  private:
   AnyExecutor executor_;

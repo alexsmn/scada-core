@@ -56,14 +56,13 @@ HistoryProxy::HistoryReadRaw(scada::HistoryReadRawDetails details) {
       });
 }
 
-Awaitable<scada::HistoryReadEventsResult> HistoryProxy::HistoryReadEvents(
-    scada::NodeId node_id,
-    scada::Time from,
-    scada::Time to,
-    scada::EventFilter filter) {
+Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>>
+HistoryProxy::HistoryReadEvents(scada::NodeId node_id,
+                                scada::Time from,
+                                scada::Time to,
+                                scada::EventFilter filter) {
   if (!sender_) {
-    co_return scada::HistoryReadEventsResult{
-        .status = scada::StatusCode::Bad_Disconnected};
+    co_return scada::StatusCode::Bad_Disconnected;
   }
 
   protocol::Request request;
@@ -76,12 +75,17 @@ Awaitable<scada::HistoryReadEventsResult> HistoryProxy::HistoryReadEvents(
     history_read_events.set_to_time(scada::base::EncodeWireMicroseconds(to));
   Convert(filter, *history_read_events.mutable_filter());
 
-  co_return co_await scada::AwaitCallbackValue<scada::HistoryReadEventsResult>(
+  co_return co_await scada::AwaitCallbackValue<
+      scada::StatusOr<scada::HistoryReadEventsResult>>(
       executor_, [this, request = std::move(request)](auto callback) mutable {
         sender_->Request(request, [callback = std::move(callback)](
                                       const protocol::Response& response) {
+          auto status = ConvertTo<scada::Status>(response.status());
+          if (!status) {
+            callback(status);
+            return;
+          }
           auto result = scada::HistoryReadEventsResult{
-              .status = ConvertTo<scada::Status>(response.status()),
               .events = ConvertTo<std::vector<scada::Event>>(
                   response.history_read_events_result().event())};
           callback(std::move(result));

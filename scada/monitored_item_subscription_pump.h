@@ -35,8 +35,14 @@ class MonitoredItemSubscriptionPump {
   MonitoredItemSubscriptionPump& operator=(
       const MonitoredItemSubscriptionPump&) = delete;
 
-  // Creates the underlying subscription and starts the read loop.
-  [[nodiscard]] Status Start();
+  // Creates the underlying subscription and starts the read loop. `context` is
+  // handed to the backend's CreateSubscription, so its trace id links the
+  // backend's subscription spans to the caller that caused them. A pump is
+  // created once per backend and reused for every later item, so this is the
+  // context of whichever item first routed here — accurate for a subscription
+  // created per request (an E2E probe), approximate for a long-lived client
+  // subscription that keeps adding items.
+  [[nodiscard]] Status Start(ServiceContext context = {});
 
   // Adds monitored items through the owned subscription. If the pump is closed
   // or has not started, all requests complete with Bad_Disconnected.

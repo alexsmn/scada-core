@@ -214,10 +214,10 @@ Awaitable<StatusOr<std::vector<Event>>> node::read_event_history(
 
   auto result = co_await services_.history_service->HistoryReadEvents(
       node_id_, details.from, details.to, details.filter);
-  if (!result.status) {
-    co_return result.status;
+  if (!result.ok()) {
+    co_return result.status();
   }
-  co_return std::move(result.events);
+  co_return std::move(result->events);
 }
 
 Awaitable<StatusOr<std::vector<Event>>> node::read_event_history() const {
