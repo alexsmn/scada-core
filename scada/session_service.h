@@ -2,10 +2,11 @@
 
 #include "base/awaitable.h"
 #include "base/time/time.h"
+#include "scada/access_rights.h"
+#include "scada/authorization.h"
 #include "scada/date_time.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
-#include "scada/privileges.h"
 #include "scada/status.h"
 
 #include <boost/signals2/connection.hpp>
@@ -74,7 +75,40 @@ class SessionService {
   virtual bool IsConnected(scada::Duration* ping_delay = nullptr) const = 0;
 
   virtual NodeId GetUserId() const = 0;
-  virtual bool HasPrivilege(Privilege privilege) const = 0;
+
+  // The session account's coarse access-rights bitmask (bits from
+  // scada::AccessRight), as granted at session activation. Zero grants nothing
+  // beyond the Observer baseline.
+  virtual std::uint32_t GetAccessRights() const = 0;
+
+  // True when the session has no authenticated user (an OPC UA Anonymous
+  // identity token), which confines it to the Anonymous role. Sessions that
+  // are authenticated by construction — in-process, test and vendor-bridge
+  // sessions — keep the default.
+  virtual bool IsAnonymous() const { return false; }
+
+  // True when the session holds the coarse account right `right`. Use this only
+  // for account-tier questions ("is this an administrator?"); gate a concrete
+  // operation with HasPermission() so the client asks exactly what the server
+  // enforces.
+  bool HasAccessRight(AccessRight right) const {
+    return scada::HasAccessRight(GetAccessRights(), right);
+  }
+
+  // The session's effective OPC UA permissions (Part 3 §8.55 PermissionType),
+  // derived from its access rights through the well-known role map.
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.55
+  Permission GetPermissions() const {
+    return PermissionsForUser(GetAccessRights(), IsAnonymous());
+  }
+
+  // True when the session's effective permissions include every bit of
+  // `permission`. This is the same derivation the server applies when it
+  // authorizes the corresponding service call, so a client-side gate and the
+  // server's enforcement cannot disagree.
+  bool HasPermission(Permission permission) const {
+    return IsPermitted(GetAccessRights(), IsAnonymous(), permission);
+  }
 
   virtual std::string GetHostName() const = 0;
 

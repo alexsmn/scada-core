@@ -28,7 +28,8 @@ class MockSessionService : public SessionService {
               (const override));
 
   MOCK_METHOD(NodeId, GetUserId, (), (const override));
-  MOCK_METHOD(bool, HasPrivilege, (Privilege privilege), (const override));
+  MOCK_METHOD(std::uint32_t, GetAccessRights, (), (const override));
+  MOCK_METHOD(bool, IsAnonymous, (), (const override));
 
   MOCK_METHOD(std::string, GetHostName, (), (const override));
 

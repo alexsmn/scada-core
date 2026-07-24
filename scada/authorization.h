@@ -1,7 +1,7 @@
 #pragma once
 
+#include "scada/access_rights.h"
 #include "scada/node_id.h"
-#include "scada/privileges.h"
 
 #include <cstdint>
 #include <span>
@@ -11,7 +11,7 @@
 namespace scada {
 
 // OPC UA well-known roles (OPC UA Part 3 §4.8 / Part 18). The server derives a
-// caller's roles from its coarse access-rights bitmask (scada::Privilege), so
+// caller's roles from its coarse access-rights bitmask (scada::AccessRight), so
 // the standard role/permission surface can be exposed without a per-user role
 // store. https://reference.opcfoundation.org/Core/Part3/v105/docs/4.8
 enum class WellKnownRole {
@@ -84,10 +84,10 @@ constexpr bool Contains(Permission granted, Permission required) {
 }
 
 // Derives the well-known roles a caller holds from its access-rights bitmask
-// (bits from scada::Privilege) and whether the session is anonymous. An
+// (bits from scada::AccessRight) and whether the session is anonymous. An
 // anonymous session is the Anonymous role only; any authenticated caller is at
 // least AuthenticatedUser + Observer, gaining Operator with the Control
-// privilege and the admin/engineering roles with the Configure privilege.
+// access right and the admin/engineering roles with the Configure access right.
 std::vector<WellKnownRole> RolesForUser(std::uint32_t access_rights,
                                         bool is_anonymous);
 

@@ -6,14 +6,6 @@ namespace scada {
 
 namespace {
 
-constexpr std::uint32_t Bit(Privilege privilege) {
-  return std::uint32_t{1} << static_cast<int>(privilege);
-}
-
-constexpr bool HasPrivilege(std::uint32_t access_rights, Privilege privilege) {
-  return (access_rights & Bit(privilege)) != 0;
-}
-
 // Read-only baseline shared by Anonymous and Observer.
 constexpr Permission kReadOnly =
     Permission::kBrowse | Permission::kRead | Permission::kReceiveEvents;
@@ -37,10 +29,10 @@ std::vector<WellKnownRole> RolesForUser(std::uint32_t access_rights,
 
   std::vector<WellKnownRole> roles{WellKnownRole::kAuthenticatedUser,
                                    WellKnownRole::kObserver};
-  if (HasPrivilege(access_rights, Privilege::Control)) {
+  if (HasAccessRight(access_rights, AccessRight::kControl)) {
     roles.push_back(WellKnownRole::kOperator);
   }
-  if (HasPrivilege(access_rights, Privilege::Configure)) {
+  if (HasAccessRight(access_rights, AccessRight::kConfigure)) {
     roles.push_back(WellKnownRole::kEngineer);
     roles.push_back(WellKnownRole::kSupervisor);
     roles.push_back(WellKnownRole::kConfigureAdmin);

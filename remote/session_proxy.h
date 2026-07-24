@@ -7,11 +7,11 @@
 #include "base/boost_log.h"
 #include "base/cancelation.h"
 #include "remote/message_sender.h"
+#include "scada/access_rights.h"
 #include "scada/attribute_service.h"
 #include "scada/logging.h"
 #include "scada/method_service.h"
 #include "scada/monitored_item_service.h"
-#include "scada/privileges.h"
 #include "scada/services.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
@@ -64,7 +64,8 @@ class SessionProxy : private SessionProxyContext,
   virtual Awaitable<void> Reconnect() override;
   virtual Awaitable<void> Disconnect() override;
   virtual bool IsConnected(scada::Duration* ping_delay) const override;
-  virtual bool HasPrivilege(scada::Privilege privilege) const override;
+  virtual std::uint32_t GetAccessRights() const override;
+  virtual bool IsAnonymous() const override;
   virtual bool IsScada() const override { return false; }
   virtual scada::NodeId GetUserId() const override;
   virtual std::string GetHostName() const override;

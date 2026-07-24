@@ -282,8 +282,14 @@ void SessionProxy::OnSessionDeleted() {
   history_proxy_->OnChannelClosed();
 }
 
-bool SessionProxy::HasPrivilege(scada::Privilege privilege) const {
-  return (user_rights_ & (1 << static_cast<int>(privilege))) != 0;
+std::uint32_t SessionProxy::GetAccessRights() const {
+  return user_rights_;
+}
+
+bool SessionProxy::IsAnonymous() const {
+  // A session that activated with an Anonymous identity token carries no user
+  // id, which confines it to the OPC UA Anonymous role (Part 3 §4.8).
+  return GetUserId().is_null();
 }
 
 Awaitable<protocol::Response> SessionProxy::RequestAsync(

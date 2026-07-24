@@ -18,7 +18,7 @@ class [[nodiscard]] ServiceContext {
   ServiceContext& operator=(const ServiceContext&) = default;
 
   const scada::NodeId& user_id() const SCADA_LIFETIME_BOUND;
-  // The caller's access-rights bitmask (bits from scada::Privilege), captured
+  // The caller's access-rights bitmask (bits from scada::AccessRight), captured
   // at session activation. Zero for an anonymous or unauthenticated context.
   uint32_t user_rights() const;
   // True when there is no authenticated user (an anonymous session): a null

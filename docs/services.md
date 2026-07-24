@@ -245,7 +245,7 @@ Header: `core/scada/session_service.h`
 Purpose:
 
 - connect, reconnect, and disconnect sessions
-- expose session identity and privilege state
+- expose session identity, access rights, and effective permissions
 - publish session-state-change notifications
 
 Primary API:
@@ -257,7 +257,14 @@ virtual Awaitable<void> Disconnect() = 0;
 
 virtual bool IsConnected(base::TimeDelta* ping_delay = nullptr) const = 0;
 virtual NodeId GetUserId() const = 0;
-virtual bool HasPrivilege(Privilege privilege) const = 0;
+virtual std::uint32_t GetAccessRights() const = 0;
+virtual bool IsAnonymous() const;
+
+// Non-virtual, derived from the two above.
+bool HasAccessRight(AccessRight right) const;
+Permission GetPermissions() const;
+bool HasPermission(Permission permission) const;
+
 virtual std::string GetHostName() const = 0;
 virtual bool IsScada() const = 0;
 ```

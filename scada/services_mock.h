@@ -13,10 +13,15 @@ struct MockServices {
   MockServices() {
     using namespace testing;
 
-    ON_CALL(session_service, HasPrivilege(_)).WillByDefault(Return(true));
+    // A fully entitled account by default, so permission-gated code under
+    // test is not silently short-circuited.
+    ON_CALL(session_service, GetAccessRights())
+        .WillByDefault(Return(AccessRightBit(AccessRight::kConfigure) |
+                              AccessRightBit(AccessRight::kControl)));
 
-    ON_CALL(session_service, Disconnect())
-        .WillByDefault([] { return ReturnVoidAwaitable(); });
+    ON_CALL(session_service, Disconnect()).WillByDefault([] {
+      return ReturnVoidAwaitable();
+    });
   }
 
   services services() {

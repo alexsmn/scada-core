@@ -19,6 +19,7 @@
 module;
 
 // ---- Global module fragment: headers stay the source of truth ----
+#include "scada/access_rights.h"
 #include "scada/aggregate_filter.h"
 #include "scada/attribute_ids.h"
 #include "scada/attribute_service.h"
@@ -61,7 +62,6 @@ module;
 #include "scada/node_class.h"
 #include "scada/node_id.h"
 #include "scada/node_management_service.h"
-#include "scada/privileges.h"
 #include "scada/qualified_name.h"
 #include "scada/qualified_name_util.h"
 #include "scada/qualifier.h"
@@ -266,11 +266,13 @@ using scada::Authenticator;
 using scada::CoroutineAuthenticator;
 using scada::FunctionCoroutineAuthenticator;
 
-// authorization.h / privileges.h
+// authorization.h / access_rights.h
+using scada::AccessRight;
+using scada::AccessRightBit;
+using scada::HasAccessRight;
 using scada::IdentityCriteriaType;
 using scada::IdentityMappingRule;
 using scada::Permission;
-using scada::Privilege;
 using scada::RolePermissionType;
 using scada::WellKnownRole;
 namespace access_level {

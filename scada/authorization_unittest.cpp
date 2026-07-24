@@ -8,10 +8,8 @@ namespace scada {
 
 namespace {
 
-constexpr std::uint32_t kConfigure = std::uint32_t{1}
-                                     << static_cast<int>(Privilege::Configure);
-constexpr std::uint32_t kControl = std::uint32_t{1}
-                                   << static_cast<int>(Privilege::Control);
+constexpr std::uint32_t kConfigure = AccessRightBit(AccessRight::kConfigure);
+constexpr std::uint32_t kControl = AccessRightBit(AccessRight::kControl);
 constexpr std::uint32_t kRootRights = kConfigure | kControl;
 
 bool HasRole(std::uint32_t access_rights, bool anonymous, WellKnownRole role) {
@@ -41,7 +39,7 @@ TEST(AuthorizationTest, AuthenticatedUserWithNoBitsIsObserver) {
   EXPECT_FALSE(IsPermitted(0, false, Permission::kWrite));
 }
 
-TEST(AuthorizationTest, ControlPrivilegeGrantsOperator) {
+TEST(AuthorizationTest, ControlAccessRightGrantsOperator) {
   EXPECT_TRUE(HasRole(kControl, false, WellKnownRole::kOperator));
   EXPECT_FALSE(HasRole(kControl, false, WellKnownRole::kConfigureAdmin));
 
@@ -52,7 +50,7 @@ TEST(AuthorizationTest, ControlPrivilegeGrantsOperator) {
   EXPECT_FALSE(IsPermitted(kControl, false, Permission::kWriteRolePermissions));
 }
 
-TEST(AuthorizationTest, ConfigurePrivilegeGrantsAdminRoles) {
+TEST(AuthorizationTest, ConfigureAccessRightGrantsAdminRoles) {
   EXPECT_TRUE(HasRole(kConfigure, false, WellKnownRole::kConfigureAdmin));
   EXPECT_TRUE(HasRole(kConfigure, false, WellKnownRole::kSecurityAdmin));
 
