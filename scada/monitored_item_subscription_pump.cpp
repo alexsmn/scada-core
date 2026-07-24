@@ -49,9 +49,7 @@ Status MonitoredItemSubscriptionPump::Start(ServiceContext context) {
   state_->error_handler = error_handler_;
   state_->subscription = std::move(*subscription_result);
 
-  CoSpawn(executor_, [state = state_] {
-    return ReadLoop(std::move(state));
-  });
+  CoSpawn(executor_, [state = state_] { return ReadLoop(std::move(state)); });
 
   return StatusCode::Good;
 }
@@ -64,9 +62,9 @@ MonitoredItemSubscriptionPump::AddItems(
     std::vector<MonitoredItemCreateResult> results;
     results.reserve(requests.size());
     for (const MonitoredItemCreateRequest& request : requests) {
-      results.emplace_back(MonitoredItemCreateResult{
-          .client_handle = request.client_handle,
-          .status = StatusCode::Bad_Disconnected});
+      results.emplace_back(
+          MonitoredItemCreateResult{.client_handle = request.client_handle,
+                                    .status = StatusCode::Bad_Disconnected});
     }
     co_return results;
   }
@@ -78,9 +76,9 @@ MonitoredItemSubscriptionPump::AddItems(
       std::vector<MonitoredItemCreateResult> results;
       results.reserve(requests.size());
       for (const MonitoredItemCreateRequest& request : requests) {
-        results.emplace_back(MonitoredItemCreateResult{
-            .client_handle = request.client_handle,
-            .status = StatusCode::Bad_Disconnected});
+        results.emplace_back(
+            MonitoredItemCreateResult{.client_handle = request.client_handle,
+                                      .status = StatusCode::Bad_Disconnected});
       }
       co_return results;
     }

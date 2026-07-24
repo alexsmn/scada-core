@@ -3,6 +3,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "scada/client.h"
+#include "scada/co_result.h"
 
 #include <gtest/gtest.h>
 
@@ -13,7 +14,7 @@ namespace {
 // per input, pointing at `target_id`.
 class FakeViewService : public ViewService {
  public:
-  Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
+  CoStatusOr<std::vector<BrowseResult>> Browse(
       ServiceContext context,
       std::vector<BrowseDescription> inputs) override {
     browse_inputs = inputs;
@@ -28,7 +29,7 @@ class FakeViewService : public ViewService {
     co_return results;
   }
 
-  Awaitable<StatusOr<std::vector<BrowsePathResult>>> TranslateBrowsePaths(
+  CoStatusOr<std::vector<BrowsePathResult>> TranslateBrowsePaths(
       std::vector<BrowsePath> inputs) override {
     co_return StatusCode::Bad_NotSupported;
   }

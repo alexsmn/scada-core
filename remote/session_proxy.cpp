@@ -5,10 +5,10 @@
 #include "base/check.h"
 #include "base/time_utils.h"
 
-#include <chrono>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <chrono>
 
 #include "base/utf_convert.h"
 #include "net/net_boost_logger_adapter.h"
@@ -22,6 +22,7 @@
 #include "remote/session_proxy_debuger.h"
 #include "remote/subscription_proxy.h"
 #include "remote/view_service_proxy.h"
+#include "scada/co_result.h"
 #include "scada/item_factory_subscription.h"
 #include "scada/monitored_item.h"
 
@@ -345,7 +346,7 @@ Awaitable<void> SessionProxy::AwaitCreateSessionAsync() {
   OnSessionCreated();
 }
 
-Awaitable<scada::Status> SessionProxy::DisconnectAsync() {
+scada::CoStatus SessionProxy::DisconnectAsync() {
   if (!session_created_)
     co_return scada::StatusCode::Bad_Disconnected;
 
@@ -492,13 +493,12 @@ Awaitable<void> SessionProxy::Connect(scada::SessionConnectParams params) {
   (void)co_await ConnectStatus(std::move(params));
 }
 
-Awaitable<scada::Status> SessionProxy::ConnectStatus(
+scada::CoStatus SessionProxy::ConnectStatus(
     scada::SessionConnectParams params) {
   co_return co_await ConnectAsync(std::move(params));
 }
 
-Awaitable<scada::Status> SessionProxy::ConnectAsync(
-    scada::SessionConnectParams params) {
+scada::CoStatus SessionProxy::ConnectAsync(scada::SessionConnectParams params) {
   scada::base::Check(!transport_);
 
   if (session_created_) {
@@ -617,7 +617,7 @@ void SessionProxy::ForwardConnectResult(scada::Status&& status) {
   connect_completion_.Complete();
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> SessionProxy::Read(
+scada::CoStatusOr<std::vector<scada::DataValue>> SessionProxy::Read(
     scada::ServiceContext context,
     std::vector<scada::ReadValueId> inputs) {
   if (!session_created_) {
@@ -638,7 +638,7 @@ Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> SessionProxy::Read(
       response.read_result().value());
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> SessionProxy::Write(
+scada::CoStatusOr<std::vector<scada::StatusCode>> SessionProxy::Write(
     scada::ServiceContext context,
     std::vector<scada::WriteValue> inputs) {
   if (!session_created_) {
@@ -657,11 +657,10 @@ Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> SessionProxy::Write(
   co_return ConvertTo<std::vector<scada::StatusCode>>(response.write_result());
 }
 
-Awaitable<scada::Status> SessionProxy::Call(
-    scada::NodeId node_id,
-    scada::NodeId method_id,
-    std::vector<scada::Variant> arguments,
-    scada::ServiceContext context) {
+scada::CoStatus SessionProxy::Call(scada::NodeId node_id,
+                                   scada::NodeId method_id,
+                                   std::vector<scada::Variant> arguments,
+                                   scada::ServiceContext context) {
   if (!session_created_) {
     co_return scada::StatusCode::Bad_Disconnected;
   }

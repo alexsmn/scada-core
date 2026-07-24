@@ -1,6 +1,7 @@
 #include "scada/multiplexing_monitored_item_subscription.h"
 
 #include "scada/attribute_ids.h"
+#include "scada/co_result.h"
 #include "scada/monitored_item_service.h"
 #include "scada/monitored_item_subscription_pump.h"
 #include "scada/serving_gate.h"
@@ -81,7 +82,7 @@ class MultiplexingMonitoredItemSubscription final
     co_return results;
   }
 
-  Awaitable<StatusOr<std::vector<MonitoredItemNotification>>> ReadNext(
+  CoStatusOr<std::vector<MonitoredItemNotification>> ReadNext(
       std::size_t max_count) override {
     if (max_count == 0) {
       co_return std::vector<MonitoredItemNotification>{};
@@ -409,7 +410,7 @@ class MultiplexingMonitoredItemSubscription final
                                         .status = StatusCode::Good};
   }
 
-  Awaitable<Status> RemoveItem(MonitoredItemId item_id) {
+  CoStatus RemoveItem(MonitoredItemId item_id) {
     std::vector<std::pair<MonitoredItemService*, MonitoredItemId>> children;
     {
       std::lock_guard lock{state_->mutex};

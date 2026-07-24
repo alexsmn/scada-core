@@ -4,6 +4,7 @@
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/co_result.h"
 
 void NodeManagementProxy::OnChannelOpened(MessageSender& sender) {
   sender_ = &sender;
@@ -13,7 +14,7 @@ void NodeManagementProxy::OnChannelClosed() {
   sender_ = nullptr;
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>>
+scada::CoStatusOr<std::vector<scada::AddNodesResult>>
 NodeManagementProxy::AddNodes(scada::ServiceContext /*context*/,
                               std::vector<scada::AddNodesItem> inputs) {
   LOG_INFO(logger_) << "AddNodes request" << LOG_TAG("Count", inputs.size());
@@ -43,13 +44,12 @@ NodeManagementProxy::AddNodes(scada::ServiceContext /*context*/,
   LOG_INFO(logger_) << "AddNodes response"
                     << LOG_TAG("Status", ToString(status))
                     << LOG_TAG("Count", inputs.size());
-  co_return status ? scada::StatusOr<std::vector<scada::AddNodesResult>>{
-                         std::move(results)}
-                   : scada::StatusOr<std::vector<scada::AddNodesResult>>{
-                         std::move(status)};
+  co_return status
+      ? scada::StatusOr<std::vector<scada::AddNodesResult>>{std::move(results)}
+      : scada::StatusOr<std::vector<scada::AddNodesResult>>{std::move(status)};
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 NodeManagementProxy::DeleteNodes(scada::ServiceContext /*context*/,
                                  std::vector<scada::DeleteNodesItem> inputs) {
   LOG_INFO(logger_) << "DeleteNodes request" << LOG_TAG("Count", inputs.size());
@@ -79,13 +79,12 @@ NodeManagementProxy::DeleteNodes(scada::ServiceContext /*context*/,
   LOG_INFO(logger_) << "DeleteNodes response"
                     << LOG_TAG("Status", ToString(status))
                     << LOG_TAG("Count", inputs.size());
-  co_return status ? scada::StatusOr<std::vector<scada::StatusCode>>{
-                         std::move(results)}
-                   : scada::StatusOr<std::vector<scada::StatusCode>>{
-                         std::move(status)};
+  co_return status
+      ? scada::StatusOr<std::vector<scada::StatusCode>>{std::move(results)}
+      : scada::StatusOr<std::vector<scada::StatusCode>>{std::move(status)};
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 NodeManagementProxy::AddReferences(
     scada::ServiceContext /*context*/,
     std::vector<scada::AddReferencesItem> inputs) {
@@ -117,13 +116,12 @@ NodeManagementProxy::AddReferences(
   LOG_INFO(logger_) << "AddReferences response"
                     << LOG_TAG("Count", inputs.size())
                     << LOG_TAG("Status", ToString(status));
-  co_return status ? scada::StatusOr<std::vector<scada::StatusCode>>{
-                         std::move(results)}
-                   : scada::StatusOr<std::vector<scada::StatusCode>>{
-                         std::move(status)};
+  co_return status
+      ? scada::StatusOr<std::vector<scada::StatusCode>>{std::move(results)}
+      : scada::StatusOr<std::vector<scada::StatusCode>>{std::move(status)};
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 NodeManagementProxy::DeleteReferences(
     scada::ServiceContext /*context*/,
     std::vector<scada::DeleteReferencesItem> inputs) {
@@ -155,8 +153,7 @@ NodeManagementProxy::DeleteReferences(
   LOG_INFO(logger_) << "DeleteReferences response"
                     << LOG_TAG("Count", inputs.size())
                     << LOG_TAG("Status", ToString(status));
-  co_return status ? scada::StatusOr<std::vector<scada::StatusCode>>{
-                         std::move(results)}
-                   : scada::StatusOr<std::vector<scada::StatusCode>>{
-                         std::move(status)};
+  co_return status
+      ? scada::StatusOr<std::vector<scada::StatusCode>>{std::move(results)}
+      : scada::StatusOr<std::vector<scada::StatusCode>>{std::move(status)};
 }

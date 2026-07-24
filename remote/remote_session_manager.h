@@ -6,6 +6,7 @@
 #include "base/lifetime.h"
 #include "metrics/tracer.h"
 #include "scada/authentication.h"
+#include "scada/co_result.h"
 #include "scada/services.h"
 #include "scada/status_or.h"
 #include "scada/view_service.h"
@@ -57,7 +58,7 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   explicit RemoteSessionManager(RemoteSessionManagerContext&& context);
   virtual ~RemoteSessionManager();
 
-  [[nodiscard]] Awaitable<scada::Status> InitAsync();
+  [[nodiscard]] scada::CoStatus InitAsync();
   [[nodiscard]] Awaitable<void> ShutdownAsync();
 
   void CloseUserSessions(const scada::NodeId& user_id);

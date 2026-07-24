@@ -1,6 +1,7 @@
 #include "scada/client.h"
 
 #include "base/check.h"
+#include "scada/co_result.h"
 #include "scada/node_management_service.h"
 #include "scada/service_context.h"
 #include "scada/view_service.h"
@@ -15,7 +16,7 @@ client client::with_context(const ServiceContext& context) const {
   return client{services_, context};
 }
 
-Awaitable<Status> client::connect(SessionConnectParams params) const {
+CoStatus client::connect(SessionConnectParams params) const {
   if (!services_.session_service) {
     co_return StatusCode::Bad_Disconnected;
   }
@@ -24,7 +25,7 @@ Awaitable<Status> client::connect(SessionConnectParams params) const {
   co_return OkStatus();
 }
 
-Awaitable<Status> client::disconnect() const {
+CoStatus client::disconnect() const {
   if (!services_.session_service) {
     co_return StatusCode::Bad_Disconnected;
   }
@@ -33,8 +34,8 @@ Awaitable<Status> client::disconnect() const {
   co_return OkStatus();
 }
 
-Awaitable<StatusOr<
-    std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>>
+CoStatusOr<
+    std::vector<scada::StatusOr<std::vector<scada::ReferenceDescription>>>>
 client::browse(std::vector<scada::BrowseDescription> inputs) const {
   if (!services_.view_service) {
     co_return StatusCode::Bad_Disconnected;
@@ -58,7 +59,7 @@ client::browse(std::vector<scada::BrowseDescription> inputs) const {
   co_return output;
 }
 
-Awaitable<StatusOr<scada::node>> client::add_node(AddNodesItem item) const {
+CoStatusOr<scada::node> client::add_node(AddNodesItem item) const {
   if (!services_.node_management_service) {
     co_return StatusCode::Bad_Disconnected;
   }
@@ -79,8 +80,8 @@ Awaitable<StatusOr<scada::node>> client::add_node(AddNodesItem item) const {
   co_return node(node_id);
 }
 
-Awaitable<Status> client::acknowledge_events(std::vector<EventId> event_ids,
-                                             Time acknowledge_time) const {
+CoStatus client::acknowledge_events(std::vector<EventId> event_ids,
+                                    Time acknowledge_time) const {
   base::Check(!event_ids.empty());
   co_return co_await server_node().call(
       scada::id::AcknowledgeableConditionType_Acknowledge, std::move(event_ids),

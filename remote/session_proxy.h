@@ -9,6 +9,7 @@
 #include "remote/message_sender.h"
 #include "scada/access_rights.h"
 #include "scada/attribute_service.h"
+#include "scada/co_result.h"
 #include "scada/logging.h"
 #include "scada/method_service.h"
 #include "scada/monitored_item_service.h"
@@ -59,7 +60,7 @@ class SessionProxy : private SessionProxyContext,
 
   // scada::SessionService
   virtual Awaitable<void> Connect(scada::SessionConnectParams params) override;
-  virtual Awaitable<scada::Status> ConnectStatus(
+  virtual scada::CoStatus ConnectStatus(
       scada::SessionConnectParams params) override;
   virtual Awaitable<void> Reconnect() override;
   virtual Awaitable<void> Disconnect() override;
@@ -94,14 +95,14 @@ class SessionProxy : private SessionProxyContext,
         std::vector<scada::WriteValue> inputs) override;
 
   // scada::MethodService
-  virtual Awaitable<scada::Status> Call(scada::NodeId node_id,
-                                        scada::NodeId method_id,
-                                        std::vector<scada::Variant> arguments,
-                                        scada::ServiceContext context) override;
+  virtual scada::CoStatus Call(scada::NodeId node_id,
+                               scada::NodeId method_id,
+                               std::vector<scada::Variant> arguments,
+                               scada::ServiceContext context) override;
 
  private:
   [[nodiscard]] transport::awaitable<void> Connect();
-  [[nodiscard]] Awaitable<scada::Status> ConnectAsync(
+  [[nodiscard]] scada::CoStatus ConnectAsync(
       scada::SessionConnectParams params);
   [[nodiscard]] Awaitable<void> ReconnectAsync();
 
@@ -113,7 +114,7 @@ class SessionProxy : private SessionProxyContext,
   void OnMessageReceived(const protocol::Message& message);
 
   [[nodiscard]] Awaitable<void> AwaitCreateSessionAsync();
-  [[nodiscard]] Awaitable<scada::Status> DisconnectAsync();
+  [[nodiscard]] scada::CoStatus DisconnectAsync();
   [[nodiscard]] Awaitable<void> PingAsync();
   [[nodiscard]] Awaitable<protocol::Response> RequestAsync(
       protocol::Request request);

@@ -4,6 +4,7 @@
 #include "base/time/time.h"
 #include "scada/access_rights.h"
 #include "scada/authorization.h"
+#include "scada/co_result.h"
 #include "scada/date_time.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
@@ -63,7 +64,7 @@ class SessionService {
 
   virtual Awaitable<void> Connect(SessionConnectParams params) = 0;
 
-  virtual Awaitable<Status> ConnectStatus(SessionConnectParams params) {
+  virtual CoStatus ConnectStatus(SessionConnectParams params) {
     co_await Connect(std::move(params));
     co_return StatusCode::Good;
   }

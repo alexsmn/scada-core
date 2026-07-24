@@ -2,6 +2,7 @@
 
 #include "base/test/awaitable_test.h"
 #include "scada/attribute_service_mock.h"
+#include "scada/co_result.h"
 #include "scada/service_context.h"
 
 #include <gmock/gmock.h>
@@ -22,7 +23,7 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
   EXPECT_CALL(service, Read(testing::_, testing::_))
       .WillOnce(Invoke([&](ServiceContext actual_context,
                            std::vector<ReadValueId> actual_inputs)
-                           -> Awaitable<StatusOr<std::vector<DataValue>>> {
+                           -> CoStatusOr<std::vector<DataValue>> {
         EXPECT_EQ(actual_context.request_id(), context.request_id());
         EXPECT_EQ(actual_inputs.size(), 1u);
         if (actual_inputs.size() != 1u)
@@ -31,7 +32,8 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
         co_return std::vector{DataValue{Variant{42}, {}, {}, {}}};
       }));
 
-  auto read_result = WaitAwaitable(executor, service.Read(context, read_inputs));
+  auto read_result =
+      WaitAwaitable(executor, service.Read(context, read_inputs));
   ASSERT_TRUE(read_result.ok());
   ASSERT_EQ(read_result->size(), 1u);
   EXPECT_EQ((*read_result)[0], DataValue(Variant{42}, {}, {}, {}));
@@ -41,7 +43,7 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
   EXPECT_CALL(service, Write(testing::_, testing::_))
       .WillOnce(Invoke([&](ServiceContext actual_context,
                            std::vector<WriteValue> actual_inputs)
-                           -> Awaitable<StatusOr<std::vector<StatusCode>>> {
+                           -> CoStatusOr<std::vector<StatusCode>> {
         EXPECT_EQ(actual_context.request_id(), context.request_id());
         EXPECT_EQ(actual_inputs.size(), 1u);
         if (actual_inputs.size() != 1u)

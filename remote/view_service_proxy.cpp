@@ -4,6 +4,7 @@
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/co_result.h"
 #include "scada/service_context.h"
 
 // ViewServiceProxy
@@ -16,9 +17,9 @@ void ViewServiceProxy::OnChannelClosed() {
   sender_ = nullptr;
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>>
-ViewServiceProxy::Browse(scada::ServiceContext context,
-                         std::vector<scada::BrowseDescription> nodes) {
+scada::CoStatusOr<std::vector<scada::BrowseResult>> ViewServiceProxy::Browse(
+    scada::ServiceContext context,
+    std::vector<scada::BrowseDescription> nodes) {
   if (!sender_)
     co_return scada::Status{scada::StatusCode::Bad_Disconnected};
 
@@ -49,13 +50,11 @@ ViewServiceProxy::Browse(scada::ServiceContext context,
   auto results = ConvertTo<std::vector<scada::BrowseResult>>(
       response.browse_result().results());
   co_return status
-                ? scada::StatusOr<std::vector<scada::BrowseResult>>{
-                      std::move(results)}
-                : scada::StatusOr<std::vector<scada::BrowseResult>>{
-                      std::move(status)};
+      ? scada::StatusOr<std::vector<scada::BrowseResult>>{std::move(results)}
+      : scada::StatusOr<std::vector<scada::BrowseResult>>{std::move(status)};
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
+scada::CoStatusOr<std::vector<scada::BrowsePathResult>>
 ViewServiceProxy::TranslateBrowsePaths(
     std::vector<scada::BrowsePath> browse_paths) {
   if (!sender_)
@@ -78,8 +77,8 @@ ViewServiceProxy::TranslateBrowsePaths(
   auto results = ConvertTo<std::vector<scada::BrowsePathResult>>(
       response.browse_path_result());
   co_return status
-                ? scada::StatusOr<std::vector<scada::BrowsePathResult>>{
-                      std::move(results)}
-                : scada::StatusOr<std::vector<scada::BrowsePathResult>>{
-                      std::move(status)};
+      ? scada::StatusOr<std::vector<scada::BrowsePathResult>>{std::move(
+            results)}
+      : scada::StatusOr<std::vector<scada::BrowsePathResult>>{
+            std::move(status)};
 }

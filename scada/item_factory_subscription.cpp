@@ -2,6 +2,7 @@
 
 #include "base/callback_awaitable.h"
 #include "scada/attribute_ids.h"
+#include "scada/co_result.h"
 
 #include <algorithm>
 #include <boost/asio/this_coro.hpp>
@@ -56,7 +57,7 @@ class ItemFactorySubscription final : public MonitoredItemSubscription {
     co_return results;
   }
 
-  Awaitable<StatusOr<std::vector<MonitoredItemNotification>>> ReadNext(
+  CoStatusOr<std::vector<MonitoredItemNotification>> ReadNext(
       std::size_t max_count) override {
     if (max_count == 0) {
       co_return std::vector<MonitoredItemNotification>{};

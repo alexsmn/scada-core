@@ -5,6 +5,7 @@
 #include "remote/remote_session_manager.h"
 #include "remote/session_stub.h"
 #include "scada/authentication_adapters.h"
+#include "scada/co_result.h"
 
 #include <boost/signals2/connection.hpp>
 #include <gmock/gmock.h>
@@ -31,7 +32,7 @@ class SessionProxyTest : public Test {
             .executor_ = asio_env_.any_executor_factory(),
             .authenticator_ = scada::MakeCoroutineAuthenticator(
                 [this](scada::LocalizedText, scada::LocalizedText)
-                    -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
+                    -> scada::CoStatusOr<scada::AuthenticationResult> {
                   if (auth_failure_status_) {
                     co_return *auth_failure_status_;
                   }

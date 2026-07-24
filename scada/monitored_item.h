@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
+#include "scada/co_result.h"
 #include "scada/data_value.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
@@ -59,11 +60,10 @@ struct OverflowNotification {
   Status status = StatusCode::Bad;
 };
 
-using MonitoredItemNotification =
-    std::variant<DataChangeNotification,
-                 EventNotification,
-                 ItemStatusNotification,
-                 OverflowNotification>;
+using MonitoredItemNotification = std::variant<DataChangeNotification,
+                                               EventNotification,
+                                               ItemStatusNotification,
+                                               OverflowNotification>;
 
 // When first subscribed, a cached value is sent immediately if one is already
 // available. If no cached value exists yet, the first callback is expected to
@@ -97,7 +97,7 @@ class MonitoredItemSubscription {
   virtual Awaitable<std::vector<Status>> RemoveItems(
       std::span<const MonitoredItemId> item_ids) = 0;
 
-  virtual Awaitable<StatusOr<std::vector<MonitoredItemNotification>>> ReadNext(
+  virtual CoStatusOr<std::vector<MonitoredItemNotification>> ReadNext(
       std::size_t max_count) = 0;
 
   virtual void Close(Status status) = 0;

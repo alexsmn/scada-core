@@ -1,6 +1,7 @@
 #include "scada/authentication_adapters.h"
 
 #include "base/test/awaitable_test.h"
+#include "scada/co_result.h"
 
 #include <gtest/gtest.h>
 
@@ -12,7 +13,7 @@ class StubCoroutineAuthenticator final : public CoroutineAuthenticator {
   explicit StubCoroutineAuthenticator(StatusOr<AuthenticationResult> result)
       : result_{std::move(result)} {}
 
-  Awaitable<StatusOr<AuthenticationResult>> Authenticate(
+  CoStatusOr<AuthenticationResult> Authenticate(
       LocalizedText user_name,
       LocalizedText password) override {
     EXPECT_EQ(user_name, LocalizedText{u"user"});
@@ -27,17 +28,15 @@ class StubCoroutineAuthenticator final : public CoroutineAuthenticator {
 TEST(AuthenticationAdaptersTest, AuthenticatorIsCoroutineFunction) {
   TestExecutor executor{true};
 
-  auto authenticator =
-      MakeAuthenticator(executor,
-                        [](LocalizedText user_name, LocalizedText password)
-                            -> Awaitable<StatusOr<AuthenticationResult>> {
-                          EXPECT_EQ(user_name, LocalizedText{u"user"});
-                          EXPECT_EQ(password, LocalizedText{u"password"});
-                          co_return AuthenticationResult{
-                              .user_id = NodeId{1, 2},
-                              .user_rights = 7,
-                              .multi_sessions = true};
-                        });
+  auto authenticator = MakeAuthenticator(
+      executor,
+      [](LocalizedText user_name,
+         LocalizedText password) -> CoStatusOr<AuthenticationResult> {
+        EXPECT_EQ(user_name, LocalizedText{u"user"});
+        EXPECT_EQ(password, LocalizedText{u"password"});
+        co_return AuthenticationResult{
+            .user_id = NodeId{1, 2}, .user_rights = 7, .multi_sessions = true};
+      });
 
   auto result = WaitAwaitable(executor, authenticator(u"user", u"password"));
 
@@ -50,12 +49,11 @@ TEST(AuthenticationAdaptersTest, AuthenticatorIsCoroutineFunction) {
 TEST(AuthenticationAdaptersTest, AuthenticatorPreservesBadStatusResult) {
   TestExecutor executor{true};
 
-  auto authenticator =
-      MakeAuthenticator(executor,
-                        [](LocalizedText, LocalizedText)
-                            -> Awaitable<StatusOr<AuthenticationResult>> {
-                          co_return StatusCode::Bad_WrongLoginCredentials;
-                        });
+  auto authenticator = MakeAuthenticator(
+      executor,
+      [](LocalizedText, LocalizedText) -> CoStatusOr<AuthenticationResult> {
+        co_return StatusCode::Bad_WrongLoginCredentials;
+      });
 
   auto result = WaitAwaitable(executor, authenticator(u"user", u"password"));
 
@@ -69,8 +67,7 @@ TEST(AuthenticationAdaptersTest,
   StubCoroutineAuthenticator authenticator{AuthenticationResult{
       .user_id = NodeId{5, 6}, .user_rights = 11, .multi_sessions = true}};
 
-  auto function_authenticator =
-      MakeAuthenticator(executor, authenticator);
+  auto function_authenticator = MakeAuthenticator(executor, authenticator);
 
   auto result =
       WaitAwaitable(executor, function_authenticator(u"user", u"password"));
@@ -85,12 +82,10 @@ TEST(AuthenticationAdaptersTest, MakeCoroutineAuthenticatorWrapsFunction) {
   TestExecutor executor{true};
   auto coroutine_authenticator = MakeCoroutineAuthenticator(
       executor,
-      [](LocalizedText, LocalizedText)
-          -> Awaitable<StatusOr<AuthenticationResult>> {
-        co_return AuthenticationResult{
-            .user_id = NodeId{7, 8},
-            .user_rights = 13,
-            .multi_sessions = false};
+      [](LocalizedText, LocalizedText) -> CoStatusOr<AuthenticationResult> {
+        co_return AuthenticationResult{.user_id = NodeId{7, 8},
+                                       .user_rights = 13,
+                                       .multi_sessions = false};
       });
 
   auto result = WaitAwaitable(

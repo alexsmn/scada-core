@@ -1,5 +1,6 @@
 #include "scada/remapping_services.h"
 
+#include "scada/co_result.h"
 #include "scada/event.h"
 
 #include <any>
@@ -11,7 +12,7 @@
 
 namespace scada::aggregation {
 
-Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>>
+scada::CoStatusOr<std::vector<scada::BrowseResult>>
 RemappingViewService::Browse(scada::ServiceContext context,
                              std::vector<scada::BrowseDescription> inputs) {
   for (auto& description : inputs) {
@@ -30,7 +31,7 @@ RemappingViewService::Browse(scada::ServiceContext context,
   co_return result;
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
+scada::CoStatusOr<std::vector<scada::BrowsePathResult>>
 RemappingViewService::TranslateBrowsePaths(
     std::vector<scada::BrowsePath> inputs) {
   for (auto& path : inputs) {
@@ -52,7 +53,7 @@ RemappingViewService::TranslateBrowsePaths(
   co_return result;
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::DataValue>>>
+scada::CoStatusOr<std::vector<scada::DataValue>>
 RemappingAttributeService::Read(scada::ServiceContext context,
                                 std::vector<scada::ReadValueId> inputs) {
   for (auto& read : inputs) {
@@ -69,7 +70,7 @@ RemappingAttributeService::Read(scada::ServiceContext context,
   co_return result;
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 RemappingAttributeService::Write(scada::ServiceContext context,
                                  std::vector<scada::WriteValue> inputs) {
   for (auto& write : inputs) {
@@ -79,7 +80,7 @@ RemappingAttributeService::Write(scada::ServiceContext context,
   co_return co_await inner_.Write(std::move(context), std::move(inputs));
 }
 
-Awaitable<scada::StatusOr<scada::HistoryReadRawResult>>
+scada::CoStatusOr<scada::HistoryReadRawResult>
 RemappingHistoryService::HistoryReadRaw(scada::HistoryReadRawDetails details) {
   details.node_id = remapper_.ToDownstream(details.node_id);
   auto result = co_await inner_.HistoryReadRaw(std::move(details));
@@ -95,7 +96,7 @@ RemappingHistoryService::HistoryReadRaw(scada::HistoryReadRawDetails details) {
   co_return result;
 }
 
-Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>>
+scada::CoStatusOr<scada::HistoryReadEventsResult>
 RemappingHistoryService::HistoryReadEvents(scada::NodeId node_id,
                                            scada::Time from,
                                            scada::Time to,
@@ -107,7 +108,7 @@ RemappingHistoryService::HistoryReadEvents(scada::NodeId node_id,
                                               from, to, std::move(filter));
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 RemappingHistoryUpdateService::HistoryUpdateData(
     scada::ServiceContext context,
     scada::UpdateDataDetails details) {
@@ -121,7 +122,7 @@ RemappingHistoryUpdateService::HistoryUpdateData(
                                               std::move(details));
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 RemappingHistoryUpdateService::HistoryUpdateEvent(
     scada::ServiceContext context,
     scada::UpdateEventDetails details) {
@@ -133,7 +134,7 @@ RemappingHistoryUpdateService::HistoryUpdateEvent(
                                                std::move(details));
 }
 
-Awaitable<scada::Status> RemappingMethodService::Call(
+scada::CoStatus RemappingMethodService::Call(
     scada::NodeId node_id,
     scada::NodeId method_id,
     std::vector<scada::Variant> arguments,
@@ -149,7 +150,7 @@ Awaitable<scada::Status> RemappingMethodService::Call(
                                  std::move(arguments), std::move(context));
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>>
+scada::CoStatusOr<std::vector<scada::AddNodesResult>>
 RemappingNodeManagementService::AddNodes(
     scada::ServiceContext context,
     std::vector<scada::AddNodesItem> inputs) {
@@ -176,7 +177,7 @@ RemappingNodeManagementService::AddNodes(
   co_return result;
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 RemappingNodeManagementService::DeleteNodes(
     scada::ServiceContext context,
     std::vector<scada::DeleteNodesItem> inputs) {
@@ -186,7 +187,7 @@ RemappingNodeManagementService::DeleteNodes(
   co_return co_await inner_.DeleteNodes(std::move(context), std::move(inputs));
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 RemappingNodeManagementService::AddReferences(
     scada::ServiceContext context,
     std::vector<scada::AddReferencesItem> inputs) {
@@ -199,7 +200,7 @@ RemappingNodeManagementService::AddReferences(
                                           std::move(inputs));
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
+scada::CoStatusOr<std::vector<scada::StatusCode>>
 RemappingNodeManagementService::DeleteReferences(
     scada::ServiceContext context,
     std::vector<scada::DeleteReferencesItem> inputs) {
@@ -271,8 +272,8 @@ class RemappingMonitoredItemSubscription final
     co_return co_await inner_->RemoveItems(item_ids);
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::MonitoredItemNotification>>>
-  ReadNext(std::size_t max_count) override {
+  scada::CoStatusOr<std::vector<scada::MonitoredItemNotification>> ReadNext(
+      std::size_t max_count) override {
     auto result = co_await inner_->ReadNext(max_count);
     if (result.ok()) {
       // Data-change values may themselves be identifiers, and event payloads
@@ -315,9 +316,9 @@ RemappingMonitoredItemService::CreateSubscription(
   return wrapped;
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>>
-MountViewService::Browse(scada::ServiceContext context,
-                         std::vector<scada::BrowseDescription> inputs) {
+scada::CoStatusOr<std::vector<scada::BrowseResult>> MountViewService::Browse(
+    scada::ServiceContext context,
+    std::vector<scada::BrowseDescription> inputs) {
   auto result = co_await inner_.Browse(std::move(context), std::move(inputs));
   if (result.ok()) {
     for (auto& browse_result : *result) {
@@ -331,7 +332,7 @@ MountViewService::Browse(scada::ServiceContext context,
   co_return result;
 }
 
-Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
+scada::CoStatusOr<std::vector<scada::BrowsePathResult>>
 MountViewService::TranslateBrowsePaths(std::vector<scada::BrowsePath> inputs) {
   // Browse paths resolve against the proxy's own Objects folder; the mount only
   // contributes Browse references.

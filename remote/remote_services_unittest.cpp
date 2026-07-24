@@ -7,6 +7,7 @@
 #include "scada/authentication_adapters.h"
 #include "scada/client.h"
 #include "scada/client_monitored_item.h"
+#include "scada/co_result.h"
 #include "scada/data_services_factory.h"
 #include "scada/item_factory_subscription.h"
 #include "scada/monitored_item.h"
@@ -77,7 +78,7 @@ class TestServer {
        .services_ = {.monitored_item_service = &monitored_item_service_},
        .authenticator_ = scada::MakeCoroutineAuthenticator(
            [](scada::LocalizedText, scada::LocalizedText)
-               -> Awaitable<scada::StatusOr<scada::AuthenticationResult>> {
+               -> scada::CoStatusOr<scada::AuthenticationResult> {
              co_return scada::AuthenticationResult{.user_id = {1, 1}};
            }),
        .transport_factory_ = asio_env_.transport_factory,
@@ -106,9 +107,10 @@ void RemoteServicesTest::SetUp() {
   server_ = std::make_unique<TestServer>(asio_env_, network_env_);
 
   ASSERT_TRUE(CreateRemoteServices(
-      DataServicesContext{.logger = std::make_shared<BoostLogger>(LOG_NAME("Test")),
-                          .executor = asio_env_.executor,
-                          .transport_factory = asio_env_.transport_factory},
+      DataServicesContext{
+          .logger = std::make_shared<BoostLogger>(LOG_NAME("Test")),
+          .executor = asio_env_.executor,
+          .transport_factory = asio_env_.transport_factory},
       data_services_));
 
   client_ = scada::client{

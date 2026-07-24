@@ -3,6 +3,7 @@
 #include "base/async_completion.h"
 #include "base/awaitable.h"
 #include "base/boost_log.h"
+#include "scada/co_result.h"
 #include "scada/status.h"
 
 #include <exception>
@@ -39,7 +40,7 @@ class RemoteListener : public std::enable_shared_from_this<RemoteListener> {
         open_completion_{acceptor_.get_executor()},
         close_completion_{acceptor_.get_executor()} {}
 
-  [[nodiscard]] Awaitable<scada::Status> InitAsync() {
+  [[nodiscard]] scada::CoStatus InitAsync() {
     LOG_INFO(*logger_) << "Listening..." << LOG_TAG("Listener", listener_name_);
 
     auto self = shared_from_this();

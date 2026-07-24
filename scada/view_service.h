@@ -2,10 +2,10 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
-#include "base/ostream_formatter.h"
-#include "base/any_executor.h"
 #include "base/check.h"
+#include "base/ostream_formatter.h"
 #include "scada/callback_awaitable.h"
+#include "scada/co_result.h"
 #include "scada/expanded_node_id.h"
 #include "scada/localized_text.h"
 #include "scada/node_class.h"
@@ -130,12 +130,12 @@ class ViewService {
  public:
   virtual ~ViewService() = default;
 
-  virtual Awaitable<StatusOr<std::vector<BrowseResult>>> Browse(
+  virtual CoStatusOr<std::vector<BrowseResult>> Browse(
       ServiceContext context,
       std::vector<BrowseDescription> inputs) = 0;
 
-  virtual Awaitable<StatusOr<std::vector<BrowsePathResult>>>
-  TranslateBrowsePaths(std::vector<BrowsePath> inputs) = 0;
+  virtual CoStatusOr<std::vector<BrowsePathResult>> TranslateBrowsePaths(
+      std::vector<BrowsePath> inputs) = 0;
 };
 
 inline Awaitable<BrowseResult> Browse(ViewService& view_service,
@@ -143,8 +143,8 @@ inline Awaitable<BrowseResult> Browse(ViewService& view_service,
                                       BrowseDescription input) {
   std::vector<BrowseDescription> inputs;
   inputs.emplace_back(std::move(input));
-  auto results = co_await view_service.Browse(std::move(context),
-                                              std::move(inputs));
+  auto results =
+      co_await view_service.Browse(std::move(context), std::move(inputs));
   if (!results.ok()) {
     co_return BrowseResult{.status_code = results.status().code()};
   }

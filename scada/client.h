@@ -2,6 +2,7 @@
 
 #include "base/check.h"
 #include "base/lifetime.h"
+#include "scada/co_result.h"
 #include "scada/node.h"
 #include "scada/session_service.h"
 #include "scada/status_or.h"
@@ -21,8 +22,8 @@ class client {
   }
   client with_context(const ServiceContext& context) const;
 
-  Awaitable<Status> connect(SessionConnectParams params) const;
-  Awaitable<Status> disconnect() const;
+  CoStatus connect(SessionConnectParams params) const;
+  CoStatus disconnect() const;
 
   scada::node node(const NodeId& node_id) const {
     base::Check(!node_id.is_null());
@@ -33,16 +34,15 @@ class client {
 
   // Lazy coroutine: `inputs` is taken by value so the coroutine frame owns
   // the vector; a const& bound to a caller temporary would dangle.
-  Awaitable<StatusOr<std::vector<StatusOr<std::vector<ReferenceDescription>>>>>
-  browse(std::vector<BrowseDescription> inputs) const;
+  CoStatusOr<std::vector<StatusOr<std::vector<ReferenceDescription>>>> browse(
+      std::vector<BrowseDescription> inputs) const;
 
-  Awaitable<StatusOr<scada::node>> add_node(AddNodesItem item) const;
+  CoStatusOr<scada::node> add_node(AddNodesItem item) const;
 
-  Awaitable<Status> acknowledge_events(std::vector<EventId> event_ids,
-                                       Time acknowledge_time) const;
+  CoStatus acknowledge_events(std::vector<EventId> event_ids,
+                              Time acknowledge_time) const;
 
-  Awaitable<Status> acknowledge_event(EventId event_id,
-                                      Time acknowledge_time) const {
+  CoStatus acknowledge_event(EventId event_id, Time acknowledge_time) const {
     return acknowledge_events({event_id}, acknowledge_time);
   }
 

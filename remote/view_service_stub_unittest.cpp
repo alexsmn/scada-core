@@ -4,6 +4,7 @@
 #include "remote/message_sender_mock.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/co_result.h"
 #include "scada/view_service.h"
 #include <boost/asio/post.hpp>
 #include <boost/asio/this_coro.hpp>
@@ -16,7 +17,7 @@ namespace {
 
 class TestViewService final : public scada::ViewService {
  public:
-  Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>> Browse(
+  scada::CoStatusOr<std::vector<scada::BrowseResult>> Browse(
       scada::ServiceContext context,
       std::vector<scada::BrowseDescription> inputs) override {
     co_await boost::asio::post(co_await boost::asio::this_coro::executor,
@@ -28,8 +29,8 @@ class TestViewService final : public scada::ViewService {
         {.status_code = scada::StatusCode::Good}};
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
-  TranslateBrowsePaths(std::vector<scada::BrowsePath>) override {
+  scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      std::vector<scada::BrowsePath>) override {
     co_return std::vector<scada::BrowsePathResult>{};
   }
 

@@ -4,6 +4,7 @@
 #include "remote/message_sender_mock.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/co_result.h"
 
 #include <gmock/gmock.h>
 
@@ -11,35 +12,34 @@ using namespace testing;
 
 namespace {
 
-class TestNodeManagementService final
-    : public scada::NodeManagementService {
+class TestNodeManagementService final : public scada::NodeManagementService {
  public:
-  Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>>
-  AddNodes(scada::ServiceContext /*context*/,
-           std::vector<scada::AddNodesItem> inputs) override {
+  scada::CoStatusOr<std::vector<scada::AddNodesResult>> AddNodes(
+      scada::ServiceContext /*context*/,
+      std::vector<scada::AddNodesItem> inputs) override {
     add_nodes_called = true;
     last_add_nodes_inputs = std::move(inputs);
     co_return std::vector<scada::AddNodesResult>{
         {.status_code = scada::StatusCode::Good, .added_node_id = {2, 3}}};
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
-  DeleteNodes(scada::ServiceContext /*context*/,
-              std::vector<scada::DeleteNodesItem> inputs) override {
+  scada::CoStatusOr<std::vector<scada::StatusCode>> DeleteNodes(
+      scada::ServiceContext /*context*/,
+      std::vector<scada::DeleteNodesItem> inputs) override {
     delete_nodes_called = true;
     last_delete_nodes_inputs = std::move(inputs);
     co_return std::vector<scada::StatusCode>{};
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
-  AddReferences(scada::ServiceContext /*context*/,
-                std::vector<scada::AddReferencesItem>) override {
+  scada::CoStatusOr<std::vector<scada::StatusCode>> AddReferences(
+      scada::ServiceContext /*context*/,
+      std::vector<scada::AddReferencesItem>) override {
     co_return std::vector<scada::StatusCode>{};
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>>
-  DeleteReferences(scada::ServiceContext /*context*/,
-                   std::vector<scada::DeleteReferencesItem>) override {
+  scada::CoStatusOr<std::vector<scada::StatusCode>> DeleteReferences(
+      scada::ServiceContext /*context*/,
+      std::vector<scada::DeleteReferencesItem>) override {
     co_return std::vector<scada::StatusCode>{};
   }
 
@@ -64,8 +64,9 @@ TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
     EXPECT_EQ(ConvertTo<scada::Status>(response.status()).code(),
               scada::StatusCode::Good);
     ASSERT_EQ(response.add_node_result_size(), 1);
-    EXPECT_EQ(ConvertTo<scada::NodeId>(response.add_node_result(0).added_node_id()),
-              scada::NodeId(2, 3));
+    EXPECT_EQ(
+        ConvertTo<scada::NodeId>(response.add_node_result(0).added_node_id()),
+        scada::NodeId(2, 3));
   }));
 
   protocol::Request request;
@@ -100,9 +101,10 @@ TEST(NodeManagementStubTest, DeleteNodesPreservesDeleteTargetReferencesFlag) {
 
   protocol::Request request;
   request.set_request_id(23);
-  Convert(std::vector<scada::DeleteNodesItem>{
-              {.node_id = {7, 8}, .delete_target_references = true}},
-          *request.mutable_delete_node());
+  Convert(
+      std::vector<scada::DeleteNodesItem>{
+          {.node_id = {7, 8}, .delete_target_references = true}},
+      *request.mutable_delete_node());
 
   stub->OnRequestReceived(request);
   executor.Poll();

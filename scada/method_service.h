@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
+#include "scada/co_result.h"
 #include "scada/node_id.h"
 #include "scada/service_context.h"
 #include "scada/status.h"
@@ -14,10 +15,10 @@ class MethodService {
  public:
   virtual ~MethodService() = default;
 
-  virtual Awaitable<Status> Call(NodeId node_id,
-                                 NodeId method_id,
-                                 std::vector<Variant> arguments,
-                                 ServiceContext context) = 0;
+  virtual CoStatus Call(NodeId node_id,
+                        NodeId method_id,
+                        std::vector<Variant> arguments,
+                        ServiceContext context) = 0;
 };
 
 }  // namespace scada

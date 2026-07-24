@@ -2,6 +2,7 @@
 
 #include "base/any_executor.h"
 #include "scada/authentication.h"
+#include "scada/co_result.h"
 
 #include <memory>
 
@@ -15,7 +16,7 @@ class FunctionCoroutineAuthenticator final : public CoroutineAuthenticator {
   explicit FunctionCoroutineAuthenticator(AsyncAuthenticator authenticator)
       : authenticator_{std::move(authenticator)} {}
 
-  Awaitable<StatusOr<AuthenticationResult>> Authenticate(
+  CoStatusOr<AuthenticationResult> Authenticate(
       LocalizedText user_name,
       LocalizedText password) override {
     co_return co_await authenticator_(std::move(user_name),
@@ -40,9 +41,9 @@ inline std::shared_ptr<CoroutineAuthenticator> MakeCoroutineAuthenticator(
 
 inline AsyncAuthenticator MakeAsyncAuthenticator(
     CoroutineAuthenticator& authenticator) {
-  return [&authenticator](LocalizedText user_name,
-                          LocalizedText password)
-             -> Awaitable<StatusOr<AuthenticationResult>> {
+  return [&authenticator](
+             LocalizedText user_name,
+             LocalizedText password) -> CoStatusOr<AuthenticationResult> {
     co_return co_await authenticator.Authenticate(std::move(user_name),
                                                   std::move(password));
   };

@@ -3,6 +3,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 
+#include "scada/co_result.h"
 #include "scada/expanded_node_id.h"
 #include "scada/service_context.h"
 #include "scada/standard_node_ids.h"
@@ -26,15 +27,15 @@ class FakeViewService : public scada::ViewService {
   std::vector<scada::BrowsePath> recorded_paths;
   std::vector<scada::BrowsePathResult> translate_response;
 
-  Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>> Browse(
+  scada::CoStatusOr<std::vector<scada::BrowseResult>> Browse(
       scada::ServiceContext,
       std::vector<scada::BrowseDescription> inputs) override {
     recorded_browse = inputs;
     co_return browse_response;
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
-  TranslateBrowsePaths(std::vector<scada::BrowsePath> inputs) override {
+  scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      std::vector<scada::BrowsePath> inputs) override {
     recorded_paths = inputs;
     co_return translate_response;
   }
@@ -47,14 +48,14 @@ class FakeAttributeService : public scada::AttributeService {
   std::vector<scada::WriteValue> recorded_write;
   std::vector<scada::StatusCode> write_response;
 
-  Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> Read(
+  scada::CoStatusOr<std::vector<scada::DataValue>> Read(
       scada::ServiceContext,
       std::vector<scada::ReadValueId> inputs) override {
     recorded_read = std::move(inputs);
     co_return read_response;
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> Write(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> Write(
       scada::ServiceContext,
       std::vector<scada::WriteValue> inputs) override {
     recorded_write = std::move(inputs);
@@ -68,10 +69,10 @@ class FakeMethodService : public scada::MethodService {
   scada::NodeId recorded_method;
   std::vector<scada::Variant> recorded_arguments;
 
-  Awaitable<scada::Status> Call(scada::NodeId node_id,
-                                scada::NodeId method_id,
-                                std::vector<scada::Variant> arguments,
-                                scada::ServiceContext) override {
+  scada::CoStatus Call(scada::NodeId node_id,
+                       scada::NodeId method_id,
+                       std::vector<scada::Variant> arguments,
+                       scada::ServiceContext) override {
     recorded_object = node_id;
     recorded_method = method_id;
     recorded_arguments = std::move(arguments);
@@ -85,13 +86,13 @@ class FakeHistoryService : public scada::HistoryService {
   std::vector<scada::DataValue> raw_response;
   scada::NodeId recorded_events_node;
 
-  Awaitable<scada::StatusOr<scada::HistoryReadRawResult>> HistoryReadRaw(
+  scada::CoStatusOr<scada::HistoryReadRawResult> HistoryReadRaw(
       scada::HistoryReadRawDetails details) override {
     recorded_raw = details;
     co_return scada::HistoryReadRawResult{.values = raw_response};
   }
 
-  Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>> HistoryReadEvents(
+  scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(
       scada::NodeId node_id,
       scada::Time,
       scada::Time,
@@ -108,14 +109,14 @@ class FakeNodeManagementService : public scada::NodeManagementService {
   std::vector<scada::DeleteNodesItem> recorded_delete;
   std::vector<scada::AddReferencesItem> recorded_add_references;
 
-  Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>> AddNodes(
+  scada::CoStatusOr<std::vector<scada::AddNodesResult>> AddNodes(
       scada::ServiceContext,
       std::vector<scada::AddNodesItem> inputs) override {
     recorded_add = std::move(inputs);
     co_return add_response;
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteNodes(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> DeleteNodes(
       scada::ServiceContext,
       std::vector<scada::DeleteNodesItem> inputs) override {
     recorded_delete = std::move(inputs);
@@ -123,7 +124,7 @@ class FakeNodeManagementService : public scada::NodeManagementService {
                                              scada::StatusCode::Good);
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> AddReferences(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> AddReferences(
       scada::ServiceContext,
       std::vector<scada::AddReferencesItem> inputs) override {
     recorded_add_references = std::move(inputs);
@@ -131,7 +132,7 @@ class FakeNodeManagementService : public scada::NodeManagementService {
                                              scada::StatusCode::Good);
   }
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteReferences(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> DeleteReferences(
       scada::ServiceContext,
       std::vector<scada::DeleteReferencesItem> inputs) override {
     co_return std::vector<scada::StatusCode>(inputs.size(),
@@ -154,8 +155,8 @@ class FakeMonitoredItemSubscription : public scada::MonitoredItemSubscription {
       std::span<const scada::MonitoredItemId>) override {
     co_return std::vector<scada::Status>{};
   }
-  Awaitable<scada::StatusOr<std::vector<scada::MonitoredItemNotification>>>
-  ReadNext(std::size_t) override {
+  scada::CoStatusOr<std::vector<scada::MonitoredItemNotification>> ReadNext(
+      std::size_t) override {
     co_return std::vector<scada::MonitoredItemNotification>{};
   }
   void Close(scada::Status) override {}

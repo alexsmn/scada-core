@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scada/co_result.h"
 #include "scada/session_service.h"
 
 #include <gmock/gmock.h>
@@ -13,7 +14,7 @@ class MockSessionService : public SessionService {
               (scada::SessionConnectParams params),
               (override));
 
-  MOCK_METHOD(Awaitable<Status>,
+  MOCK_METHOD(CoStatus,
               ConnectStatus,
               (scada::SessionConnectParams params),
               (override));

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
+#include "scada/co_result.h"
 #include "scada/history_types.h"
 #include "scada/service_context.h"
 #include "scada/status_or.h"
@@ -24,15 +25,15 @@ class HistoryUpdateService {
   // Inserts/replaces historical data values for a node (UpdateDataDetails).
   // Returns one StatusCode per supplied value; an operation-level failure is
   // reported via the StatusOr status.
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>> HistoryUpdateData(
+  virtual CoStatusOr<std::vector<StatusCode>> HistoryUpdateData(
       ServiceContext context,
       UpdateDataDetails details) = 0;
 
   // Inserts historical events for a node (UpdateEventDetails). Returns one
-  // StatusCode per supplied event; an operation-level failure is reported via the
-  // StatusOr status. OPC UA Part 11 §6.8.4 UpdateEventDetails,
+  // StatusCode per supplied event; an operation-level failure is reported via
+  // the StatusOr status. OPC UA Part 11 §6.8.4 UpdateEventDetails,
   // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.4
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>> HistoryUpdateEvent(
+  virtual CoStatusOr<std::vector<StatusCode>> HistoryUpdateEvent(
       ServiceContext context,
       UpdateEventDetails details) = 0;
 };

@@ -1,25 +1,26 @@
 #pragma once
 
 #include "scada/attribute_service.h"
+#include "scada/co_result.h"
 
 #include <gmock/gmock.h>
 
 namespace scada {
 
 template <class T>
-Awaitable<StatusOr<std::vector<T>>> MakeAttributeResult(
+CoStatusOr<std::vector<T>> MakeAttributeResult(
     StatusOr<std::vector<T>> result) {
   co_return std::move(result);
 }
 
 class MockAttributeService : public AttributeService {
  public:
-  MOCK_METHOD((Awaitable<StatusOr<std::vector<DataValue>>>),
+  MOCK_METHOD((CoStatusOr<std::vector<DataValue>>),
               Read,
               (ServiceContext context, std::vector<ReadValueId> inputs),
               (override));
 
-  MOCK_METHOD((Awaitable<StatusOr<std::vector<StatusCode>>>),
+  MOCK_METHOD((CoStatusOr<std::vector<StatusCode>>),
               Write,
               (ServiceContext context, std::vector<WriteValue> inputs),
               (override));
@@ -42,7 +43,7 @@ class SimpleMockAttributeService : public AttributeService {
               Write,
               (const ServiceContext& context, const WriteValue& value));
 
-  virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
+  virtual CoStatusOr<std::vector<DataValue>> Read(
       ServiceContext context,
       std::vector<ReadValueId> inputs) override {
     std::vector<DataValue> results(inputs.size());
@@ -51,7 +52,7 @@ class SimpleMockAttributeService : public AttributeService {
     co_return std::move(results);
   }
 
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
+  virtual CoStatusOr<std::vector<StatusCode>> Write(
       ServiceContext context,
       std::vector<WriteValue> inputs) override {
     std::vector<StatusCode> results(inputs.size());

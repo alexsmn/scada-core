@@ -2,6 +2,7 @@
 
 #include "base/awaitable.h"
 #include "base/struct_writer.h"
+#include "scada/co_result.h"
 #include "scada/localized_text.h"
 #include "scada/node_id.h"
 #include "scada/status.h"
@@ -27,10 +28,9 @@ using AuthenticationCallback =
     std::function<void(const AuthenticationResult& result)>;
 
 // TODO: Merge into `SessionService`.
-using Authenticator =
-    std::function<Awaitable<scada::StatusOr<AuthenticationResult>>(
-        scada::LocalizedText user_name,
-        scada::LocalizedText password)>;
+using Authenticator = std::function<scada::CoStatusOr<AuthenticationResult>(
+    scada::LocalizedText user_name,
+    scada::LocalizedText password)>;
 
 using AsyncAuthenticator = Authenticator;
 
@@ -38,7 +38,7 @@ class CoroutineAuthenticator {
  public:
   virtual ~CoroutineAuthenticator() = default;
 
-  virtual Awaitable<scada::StatusOr<AuthenticationResult>> Authenticate(
+  virtual scada::CoStatusOr<AuthenticationResult> Authenticate(
       scada::LocalizedText user_name,
       scada::LocalizedText password) = 0;
 };

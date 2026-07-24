@@ -2,6 +2,7 @@
 
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "scada/co_result.h"
 #include "scada/monitored_item_service.h"
 #include "scada/serving_gate.h"
 
@@ -56,8 +57,8 @@ TEST(ServingGate, DroppedRegistrationIsNotSwept) {
 // Regression: a Registration that outlives its ServingGate must destroy
 // cleanly. Previously the Registration held a raw ServingGate* and unregistered
 // from the gate's mutex in its destructor, so a subscription State torn down
-// after the RootNodeManager that owns the gate locked a destroyed std::mutex and
-// aborted with "mutex lock failed: Invalid argument". The registry is now a
+// after the RootNodeManager that owns the gate locked a destroyed std::mutex
+// and aborted with "mutex lock failed: Invalid argument". The registry is now a
 // shared control block referenced weakly, so the late unregister is a no-op.
 TEST(ServingGate, RegistrationOutlivingGateDestroysSafely) {
   ServingGate::Registration registration;
@@ -118,7 +119,7 @@ class FakeBackendSubscription final : public MonitoredItemSubscription {
     co_return std::vector<Status>(item_ids.size(), Status{StatusCode::Good});
   }
 
-  Awaitable<StatusOr<std::vector<MonitoredItemNotification>>> ReadNext(
+  CoStatusOr<std::vector<MonitoredItemNotification>> ReadNext(
       std::size_t) override {
     if (state_->read_results.empty()) {
       // No further backend activity — the pump stops reading. The already-added
@@ -212,11 +213,11 @@ TEST(MultiplexingSubscriptionServingGate, RewritesBackendSampleWhileBlocked) {
       {.item_id = 1, .client_handle = 0, .status = StatusCode::Good});
   // The backend delivers one good data-change; `client_handle` carries the
   // router item id the multiplexing layer assigned (the first item -> 1).
-  backend_state->read_results.push_back(std::vector<MonitoredItemNotification>{
-      DataChangeNotification{.item_id = 1,
-                             .client_handle = 1,
-                             .value = DataValue{Variant{42}, Qualifier{},
-                                                Time{}, Time{}}}});
+  backend_state->read_results.push_back(
+      std::vector<MonitoredItemNotification>{DataChangeNotification{
+          .item_id = 1,
+          .client_handle = 1,
+          .value = DataValue{Variant{42}, Qualifier{}, Time{}, Time{}}}});
   FakeBackendService service{backend_state};
 
   StatusOr<std::unique_ptr<MonitoredItemSubscription>> subscription =

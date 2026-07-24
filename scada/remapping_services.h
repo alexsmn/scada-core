@@ -17,6 +17,7 @@
 #include "scada/namespace_remapper.h"
 
 #include "scada/attribute_service.h"
+#include "scada/co_result.h"
 #include "scada/history_service.h"
 #include "scada/history_update_service.h"
 #include "scada/method_service.h"
@@ -33,12 +34,12 @@ class RemappingViewService : public scada::ViewService {
                        const NamespaceRemapper& remapper)
       : inner_{inner}, remapper_{remapper} {}
 
-  Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>> Browse(
+  scada::CoStatusOr<std::vector<scada::BrowseResult>> Browse(
       scada::ServiceContext context,
       std::vector<scada::BrowseDescription> inputs) override;
 
-  Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
-  TranslateBrowsePaths(std::vector<scada::BrowsePath> inputs) override;
+  scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      std::vector<scada::BrowsePath> inputs) override;
 
  private:
   scada::ViewService& inner_;
@@ -52,11 +53,11 @@ class RemappingAttributeService : public scada::AttributeService {
                             const NamespaceRemapper& remapper)
       : inner_{inner}, remapper_{remapper} {}
 
-  Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> Read(
+  scada::CoStatusOr<std::vector<scada::DataValue>> Read(
       scada::ServiceContext context,
       std::vector<scada::ReadValueId> inputs) override;
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> Write(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> Write(
       scada::ServiceContext context,
       std::vector<scada::WriteValue> inputs) override;
 
@@ -76,10 +77,10 @@ class RemappingHistoryService : public scada::HistoryService {
                           const NamespaceRemapper& remapper)
       : inner_{inner}, remapper_{remapper} {}
 
-  Awaitable<scada::StatusOr<scada::HistoryReadRawResult>> HistoryReadRaw(
+  scada::CoStatusOr<scada::HistoryReadRawResult> HistoryReadRaw(
       scada::HistoryReadRawDetails details) override;
 
-  Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>> HistoryReadEvents(
+  scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(
       scada::NodeId node_id,
       scada::Time from,
       scada::Time to,
@@ -106,11 +107,11 @@ class RemappingHistoryUpdateService : public scada::HistoryUpdateService {
                                 const NamespaceRemapper& remapper)
       : inner_{inner}, remapper_{remapper} {}
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> HistoryUpdateData(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> HistoryUpdateData(
       scada::ServiceContext context,
       scada::UpdateDataDetails details) override;
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> HistoryUpdateEvent(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> HistoryUpdateEvent(
       scada::ServiceContext context,
       scada::UpdateEventDetails details) override;
 
@@ -127,10 +128,10 @@ class RemappingMethodService : public scada::MethodService {
                          const NamespaceRemapper& remapper)
       : inner_{inner}, remapper_{remapper} {}
 
-  Awaitable<scada::Status> Call(scada::NodeId node_id,
-                                scada::NodeId method_id,
-                                std::vector<scada::Variant> arguments,
-                                scada::ServiceContext context) override;
+  scada::CoStatus Call(scada::NodeId node_id,
+                       scada::NodeId method_id,
+                       std::vector<scada::Variant> arguments,
+                       scada::ServiceContext context) override;
 
  private:
   scada::MethodService& inner_;
@@ -170,19 +171,19 @@ class RemappingNodeManagementService : public scada::NodeManagementService {
                                  const NamespaceRemapper& remapper)
       : inner_{inner}, remapper_{remapper} {}
 
-  Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>> AddNodes(
+  scada::CoStatusOr<std::vector<scada::AddNodesResult>> AddNodes(
       scada::ServiceContext context,
       std::vector<scada::AddNodesItem> inputs) override;
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteNodes(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> DeleteNodes(
       scada::ServiceContext context,
       std::vector<scada::DeleteNodesItem> inputs) override;
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> AddReferences(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> AddReferences(
       scada::ServiceContext context,
       std::vector<scada::AddReferencesItem> inputs) override;
 
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteReferences(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> DeleteReferences(
       scada::ServiceContext context,
       std::vector<scada::DeleteReferencesItem> inputs) override;
 
@@ -202,12 +203,12 @@ class MountViewService : public scada::ViewService {
  public:
   explicit MountViewService(scada::ViewService& inner) : inner_{inner} {}
 
-  Awaitable<scada::StatusOr<std::vector<scada::BrowseResult>>> Browse(
+  scada::CoStatusOr<std::vector<scada::BrowseResult>> Browse(
       scada::ServiceContext context,
       std::vector<scada::BrowseDescription> inputs) override;
 
-  Awaitable<scada::StatusOr<std::vector<scada::BrowsePathResult>>>
-  TranslateBrowsePaths(std::vector<scada::BrowsePath> inputs) override;
+  scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      std::vector<scada::BrowsePath> inputs) override;
 
  private:
   // The downstream's already namespace-remapped ViewService.

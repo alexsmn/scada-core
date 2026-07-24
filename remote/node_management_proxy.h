@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "base/boost_log.h"
+#include "scada/co_result.h"
 #include "scada/node_management_service.h"
 
 class MessageSender;
@@ -13,16 +14,16 @@ class NodeManagementProxy : public scada::NodeManagementService {
   void OnChannelClosed();
 
   // scada::NodeManagementService
-  Awaitable<scada::StatusOr<std::vector<scada::AddNodesResult>>> AddNodes(
+  scada::CoStatusOr<std::vector<scada::AddNodesResult>> AddNodes(
       scada::ServiceContext context,
       std::vector<scada::AddNodesItem> inputs) override;
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteNodes(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> DeleteNodes(
       scada::ServiceContext context,
       std::vector<scada::DeleteNodesItem> inputs) override;
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> AddReferences(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> AddReferences(
       scada::ServiceContext context,
       std::vector<scada::AddReferencesItem> inputs) override;
-  Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> DeleteReferences(
+  scada::CoStatusOr<std::vector<scada::StatusCode>> DeleteReferences(
       scada::ServiceContext context,
       std::vector<scada::DeleteReferencesItem> inputs) override;
 

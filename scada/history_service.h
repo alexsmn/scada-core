@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/awaitable.h"
+#include "scada/co_result.h"
 #include "scada/event.h"
 #include "scada/history_types.h"
 #include "scada/status_or.h"
@@ -11,10 +12,10 @@ class HistoryService {
  public:
   virtual ~HistoryService() = default;
 
-  virtual Awaitable<StatusOr<HistoryReadRawResult>> HistoryReadRaw(
+  virtual CoStatusOr<HistoryReadRawResult> HistoryReadRaw(
       HistoryReadRawDetails details) = 0;
 
-  virtual Awaitable<StatusOr<HistoryReadEventsResult>> HistoryReadEvents(
+  virtual CoStatusOr<HistoryReadEventsResult> HistoryReadEvents(
       NodeId node_id,
       scada::Time from,
       scada::Time to,

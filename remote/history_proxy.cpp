@@ -5,13 +5,14 @@
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "scada/callback_awaitable.h"
+#include "scada/co_result.h"
 #include "scada/standard_node_ids.h"
 
 HistoryProxy::HistoryProxy(AnyExecutor executor)
     : executor_{std::move(executor)} {}
 
-Awaitable<scada::StatusOr<scada::HistoryReadRawResult>>
-HistoryProxy::HistoryReadRaw(scada::HistoryReadRawDetails details) {
+scada::CoStatusOr<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
+    scada::HistoryReadRawDetails details) {
   if (!sender_) {
     co_return scada::StatusCode::Bad_Disconnected;
   }
@@ -56,7 +57,7 @@ HistoryProxy::HistoryReadRaw(scada::HistoryReadRawDetails details) {
       });
 }
 
-Awaitable<scada::StatusOr<scada::HistoryReadEventsResult>>
+scada::CoStatusOr<scada::HistoryReadEventsResult>
 HistoryProxy::HistoryReadEvents(scada::NodeId node_id,
                                 scada::Time from,
                                 scada::Time to,

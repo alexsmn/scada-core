@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scada/co_result.h"
 #include "scada/history_service.h"
 
 #include <gmock/gmock.h>
@@ -11,25 +12,24 @@ class MockHistoryService : public HistoryService {
   MockHistoryService() {
     using namespace testing;
     ON_CALL(*this, HistoryReadRaw(_))
-        .WillByDefault([](HistoryReadRawDetails)
-                           -> Awaitable<StatusOr<HistoryReadRawResult>> {
-          co_return HistoryReadRawResult{};
-        });
-    ON_CALL(*this, HistoryReadEvents(_, _, _, _))
         .WillByDefault(
-            [](NodeId, scada::Time, scada::Time,
-               EventFilter) -> Awaitable<StatusOr<HistoryReadEventsResult>> {
-              co_return HistoryReadEventsResult{};
+            [](HistoryReadRawDetails) -> CoStatusOr<HistoryReadRawResult> {
+              co_return HistoryReadRawResult{};
             });
+    ON_CALL(*this, HistoryReadEvents(_, _, _, _))
+        .WillByDefault([](NodeId, scada::Time, scada::Time,
+                          EventFilter) -> CoStatusOr<HistoryReadEventsResult> {
+          co_return HistoryReadEventsResult{};
+        });
   }
 
-  MOCK_METHOD(Awaitable<StatusOr<HistoryReadRawResult>>,
+  MOCK_METHOD(CoStatusOr<HistoryReadRawResult>,
               HistoryReadRaw,
               (HistoryReadRawDetails details),
               (override));
 
   MOCK_METHOD(
-      Awaitable<StatusOr<HistoryReadEventsResult>>,
+      CoStatusOr<HistoryReadEventsResult>,
       HistoryReadEvents,
       (NodeId node_id, scada::Time from, scada::Time to, EventFilter filter),
       (override));

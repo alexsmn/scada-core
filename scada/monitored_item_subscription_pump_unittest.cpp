@@ -2,6 +2,7 @@
 
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "scada/co_result.h"
 #include "scada/service_context.h"
 
 #include <gmock/gmock.h>
@@ -41,7 +42,7 @@ class FakeMonitoredItemSubscription final : public MonitoredItemSubscription {
     co_return state_->remove_results;
   }
 
-  Awaitable<StatusOr<std::vector<MonitoredItemNotification>>> ReadNext(
+  CoStatusOr<std::vector<MonitoredItemNotification>> ReadNext(
       std::size_t max_count) override {
     state_->read_next_max_counts.push_back(max_count);
     if (state_->read_results.empty()) {

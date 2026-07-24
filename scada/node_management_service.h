@@ -4,6 +4,7 @@
 #include "base/awaitable.h"
 #include "base/check.h"
 #include "base/struct_writer.h"
+#include "scada/co_result.h"
 #include "scada/node_attributes.h"
 #include "scada/node_class.h"
 #include "scada/service_context.h"
@@ -56,21 +57,21 @@ class NodeManagementService {
 
   // `context` carries the caller identity and rights for authorization
   // (OPC UA Part 4 §5.7 NodeManagement).
-  virtual Awaitable<StatusOr<std::vector<AddNodesResult>>> AddNodes(
+  virtual CoStatusOr<std::vector<AddNodesResult>> AddNodes(
       ServiceContext context,
       std::vector<AddNodesItem> inputs) = 0;
 
   // Delete record from table. If |return_dependencies| is true and deletion
   // fails, it gets list of related records, which must be deleted before.
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>> DeleteNodes(
+  virtual CoStatusOr<std::vector<StatusCode>> DeleteNodes(
       ServiceContext context,
       std::vector<DeleteNodesItem> inputs) = 0;
 
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>> AddReferences(
+  virtual CoStatusOr<std::vector<StatusCode>> AddReferences(
       ServiceContext context,
       std::vector<AddReferencesItem> inputs) = 0;
 
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>> DeleteReferences(
+  virtual CoStatusOr<std::vector<StatusCode>> DeleteReferences(
       ServiceContext context,
       std::vector<DeleteReferencesItem> inputs) = 0;
 };
@@ -89,8 +90,8 @@ inline Awaitable<AddNodesResult> AddNode(NodeManagementService& service,
   co_return std::move(results->front());
 }
 
-inline Awaitable<Status> DeleteNode(NodeManagementService& service,
-                                    DeleteNodesItem input) {
+inline CoStatus DeleteNode(NodeManagementService& service,
+                           DeleteNodesItem input) {
   std::vector<DeleteNodesItem> inputs;
   inputs.emplace_back(std::move(input));
   auto results =

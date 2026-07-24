@@ -5,7 +5,6 @@
 #include "base/check.h"
 #include "base/debug_util.h"
 #include "base/utf_convert.h"
-#include "scada/node_id_log.h"
 #include "net/net_boost_logger_adapter.h"
 #include "net/net_executor_adapter.h"
 #include "remote/protocol.h"
@@ -15,6 +14,8 @@
 #include "remote/remote_connection.h"
 #include "remote/remote_listener.h"
 #include "remote/session_stub.h"
+#include "scada/co_result.h"
+#include "scada/node_id_log.h"
 #include "scada/service_context.h"
 #include "scada/status_or.h"
 
@@ -67,7 +68,7 @@ RemoteSessionManager::~RemoteSessionManager() {
   }
 }
 
-Awaitable<scada::Status> RemoteSessionManager::InitAsync() {
+scada::CoStatus RemoteSessionManager::InitAsync() {
   transport::log_source transport_logger{
       std::make_shared<NetBoostLoggerAdapter>(logger_)};
 

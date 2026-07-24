@@ -2,6 +2,7 @@
 
 #include "base/awaitable.h"
 #include "base/check.h"
+#include "scada/co_result.h"
 #include "scada/data_value.h"
 #include "scada/node_class.h"
 #include "scada/read_value_id.h"
@@ -32,11 +33,11 @@ class AttributeService {
  public:
   virtual ~AttributeService() = default;
 
-  virtual Awaitable<StatusOr<std::vector<DataValue>>> Read(
+  virtual CoStatusOr<std::vector<DataValue>> Read(
       ServiceContext context,
       std::vector<ReadValueId> inputs) = 0;
 
-  virtual Awaitable<StatusOr<std::vector<StatusCode>>> Write(
+  virtual CoStatusOr<std::vector<StatusCode>> Write(
       ServiceContext context,
       std::vector<WriteValue> inputs) = 0;
 };
@@ -68,9 +69,9 @@ inline Awaitable<DataValue> Read(AttributeService& attribute_service,
   co_return std::move(results->front());
 }
 
-inline Awaitable<Status> Write(AttributeService& attribute_service,
-                               scada::ServiceContext context,
-                               WriteValue input) {
+inline CoStatus Write(AttributeService& attribute_service,
+                      scada::ServiceContext context,
+                      WriteValue input) {
   auto results = co_await attribute_service.Write(
       std::move(context), std::vector<WriteValue>(1, std::move(input)));
   if (!results.ok())

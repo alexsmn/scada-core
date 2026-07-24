@@ -3,6 +3,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "scada/attribute_service.h"
+#include "scada/co_result.h"
 #include "scada/service_context.h"
 
 #include <boost/asio/redirect_error.hpp>
@@ -62,7 +63,7 @@ class FakeMonitoredItemSubscription final : public MonitoredItemSubscription {
     co_return std::vector<Status>(item_ids.size(), StatusCode::Good);
   }
 
-  Awaitable<StatusOr<std::vector<MonitoredItemNotification>>> ReadNext(
+  CoStatusOr<std::vector<MonitoredItemNotification>> ReadNext(
       std::size_t max_count) override {
     for (;;) {
       {
@@ -268,7 +269,8 @@ TEST(LegacyMonitoredItemAdapter, FailedAddDoesNotDeliverStaleNotifications) {
 // lambda argument first (GCC) moved `state` out and then dereferenced the null
 // pointer to read `state->executor`, crashing on startup. The spawned work must
 // still run on the adapter's executor — driving it must add, then remove, the
-// item on the underlying subscription — regardless of argument evaluation order.
+// item on the underlying subscription — regardless of argument evaluation
+// order.
 TEST(LegacyMonitoredItemAdapter, SpawnedAddAndRemoveRunOnAdapterExecutor) {
   TestExecutor executor;
   auto subscription_state =

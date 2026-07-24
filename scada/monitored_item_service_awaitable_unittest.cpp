@@ -2,6 +2,7 @@
 
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "scada/co_result.h"
 #include "scada/item_factory_subscription.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
@@ -67,7 +68,7 @@ class FakeMonitoredItemSubscription final : public MonitoredItemSubscription {
     co_return results;
   }
 
-  Awaitable<StatusOr<std::vector<MonitoredItemNotification>>> ReadNext(
+  CoStatusOr<std::vector<MonitoredItemNotification>> ReadNext(
       std::size_t max_count) override {
     state_->read_next_max_counts.push_back(max_count);
     if (state_->read_results.empty()) {
@@ -120,11 +121,9 @@ TEST(MonitoredItemServiceAwaitable, ReadsInitialValuesInInputOrder) {
                                                       /*params=*/{}));
 
   Drain(executor);
-  second_item->NotifyDataChange(
-      DataValue{Variant{22}, {}, Time{}, Time{}});
+  second_item->NotifyDataChange(DataValue{Variant{22}, {}, Time{}, Time{}});
   Drain(executor);
-  first_item->NotifyDataChange(
-      DataValue{Variant{11}, {}, Time{}, Time{}});
+  first_item->NotifyDataChange(DataValue{Variant{11}, {}, Time{}, Time{}});
 
   EXPECT_THAT(WaitResult(executor, read_result),
               ElementsAre(Field(&DataValue::value, Variant{11}),
