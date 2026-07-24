@@ -1,0 +1,23 @@
+@startuml remote_session_creation
+!include _style.puml
+
+title Core remote — session creation
+
+participant "SessionProxy" as Client $external
+participant "ServerConnection" as Conn $tier
+participant "RemoteSessionManager" as Manager $tier
+participant "AsyncAuthenticator" as Auth $tier
+participant "SessionStub" as Session $tier
+
+Client -> Client : Await ConnectAsync gate
+Client -> Conn : CreateSession
+Conn -> Manager : CreateSessionAsync(...)
+Manager -> Auth : Authenticate(user, password)
+Auth --> Manager : AuthenticationResult / Status
+Manager -> Session : Create(session context)
+Manager --> Conn : CreateSessionResult
+Conn -> Session : SetConnection(this)
+Conn --> Client : CreateSessionResult response
+Client --> Client : Complete connect gate
+
+@enduml

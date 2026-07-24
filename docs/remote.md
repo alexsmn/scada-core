@@ -17,25 +17,25 @@ Related documents:
 
 ![Core remote overview](./remote_overview.svg)
 
-Source: [remote_overview.mmd](./remote_overview.mmd)
+Source: [remote_overview.puml](./remote_overview.puml)
 
 ### Request Flow
 
 ![Core remote request flow](./remote_request_flow.svg)
 
-Source: [remote_request_flow.mmd](./remote_request_flow.mmd)
+Source: [remote_request_flow.puml](./remote_request_flow.puml)
 
 ### Session Creation Sequence
 
 ![Core remote session creation](./remote_session_creation.svg)
 
-Source: [remote_session_creation.mmd](./remote_session_creation.mmd)
+Source: [remote_session_creation.puml](./remote_session_creation.puml)
 
 ### Disconnect Sequence
 
 ![Core remote disconnect](./remote_disconnect.svg)
 
-Source: [remote_disconnect.mmd](./remote_disconnect.mmd)
+Source: [remote_disconnect.puml](./remote_disconnect.puml)
 
 ## Purpose
 
