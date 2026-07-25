@@ -155,33 +155,42 @@ class OpenTelemetryMetrics::Impl {
  public:
   explicit Impl(OpenTelemetryMetricsOptions options)
       : in_memory_data_{std::make_shared<ObservingInMemoryMetricData>()} {
-    otlp::OtlpGrpcMetricExporterOptions exporter_options;
-    exporter_options.endpoint = NormalizeGrpcEndpoint(options.endpoint);
-    exporter_options.use_ssl_credentials = false;
-    exporter_options.timeout = options.export_timeout;
-
-    auto exporter =
-        otlp::OtlpGrpcMetricExporterFactory::Create(exporter_options);
-
     metrics_sdk::PeriodicExportingMetricReaderOptions reader_options;
     reader_options.export_interval_millis = options.export_interval;
     reader_options.export_timeout_millis = options.export_timeout;
-
-    auto otlp_reader =
-        metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
-            std::move(exporter), reader_options);
-    auto in_memory_exporter =
-        memory::InMemoryMetricExporterFactory::Create(in_memory_data_);
-    auto in_memory_reader =
-        metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
-            std::move(in_memory_exporter), reader_options);
 
     const resource::ResourceAttributes resource_attributes = {
         {"service.name", options.service_name}};
     auto context = metrics_sdk::MeterContextFactory::Create(
         metrics_sdk::ViewRegistryFactory::Create(),
         resource::Resource::Create(resource_attributes));
-    context->AddMetricReader(std::move(otlp_reader));
+
+    // No endpoint configured means nobody asked for OTLP export — the common
+    // case for a desktop client or a tier with telemetry switched off. Creating
+    // the exporter anyway is not harmless: the OTLP client cannot build a gRPC
+    // stub for an empty target, so it logs an "empty endpoint" error at
+    // startup, and the periodic reader then logs "service stub unavailable"
+    // once per export interval for the life of the process. The in-memory
+    // reader below is what serves the local metric views, and it stays either
+    // way.
+    const std::string endpoint = NormalizeGrpcEndpoint(options.endpoint);
+    if (!endpoint.empty()) {
+      otlp::OtlpGrpcMetricExporterOptions exporter_options;
+      exporter_options.endpoint = endpoint;
+      exporter_options.use_ssl_credentials = false;
+      exporter_options.timeout = options.export_timeout;
+
+      context->AddMetricReader(
+          metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
+              otlp::OtlpGrpcMetricExporterFactory::Create(exporter_options),
+              reader_options));
+    }
+
+    auto in_memory_exporter =
+        memory::InMemoryMetricExporterFactory::Create(in_memory_data_);
+    auto in_memory_reader =
+        metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
+            std::move(in_memory_exporter), reader_options);
     context->AddMetricReader(std::move(in_memory_reader));
 
     auto provider =
