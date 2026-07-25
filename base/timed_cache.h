@@ -25,6 +25,14 @@ class TimedCache {
 
   Value Find(const Key& key) const;
 
+  // Invokes `visitor` for every live value, so a caller can compute aggregate
+  // state across the cache (e.g. "is any cached entry still loading?").
+  template <class Visitor>
+  void ForEach(Visitor&& visitor) const {
+    for (const auto& [key, entry] : map_)
+      visitor(entry.value);
+  }
+
  private:
   struct CacheEntry {
     template <class T>
