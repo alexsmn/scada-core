@@ -34,11 +34,11 @@ CoStatus WriteNodeAsync(services services,
   co_return (*statuses)[0];
 }
 
-CoStatus CallNodeAsync(services services,
-                       NodeId node_id,
-                       ServiceContext context,
-                       NodeId method_id,
-                       std::vector<Variant> arguments) {
+CoStatusOr<CallResult> CallNodeAsync(services services,
+                                     NodeId node_id,
+                                     ServiceContext context,
+                                     NodeId method_id,
+                                     std::vector<Variant> arguments) {
   if (!services.method_service) {
     co_return StatusCode::Bad_Disconnected;
   }
@@ -165,6 +165,14 @@ CoStatusOr<node> node::child_node(scada::QualifiedName browse_name) const {
 
 CoStatus node::call_packed(NodeId method_id,
                            std::vector<Variant> arguments) const {
+  co_return (co_await call_packed_result(std::move(method_id),
+                                         std::move(arguments)))
+      .status();
+}
+
+CoStatusOr<CallResult> node::call_packed_result(
+    NodeId method_id,
+    std::vector<Variant> arguments) const {
   return CallNodeAsync(services_, node_id_, context_, std::move(method_id),
                        std::move(arguments));
 }

@@ -134,7 +134,7 @@ RemappingHistoryUpdateService::HistoryUpdateEvent(
                                                std::move(details));
 }
 
-scada::CoStatus RemappingMethodService::Call(
+scada::CoStatusOr<scada::CallResult> RemappingMethodService::Call(
     scada::NodeId node_id,
     scada::NodeId method_id,
     std::vector<scada::Variant> arguments,
@@ -145,9 +145,20 @@ scada::CoStatus RemappingMethodService::Call(
   for (auto& argument : arguments) {
     argument = remapper_.ToDownstream(argument);
   }
-  co_return co_await inner_.Call(remapper_.ToDownstream(node_id),
-                                 remapper_.ToDownstream(method_id),
-                                 std::move(arguments), std::move(context));
+  auto result = co_await inner_.Call(remapper_.ToDownstream(node_id),
+                                     remapper_.ToDownstream(method_id),
+                                     std::move(arguments), std::move(context));
+  if (!result.ok()) {
+    co_return result.status();
+  }
+  // Output arguments come back in the downstream's namespaces and must be
+  // mapped home, exactly as the inputs were mapped out. Without this a client
+  // that asks the proxy for, say, a newly created node's id is handed an id it
+  // cannot address.
+  for (auto& output : result->output_arguments) {
+    output = remapper_.ToProxy(output);
+  }
+  co_return std::move(*result);
 }
 
 scada::CoStatusOr<std::vector<scada::AddNodesResult>>

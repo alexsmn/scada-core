@@ -21,6 +21,7 @@
 #include "remote/protocol_utils.h"
 #include "remote/session_proxy_debuger.h"
 #include "remote/subscription_proxy.h"
+#include "scada/method_service.h"
 #include "remote/view_service_proxy.h"
 #include "scada/co_result.h"
 #include "scada/item_factory_subscription.h"
@@ -657,7 +658,7 @@ scada::CoStatusOr<std::vector<scada::StatusCode>> SessionProxy::Write(
   co_return ConvertTo<std::vector<scada::StatusCode>>(response.write_result());
 }
 
-scada::CoStatus SessionProxy::Call(scada::NodeId node_id,
+scada::CoStatusOr<scada::CallResult> SessionProxy::Call(scada::NodeId node_id,
                                    scada::NodeId method_id,
                                    std::vector<scada::Variant> arguments,
                                    scada::ServiceContext context) {
@@ -675,7 +676,9 @@ scada::CoStatus SessionProxy::Call(scada::NodeId node_id,
   Convert(arguments, *command.mutable_argument());
 
   auto response = co_await RequestAsync(std::move(request));
-  co_return ConvertTo<scada::Status>(response.status());
+  // scada.proto carries no output arguments, so a good status yields an empty
+  // result. MakeCallResult, not StatusOr{status}: the latter panics on ok.
+  co_return scada::MakeCallResult(ConvertTo<scada::Status>(response.status()));
 }
 
 scada::StatusOr<std::unique_ptr<scada::MonitoredItemSubscription>>

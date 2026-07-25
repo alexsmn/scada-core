@@ -9,7 +9,7 @@ namespace scada {
 
 class MockMethodService : public MethodService {
  public:
-  MOCK_METHOD(CoStatus,
+  MOCK_METHOD(CoStatusOr<CallResult>,
               Call,
               (NodeId node_id,
                NodeId method_id,
@@ -18,8 +18,15 @@ class MockMethodService : public MethodService {
               (override));
 };
 
-inline CoStatus MakeMethodCallResult(Status status = StatusCode::Good) {
-  co_return std::move(status);
+inline CoStatusOr<CallResult> MakeMethodCallResult(
+    Status status = StatusCode::Good) {
+  co_return MakeCallResult(std::move(status));
+}
+
+// A successful call returning output arguments.
+inline CoStatusOr<CallResult> MakeMethodCallResult(
+    std::vector<Variant> outputs) {
+  co_return CallResult{std::move(outputs)};
 }
 
 }  // namespace scada

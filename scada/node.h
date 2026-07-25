@@ -5,6 +5,7 @@
 #include "scada/attribute_ids.h"
 #include "scada/co_result.h"
 #include "scada/history_service.h"
+#include "scada/method_service.h"
 #include "scada/monitored_item_service.h"
 #include "scada/service_context.h"
 #include "scada/services.h"
@@ -88,11 +89,26 @@ class node {
   CoStatusOr<NodeId> child_id(scada::QualifiedName browse_name) const;
   CoStatusOr<node> child_node(scada::QualifiedName browse_name) const;
 
+  // Invokes a method and discards its output arguments. Most callers want this:
+  // a method that answers with a status alone is the common case, and the
+  // status-only return composes with the `CoStatus`-typed sinks the client
+  // task plumbing expects.
   CoStatus call_packed(NodeId method_id, std::vector<Variant> arguments) const;
 
   template <class... Args>
   CoStatus call(NodeId method_id, Args&&... args) const {
     return call_packed(std::move(method_id), {std::forward<Args>(args)...});
+  }
+
+  // The same, keeping the method's output arguments.
+  CoStatusOr<CallResult> call_packed_result(
+      NodeId method_id,
+      std::vector<Variant> arguments) const;
+
+  template <class... Args>
+  CoStatusOr<CallResult> call_result(NodeId method_id, Args&&... args) const {
+    return call_packed_result(std::move(method_id),
+                              {std::forward<Args>(args)...});
   }
 
   // `details.node_id` is overridden by the node ID and doesn't have

@@ -337,8 +337,13 @@ Awaitable<void> SessionStub::OnCallAsync(
   span.SetAttribute("scada.object_node_id", node_id.ToString());
   span.SetAttribute("scada.method_node_id", method_id.ToString());
 
-  auto status = co_await services_.method_service->Call(
-      std::move(node_id), std::move(method_id), std::move(arguments), context);
+  // The gRPC Call is deliberately status-only (scada.proto has no output
+  // arguments), so a method's outputs stop here. A caller that needs them must
+  // use OPC UA.
+  auto status = (co_await services_.method_service->Call(
+                     std::move(node_id), std::move(method_id),
+                     std::move(arguments), context))
+                    .status();
 
   if (!connection_)
     co_return;

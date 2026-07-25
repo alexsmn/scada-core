@@ -69,14 +69,16 @@ class FakeMethodService : public scada::MethodService {
   scada::NodeId recorded_method;
   std::vector<scada::Variant> recorded_arguments;
 
-  scada::CoStatus Call(scada::NodeId node_id,
-                       scada::NodeId method_id,
-                       std::vector<scada::Variant> arguments,
-                       scada::ServiceContext) override {
+  std::vector<scada::Variant> outputs;
+
+  scada::CoStatusOr<scada::CallResult> Call(scada::NodeId node_id,
+                                            scada::NodeId method_id,
+                                            std::vector<scada::Variant> arguments,
+                                            scada::ServiceContext) override {
     recorded_object = node_id;
     recorded_method = method_id;
     recorded_arguments = std::move(arguments);
-    co_return scada::Status{scada::StatusCode::Good};
+    co_return scada::CallResult{outputs};
   }
 };
 
@@ -316,6 +318,32 @@ TEST(RemappingMethodServiceTest, RemapsObjectAndMethodIds) {
   ASSERT_TRUE(inner.recorded_arguments[0].get_if<scada::NodeId>());
   EXPECT_EQ(*inner.recorded_arguments[0].get_if<scada::NodeId>(),
             scada::NodeId(12, fixture.downstream_ns));
+}
+
+// The mirror of the input remap above. A method's output arguments come back in
+// the downstream's namespaces, so without the inverse mapping the proxy hands a
+// client node ids from a namespace table the client never saw and cannot
+// address.
+TEST(RemappingMethodServiceTest, RemapsIdentifierValuesInOutputArguments) {
+  Fixture fixture;
+  FakeMethodService inner;
+  inner.outputs = {scada::Variant{scada::NodeId{77, fixture.downstream_ns}},
+                   scada::Variant{scada::Int32{5}}};
+  RemappingMethodService service{inner, fixture.remapper};
+  TestExecutor executor;
+
+  auto result = WaitAwaitable(
+      executor, service.Call(scada::NodeId{10, fixture.proxy_ns},
+                             scada::NodeId{11, fixture.proxy_ns}, {},
+                             scada::ServiceContext{}));
+
+  ASSERT_TRUE(result.ok());
+  ASSERT_EQ(result->output_arguments.size(), 2u);
+  ASSERT_TRUE(result->output_arguments[0].get_if<scada::NodeId>());
+  EXPECT_EQ(*result->output_arguments[0].get_if<scada::NodeId>(),
+            scada::NodeId(77, fixture.proxy_ns));
+  // Non-identifier outputs pass through untouched.
+  EXPECT_EQ(result->output_arguments[1].get<scada::Int32>(), 5);
 }
 
 TEST(RemappingAttributeServiceTest, RemapsIdentifierValuesInReadResults) {

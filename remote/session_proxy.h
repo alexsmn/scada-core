@@ -95,7 +95,7 @@ class SessionProxy : private SessionProxyContext,
         std::vector<scada::WriteValue> inputs) override;
 
   // scada::MethodService
-  virtual scada::CoStatus Call(scada::NodeId node_id,
+  virtual scada::CoStatusOr<scada::CallResult> Call(scada::NodeId node_id,
                                scada::NodeId method_id,
                                std::vector<scada::Variant> arguments,
                                scada::ServiceContext context) override;
