@@ -120,7 +120,7 @@ ProtocolMessageTransport::read(std::span<char> data) {
     co_return transport::ERR_FAILED;
   }
 
-  LOG_INFO(logger) << "Read payload" << LOG_TAG("PayloadSize", *payload_size);
+  LOG_DEBUG(logger) << "Read payload" << LOG_TAG("PayloadSize", *payload_size);
 
   auto payload_read = co_await ReadExact(transport_, cancelation,
                                          data.subspan(0, *payload_size));
@@ -128,16 +128,16 @@ ProtocolMessageTransport::read(std::span<char> data) {
     co_return transport::ERR_ABORTED;
   }
   reading_ = false;
-  LOG_INFO(logger) << "Read payload completed"
-                   << LOG_TAG("Ok", payload_read.ok())
-                   << LOG_TAG("BytesRead",
-                              payload_read.ok() ? *payload_read : 0);
+  LOG_DEBUG(logger) << "Read payload completed"
+                    << LOG_TAG("Ok", payload_read.ok())
+                    << LOG_TAG("BytesRead",
+                               payload_read.ok() ? *payload_read : 0);
   co_return payload_read;
 }
 
 transport::awaitable<transport::expected<size_t>>
 ProtocolMessageTransport::write(std::span<const char> data) {
-  LOG_INFO(logger) << "Write payload" << LOG_TAG("PayloadSize", data.size());
+  LOG_DEBUG(logger) << "Write payload" << LOG_TAG("PayloadSize", data.size());
   std::string message;
   protocol::PrependMessageSize(message);
   message.insert(message.end(), data.begin(), data.end());
@@ -151,8 +151,8 @@ ProtocolMessageTransport::write(std::span<const char> data) {
     co_return write_error;
   }
 
-  LOG_INFO(logger) << "Write payload completed"
-                   << LOG_TAG("PayloadSize", data.size());
+  LOG_DEBUG(logger) << "Write payload completed"
+                    << LOG_TAG("PayloadSize", data.size());
 
   // Return the size of the payload.
   co_return data.size();

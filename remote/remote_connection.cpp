@@ -11,8 +11,8 @@
 
 std::shared_ptr<ServerConnection> ServerConnection::Create(
     ServerConnectionContext&& context) {
-  auto connection =
-      std::shared_ptr<ServerConnection>(new ServerConnection(std::move(context)));
+  auto connection = std::shared_ptr<ServerConnection>(
+      new ServerConnection(std::move(context)));
   connection->Start();
   return connection;
 }
@@ -33,8 +33,8 @@ void ServerConnection::Start() {
         try {
           co_await self->Run();
         } catch (const std::exception& e) {
-          LOG_ERROR(*self->logger_) << "Connection coroutine failed"
-                                    << LOG_TAG("Error", e.what());
+          LOG_ERROR(*self->logger_)
+              << "Connection coroutine failed" << LOG_TAG("Error", e.what());
           self->Close();
         } catch (...) {
           LOG_ERROR(*self->logger_)
@@ -163,21 +163,20 @@ void ServerConnection::Send(protocol::Message& message) {
           if (self->closed_)
             co_return;
 
-          LOG_INFO(*self->logger_) << "Begin async write"
-                                   << LOG_TAG("Size", string.size());
+          LOG_DEBUG(*self->logger_)
+              << "Begin async write" << LOG_TAG("Size", string.size());
           auto bytes_written = co_await self->write_queue_.Write(string);
-          LOG_INFO(*self->logger_) << "Async write completed"
-                                   << LOG_TAG("Ok", bytes_written.ok())
-                                   << LOG_TAG("BytesWritten",
-                                              bytes_written.ok() ? *bytes_written
-                                                                 : 0);
+          LOG_DEBUG(*self->logger_)
+              << "Async write completed" << LOG_TAG("Ok", bytes_written.ok())
+              << LOG_TAG("BytesWritten",
+                         bytes_written.ok() ? *bytes_written : 0);
           if (!bytes_written.ok() || *bytes_written != string.size()) {
             self->Close();
             co_return;
           }
         } catch (const std::exception& e) {
-          LOG_ERROR(*self->logger_) << "Async write failed"
-                                    << LOG_TAG("Error", e.what());
+          LOG_ERROR(*self->logger_)
+              << "Async write failed" << LOG_TAG("Error", e.what());
           self->Close();
         } catch (...) {
           LOG_ERROR(*self->logger_) << "Async write failed with unknown error";
@@ -198,18 +197,18 @@ void ServerConnection::OnCreateSession(const protocol::Request& request) {
       boost::asio::detached);
 }
 
-Awaitable<void> ServerConnection::OnCreateSessionAsync(protocol::Request request) {
+Awaitable<void> ServerConnection::OnCreateSessionAsync(
+    protocol::Request request) {
   const auto request_id = request.request_id();
   auto result = co_await create_session_handler_(request.create_session());
 
   if (closed_)
     co_return;
 
-  LOG_INFO(*logger_)
-      << "CreateSession completed"
-      << LOG_TAG("RequestId", request_id)
-      << LOG_TAG("Status", ToString(result.status))
-      << LOG_TAG("HasSession", result.session != nullptr);
+  LOG_INFO(*logger_) << "CreateSession completed"
+                     << LOG_TAG("RequestId", request_id)
+                     << LOG_TAG("Status", ToString(result.status))
+                     << LOG_TAG("HasSession", result.session != nullptr);
 
   protocol::Message message;
   auto& response = *message.add_responses();
@@ -224,16 +223,14 @@ Awaitable<void> ServerConnection::OnCreateSessionAsync(protocol::Request request
     Convert(result.user_id, *create_session_result.mutable_user_node_id());
     create_session_result.set_user_rights(result.user_rights);
   }
-  LOG_INFO(*logger_)
-      << "Sending create-session response"
-      << LOG_TAG("RequestId", request_id);
+  LOG_INFO(*logger_) << "Sending create-session response"
+                     << LOG_TAG("RequestId", request_id);
   Send(message);
 
   session_ = result.session;
   if (session_)
-    LOG_INFO(*logger_)
-        << "Binding session to connection"
-        << LOG_TAG("RequestId", request_id);
+    LOG_INFO(*logger_) << "Binding session to connection"
+                       << LOG_TAG("RequestId", request_id);
   if (session_)
     session_->SetConnection(this);
 }
@@ -249,7 +246,8 @@ void ServerConnection::OnDeleteSession(const protocol::Request& request) {
       boost::asio::detached);
 }
 
-Awaitable<void> ServerConnection::OnDeleteSessionAsync(protocol::Request request) {
+Awaitable<void> ServerConnection::OnDeleteSessionAsync(
+    protocol::Request request) {
   scada::Status status(scada::StatusCode::Good);
 
   if (session_) {
