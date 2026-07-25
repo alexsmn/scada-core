@@ -409,10 +409,8 @@ TEST(RemappingNodeManagementServiceTest, RemapsAddNodesRequestAndResultIds) {
   scada::AddNodesItem item;
   item.parent_id = scada::NodeId{304, fixture.proxy_ns};
   item.type_definition_id = scada::NodeId{306, fixture.proxy_ns};
-  item.attributes.set_browse_name(
-      scada::QualifiedName{"f.txt", fixture.proxy_ns});
-  item.attributes.set_value(
-      scada::Variant{scada::NodeId{12, fixture.proxy_ns}});
+  item.attributes.browse_name = scada::QualifiedName{"f.txt", fixture.proxy_ns};
+  item.attributes.value = scada::Variant{scada::NodeId{12, fixture.proxy_ns}};
   auto result = WaitAwaitable(
       executor, service.AddNodes(scada::ServiceContext{}, {item}));
 

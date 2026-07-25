@@ -26,35 +26,9 @@ class AttributeSet {
   unsigned bits_ = 0;
 };
 
+// Construct with designated initializers; there are deliberately no field
+// setters. Field order is the declaration order below.
 struct NodeAttributes {
-  NodeAttributes& set_browse_name(QualifiedName browse_name)
-      SCADA_LIFETIME_BOUND {
-    this->browse_name = std::move(browse_name);
-    return *this;
-  }
-
-  NodeAttributes& set_display_name(LocalizedText display_name)
-      SCADA_LIFETIME_BOUND {
-    this->display_name = std::move(display_name);
-    return *this;
-  }
-
-  NodeAttributes& set_inverse_name(LocalizedText inverse_name)
-      SCADA_LIFETIME_BOUND {
-    this->inverse_name = std::move(inverse_name);
-    return *this;
-  }
-
-  NodeAttributes& set_data_type(NodeId data_type) SCADA_LIFETIME_BOUND {
-    this->data_type = std::move(data_type);
-    return *this;
-  }
-
-  NodeAttributes& set_value(Variant value) SCADA_LIFETIME_BOUND {
-    this->value = std::move(value);
-    return *this;
-  }
-
   bool empty() const {
     return browse_name.empty() && display_name.empty() &&
            inverse_name.empty() && data_type.is_null() && !value.has_value();
