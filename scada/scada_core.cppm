@@ -141,9 +141,18 @@ using scada::Variant;
 using scada::VQ;
 
 // date_time.h / date_time_range.h
-using scada::DateTime;
-using scada::DateTimeRange;
-using scada::Duration;
+// The chrono migration renamed these: DateTime became Time and DateTimeRange
+// became TimeRange (an Interval<Time>). Time and Duration are NOT re-exported
+// here — they moved to base/time/time.h, so scada.base is their single owner
+// and the `export import scada.base` above already carries them to importers.
+// The scada::-spelled sentinels and helpers below ARE owned here: date_time.h
+// declares them as distinct entities aliasing the scada::base originals.
+using scada::IsNull;
+using scada::kMaxTime;
+using scada::kMinTime;
+using scada::kNullTime;
+using scada::Now;
+using scada::TimeRange;
 
 // status.h / status_or.h / status_callback.h
 using scada::MultiStatusCallback;

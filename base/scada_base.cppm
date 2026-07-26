@@ -169,13 +169,20 @@ using scada::base::SystemMemoryInfoKB;
 // time/clock.h / time/default_clock.h / time/time.h
 using scada::base::Clock;
 using scada::base::DefaultClock;
-using scada::base::Time;
-using scada::base::TimeDelta;
-using scada::base::TimeTicks;
-// Free operators on Time/TimeDelta (member operators travel with the
-// classes; these using-declarations pick up the free overload sets).
-using scada::base::operator+;
-using scada::base::operator*;
+// The surviving time.h API: "now", the null/unbounded sentinels and the null
+// test. These are inline constexpr (or a function), so unlike the model's
+// plain namespace-scope constants they are exportable.
+using scada::base::IsNull;
+using scada::base::kMaxTime;
+using scada::base::kMinTime;
+using scada::base::kNullTime;
+using scada::base::NowUtc;
+// The former base::Time / base::TimeDelta / base::TimeTicks are gone: the
+// chrono migration moved the absolute-time and duration aliases to
+// scada::Time / scada::Duration (exported below), and monotonic timing now
+// uses std::chrono::steady_clock directly, so there is no TimeTicks successor.
+// Their free operator+ / operator* overload sets went with them — std::chrono
+// supplies those for the alias types.
 using scada::base::operator<<;
 
 // uri.h
@@ -193,6 +200,20 @@ using scada::base::WaitableEvent;
 #endif
 
 }  // namespace scada::base
+
+// ---- namespace scada ----
+// time/time.h defines the project-wide time vocabulary in namespace scada
+// rather than scada::base, so it is exported here even though the header is a
+// base one. scada.core re-exports Duration alongside its own date_time.h
+// helpers; both name the same global-module entity, so importing either (or
+// both) is fine.
+export namespace scada {
+
+// time/time.h
+using scada::Duration;
+using scada::Time;
+
+}  // namespace scada
 
 // ---- global namespace ----
 export {
@@ -341,14 +362,16 @@ export {
 #endif
 
   // time_utils.h / timed_cache.h / timer.h
-  using ::AsChrono;
+  // AsChrono and TimeDeltaFromSecondsF were dropped by the chrono migration:
+  // the former converted base::TimeDelta to a std::chrono duration and is
+  // vacuous now that Duration *is* one, the latter is std::chrono::duration<
+  // double> at the call site.
   using ::Deserialize;
   using ::InMilliseconds;
   using ::InSeconds;
   using ::IsTimedCacheExpired;
   using ::SerializeToString;
   using ::TimedCache;
-  using ::TimeDeltaFromSecondsF;
   using ::Timer;
 
   // u16format.h
