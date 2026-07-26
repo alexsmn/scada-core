@@ -48,6 +48,12 @@ CoStatusOr<CallResult> CallNodeAsync(services services,
       std::move(context));
 }
 
+// Reduces a Call to its status. Free rather than a `node` member so that
+// `call_packed` can stay a non-coroutine: see the comment there.
+CoStatus CallStatusAsync(CoStatusOr<CallResult> operation) {
+  co_return (co_await std::move(operation)).status();
+}
+
 CoStatusOr<DataValue> ReadNodeAsync(services services,
                                     NodeId node_id,
                                     ServiceContext context,
@@ -165,9 +171,15 @@ CoStatusOr<node> node::child_node(scada::QualifiedName browse_name) const {
 
 CoStatus node::call_packed(NodeId method_id,
                            std::vector<Variant> arguments) const {
-  co_return (co_await call_packed_result(std::move(method_id),
-                                         std::move(arguments)))
-      .status();
+  // Deliberately NOT a coroutine. A coroutine member captures `this`, not a
+  // copy of the node, and its body first runs when the awaitable is awaited —
+  // so `SomeNode().call(...)`, whose node is a temporary, resumed a frame
+  // pointing at freed memory and dereferenced a null `services_`. Delegating
+  // eagerly snapshots services/node id/context at call time, the way `read()`
+  // and `write()` already do, which makes the leaf operations uniformly safe
+  // on a temporary node.
+  return CallStatusAsync(
+      call_packed_result(std::move(method_id), std::move(arguments)));
 }
 
 CoStatusOr<CallResult> node::call_packed_result(
