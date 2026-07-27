@@ -65,6 +65,55 @@ TEST(EventUtilTest, NonCoreEventTypeRoundTripsAsEvent) {
   EXPECT_EQ(*result, event);
 }
 
+DeviceFrameEvent MakeFrameEvent() {
+  DeviceFrameEvent event;
+  // The producing tier supplies the type id: DeviceFrameEventType lives in the
+  // SCADA model namespace, which core does not depend on.
+  event.base = MakeEvent(NodeId{15133, 7});
+  event.base.message = u"#RX: 68 0C FA 0F";
+  event.direction = DeviceFrameEvent::kInbound;
+  event.raw_data = ByteString{0x68, 0x0c, '\xfa', '\x0f'};
+  event.format = "I";
+  event.type_id = 13;
+  event.cause = 1;
+  event.object_address = 4002;
+  event.send_sequence = 2045;
+  event.receive_sequence = 1602;
+  return event;
+}
+
+TEST(EventUtilTest, DeviceFrameEventRoundTrips) {
+  const DeviceFrameEvent event = MakeFrameEvent();
+
+  const std::vector<Variant> fields = DisassembleEvent(std::any{event});
+  const std::any assembled = AssembleEvent(fields);
+
+  const auto* result = std::any_cast<DeviceFrameEvent>(&assembled);
+  ASSERT_NE(result, nullptr) << "frame layout did not assemble as a frame";
+  EXPECT_EQ(*result, event);
+}
+
+// The frame layout must not disturb the base one: its whole reason for existing
+// is that every other event keeps the 15-field layout and stays wire
+// compatible.
+TEST(EventUtilTest, DeviceFrameLayoutIsDistinctFromTheBaseLayout) {
+  const std::vector<Variant> frame_fields =
+      DisassembleEvent(std::any{MakeFrameEvent()});
+  const std::vector<Variant> base_fields =
+      DisassembleEvent(std::any{MakeEvent(NodeId{id::SystemEventType})});
+
+  EXPECT_EQ(base_fields.size(), 15u);
+  EXPECT_EQ(frame_fields.size(), 23u);
+
+  // The base prefix is carried verbatim, so a frame degrades cleanly to its
+  // log line for anything that only reads the base event.
+  const std::any as_base =
+      AssembleEvent(std::span{frame_fields}.first(base_fields.size()));
+  const auto* base = std::any_cast<Event>(&as_base);
+  ASSERT_NE(base, nullptr);
+  EXPECT_EQ(base->message.text, u"#RX: 68 0C FA 0F");
+}
+
 TEST(EventUtilTest, ModelChangeEventRoundTrips) {
   ModelChangeEvent event;
   event.node_id = NodeId{5, 2};

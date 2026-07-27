@@ -13,6 +13,14 @@ namespace scada {
 constexpr size_t kEventFieldCount = 15;
 constexpr size_t kEventFieldCountV1 = 14;
 
+// Field count of the DeviceFrameEvent layout: the base event's fields followed
+// by the eight frame fields. It is its own layout rather than an extension of
+// the base one so that adding frame data costs nothing on every other event —
+// alarms, model changes and journal history keep the 15-field layout and stay
+// wire-compatible. Dispatch is by count, as it is for the model-notification
+// layouts; the count must stay distinct from 2, 4, 14 and 15.
+constexpr size_t kDeviceFrameFieldCount = kEventFieldCount + 8;
+
 scada::Event AssembleBaseEvent(std::span<const scada::Variant> fields) {
   scada::Event event;
   fields[0].get(event.event_type_id);
@@ -32,6 +40,21 @@ scada::Event AssembleBaseEvent(std::span<const scada::Variant> fields) {
   if (fields.size() > 14) {
     fields[14].get(event.source_name);
   }
+  return event;
+}
+
+scada::DeviceFrameEvent AssembleDeviceFrameEvent(
+    std::span<const scada::Variant> fields) {
+  scada::DeviceFrameEvent event;
+  event.base = AssembleBaseEvent(fields.first(kEventFieldCount));
+  fields[15].get(event.direction);
+  fields[16].get(event.raw_data);
+  fields[17].get(event.format);
+  fields[18].get(event.type_id);
+  fields[19].get(event.cause);
+  fields[20].get(event.object_address);
+  fields[21].get(event.send_sequence);
+  fields[22].get(event.receive_sequence);
   return event;
 }
 
@@ -71,6 +94,9 @@ std::any AssembleEvent(std::span<const scada::Variant> fields) {
   } else if (event_type_id == scada::id::SemanticChangeEventType &&
              fields.size() == 2) {
     return AssembleSemanticChangeEvent(fields);
+  } else if (!event_type_id.is_null() &&
+             fields.size() == kDeviceFrameFieldCount) {
+    return AssembleDeviceFrameEvent(fields);
   } else if (!event_type_id.is_null() && (fields.size() == kEventFieldCount ||
                                           fields.size() == kEventFieldCountV1)) {
     return AssembleBaseEvent(fields);
@@ -104,6 +130,23 @@ std::vector<scada::Variant> DisassembleEvent(const scada::Event& event) {
 }
 
 std::vector<scada::Variant> DisassembleEvent(
+    const scada::DeviceFrameEvent& event) {
+  // The base layout verbatim, then the frame fields. Keeping the base prefix
+  // intact means AssembleBaseEvent reads it unchanged and a frame event
+  // degrades cleanly to its log line for anything that only wants that.
+  std::vector<scada::Variant> fields = DisassembleEvent(event.base);
+  fields.push_back(event.direction);
+  fields.push_back(event.raw_data);
+  fields.push_back(event.format);
+  fields.push_back(event.type_id);
+  fields.push_back(event.cause);
+  fields.push_back(event.object_address);
+  fields.push_back(event.send_sequence);
+  fields.push_back(event.receive_sequence);
+  return fields;
+}
+
+std::vector<scada::Variant> DisassembleEvent(
     const scada::ModelChangeEvent& event) {
   return {
       scada::NodeId{event.event_type_id},
@@ -131,6 +174,9 @@ std::vector<scada::Variant> DisassembleEvent(const std::any& event) {
   } else if (auto* semantic_change_event =
                  std::any_cast<scada::SemanticChangeEvent>(&event)) {
     return DisassembleEvent(*semantic_change_event);
+  } else if (auto* device_frame_event =
+                 std::any_cast<scada::DeviceFrameEvent>(&event)) {
+    return DisassembleEvent(*device_frame_event);
   } else {
     base::NotReached();
     return {};

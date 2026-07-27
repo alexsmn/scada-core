@@ -111,6 +111,49 @@ struct ModelChangeEvent {
   static const NumericId event_type_id = id::GeneralModelChangeEventType;
 };
 
+// One protocol frame on a device link, reported as data rather than as prose in
+// the message (docs/ux/shell.md §2.8 in the client). It embeds the base event —
+// time, source device, severity, message — and adds the decoded frame fields, so
+// a consumer that only wants the log still has it.
+//
+// The type id is a *member* rather than a compile-time constant, unlike
+// ModelChangeEvent and SemanticChangeEvent: `DeviceFrameEventType` lives in the
+// SCADA model namespace (common/model), which core does not depend on. The
+// producer supplies it.
+struct DeviceFrameEvent {
+  // Direction of travel. Deliberately not an enum class: it crosses the wire as
+  // an Int32 property (DeviceFrameEventType_Direction) and is written by
+  // drivers in several repos.
+  enum Direction : scada::Int32 {
+    kDirectionUnknown = 0,
+    // Received from the device.
+    kInbound = 1,
+    // Sent to the device.
+    kOutbound = 2,
+  };
+
+  bool operator==(const DeviceFrameEvent&) const = default;
+
+  // Time, source device, severity and the human-readable message.
+  Event base;
+
+  scada::Int32 direction = kDirectionUnknown;
+  // The frame as it went over the link. Empty when the driver reported a
+  // decoded object without the surrounding bytes.
+  ByteString raw_data;
+  // Link-layer frame format, protocol-specific (IEC 60870: "I", "S", "U").
+  String format;
+  // Protocol type identifier (IEC 60870 ASDU Type ID).
+  scada::Int32 type_id = 0;
+  // Cause of transmission.
+  scada::Int32 cause = 0;
+  // Information object address.
+  scada::Int32 object_address = 0;
+  // Link-layer sequence numbers, N(S) and N(R).
+  scada::Int32 send_sequence = 0;
+  scada::Int32 receive_sequence = 0;
+};
+
 struct SemanticChangeEvent {
   bool operator==(const SemanticChangeEvent&) const = default;
 
