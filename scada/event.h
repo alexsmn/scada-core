@@ -120,7 +120,10 @@ struct ModelChangeEvent {
 // ModelChangeEvent and SemanticChangeEvent: `DeviceFrameEventType` lives in the
 // SCADA model namespace (common/model), which core does not depend on. The
 // producer supplies it.
-struct DeviceFrameEvent {
+// The decoded content of one protocol frame, without the event envelope. Split
+// out so a driver can hand a sink the frame it just saw without knowing the
+// device id, the time or the event type.
+struct DeviceFrame {
   // Direction of travel. Deliberately not an enum class: it crosses the wire as
   // an Int32 property (DeviceFrameEventType_Direction) and is written by
   // drivers in several repos.
@@ -132,10 +135,7 @@ struct DeviceFrameEvent {
     kOutbound = 2,
   };
 
-  bool operator==(const DeviceFrameEvent&) const = default;
-
-  // Time, source device, severity and the human-readable message.
-  Event base;
+  bool operator==(const DeviceFrame&) const = default;
 
   scada::Int32 direction = kDirectionUnknown;
   // The frame as it went over the link. Empty when the driver reported a
@@ -152,6 +152,22 @@ struct DeviceFrameEvent {
   // Link-layer sequence numbers, N(S) and N(R).
   scada::Int32 send_sequence = 0;
   scada::Int32 receive_sequence = 0;
+};
+
+// One protocol frame on a device link, reported as data rather than as prose in
+// the message (docs/ux/shell.md §2.8 in the client). It embeds the base event —
+// time, source device, severity, message — so a consumer that only wants the
+// log line still has it.
+//
+// The type id is carried in `base.event_type_id` rather than as a compile-time
+// constant, unlike ModelChangeEvent and SemanticChangeEvent: DeviceFrameEventType
+// lives in the SCADA model namespace (common/model), which core does not depend
+// on. The producer supplies it.
+struct DeviceFrameEvent {
+  bool operator==(const DeviceFrameEvent&) const = default;
+
+  Event base;
+  DeviceFrame frame;
 };
 
 struct SemanticChangeEvent {

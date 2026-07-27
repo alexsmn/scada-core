@@ -47,14 +47,14 @@ scada::DeviceFrameEvent AssembleDeviceFrameEvent(
     std::span<const scada::Variant> fields) {
   scada::DeviceFrameEvent event;
   event.base = AssembleBaseEvent(fields.first(kEventFieldCount));
-  fields[15].get(event.direction);
-  fields[16].get(event.raw_data);
-  fields[17].get(event.format);
-  fields[18].get(event.type_id);
-  fields[19].get(event.cause);
-  fields[20].get(event.object_address);
-  fields[21].get(event.send_sequence);
-  fields[22].get(event.receive_sequence);
+  fields[15].get(event.frame.direction);
+  fields[16].get(event.frame.raw_data);
+  fields[17].get(event.frame.format);
+  fields[18].get(event.frame.type_id);
+  fields[19].get(event.frame.cause);
+  fields[20].get(event.frame.object_address);
+  fields[21].get(event.frame.send_sequence);
+  fields[22].get(event.frame.receive_sequence);
   return event;
 }
 
@@ -135,14 +135,14 @@ std::vector<scada::Variant> DisassembleEvent(
   // intact means AssembleBaseEvent reads it unchanged and a frame event
   // degrades cleanly to its log line for anything that only wants that.
   std::vector<scada::Variant> fields = DisassembleEvent(event.base);
-  fields.push_back(event.direction);
-  fields.push_back(event.raw_data);
-  fields.push_back(event.format);
-  fields.push_back(event.type_id);
-  fields.push_back(event.cause);
-  fields.push_back(event.object_address);
-  fields.push_back(event.send_sequence);
-  fields.push_back(event.receive_sequence);
+  fields.push_back(event.frame.direction);
+  fields.push_back(event.frame.raw_data);
+  fields.push_back(event.frame.format);
+  fields.push_back(event.frame.type_id);
+  fields.push_back(event.frame.cause);
+  fields.push_back(event.frame.object_address);
+  fields.push_back(event.frame.send_sequence);
+  fields.push_back(event.frame.receive_sequence);
   return fields;
 }
 

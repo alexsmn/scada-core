@@ -71,14 +71,14 @@ DeviceFrameEvent MakeFrameEvent() {
   // SCADA model namespace, which core does not depend on.
   event.base = MakeEvent(NodeId{15133, 7});
   event.base.message = u"#RX: 68 0C FA 0F";
-  event.direction = DeviceFrameEvent::kInbound;
-  event.raw_data = ByteString{0x68, 0x0c, '\xfa', '\x0f'};
-  event.format = "I";
-  event.type_id = 13;
-  event.cause = 1;
-  event.object_address = 4002;
-  event.send_sequence = 2045;
-  event.receive_sequence = 1602;
+  event.frame.direction = DeviceFrame::kInbound;
+  event.frame.raw_data = ByteString{0x68, 0x0c, '\xfa', '\x0f'};
+  event.frame.format = "I";
+  event.frame.type_id = 13;
+  event.frame.cause = 1;
+  event.frame.object_address = 4002;
+  event.frame.send_sequence = 2045;
+  event.frame.receive_sequence = 1602;
   return event;
 }
 
