@@ -4,6 +4,7 @@ add_subdirectory(test)
 
 scada_module(scada_base)
 scada_module_sources(scada_base PRIVATE "metrics")
+scada_module_sources(scada_base PRIVATE "process")
 scada_module_sources(scada_base PRIVATE "time")
 
 if(APPLE)
