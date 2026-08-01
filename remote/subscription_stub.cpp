@@ -1,7 +1,7 @@
 #include "remote/subscription_stub.h"
 
-#include "base/check.h"
 #include "base/any_executor_dispatch.h"
+#include "base/check.h"
 #include "remote/message_sender.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
@@ -193,6 +193,19 @@ void SubscriptionStub::OnEvent(MonitoredItemId monitored_item_id,
     Convert(status_code, *notification.mutable_status_code());
 
   if (auto* system_event = std::any_cast<scada::Event>(&event)) {
+    // The payload may have crossed a tier boundary (the aggregating proxy
+    // relays a downstream tier's events to its own clients), so it is external
+    // input and must never panic this process. Convert() requires a non-zero
+    // event id and panics without one, so screen for exactly that here and drop
+    // the event with a diagnostic instead. The check is deliberately no
+    // stricter than Convert's precondition: an event that merely lacks an
+    // optional field is still worth delivering.
+    if (system_event->event_id == 0) {
+      LOG_WARNING(logger_) << "Dropping invalid event"
+                           << LOG_TAG("MonitoredItemId", monitored_item_id)
+                           << LOG_TAG("Event", ToString(*system_event));
+      return;
+    }
     Convert(*system_event, *notification.add_events());
   } else if (auto* model_change_event =
                  std::any_cast<scada::ModelChangeEvent>(&event)) {
