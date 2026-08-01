@@ -42,6 +42,23 @@ struct SessionSecuritySettings {
   // private key. Required when `mode` selects a secured endpoint.
   std::string client_certificate_path;
   std::string client_private_key_path;
+  // Trust store used to authenticate the SERVER's application instance
+  // certificate, mirroring the server-side store that authenticates clients
+  // (`OpcUaModuleParams`). All empty means the server is not authenticated:
+  // its certificate arrives inside the discovered EndpointDescription, so a
+  // man in the middle can substitute its own and the channel is encrypted to
+  // the attacker. See docs/server/opcua-client-security.md.
+  std::string trusted_certificates_dir;
+  std::string issuer_certificates_dir;
+  std::string crl_dir;
+  std::string rejected_certificates_dir;
+
+  // True once any trust-store directory is configured; see the OPC UA-side
+  // mirror of this struct for why selection tightens when it is.
+  [[nodiscard]] bool has_trust_store() const {
+    return !trusted_certificates_dir.empty() ||
+           !issuer_certificates_dir.empty();
+  }
 };
 
 struct SessionConnectParams {
