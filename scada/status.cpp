@@ -131,6 +131,8 @@ const Entry kEntries[] = {
      L"Операция не поддерживается"},
     {scada::StatusCode::Bad_LicenseExpired, "Bad_LicenseExpired",
      L"Срок действия лицензии истёк"},
+    {scada::StatusCode::Bad_WaitingForInitialData, "Bad_WaitingForInitialData",
+     L"Значение от источника данных ещё не получено"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {

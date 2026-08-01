@@ -127,6 +127,13 @@ enum class StatusCode : unsigned {
   // code (0x810E0000) — OPC UA Part 4 §7.39 Common StatusCodes,
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.39
   Bad_LicenseExpired = Bad | 50,
+  // The server holds the node but the underlying data source has not delivered
+  // a value for it yet, so the Value it would report carries no Variant at all.
+  // Maps to the OPC UA Bad_WaitingForInitialData code (0x80320000) — OPC UA
+  // Part 4 §7.38.2 Common StatusCodes,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.38.2 :
+  // "Waiting for the Server to obtain values from the underlying data source."
+  Bad_WaitingForInitialData = Bad | 51,
 };
 
 enum class StatusLimit {

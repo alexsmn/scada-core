@@ -150,7 +150,15 @@ class Qualifier {
 inline Status Qualifier::ToStatus() const {
   Status status(StatusCode::Good);
 
-  if (bad())
+  // FAILED is terminal — the item could not be connected and no further update
+  // can follow — so it can never project onto a Good or Uncertain severity. It
+  // is checked first and mapped to plain Bad, which is the convention the
+  // `DataValue` value constructor already applies to the same bit, and which
+  // `SubscriptionStub::OnDataChange` asserts as an invariant
+  // (`!qualifier.failed() || IsBad(status_code)`).
+  if (failed())
+    status = Status(StatusCode::Bad);
+  else if (bad())
     status = Status(StatusCode::Uncertain_DeviceFlag);
   else if (offline())
     status = Status(StatusCode::Uncertain_Disconnected);
