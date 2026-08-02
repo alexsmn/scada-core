@@ -306,6 +306,49 @@ compatibility `CreateMonitoredItem` API remains during migration, and the
 default subscription implementation adapts existing per-item services to the
 new stream API.
 
+#### The `ReadNext` park/wake contract
+
+`ReadNext` blocks when the pending queue is empty, so every implementation has
+to park a reader and wake it when a notification is pushed. **The wake must be
+delivered through the coroutine's own executor** — `ItemFactorySubscription`
+stores a `read_waiter` callback and resumes it via `CallbackToAwaitable`, so a
+push and the resumption it causes are ordered by the same executor that runs
+the reader.
+
+The invariant exists because it was violated. `ReadNext` originally parked on a
+`boost::asio::steady_timer` set to `time_point::max()` and woke it by calling
+`cancel()` from the push path. That needs a real timer reactor. A deterministic
+test executor is a bare `boost::asio::execution_context` with no reactor the
+test drives, so the cancel completion was not delivered on the test's thread —
+delivery depended on asio's own scheduling. When it lost the race the pushed
+notification stayed in `pending` and the parked reader never resumed.
+
+The failure surfaces far from its cause, which is what made it expensive to
+find. A notification stuck in the pump never reaches the OPC UA subscription's
+`pending_notifications_`, so `ServerSubscription::TryPublish` finds nothing to
+send and correctly returns a **keep-alive** — a `PublishResponse` with empty
+`notification_data`. Every test in the publish family then fails on a variant
+of "expected a `DataChangeNotification`, got nothing", pointing at publish
+scheduling rather than at delivery. Because each test raced independently at a
+low rate (measured 0–3.3% per test), the visible symptom was a *rotating* set of
+publish tests failing across full-suite runs, which reads like cross-test state
+leakage and is not.
+
+Two consequences for tests:
+
+- A test that pushes a notification and then asserts on it only needs to drain
+  its executor to quiescence. **Do not synchronize with a bounded spin** — the
+  `for (int i = 0; i < 200; ++i) { Drain(executor); std::this_thread::yield(); }`
+  idiom was written to paper over the timer park and is not a fix: on an idle
+  machine the 200 yields retire in microseconds, and under CPU load the same
+  loop passes because `yield()` finally cedes the core. A test whose pass rate
+  *improves* under load is synchronizing on wall clock, not on the executor.
+- Coverage for the contract itself is
+  `MonitoredItemSubscription.LegacyAdapterReadNextWaitsForNotification` in
+  `core/scada/monitored_item_service_awaitable_unittest.cpp`: it parks a
+  `ReadNext`, asserts the coroutine is still suspended after a drain, then
+  pushes a value and requires the drain that follows to complete it.
+
 ## Attribute Service
 
 `AttributeService` is coroutine-first. The former callback attribute service
