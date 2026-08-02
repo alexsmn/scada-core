@@ -5,6 +5,7 @@
 #include "scada/event.h"
 #include "scada/extension_object.h"
 #include "scada/identity_mapping_rule_encoding.h"
+#include "scada/user_management_encoding.h"
 #include "scada/variant.h"
 
 #include <any>
@@ -37,6 +38,49 @@ TEST(ProtocolUtils, ExtensionObjectRolePermissionArrayRoundTrip) {
   EXPECT_EQ(decoded->role_id, (scada::NodeId{15680u, 0}));
   EXPECT_EQ(decoded->permissions,
             (scada::Permission::kRead | scada::Permission::kWrite));
+}
+
+// A UserManagementDataType payload (one entry of the UserManagement object's
+// Users property, OPC UA Part 18 §5.2.4) survives the gRPC boundary. The whole
+// users grid is one Read of this array, so a payload that degraded to its type
+// id here would leave the client with a list of nameless accounts.
+TEST(ProtocolUtils, ExtensionObjectUserManagementUserRoundTrip) {
+  const scada::UserManagementDataType user{
+      .user_name = "ivanov",
+      .user_configuration = scada::UserConfiguration::kDisabled |
+                            scada::UserConfiguration::kMustChangePassword,
+      .description = "Dispatcher, north"};
+  const auto original =
+      scada::EncodeUserManagementUsers(std::vector{user});
+
+  protocol::Variant proto;
+  Convert(original, proto);
+  const auto restored = ConvertTo<scada::Variant>(proto);
+
+  const auto decoded = scada::DecodeUserManagementUsers(restored);
+  ASSERT_TRUE(decoded.has_value());
+  ASSERT_EQ(decoded->size(), 1u);
+  EXPECT_EQ(decoded->front(), user);
+}
+
+// An account carrying no configuration bits is a real answer -- an ordinary,
+// enabled user -- and must survive as such rather than arriving as an absent
+// payload.
+TEST(ProtocolUtils, ExtensionObjectUserManagementDefaultsRoundTrip) {
+  const scada::UserManagementDataType user{.user_name = "root"};
+  const auto original = scada::EncodeUserManagementUsers(std::vector{user});
+
+  protocol::Variant proto;
+  Convert(original, proto);
+  const auto decoded =
+      scada::DecodeUserManagementUsers(ConvertTo<scada::Variant>(proto));
+
+  ASSERT_TRUE(decoded.has_value());
+  ASSERT_EQ(decoded->size(), 1u);
+  EXPECT_EQ(decoded->front().user_name, "root");
+  EXPECT_EQ(decoded->front().user_configuration,
+            scada::UserConfiguration::kNone);
+  EXPECT_TRUE(decoded->front().description.empty());
 }
 
 // An IdentityMappingRuleType payload (a Role's Identities entry or an

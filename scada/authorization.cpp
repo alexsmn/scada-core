@@ -213,6 +213,89 @@ Permission PermissionsForRoles(
   return permissions;
 }
 
+PasswordPolicyViolation CheckPasswordPolicy(std::string_view password,
+                                            PasswordOptions options,
+                                            double min_length,
+                                            double max_length) {
+  // Length first: a Range whose bound is non-positive means "unconstrained",
+  // which is how a server that publishes no minimum or no maximum shows up
+  // (OPC UA Part 18 §5.2.2 PasswordLength).
+  const double length = static_cast<double>(password.size());
+  if (min_length > 0 && length < min_length) {
+    return PasswordPolicyViolation::kTooShort;
+  }
+  if (max_length > 0 && length > max_length) {
+    return PasswordPolicyViolation::kTooLong;
+  }
+
+  // The kRequires* bits are defined over ASCII (Part 18 §5.2.2), so classify
+  // by byte rather than by locale: a UTF-8 continuation byte is not an upper
+  // case letter in any locale the policy means to describe, and running this
+  // through <cctype> with a non-"C" locale would make the same password pass
+  // on one host and fail on another.
+  bool has_upper = false;
+  bool has_lower = false;
+  bool has_digit = false;
+  bool has_special = false;
+  for (const char c : password) {
+    if (c >= 'A' && c <= 'Z') {
+      has_upper = true;
+    } else if (c >= 'a' && c <= 'z') {
+      has_lower = true;
+    } else if (c >= '0' && c <= '9') {
+      has_digit = true;
+    } else {
+      has_special = true;
+    }
+  }
+
+  if (HasPasswordOption(options, PasswordOptions::kRequiresUpperCaseCharacters) &&
+      !has_upper) {
+    return PasswordPolicyViolation::kMissingUpperCase;
+  }
+  if (HasPasswordOption(options, PasswordOptions::kRequiresLowerCaseCharacters) &&
+      !has_lower) {
+    return PasswordPolicyViolation::kMissingLowerCase;
+  }
+  if (HasPasswordOption(options, PasswordOptions::kRequiresDigitCharacters) &&
+      !has_digit) {
+    return PasswordPolicyViolation::kMissingDigit;
+  }
+  if (HasPasswordOption(options, PasswordOptions::kRequiresSpecialCharacters) &&
+      !has_special) {
+    return PasswordPolicyViolation::kMissingSpecial;
+  }
+  return PasswordPolicyViolation::kNone;
+}
+
+bool IsWellKnownRoleId(const NodeId& role_id) {
+  for (const WellKnownRole role :
+       {WellKnownRole::kAnonymous, WellKnownRole::kAuthenticatedUser,
+        WellKnownRole::kObserver, WellKnownRole::kOperator,
+        WellKnownRole::kEngineer, WellKnownRole::kSupervisor,
+        WellKnownRole::kConfigureAdmin, WellKnownRole::kSecurityAdmin}) {
+    if (WellKnownRoleId(role) == role_id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::uint32_t AccessRightsForRoles(std::span<const NodeId> role_ids) {
+  std::uint32_t access_rights = 0;
+  for (const NodeId& role_id : role_ids) {
+    if (role_id == WellKnownRoleId(WellKnownRole::kOperator)) {
+      access_rights |= AccessRightBit(AccessRight::kControl);
+    } else if (role_id == WellKnownRoleId(WellKnownRole::kEngineer) ||
+               role_id == WellKnownRoleId(WellKnownRole::kSupervisor) ||
+               role_id == WellKnownRoleId(WellKnownRole::kConfigureAdmin) ||
+               role_id == WellKnownRoleId(WellKnownRole::kSecurityAdmin)) {
+      access_rights |= AccessRightBit(AccessRight::kConfigure);
+    }
+  }
+  return access_rights;
+}
+
 std::vector<NodeId> CallerRoleIds(std::uint32_t access_rights,
                                   bool is_anonymous,
                                   std::span<const NodeId> granted_role_ids) {

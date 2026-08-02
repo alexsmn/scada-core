@@ -91,6 +91,35 @@ constexpr NumericId HistoryServerCapabilities_AccessHistoryEventsCapability =
 constexpr NumericId Server_ServerCapabilities_RoleSet = 15606;
 constexpr NumericId Server_ServerCapabilities_RoleSet_AddRole = 16301;
 constexpr NumericId Server_ServerCapabilities_RoleSet_RemoveRole = 16304;
+// Server.ServerConfiguration and its UserManagement component. The
+// UserManagement Object is ComponentOf ServerConfiguration (OPC UA Part 18
+// §5.3, https://reference.opcfoundation.org/Core/Part18/v105/docs/5.3); the
+// enclosing ServerConfiguration Object itself is defined by Part 12. We serve
+// it *only* as the mandated parent of UserManagement — the Part 12
+// push-certificate model (TrustList, UpdateCertificate, CertificateGroups) is
+// deliberately not implemented, so a client must not infer it from the
+// object's presence. Ids per the official 1.05 NodeIds.csv.
+constexpr NumericId Server_ServerConfiguration = 12637;
+// The UserManagement Object instance and its members (OPC UA Part 18 §5.2,
+// https://reference.opcfoundation.org/Core/Part18/v105/docs/5.2). These are the
+// standard INSTANCE ids; the UserManagementType member ids (24265..24276) are
+// that type's InstanceDeclarations, not these nodes.
+constexpr NumericId Server_ServerConfiguration_UserManagement = 24290;
+constexpr NumericId UserManagement_Users = 24301;
+constexpr NumericId UserManagement_PasswordLength = 24302;
+constexpr NumericId UserManagement_PasswordOptions = 24303;
+constexpr NumericId UserManagement_PasswordRestrictions = 24291;
+constexpr NumericId UserManagement_AddUser = 24304;
+constexpr NumericId UserManagement_ModifyUser = 24306;
+constexpr NumericId UserManagement_RemoveUser = 24308;
+constexpr NumericId UserManagement_ChangePassword = 24310;
+constexpr NumericId UserManagementType = 24264;
+// The UserManagementDataType structure (Part 18 §5.2.4) and its DefaultBinary
+// encoding object, plus the two OptionSet DataTypes the object publishes.
+constexpr NumericId UserManagementDataType = 24281;
+constexpr NumericId UserManagementDataType_Encoding_DefaultBinary = 24292;
+constexpr NumericId PasswordOptionsMask = 24277;
+constexpr NumericId UserConfigurationMask = 24279;
 // Server.Namespaces and the NamespaceMetadataType of its per-namespace
 // metadata objects (OPC UA Part 5 §6.3.12/§6.3.13,
 // https://reference.opcfoundation.org/Core/Part5/v105/docs/6.3.12). Ids per

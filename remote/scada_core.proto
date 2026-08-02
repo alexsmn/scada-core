@@ -78,13 +78,33 @@ message IdentityMappingRule {
   string criteria = 2;
 }
 
+// One entry of the UserManagement object's Users property (OPC UA Part 18
+// §5.2.4 UserManagementDataType). Carried inside ExtensionObject on the gRPC
+// wire; `user_configuration` holds the UserConfigurationMask bits (Part 18
+// §5.2.3, Disabled = bit 1).
+message UserManagementUser {
+  string user_name = 1;
+  uint32 user_configuration = 2;
+  string description = 3;
+}
+
+// An inclusive low/high pair of Doubles (OPC UA Part 8 §5.6.2 Range). Carries
+// the UserManagement object's PasswordLength (Part 18 §5.2.2), where `low` is
+// the minimum and `high` the maximum password length.
+message Range {
+  double low = 1;
+  double high = 2;
+}
+
 // gRPC representation of a structured (ExtensionObject) value. `type_id` is the
-// value's DataType NodeId; the payload is a typed field (RolePermissionType and
-// IdentityMappingRuleType are carried today).
+// value's DataType NodeId; the payload is a typed field (RolePermissionType,
+// IdentityMappingRuleType, UserManagementDataType and Range are carried today).
 message ExtensionObject {
   NodeId type_id = 1;
   RolePermission role_permission = 2;
   IdentityMappingRule identity_mapping_rule = 3;
+  UserManagementUser user_management_user = 4;
+  Range range = 5;
 }
 
 message Variant {

@@ -189,6 +189,190 @@ TEST(AuthorizationTest, UserRolePermissionsFromNodeOverride) {
           .empty());
 }
 
+// AccessRightsForRoles is the inverse of RolesForUser, and roles are now the
+// stored model, so a round trip through it must not change a user's effective
+// rights — that round trip is what the one-shot migration relies on.
+TEST(AccessRightsForRolesTest, InvertsRolesForUser) {
+  for (const std::uint32_t rights : {0u, kControl, kConfigure, kRootRights}) {
+    std::vector<NodeId> role_ids;
+    for (const WellKnownRole role : RolesForUser(rights, /*anon=*/false)) {
+      role_ids.push_back(WellKnownRoleId(role));
+    }
+    EXPECT_EQ(AccessRightsForRoles(role_ids), rights)
+        << "round trip changed rights " << rights;
+  }
+}
+
+TEST(AccessRightsForRolesTest, MapsEachRoleToItsBit) {
+  const auto rights = [](WellKnownRole role) {
+    const NodeId ids[] = {WellKnownRoleId(role)};
+    return AccessRightsForRoles(ids);
+  };
+
+  EXPECT_EQ(rights(WellKnownRole::kOperator), kControl);
+  EXPECT_EQ(rights(WellKnownRole::kEngineer), kConfigure);
+  EXPECT_EQ(rights(WellKnownRole::kSupervisor), kConfigure);
+  EXPECT_EQ(rights(WellKnownRole::kConfigureAdmin), kConfigure);
+  EXPECT_EQ(rights(WellKnownRole::kSecurityAdmin), kConfigure);
+
+  // The roles every authenticated session holds carry no coarse right of
+  // their own; reading a bit out of them would hand every user Control.
+  EXPECT_EQ(rights(WellKnownRole::kAnonymous), 0u);
+  EXPECT_EQ(rights(WellKnownRole::kAuthenticatedUser), 0u);
+  EXPECT_EQ(rights(WellKnownRole::kObserver), 0u);
+}
+
+TEST(AccessRightsForRolesTest, IgnoresCustomAndUnknownRoles) {
+  // A custom (group) Role grants through its namespace policy, not through
+  // these two bits, so it must contribute neither — silently, because it is a
+  // perfectly valid role, not an error.
+  const NodeId ids[] = {NodeId{1u, 30 /*ROLE namespace*/},
+                        NodeId{999999u, 0}};
+  EXPECT_EQ(AccessRightsForRoles(ids), 0u);
+
+  EXPECT_EQ(AccessRightsForRoles({}), 0u);
+}
+
+TEST(AccessRightsForRolesTest, CombinesBitsAcrossRoles) {
+  const NodeId ids[] = {WellKnownRoleId(WellKnownRole::kOperator),
+                        WellKnownRoleId(WellKnownRole::kConfigureAdmin)};
+  EXPECT_EQ(AccessRightsForRoles(ids), kRootRights);
+}
+
+TEST(UserConfigurationTest, MaskBitsMatchTheSpecPositions) {
+  // OPC UA Part 18 §5.2.3 Table 24: NoDelete(0), Disabled(1),
+  // NoChangeByUser(2), MustChangePassword(3). The values are on the wire, so a
+  // renumbering here silently changes what a stored mask means.
+  EXPECT_EQ(static_cast<std::uint32_t>(UserConfiguration::kNoDelete), 1u);
+  EXPECT_EQ(static_cast<std::uint32_t>(UserConfiguration::kDisabled), 2u);
+  EXPECT_EQ(static_cast<std::uint32_t>(UserConfiguration::kNoChangeByUser), 4u);
+  EXPECT_EQ(static_cast<std::uint32_t>(UserConfiguration::kMustChangePassword),
+            8u);
+
+  const UserConfiguration mask =
+      UserConfiguration::kDisabled | UserConfiguration::kNoDelete;
+  EXPECT_TRUE(HasUserConfiguration(mask, UserConfiguration::kDisabled));
+  EXPECT_TRUE(HasUserConfiguration(mask, UserConfiguration::kNoDelete));
+  EXPECT_FALSE(HasUserConfiguration(mask, UserConfiguration::kNoChangeByUser));
+  EXPECT_FALSE(
+      HasUserConfiguration(mask, UserConfiguration::kMustChangePassword));
+
+  // An empty mask is a real answer -- an ordinary, enabled, deletable account
+  // -- not an absent one.
+  EXPECT_FALSE(
+      HasUserConfiguration(UserConfiguration::kNone, UserConfiguration::kDisabled));
+}
+
+TEST(PasswordOptionsTest, MaskBitsMatchTheSpecPositions) {
+  // OPC UA Part 18 §5.2.2 Table 23.
+  EXPECT_EQ(
+      static_cast<std::uint32_t>(PasswordOptions::kSupportInitialPasswordChange),
+      1u);
+  EXPECT_EQ(static_cast<std::uint32_t>(PasswordOptions::kSupportDisableUser),
+            2u);
+  EXPECT_EQ(
+      static_cast<std::uint32_t>(PasswordOptions::kSupportDisableDeleteForUser),
+      4u);
+  EXPECT_EQ(static_cast<std::uint32_t>(PasswordOptions::kSupportNoChangeForUser),
+            8u);
+  EXPECT_EQ(
+      static_cast<std::uint32_t>(PasswordOptions::kSupportDescriptionForUser),
+      16u);
+  EXPECT_EQ(
+      static_cast<std::uint32_t>(PasswordOptions::kRequiresUpperCaseCharacters),
+      32u);
+  EXPECT_EQ(
+      static_cast<std::uint32_t>(PasswordOptions::kRequiresLowerCaseCharacters),
+      64u);
+  EXPECT_EQ(
+      static_cast<std::uint32_t>(PasswordOptions::kRequiresDigitCharacters),
+      128u);
+  EXPECT_EQ(
+      static_cast<std::uint32_t>(PasswordOptions::kRequiresSpecialCharacters),
+      256u);
+}
+
+TEST(CheckPasswordPolicyTest, LengthBoundsAreOptional) {
+  constexpr auto kNoOptions = PasswordOptions::kNone;
+
+  // A non-positive bound means "unconstrained", which is how a server that
+  // publishes no minimum or no maximum shows up.
+  EXPECT_EQ(CheckPasswordPolicy("", kNoOptions, 0, 0),
+            PasswordPolicyViolation::kNone);
+
+  EXPECT_EQ(CheckPasswordPolicy("short", kNoOptions, 8, 0),
+            PasswordPolicyViolation::kTooShort);
+  EXPECT_EQ(CheckPasswordPolicy("longenough", kNoOptions, 8, 0),
+            PasswordPolicyViolation::kNone);
+
+  // The bounds are inclusive: a password of exactly the minimum or maximum
+  // length is acceptable.
+  EXPECT_EQ(CheckPasswordPolicy("12345678", kNoOptions, 8, 8),
+            PasswordPolicyViolation::kNone);
+  EXPECT_EQ(CheckPasswordPolicy("123456789", kNoOptions, 8, 8),
+            PasswordPolicyViolation::kTooLong);
+}
+
+TEST(CheckPasswordPolicyTest, CharacterClassRequirements) {
+  EXPECT_EQ(CheckPasswordPolicy(
+                "lowercase", PasswordOptions::kRequiresUpperCaseCharacters, 0, 0),
+            PasswordPolicyViolation::kMissingUpperCase);
+  EXPECT_EQ(CheckPasswordPolicy(
+                "UPPERCASE", PasswordOptions::kRequiresLowerCaseCharacters, 0, 0),
+            PasswordPolicyViolation::kMissingLowerCase);
+  EXPECT_EQ(CheckPasswordPolicy("noDigitsHere",
+                                PasswordOptions::kRequiresDigitCharacters, 0, 0),
+            PasswordPolicyViolation::kMissingDigit);
+  EXPECT_EQ(
+      CheckPasswordPolicy("nospecials1",
+                          PasswordOptions::kRequiresSpecialCharacters, 0, 0),
+      PasswordPolicyViolation::kMissingSpecial);
+
+  const PasswordOptions all_required =
+      PasswordOptions::kRequiresUpperCaseCharacters |
+      PasswordOptions::kRequiresLowerCaseCharacters |
+      PasswordOptions::kRequiresDigitCharacters |
+      PasswordOptions::kRequiresSpecialCharacters;
+  EXPECT_EQ(CheckPasswordPolicy("Passw0rd!", all_required, 8, 64),
+            PasswordPolicyViolation::kNone);
+
+  // A kSupport* bit is a capability advertisement, never a password
+  // requirement -- a server that supports disabling users must not thereby
+  // reject every password.
+  EXPECT_EQ(CheckPasswordPolicy("a", PasswordOptions::kSupportDisableUser, 0, 0),
+            PasswordPolicyViolation::kNone);
+}
+
+TEST(CheckPasswordPolicyTest, ClassifiesByAsciiByteNotLocale) {
+  // Non-ASCII bytes count as "special" rather than as letters: the spec
+  // defines the classes over ASCII, and deferring to <cctype> would make the
+  // same password pass on one host's locale and fail on another's.
+  EXPECT_EQ(CheckPasswordPolicy("\xd0\x9f\xd0\xb0\xd1\x80\xd0\xbe\xd0\xbb\xd1\x8c",
+                                PasswordOptions::kRequiresSpecialCharacters, 0,
+                                0),
+            PasswordPolicyViolation::kNone);
+  EXPECT_EQ(CheckPasswordPolicy("\xd0\x9f\xd0\xb0\xd1\x80\xd0\xbe\xd0\xbb\xd1\x8c",
+                                PasswordOptions::kRequiresUpperCaseCharacters, 0,
+                                0),
+            PasswordPolicyViolation::kMissingUpperCase);
+
+  // Length is measured in bytes, which is what a credential store hashes.
+  EXPECT_EQ(CheckPasswordPolicy("\xd0\x9f\xd0\xb0", PasswordOptions::kNone, 4, 0),
+            PasswordPolicyViolation::kNone);
+}
+
+TEST(UserManagementDataTypeTest, IsValueEqualityComparable) {
+  const UserManagementDataType user{
+      .user_name = "ivanov",
+      .user_configuration = UserConfiguration::kDisabled,
+      .description = "Dispatcher, north"};
+  EXPECT_EQ(user, user);
+
+  UserManagementDataType enabled = user;
+  enabled.user_configuration = UserConfiguration::kNone;
+  EXPECT_NE(user, enabled);
+}
+
 TEST(AuthorizationTest, PermissionBitwiseHelpers) {
   const Permission combined = Permission::kRead | Permission::kWrite;
   EXPECT_TRUE(Contains(combined, Permission::kRead));

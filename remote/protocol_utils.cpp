@@ -10,6 +10,7 @@
 #include "scada/event_filter.h"
 #include "scada/extension_object.h"
 #include "scada/monitoring_parameters.h"
+#include "scada/range_encoding.h"
 #include "scada/read_value_id.h"
 #include "scada/standard_node_ids.h"
 
@@ -92,6 +93,18 @@ void Convert(const protocol::ExtensionObject& source,
         .criteria_type = static_cast<scada::IdentityCriteriaType>(
             source.identity_mapping_rule().criteria_type()),
         .criteria = source.identity_mapping_rule().criteria()}};
+  } else if (source.has_user_management_user()) {
+    // UserManagementDataType (OPC UA Part 18 §5.2.4): user_configuration
+    // carries the UserConfigurationMask bits (Part 18 §5.2.3).
+    // https://reference.opcfoundation.org/Core/Part18/v105/docs/5.2.4
+    value = std::any{scada::UserManagementDataType{
+        .user_name = source.user_management_user().user_name(),
+        .user_configuration = static_cast<scada::UserConfiguration>(
+            source.user_management_user().user_configuration()),
+        .description = source.user_management_user().description()}};
+  } else if (source.has_range()) {
+    value = std::any{scada::Range{.low = source.range().low(),
+                                  .high = source.range().high()}};
   }
   target = scada::ExtensionObject{scada::ExpandedNodeId{std::move(type_id)},
                                   std::move(value)};
@@ -100,9 +113,9 @@ void Convert(const protocol::ExtensionObject& source,
 void Convert(const scada::ExtensionObject& source,
              protocol::ExtensionObject& target) {
   Convert(source.data_type_id().node_id(), *target.mutable_type_id());
-  // Only RolePermissionType and IdentityMappingRuleType payloads are carried
-  // across gRPC today; other payloads degrade to just the type id (matching
-  // the pre-existing behavior).
+  // Only RolePermissionType, IdentityMappingRuleType, UserManagementDataType
+  // and Range payloads are carried across gRPC today; other payloads degrade
+  // to just the type id (matching the pre-existing behavior).
   if (const auto* role =
           std::any_cast<scada::RolePermissionType>(&source.value())) {
     auto* role_permission = target.mutable_role_permission();
@@ -115,6 +128,17 @@ void Convert(const scada::ExtensionObject& source,
     identity_mapping_rule->set_criteria_type(
         static_cast<std::int32_t>(rule->criteria_type));
     identity_mapping_rule->set_criteria(rule->criteria);
+  } else if (const auto* user = std::any_cast<scada::UserManagementDataType>(
+                 &source.value())) {
+    auto* user_management_user = target.mutable_user_management_user();
+    user_management_user->set_user_name(user->user_name);
+    user_management_user->set_user_configuration(
+        static_cast<std::uint32_t>(user->user_configuration));
+    user_management_user->set_description(user->description);
+  } else if (const auto* range = std::any_cast<scada::Range>(&source.value())) {
+    auto* proto_range = target.mutable_range();
+    proto_range->set_low(range->low);
+    proto_range->set_high(range->high);
   }
 }
 
