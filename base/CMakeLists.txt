@@ -1,5 +1,4 @@
 find_package(Boost REQUIRED COMPONENTS system date_time json log log_setup program_options regex)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../third_party/net/cmake")
 add_subdirectory(test)
 
 scada_module(scada_base)
