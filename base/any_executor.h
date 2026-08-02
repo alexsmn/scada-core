@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/io_thread.h"
+
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/execution.hpp>
 #include <boost/asio/execution_context.hpp>
@@ -54,7 +56,7 @@ class AnyExecutorAdapter {
 
   boost::asio::execution_context& query(
       boost::asio::execution::context_t) const noexcept {
-    return state_->context;
+    return state_->io_thread.context();
   }
 
   static constexpr boost::asio::execution::blocking_t::never_t query(
@@ -72,17 +74,19 @@ class AnyExecutorAdapter {
     explicit State(std::shared_ptr<Executor> executor)
         : executor{std::move(executor)} {}
 
-    boost::asio::execution_context context;
     std::shared_ptr<Executor> executor;
+    // Declared last so it is destroyed first: the thread must be stopped and
+    // joined before anything it might still touch goes away.
+    scada::base::IoThread io_thread{"scada-io"};
   };
 
   template <class F>
   static std::function<void()> MakeTask(F&& f) {
     using Func = std::decay_t<F>;
-    return [copyable_fun =
-                std::make_shared<Func>(std::forward<F>(f))]() mutable {
-      std::move(*copyable_fun)();
-    };
+    return
+        [copyable_fun = std::make_shared<Func>(std::forward<F>(f))]() mutable {
+          std::move (*copyable_fun)();
+        };
   }
 
   std::shared_ptr<State> state_;

@@ -38,6 +38,7 @@ module;
 #include "base/base64.h"
 #include "base/binary_reader.h"
 #include "base/binary_writer.h"
+#include "base/io_thread.h"
 #include "base/bit_mask_string.h"
 #include "base/boost_json_file.h"
 #include "base/boost_log.h"
@@ -107,6 +108,10 @@ using scada::base::Check;
 using scada::base::CheckCondition;
 using scada::base::NotReached;
 using scada::base::Panic;
+
+// io_thread.h
+using scada::base::IoThread;
+using scada::base::SetCurrentThreadName;
 
 // at_exit.h / auto_reset.h / no_destructor.h / observer_list.h
 using scada::base::AtExitManager;
