@@ -84,6 +84,43 @@ constexpr bool Contains(Permission granted, Permission required) {
   return (granted & required) == required;
 }
 
+// The coarse capabilities the users/RBAC admin surfaces present, in display
+// order. These are what an operator reasons about ("may this account issue
+// commands?"), not a role tier: an account holds a SET of Roles whose
+// permissions union, so there is no single Administrator/Operator/Observer
+// level to report.
+//
+// Each is backed by concrete PermissionType bits (below) rather than by a
+// client-invented notion of seniority, so a surface cannot claim a capability
+// the server would refuse. Both clients present the same three, which is why
+// the definition lives here and not in either client.
+enum class Capability {
+  kView,       // See the address space and live values.
+  kControl,    // Issue commands and write values.
+  kConfigure,  // Change the configuration.
+};
+
+// The PermissionType bits `capability` requires. A capability is granted only
+// when the caller holds ALL of them — Control means both writing a value and
+// calling a method, and an account that could do only one of those must not be
+// shown as able to control the process.
+constexpr Permission RequiredPermissions(Capability capability) {
+  switch (capability) {
+    case Capability::kView:
+      return Permission::kBrowse | Permission::kRead;
+    case Capability::kControl:
+      return Permission::kWrite | Permission::kCall;
+    case Capability::kConfigure:
+      return Permission::kAddNode | Permission::kDeleteNode;
+  }
+  return Permission::kNone;
+}
+
+// Whether `permissions` grants `capability`.
+constexpr bool Grants(Permission permissions, Capability capability) {
+  return Contains(permissions, RequiredPermissions(capability));
+}
+
 // Derives the well-known roles a caller holds from its access-rights bitmask
 // (bits from scada::AccessRight) and whether the session is anonymous. An
 // anonymous session is the Anonymous role only; any authenticated caller is at

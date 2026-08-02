@@ -135,6 +135,58 @@ TEST(AuthorizationTest, DefaultRolePermissionsCoversAllRoles) {
                        Permission::kWriteRolePermissions));
 }
 
+// The coarse capabilities both clients present are derived from the SAME map
+// the server enforces with, by evaluating the published RolePermissions rather
+// than by consulting a client-side table. This test is the contract that lets
+// each client drop its own copy of the map: whatever
+// `DefaultPermissionsForRole` says, evaluating the published entries has to
+// agree with it.
+TEST(AuthorizationTest, CapabilitiesFollowThePublishedRoleMap) {
+  const std::vector<RolePermissionType> published = DefaultRolePermissions();
+
+  const auto granted = [&](WellKnownRole role, Capability capability) {
+    const NodeId role_ids[] = {WellKnownRoleId(role)};
+    return Grants(PermissionsForRoles(published, role_ids), capability);
+  };
+
+  // Observer looks; Operator also acts; ConfigureAdmin also configures.
+  EXPECT_TRUE(granted(WellKnownRole::kObserver, Capability::kView));
+  EXPECT_FALSE(granted(WellKnownRole::kObserver, Capability::kControl));
+  EXPECT_FALSE(granted(WellKnownRole::kObserver, Capability::kConfigure));
+
+  EXPECT_TRUE(granted(WellKnownRole::kOperator, Capability::kControl));
+  EXPECT_FALSE(granted(WellKnownRole::kOperator, Capability::kConfigure));
+
+  EXPECT_TRUE(granted(WellKnownRole::kConfigureAdmin, Capability::kConfigure));
+
+  // Every role's evaluated capabilities must match its enforced permissions --
+  // the property that makes a client reading the map incapable of disagreeing
+  // with the server.
+  for (const RolePermissionType& entry : published) {
+    for (const Capability capability :
+         {Capability::kView, Capability::kControl, Capability::kConfigure}) {
+      const NodeId role_ids[] = {entry.role_id};
+      EXPECT_EQ(Grants(PermissionsForRoles(published, role_ids), capability),
+                Grants(entry.permissions, capability))
+          << "role " << entry.role_id.ToString();
+    }
+  }
+}
+
+// A Role the server published no entry for grants nothing. This is what keeps
+// a custom (group) Role honest on a client: its grants are a per-namespace
+// policy (Part 3 §5.2.9) that is not in this map, and inventing one would let
+// the client overstate what an account may do.
+TEST(AuthorizationTest, UnpublishedRoleGrantsNothing) {
+  const std::vector<RolePermissionType> published = DefaultRolePermissions();
+  const NodeId custom_role[] = {NodeId{4242, 7}};
+
+  const Permission permissions = PermissionsForRoles(published, custom_role);
+
+  EXPECT_EQ(permissions, Permission::kNone);
+  EXPECT_FALSE(Grants(permissions, Capability::kView));
+}
+
 TEST(AuthorizationTest, UserRolePermissionsReflectsCallerRoles) {
   // An anonymous caller holds only the Anonymous role.
   const auto anon = UserRolePermissions(0, /*is_anonymous=*/true);

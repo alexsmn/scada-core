@@ -278,10 +278,13 @@ using scada::FunctionCoroutineAuthenticator;
 // authorization.h / access_rights.h
 using scada::AccessRight;
 using scada::AccessRightBit;
+using scada::Capability;
+using scada::Grants;
 using scada::HasAccessRight;
 using scada::IdentityCriteriaType;
 using scada::IdentityMappingRule;
 using scada::Permission;
+using scada::RequiredPermissions;
 using scada::RolePermissionType;
 using scada::WellKnownRole;
 namespace access_level {
@@ -298,6 +301,8 @@ using scada::access_level::kTimestampWrite;
 // identity_mapping_rule_encoding.h / role_permission_encoding.h
 // (the inline constexpr *Id constants have external linkage - exportable)
 using scada::DecodeIdentityMappingRule;
+using scada::DecodeRolePermissionObject;
+using scada::DecodeRolePermissions;
 using scada::EncodeIdentityMappingRules;
 using scada::EncodeRolePermissions;
 using scada::kIdentityMappingRuleTypeDataTypeId;

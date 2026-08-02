@@ -38,5 +38,47 @@ TEST(RolePermissionEncodingTest, EmptyEntriesYieldEmptyArray) {
   EXPECT_TRUE(value.get<std::vector<ExtensionObject>>().empty());
 }
 
+// The round trip a client depends on: it reads the server's whole role map off
+// the RolePermissions attribute instead of carrying its own copy.
+TEST(RolePermissionEncodingTest, DecodeRestoresTheServerRoleMap) {
+  const std::vector<RolePermissionType> entries = DefaultRolePermissions();
+  ASSERT_EQ(entries.size(), 8u);
+
+  const auto decoded = DecodeRolePermissions(EncodeRolePermissions(entries));
+  ASSERT_TRUE(decoded);
+  EXPECT_EQ(*decoded, entries);
+}
+
+// An empty map is a real answer — a node granting nothing to anybody — and
+// must stay distinguishable from a value that could not be decoded at all.
+TEST(RolePermissionEncodingTest, EmptyArrayDecodesToEmptyNotNullopt) {
+  const auto decoded = DecodeRolePermissions(EncodeRolePermissions({}));
+  ASSERT_TRUE(decoded);
+  EXPECT_TRUE(decoded->empty());
+}
+
+TEST(RolePermissionEncodingTest, NonExtensionObjectValueDecodesToNullopt) {
+  EXPECT_FALSE(DecodeRolePermissions(Variant{Int32{42}}));
+  EXPECT_FALSE(DecodeRolePermissions(Variant{}));
+}
+
+// A foreign payload is dropped, not defaulted: a zero-filled entry would read
+// as a real Role that grants nothing.
+TEST(RolePermissionEncodingTest, ForeignPayloadsAreDropped) {
+  std::vector<ExtensionObject> objects;
+  objects.emplace_back(ExpandedNodeId{NodeId{kRolePermissionTypeDataTypeId, 0}},
+                       std::any{RolePermissionType{
+                           .role_id = WellKnownRoleId(WellKnownRole::kOperator),
+                           .permissions = Permission::kRead}});
+  objects.emplace_back(ExpandedNodeId{NodeId{kRolePermissionTypeDataTypeId, 0}},
+                       std::any{std::string{"not a role permission"}});
+
+  const auto decoded = DecodeRolePermissions(Variant{std::move(objects)});
+  ASSERT_TRUE(decoded);
+  ASSERT_EQ(decoded->size(), 1u);
+  EXPECT_EQ(decoded->front().role_id,
+            WellKnownRoleId(WellKnownRole::kOperator));
+}
+
 }  // namespace
 }  // namespace scada
