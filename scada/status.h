@@ -142,6 +142,13 @@ enum class StatusCode : unsigned {
   // Part 4 permits refusing such a write; what it does not permit is answering
   // Good for a write that was not performed.
   Bad_OutOfRange = Bad | 52,
+  // The node cannot be written because its AccessLevel does not allow it —
+  // distinct from Bad_UserAccessDenied, which is about WHO is asking. A
+  // read-only observation (a runtime counter, say) is unwritable for everyone.
+  // Maps to the OPC UA Bad_NotWritable code (0x803B0000) — OPC UA Part 3
+  // §5.6.2 AccessLevel,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.2
+  Bad_NotWritable = Bad | 53,
 };
 
 enum class StatusLimit {
