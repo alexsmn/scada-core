@@ -194,21 +194,41 @@ bool RemoteSessionManager::CheckExistingSession(
     const scada::NodeId& user_id,
     const scada::LocalizedText& user_name,
     bool delete_existing) {
-  // Disconnect existing session of the same user_node.
-  if (SessionStub* existing_session = FindUserSession(user_id)) {
-    if (!delete_existing)
-      return false;
+  SessionStub* existing_session = FindUserSession(user_id);
+  if (!existing_session) {
+    return true;
+  }
 
+  // Only a session some connection is still serving counts as a live logon.
+  // A detached one is leftover state, not a logon: this protocol has no
+  // resume — `CreateSession` always makes a new session — so nothing can ever
+  // reattach to it, and refusing its own owner on its behalf is a lockout with
+  // no upside. Reclaim it instead, and let the logon through.
+  const bool attached = existing_session->connection() != nullptr;
+  if (attached && !delete_existing) {
+    return false;
+  }
+
+  if (attached) {
     LOG_WARNING(*logger_) << "Forced log off existing session"
                           << LOG_TAG("UserId", NodeIdToLogString(user_id))
                           << LOG_TAG("UserName", user_name)
                           << LOG_TAG(
                                  "Context",
                                  ToString(existing_session->service_context()));
+    // Only an attached session has a connection to carry the notification;
+    // sending it to a detached one just buffers a message nobody will read.
     existing_session->OnSessionDeleted();
-    DeleteSession(user_id);
+  } else {
+    LOG_INFO(*logger_) << "Reclaiming detached session"
+                       << LOG_TAG("UserId", NodeIdToLogString(user_id))
+                       << LOG_TAG("UserName", user_name)
+                       << LOG_TAG(
+                              "Context",
+                              ToString(existing_session->service_context()));
   }
 
+  DeleteSession(*existing_session);
   return true;
 }
 
@@ -248,10 +268,18 @@ SessionStub& RemoteSessionManager::CreateNewSession(
   return session_ref;
 }
 
-void RemoteSessionManager::DeleteSession(const scada::NodeId& user_id) {
-  // Remove session from map.
-  auto i = session_map_.find(user_id);
-  scada::base::Check(i != session_map_.end());
+void RemoteSessionManager::DeleteSession(SessionStub& session_to_delete) {
+  auto i = session_map_.find(session_to_delete.service_context().user_id());
+
+  // Erase only if this is still the session the map holds for that user. The
+  // callers are wire-driven — a `DeleteSession` request, connection teardown,
+  // the release of a session whose connection went away mid-authentication —
+  // and can race each other, so an entry already gone (or already replaced by
+  // a newer logon) is an ordinary outcome, not an invariant violation.
+  if (i == session_map_.end() || i->second.get() != &session_to_delete) {
+    return;
+  }
+
   auto session = std::move(i->second);
   session_map_.erase(i);
 
@@ -277,7 +305,7 @@ void RemoteSessionManager::CloseUserSessions(const scada::NodeId& user_id) {
       LOG_WARNING(*logger_) << "Close session because of user deletion"
                             << " | Context = " << session->service_context();
       session->OnSessionDeleted();
-      DeleteSession(user_id);
+      DeleteSession(*session);
     }
   });
 }
@@ -314,7 +342,7 @@ void RemoteSessionManager::OnSessionAccepted(
     if (alive.expired()) {
       return;
     }
-    DeleteSession(session.service_context().user_id());
+    DeleteSession(session);
   };
   connection_context.closed_handler_ = [this,
                                         alive](ServerConnection& connection) {
@@ -332,12 +360,4 @@ void RemoteSessionManager::OnConnectionClosed(ServerConnection& connection) {
   std::erase_if(connections_, [&connection](const auto& item) {
     return item.get() == &connection;
   });
-}
-
-void RemoteSessionManager::OnTransportClosed(transport::error_code error) {
-  LOG_WARNING(*logger_) << "Session transport closed"
-                        << LOG_TAG("ErrorString",
-                                   transport::ErrorToString(error));
-
-  // Don't close session intentionally.
 }

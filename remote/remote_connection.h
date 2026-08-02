@@ -6,11 +6,13 @@
 #include "scada/node_id.h"
 #include "scada/status.h"
 
+#include <boost/asio/steady_timer.hpp>
 #include <functional>
 #include <memory>
-#include <vector>
+#include <optional>
 #include <transport/any_transport.h>
 #include <transport/write_queue.h>
+#include <vector>
 
 namespace protocol {
 class CreateSession;
@@ -66,12 +68,22 @@ class ServerConnection : public Connection,
   void OnTransportClosed(transport::error_code error);
   void OnTransportMessageReceived(std::span<const char> data);
 
+  // (Re)starts the inactivity deadline. Armed when the connection starts and
+  // pushed back by every message received, so it only expires on a peer that
+  // has stopped talking without the socket reporting it.
+  void ArmIdleTimer();
+  void OnIdleTimeout();
+
   SessionStub* session_ = nullptr;
 
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("ServerConnection"));
 
   transport::WriteQueue write_queue_{transport_};
+
+  // Constructed lazily on the transport's executor, so every rearm and the
+  // Close() that drops it run on the same thread as the read loop.
+  std::optional<boost::asio::steady_timer> idle_timer_;
 
   std::shared_ptr<bool> cancelation_ = std::make_shared<bool>(false);
   bool closed_ = false;

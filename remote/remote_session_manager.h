@@ -75,7 +75,9 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
       protocol::CreateSession create_session);
 
-  void DeleteSession(const scada::NodeId& user_node_id);
+  // Removes `session` from the session map and notifies close observers.
+  // A no-op if the map no longer holds that session for its user.
+  void DeleteSession(SessionStub& session);
 
   bool CheckExistingSession(const scada::NodeId& user_id,
                             const scada::LocalizedText& user_name,
@@ -89,8 +91,6 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
 
   void OnSessionAccepted(transport::any_transport transport);
   void OnConnectionClosed(ServerConnection& connection);
-
-  void OnTransportClosed(transport::error_code error);
 
   const std::shared_ptr<BoostLogger> logger_ =
       std::make_shared<BoostLogger>(LOG_NAME("SessionManager"));

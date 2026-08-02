@@ -8,6 +8,28 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <chrono>
+
+namespace {
+
+// A connection is closed when nothing has arrived on it for this long.
+//
+// The peer pings once a second (`kPingDelay` in session_proxy.cpp) for as long
+// as its session lives, so this is sixty missed pings — a wide margin against a
+// merely busy, or briefly suspended, client.
+//
+// The deadline exists for the disconnect the socket never reports. An ordinary
+// disconnect (process exit, kill, close) errors the pending read and
+// `ServerConnection::Run` closes the connection, which releases the session.
+// A peer host that loses power, a network partition, or a NAT that silently
+// drops the flow leaves an established connection whose read simply never
+// completes — and without a deadline that connection, and the session it holds,
+// outlive the peer for the life of the process. For a single-session account
+// that is a permanent lockout, because the logon gate counts any session a
+// connection is still serving.
+constexpr auto kIdleTimeout = std::chrono::seconds{60};
+
+}  // namespace
 
 std::shared_ptr<ServerConnection> ServerConnection::Create(
     ServerConnectionContext&& context) {
@@ -26,6 +48,8 @@ ServerConnection::~ServerConnection() {
 }
 
 void ServerConnection::Start() {
+  ArmIdleTimer();
+
   auto self = shared_from_this();
   boost::asio::co_spawn(
       transport_.get_executor(),
@@ -86,7 +110,47 @@ void ServerConnection::Shutdown() {
   Close();
 }
 
+void ServerConnection::ArmIdleTimer() {
+  if (closed_) {
+    return;
+  }
+
+  if (!idle_timer_) {
+    idle_timer_.emplace(transport_.get_executor());
+  }
+
+  // Rescheduling cancels the armed wait; its handler runs with
+  // `operation_aborted` and returns without touching anything.
+  idle_timer_->expires_after(kIdleTimeout);
+  idle_timer_->async_wait(
+      [weak_self = weak_from_this()](boost::system::error_code error) {
+        if (error == boost::asio::error::operation_aborted) {
+          return;
+        }
+        if (auto self = weak_self.lock()) {
+          self->OnIdleTimeout();
+        }
+      });
+}
+
+void ServerConnection::OnIdleTimeout() {
+  if (closed_) {
+    return;
+  }
+
+  LOG_WARNING(*logger_)
+      << "Closing idle connection"
+      << LOG_TAG("IdleSeconds",
+                 std::chrono::duration_cast<std::chrono::seconds>(kIdleTimeout)
+                     .count())
+      << LOG_TAG("HasSession", session_ != nullptr);
+
+  Close();
+}
+
 void ServerConnection::OnTransportMessageReceived(std::span<const char> data) {
+  ArmIdleTimer();
+
   protocol::Message message;
   if (!message.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
     Close();
@@ -117,6 +181,7 @@ void ServerConnection::Close() {
   auto self = shared_from_this();
   closed_ = true;
   cancelation_.reset();
+  idle_timer_.reset();
 
   if (session_) {
     auto* session = session_;
@@ -202,8 +267,20 @@ Awaitable<void> ServerConnection::OnCreateSessionAsync(
   const auto request_id = request.request_id();
   auto result = co_await create_session_handler_(request.create_session());
 
-  if (closed_)
+  if (closed_) {
+    // The peer went away while authentication was in flight. The session now
+    // exists in the manager, but this connection never bound it — so the
+    // Close() that ran during the await saw no session and could not release
+    // it. Release it here: otherwise it stays in the session map for the life
+    // of the process, and for a single-session account every later logon is
+    // refused with Bad_UserIsAlreadyLoggedOn by a session nothing can reach.
+    if (result.session && delete_session_handler_) {
+      LOG_INFO(*logger_) << "Releasing session created after connection closed"
+                         << LOG_TAG("RequestId", request_id);
+      delete_session_handler_(*result.session);
+    }
     co_return;
+  }
 
   LOG_INFO(*logger_) << "CreateSession completed"
                      << LOG_TAG("RequestId", request_id)
