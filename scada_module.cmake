@@ -54,9 +54,7 @@ function(scada_module_unittests MODULE_NAME)
 
     target_link_libraries(${MODULE_NAME}_unittests PRIVATE ${MODULE_NAME} base_unittest)
     target_include_directories(${MODULE_NAME}_unittests PRIVATE
-      ${CMAKE_SOURCE_DIR}
-      ${CMAKE_SOURCE_DIR}/server
-      ${CMAKE_SOURCE_DIR}/server/modules)
+      ${CMAKE_SOURCE_DIR})
 
     if(MSVC)
       # Debug and RelWithDebInfo already use embedded object debug info via
@@ -94,9 +92,7 @@ function(scada_module_benchmarks MODULE_NAME)
     target_link_libraries(${MODULE_NAME}_benchmarks PRIVATE
       ${MODULE_NAME} benchmark::benchmark benchmark::benchmark_main)
     target_include_directories(${MODULE_NAME}_benchmarks PRIVATE
-      ${CMAKE_SOURCE_DIR}
-      ${CMAKE_SOURCE_DIR}/server
-      ${CMAKE_SOURCE_DIR}/server/modules)
+      ${CMAKE_SOURCE_DIR})
 
     if(MSVC)
       # Match scada_module_unittests: embedded object debug info via the preset,
