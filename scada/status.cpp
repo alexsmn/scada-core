@@ -133,6 +133,8 @@ const Entry kEntries[] = {
      L"Срок действия лицензии истёк"},
     {scada::StatusCode::Bad_WaitingForInitialData, "Bad_WaitingForInitialData",
      L"Значение от источника данных ещё не получено"},
+    {scada::StatusCode::Bad_OutOfRange, "Bad_OutOfRange",
+     L"Значение недопустимо и не будет сохранено"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {

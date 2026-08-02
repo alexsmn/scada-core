@@ -134,6 +134,14 @@ enum class StatusCode : unsigned {
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.38.2 :
   // "Waiting for the Server to obtain values from the underlying data source."
   Bad_WaitingForInitialData = Bad | 51,
+  // A written value violates a Server-defined restriction — the Server will not
+  // store it, and says so rather than accepting the write and dropping it.
+  // Maps to the OPC UA Bad_OutOfRange code (0x803C0000) — OPC UA Part 4 §5.10.4
+  // Write, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.10.4 :
+  // a value "outside the valid range ... or other server-defined restrictions".
+  // Part 4 permits refusing such a write; what it does not permit is answering
+  // Good for a write that was not performed.
+  Bad_OutOfRange = Bad | 52,
 };
 
 enum class StatusLimit {
