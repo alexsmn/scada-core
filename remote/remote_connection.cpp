@@ -54,12 +54,14 @@ transport::awaitable<void> ServerConnection::Run() {
   }
 
   auto cancelation = std::weak_ptr{cancelation_};
-  std::vector<char> message;
+  // The framed Scada protocol has no chunking, so the buffer must fit the
+  // largest single message the peer sends (see protocol::kMaxMessageSize).
+  // Size it once, outside the loop, and hand each message out as a subspan —
+  // resizing per iteration burned a 16 MiB value-initialization plus a 16 MiB
+  // destroy on every read. See the matching note in SessionProxy::Connect.
+  std::vector<char> message(protocol::kMaxMessageSize);
 
   while (!cancelation.expired()) {
-    // The framed Scada protocol has no chunking, so the buffer must fit the
-    // largest single message the peer sends (see protocol::kMaxMessageSize).
-    message.resize(protocol::kMaxMessageSize);
     auto bytes_read = co_await transport_.read(message);
 
     if (cancelation.expired()) {
@@ -71,9 +73,7 @@ transport::awaitable<void> ServerConnection::Run() {
       co_return;
     }
 
-    message.resize(*bytes_read);
-
-    OnTransportMessageReceived(message);
+    OnTransportMessageReceived(std::span{message}.first(*bytes_read));
   }
 }
 

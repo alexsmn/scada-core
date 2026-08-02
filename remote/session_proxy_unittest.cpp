@@ -10,7 +10,9 @@
 #include <boost/signals2/connection.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <chrono>
 #include <optional>
+#include <tuple>
 
 using namespace testing;
 
@@ -133,6 +135,52 @@ TEST_F(SessionProxyTest, ManagerObserverNotifiedOnOpenAndClose) {
 
   asio_env_.Wait(session.Disconnect());
   EXPECT_THAT(closed_user_ids, ElementsAre(kUserId));
+}
+
+// Regression: both read loops (SessionProxy::Connect here, ServerConnection on
+// the other end) used to resize their receive buffer to protocol::kMaxMessageSize
+// before every read and back down to the message length after it, so each
+// message cost a 16 MiB value-initialization plus a 16 MiB destroy. On the Qt
+// client that runs on the thread which also drives the UI and every coroutine
+// continuation, and it pinned that thread at 100% CPU: the loop could not keep
+// up with a steady notification stream, the backlog grew without bound, and each
+// service response came back later than the last, so lazily-expanding views
+// (the object tree) never finished loading no matter how long they waited.
+//
+// This is a cost, not a behaviour, so the assertion is a time budget. The margin
+// is what keeps it non-fragile rather than the precision — measured on one macOS
+// arm64 Debug build, the two are 159x apart:
+//
+//   pre-fix   33.5 s   (~168 ms per round trip: two 16 MiB resizes each side)
+//   fixed      0.21 s  (~1 ms per round trip)
+//
+// The 5 s budget therefore sits ~24x above the fixed cost and ~6.7x below the
+// regressed one, so neither a loaded machine nor a faster one flips the verdict.
+TEST_F(SessionProxyTest, RoundTripsDoNotPayPerMessageBufferCost) {
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                        .transport_factory_ = asio_env_.transport_factory}};
+
+  asio_env_.Wait(session.Connect(GetConnectParams()));
+
+  // The manager is built without an attribute service, so the stub answers each
+  // Read with Bad immediately. The status is irrelevant — what the test
+  // exercises is a full message round trip through both read loops.
+  constexpr int kRoundTrips = 200;
+  const auto start = std::chrono::steady_clock::now();
+  for (int i = 0; i < kRoundTrips; ++i) {
+    std::ignore = asio_env_.Wait(session.Read(
+        scada::ServiceContext{},
+        {scada::ReadValueId{scada::NodeId{1, 1}, scada::AttributeId::Value}}));
+  }
+  const auto elapsed = std::chrono::steady_clock::now() - start;
+
+  EXPECT_LT(elapsed, std::chrono::seconds{5})
+      << "200 round trips took "
+      << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()
+      << " ms; the read loops are paying a per-message cost proportional to "
+         "protocol::kMaxMessageSize again";
+
+  asio_env_.Wait(session.Disconnect());
 }
 
 }  // namespace

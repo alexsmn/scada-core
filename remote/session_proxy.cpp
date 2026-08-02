@@ -557,17 +557,22 @@ transport::awaitable<void> SessionProxy::Connect() {
 
     OnTransportOpened();
 
-    std::vector<char> buffer;
+    // The framed Scada protocol has no chunking, so the buffer must fit the
+    // largest single message the server sends (see protocol::kMaxMessageSize).
+    // Size it once, outside the loop, and hand each message out as a subspan.
+    // Resizing per iteration made every read cost a 16 MiB value-initialization
+    // plus a 16 MiB destroy on the thread that also runs the UI and every
+    // coroutine continuation: under a steady notification stream that alone
+    // consumed the whole main thread, the read loop fell behind the publish
+    // rate, and the backlog it built delayed each Browse/Read response more
+    // than the last, so lazily expanding views never finished loading.
+    std::vector<char> buffer(protocol::kMaxMessageSize);
 
     for (;;) {
       if (cancelation.canceled()) {
         co_return;
       }
 
-      // The framed Scada protocol has no chunking, so the buffer must fit the
-      // largest single message the server sends (see
-      // protocol::kMaxMessageSize).
-      buffer.resize(protocol::kMaxMessageSize);
       auto bytes_read = co_await transport_.read(buffer);
 
       if (cancelation.canceled()) {
@@ -590,12 +595,10 @@ transport::awaitable<void> SessionProxy::Connect() {
         co_return;
       }
 
-      buffer.resize(*bytes_read);
-
       LOG_INFO(*logger_) << "Dispatching transport message"
                          << LOG_TAG("BytesRead", *bytes_read);
 
-      OnTransportMessageReceived(buffer);
+      OnTransportMessageReceived(std::span{buffer}.first(*bytes_read));
     }
   } catch (const std::exception& e) {
     LOG_ERROR(*logger_) << "Connect coroutine failed"
