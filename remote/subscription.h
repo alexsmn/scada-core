@@ -1,0 +1,46 @@
+#pragma once
+
+#include "scada/attribute_ids.h"
+#include "scada/data_value.h"
+
+#include <functional>
+#include <string_view>
+
+typedef int MonitoredItemId;
+
+struct SubscriptionParams {
+  scada::Duration update_rate = scada::Duration::zero();
+};
+
+struct MonitoredItemParams {
+  MonitoredItemId handle;
+  std::wstring_view item_id;
+};
+
+/*namespace scada {
+
+class Status;
+
+struct Notification {
+};
+
+struct DataChangeNotification : Notification {
+};
+
+struct EventNotification : Notification {
+};
+
+struct StatusChangeNotification : Notification {
+};
+
+class SubscriptionService {
+ public:
+  virtual ~SubscriptionService() {}
+
+  using PublishCallback = std::function<void(const Status& status, const
+std::vector<Notification>& notifications)>;
+
+  virtual void Publish(PublishCallback callback) = 0;
+};
+
+} // namespace scada*/

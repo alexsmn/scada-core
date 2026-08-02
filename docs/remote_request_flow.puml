@@ -1,0 +1,21 @@
+@startuml remote_request_flow
+!include _style.puml
+
+title Core remote — request flow
+
+participant "Local SCADA caller" as Client $external
+participant "SessionProxy /\nservice proxy" as Proxy $tier
+participant "ServerConnection" as Conn $tier
+participant "SessionStub /\nnested stub" as Stub $tier
+participant "SCADA service" as Service $tier
+
+Client -> Proxy : Read / Write / Call / Browse / History / NodeMgmt
+Proxy -> Conn : Protocol request
+Conn -> Stub : Dispatch request
+Stub -> Service : Service call or coroutine await
+Service --> Stub : Result
+Stub --> Conn : Protocol response
+Conn --> Proxy : Response
+Proxy --> Client : Callback / awaitable completion
+
+@enduml

@@ -1,0 +1,241 @@
+syntax = "proto3";
+
+package protocol;
+
+// TODO: Describe the purpose of this file.
+// TODO: Introduce core protocol version.
+
+enum AttributeId {
+  NONE = 0;
+  NODE_ID = 1;
+  NODE_CLASS = 2;
+  BROWSE_NAME = 3;
+  DISPLAY_NAME = 4;
+  DESCRIPTION = 5;
+  WriteMask = 6;
+  UserWriteMask = 7;
+  IsAbstract = 8;
+  Symmetric = 9;
+  InverseName = 10;
+  ContainsNoLoops = 11;
+  EVENT_NOTIFIER = 12;
+  VALUE = 13;
+  DATA_TYPE = 14;
+  ValueRank = 15;
+  ArrayDimensions = 16;
+  AccessLevel = 17;
+  UserAccessLevel = 18;
+  MinimumSamplingInterval = 19;
+  Historizing = 20;
+  Executable = 21;
+  UserExecutable = 22;
+}
+
+message Attributes {
+  bytes browse_name_utf8 = 3;
+  bytes display_name_utf8 = 4;
+  Variant value = 13;
+  NodeId data_type_id = 14;
+}
+
+enum NodeClass {
+  None = 0;
+  Object = 1;
+  Variable = 2;
+  Method = 4;
+  ObjectType = 8;
+  VariableType = 16;
+  ReferenceType = 32;
+  DataType = 64;
+  View = 128;
+}
+
+
+message NodeId {
+  uint32 namespace_index = 1;
+  uint32 numeric_id = 2;
+  string string_id = 3;
+  bytes opaque_id = 4;
+}
+
+message ExpandedNodeId {
+  NodeId node_id = 1;
+}
+
+// One (role, permissions) entry of a RolePermissionType value (OPC UA Part 3
+// §8.56). Carried inside ExtensionObject on the gRPC wire.
+message RolePermission {
+  NodeId role_id = 1;
+  uint32 permissions = 2;
+}
+
+// One identity mapping rule of a Role's Identities value (OPC UA Part 18
+// §4.4.3 IdentityMappingRuleType). Carried inside ExtensionObject on the gRPC
+// wire; `criteria_type` holds the IdentityCriteriaType enum value (Part 18
+// §4.4.4, UserName = 1).
+message IdentityMappingRule {
+  int32 criteria_type = 1;
+  string criteria = 2;
+}
+
+// One entry of the UserManagement object's Users property (OPC UA Part 18
+// §5.2.4 UserManagementDataType). Carried inside ExtensionObject on the gRPC
+// wire; `user_configuration` holds the UserConfigurationMask bits (Part 18
+// §5.2.3, Disabled = bit 1).
+message UserManagementUser {
+  string user_name = 1;
+  uint32 user_configuration = 2;
+  string description = 3;
+}
+
+// An inclusive low/high pair of Doubles (OPC UA Part 8 §5.6.2 Range). Carries
+// the UserManagement object's PasswordLength (Part 18 §5.2.2), where `low` is
+// the minimum and `high` the maximum password length.
+message Range {
+  double low = 1;
+  double high = 2;
+}
+
+// gRPC representation of a structured (ExtensionObject) value. `type_id` is the
+// value's DataType NodeId; the payload is a typed field (RolePermissionType,
+// IdentityMappingRuleType, UserManagementDataType and Range are carried today).
+message ExtensionObject {
+  NodeId type_id = 1;
+  RolePermission role_permission = 2;
+  IdentityMappingRule identity_mapping_rule = 3;
+  UserManagementUser user_management_user = 4;
+  Range range = 5;
+}
+
+message Variant {
+  uint32 data_type     = 1;
+
+  // 0 - scalar, 1 - array
+  uint32 rank          = 2;
+
+  bool   bool_value    = 13;
+  int64  int_value     = 14;
+  double double_value  = 15;
+  // String, QualifiedName, or LocalizedText
+  bytes  string_value_utf8  = 16;
+  NodeId node_id_value = 17;
+  bytes  byte_string_value = 18;
+  int64  time_value_time = 19;
+  ExtensionObject extension_object_value = 20;
+
+  repeated bool   bool_array = 103;
+  repeated int64  int_array = 104;
+  repeated double double_array = 105;
+  // String, QualifiedName, or LocalizedText
+  repeated bytes  string_array_utf8 = 106;
+  NodeId node_id_array = 107;
+  bytes  byte_string_array = 108;
+  int64  time_array_time = 109;
+  repeated ExtensionObject extension_object_array = 110;
+}
+
+message DataValue {
+  uint64 server_time = 1;
+  uint64 source_time = 2;
+  Variant value = 3;
+  uint32 qualifier = 4;
+  uint32 status_code = 5;
+}
+
+
+message NodeReference {
+  NodeId reference_type_id = 1;
+  bool forward = 2;
+  NodeId node_id = 3;
+}
+
+message NodeProperty {
+  NodeId declaration_id = 1;
+  Variant value = 2;
+}
+
+message Node {
+  NodeId node_id = 1;
+  NodeId type_definition_id = 2;
+  NodeClass node_class = 3;
+  Attributes attributes = 5;
+  NodeId parent_id = 6;
+  NodeId reference_type_id = 7;
+  repeated NodeReference reference = 8;
+  repeated NodeProperty property = 9;
+  repeated Node children = 10;
+}
+
+
+enum ConstantNodeId {
+  NULL = 0;
+  ROOT = 13;
+  TYPES = 15;
+  OBJECTS = 100;
+  DEVICES = 109;
+}
+
+enum Severity {
+  // Good value.
+  Good = 0;
+  // Value is not up-to-date.
+  Uncertain = 1;
+  // Subscription has failed.
+  Bad = 2;
+}
+
+message StatusCode {
+  Severity severity = 1;
+  uint32 sub_code = 2;
+  bool structure_changed = 3;
+  bool semantics_changed = 4;
+}
+
+message Status {
+  StatusCode code = 1;
+}
+
+message Qualifier {
+  enum SubCode {
+    GOOD_NORMAL = 0;
+    GOOD_BACKUP = 1;
+    GOOD_MANUAL = 2;
+    GOOD_SIMULATED = 3;
+    UNCERTAIN_DEVICE = 10;
+    UNCERTAIN_OFFLINE = 11;
+    UNCERTAIN_MISCONFIGURED = 12;
+    UNCERTAIN_STALE = 13;
+    BAD_FAILED = 20;
+  }
+
+  enum Limit {
+    NORMAL = 0;
+    LO = 1;
+    HI = 2;
+    LOLO = 3;
+    HIHI = 4;
+  }
+
+  Severity severity = 1;
+  SubCode sub_code = 2;
+  Limit limit = 3;
+}
+
+message Event {
+  uint64 event_id = 1;
+  uint64 time = 2;
+  uint32 severity = 3;
+  NodeId source_node_id = 4;
+  NodeId user_node_id = 5;
+  Variant value = 6;
+  uint32 qualifier = 7;
+  bytes message_utf8 = 8;
+  bool acknowledged = 9;
+  uint64 acknowledge_time = 11;
+  NodeId acknowledge_user_id = 12;
+  // BaseEventType SourceName (resolved DisplayName of source_node_id).
+  string source_name = 13;
+  // Locale of `message_utf8` (RFC 3066 id, e.g. "en"/"ru"); empty when
+  // unspecified. Mirrors the OPC UA LocalizedText Locale field.
+  string message_locale = 14;
+}

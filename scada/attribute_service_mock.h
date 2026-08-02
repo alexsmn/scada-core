@@ -1,0 +1,65 @@
+#pragma once
+
+#include "scada/attribute_service.h"
+#include "scada/co_result.h"
+
+#include <gmock/gmock.h>
+
+namespace scada {
+
+template <class T>
+CoStatusOr<std::vector<T>> MakeAttributeResult(
+    StatusOr<std::vector<T>> result) {
+  co_return std::move(result);
+}
+
+class MockAttributeService : public AttributeService {
+ public:
+  MOCK_METHOD((CoStatusOr<std::vector<DataValue>>),
+              Read,
+              (ServiceContext context, std::vector<ReadValueId> inputs),
+              (override));
+
+  MOCK_METHOD((CoStatusOr<std::vector<StatusCode>>),
+              Write,
+              (ServiceContext context, std::vector<WriteValue> inputs),
+              (override));
+};
+
+class SimpleMockAttributeService : public AttributeService {
+ public:
+  SimpleMockAttributeService() {
+    using namespace testing;
+
+    ON_CALL(*this, Read(_))
+        .WillByDefault(Return(MakeReadError(StatusCode::Bad)));
+
+    ON_CALL(*this, Write(_, _)).WillByDefault(Return(StatusCode::Good));
+  }
+
+  MOCK_METHOD(DataValue, Read, (const ReadValueId& value_id));
+
+  MOCK_METHOD(StatusCode,
+              Write,
+              (const ServiceContext& context, const WriteValue& value));
+
+  virtual CoStatusOr<std::vector<DataValue>> Read(
+      ServiceContext context,
+      std::vector<ReadValueId> inputs) override {
+    std::vector<DataValue> results(inputs.size());
+    for (size_t i = 0; i < inputs.size(); ++i)
+      results[i] = Read(inputs[i]);
+    co_return std::move(results);
+  }
+
+  virtual CoStatusOr<std::vector<StatusCode>> Write(
+      ServiceContext context,
+      std::vector<WriteValue> inputs) override {
+    std::vector<StatusCode> results(inputs.size());
+    for (size_t i = 0; i < inputs.size(); ++i)
+      results[i] = Write(context, inputs[i]);
+    co_return std::move(results);
+  }
+};
+
+}  // namespace scada

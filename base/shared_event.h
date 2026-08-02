@@ -1,0 +1,33 @@
+#pragma once
+
+#include "base/win/scoped_handle.h"
+
+#include <cassert>
+#include <windows.h>
+
+class SharedEvent {
+ public:
+  SharedEvent() = default;
+
+  SharedEvent(const SharedEvent&) = delete;
+  SharedEvent& operator=(const SharedEvent&) = delete;
+
+  bool Create(const wchar_t* name) {
+    handle_.Set(CreateEventW(NULL, FALSE, FALSE, name));
+    return handle_.IsValid();
+  }
+
+  bool Open(const wchar_t* name) {
+    handle_.Set(OpenEventW(EVENT_MODIFY_STATE, TRUE, name));
+    return handle_.IsValid();
+  }
+
+  void Set() { ::SetEvent(handle_.Get()); }
+
+  DWORD WaitFor(DWORD milliseconds) {
+    return ::WaitForSingleObject(handle_.Get(), milliseconds);
+  }
+
+ private:
+  scada::base::win::ScopedHandle handle_;
+};

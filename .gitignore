@@ -1,0 +1,7 @@
+/build/
+/.core/
+/.claude/
+/.cache/
+/Testing/
+nul
+CMakeUserPresets.json

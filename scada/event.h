@@ -1,0 +1,234 @@
+#pragma once
+
+#include "base/lifetime.h"
+#include "base/struct_format.h"
+#include "base/struct_writer.h"
+#include "scada/data_value.h"
+#include "scada/standard_node_ids.h"
+
+#include <string>
+#include <string_view>
+
+namespace scada {
+
+// Convenience levels on the BaseEventType Severity scale: 1 (lowest) to 1000
+// (highest), 0 is invalid; the spec recommends the bands 1-333 (low), 334-666
+// (medium), 667-1000 (high). OPC UA Part 5 §6.4.2 BaseEventType,
+// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4.2
+enum EventSeverity : unsigned {
+  kSeverityMin = 1,         // lowest / cleared
+  kSeverityVerbose = 200,   // verbose
+  kSeverityNormal = 500,    // normal
+  kSeverityWarning = 600,   // warning
+  kSeverityCritical = 800,  // critical
+  kSeverityMax = 1000       // max
+};
+
+// Cannot be zero.
+using EventId = scada::UInt64;
+
+// Corresponds to the `BaseEventType`.
+// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4.2
+// TODO: Introduce an event ID and remove the ack ID.
+struct Event {
+ public:
+  enum ChangeFlags {
+    EVT_VAL = 0x0001,     // value changed
+    EVT_QUAL = 0x0002,    // quality changed
+    EVT_LIM = 0x0004,     // limit changed
+    EVT_USER = 0x0008,    // user event
+    EVT_SUBS = 0x0010,    // subsystem event
+    EVT_MAN = 0x0020,     // manual input
+    EVT_LOCK = 0x0040,    // locked
+    EVT_CTRL = 0x0080,    // control
+    EVT_BACKUP = 0x0100,  // locked
+  };
+
+  [[nodiscard]] bool is_valid() const;
+
+  bool operator==(const Event&) const = default;
+
+  NodeId event_type_id = scada::id::SystemEventType;
+  // `event_id` is zero until it's processed by server. And never can become
+  // zero after that.
+  EventId event_id = 0;
+  // `time` cannot be null.
+  Time time = scada::kNullTime;
+  // `receive_time` is assigned by server. It's null until the event is
+  // processed by server.
+  Time receive_time = scada::kNullTime;
+  scada::UInt32 change_mask = 0;
+  scada::UInt32 severity = kSeverityNormal;
+  // The node the event originates from; corresponds to `SourceNode` of
+  // `BaseEventType` (OPC UA Part 5 §6.4.2,
+  // https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4.2).
+  // Null when the event is not specific to a node.
+  NodeId source_node_id;
+  // Human-readable name of the event source; corresponds to `SourceName` of
+  // `BaseEventType` (OPC UA Part 5 §6.4.2). Resolved by the producing tier
+  // from the source node's DisplayName; forwarded events keep the origin
+  // tier's value. Empty when the event is not node-specific or the name
+  // could not be resolved (the projection then falls back to the NodeId
+  // string).
+  String source_name;
+  // `user_id` can be null.
+  NodeId user_id;
+  // `value` can be null.
+  Variant value;
+  Qualifier qualifier;
+  // TODO: Require non-empty message.
+  scada::LocalizedText message;
+  bool acked = false;
+  // `acknowledged_time` must be non-null if `acked` is true.
+  Time acknowledged_time = scada::kNullTime;
+  // `acknowledged_user_id` can be null if `acked` is true.
+  NodeId acknowledged_user_id;
+};
+
+struct ModelChangeEvent {
+  enum Verb : uint8_t {
+    NodeAdded = 1 << 0,
+    NodeDeleted = 1 << 1,
+    ReferenceAdded = 1 << 2,
+    ReferenceDeleted = 1 << 3,
+    DataTypeChanged = 1 << 4,
+  };
+
+  ModelChangeEvent& set_verb(uint8_t verb) SCADA_LIFETIME_BOUND {
+    this->verb = verb;
+    return *this;
+  }
+
+  bool operator==(const ModelChangeEvent&) const = default;
+
+  NodeId node_id;
+
+  // |type_definition_id| is only set for |NodeAdded| event.
+  NodeId type_definition_id;
+
+  uint8_t verb = 0;
+
+  static const NumericId event_type_id = id::GeneralModelChangeEventType;
+};
+
+// One protocol frame on a device link, reported as data rather than as prose in
+// the message (docs/ux/shell.md §2.8 in the client). It embeds the base event —
+// time, source device, severity, message — and adds the decoded frame fields, so
+// a consumer that only wants the log still has it.
+//
+// The type id is a *member* rather than a compile-time constant, unlike
+// ModelChangeEvent and SemanticChangeEvent: `DeviceFrameEventType` lives in the
+// SCADA model namespace (common/model), which core does not depend on. The
+// producer supplies it.
+// The decoded content of one protocol frame, without the event envelope. Split
+// out so a driver can hand a sink the frame it just saw without knowing the
+// device id, the time or the event type.
+struct DeviceFrame {
+  // Direction of travel. Deliberately not an enum class: it crosses the wire as
+  // an Int32 property (DeviceFrameEventType_Direction) and is written by
+  // drivers in several repos.
+  enum Direction : scada::Int32 {
+    kDirectionUnknown = 0,
+    // Received from the device.
+    kInbound = 1,
+    // Sent to the device.
+    kOutbound = 2,
+  };
+
+  bool operator==(const DeviceFrame&) const = default;
+
+  scada::Int32 direction = kDirectionUnknown;
+  // The frame as it went over the link. Empty when the driver reported a
+  // decoded object without the surrounding bytes.
+  ByteString raw_data;
+  // Link-layer frame format, protocol-specific (IEC 60870: "I", "S", "U").
+  String format;
+  // Protocol type identifier (IEC 60870 ASDU Type ID).
+  scada::Int32 type_id = 0;
+  // Cause of transmission.
+  scada::Int32 cause = 0;
+  // Information object address.
+  scada::Int32 object_address = 0;
+  // Link-layer sequence numbers, N(S) and N(R).
+  scada::Int32 send_sequence = 0;
+  scada::Int32 receive_sequence = 0;
+};
+
+// One protocol frame on a device link, reported as data rather than as prose in
+// the message (docs/ux/shell.md §2.8 in the client). It embeds the base event —
+// time, source device, severity, message — so a consumer that only wants the
+// log line still has it.
+//
+// The type id is carried in `base.event_type_id` rather than as a compile-time
+// constant, unlike ModelChangeEvent and SemanticChangeEvent: DeviceFrameEventType
+// lives in the SCADA model namespace (common/model), which core does not depend
+// on. The producer supplies it.
+struct DeviceFrameEvent {
+  bool operator==(const DeviceFrameEvent&) const = default;
+
+  Event base;
+  DeviceFrame frame;
+};
+
+struct SemanticChangeEvent {
+  bool operator==(const SemanticChangeEvent&) const = default;
+
+  NodeId node_id;
+
+  static const NumericId event_type_id = id::SemanticChangeEventType;
+};
+
+inline bool Event::is_valid() const {
+  if (event_id == 0 || scada::IsNull(time) || scada::IsNull(receive_time)) {
+    return false;
+  }
+
+  if (acked) {
+    if (scada::IsNull(acknowledged_time)) {
+      return false;
+    }
+  } else {
+    if (!scada::IsNull(acknowledged_time) || !acknowledged_user_id.is_null()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+std::ostream& operator<<(std::ostream& stream, const Event& event);
+
+}  // namespace scada
+
+// Event still renders through operator<< + StructWriter, bridged into
+// std::format by OStreamFormatter (see base/struct_writer.h); its value fields
+// (Time, Variant, ...) are not yet std::format-native.
+template <>
+struct std::formatter<scada::Event> : OStreamFormatter {};
+
+// ModelChangeEvent / SemanticChangeEvent are std::format-native: they render
+// directly via StructFormatter with no std::ostream in the path. All of their
+// fields are formattable leaves (NodeId, bitmask), so no operator<< is needed.
+template <>
+struct std::formatter<scada::ModelChangeEvent> : EmptyFormatSpec {
+  template <class FormatContext>
+  auto format(const scada::ModelChangeEvent& e, FormatContext& ctx) const {
+    static constexpr std::string_view kVerbBitStrings[] = {
+        "NodeAdded",        "NodeDeleted",     "ReferenceAdded",
+        "ReferenceDeleted", "DataTypeChanged",
+    };
+    return StructFormatter{ctx.out()}
+        .AddField("node_id", e.node_id)
+        .AddField("type_definition_id", e.type_definition_id)
+        .AddBitMaskField("verb", e.verb, kVerbBitStrings)
+        .Finish();
+  }
+};
+
+template <>
+struct std::formatter<scada::SemanticChangeEvent> : EmptyFormatSpec {
+  template <class FormatContext>
+  auto format(const scada::SemanticChangeEvent& e, FormatContext& ctx) const {
+    return StructFormatter{ctx.out()}.AddField("node_id", e.node_id).Finish();
+  }
+};

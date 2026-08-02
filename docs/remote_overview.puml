@@ -1,0 +1,41 @@
+@startuml remote_overview
+!include _style.puml
+
+title Core remote — server stubs and client proxies
+
+left to right direction
+
+package "Server Side" as Server {
+  rectangle "RemoteListener" as RL $tier
+  rectangle "RemoteSessionManager" as RM $tier
+  rectangle "ServerConnection" as SC $tier
+  rectangle "SessionStub" as SS $tier
+  rectangle "HistoryStub" as HS $tier
+  rectangle "NodeManagementStub" as NMS $tier
+  rectangle "ViewServiceStub" as VS $tier
+}
+
+package "Client Side" as Client {
+  rectangle "SessionProxy" as SP $tier
+  rectangle "HistoryProxy" as HP $tier
+  rectangle "NodeManagementProxy" as NMP $tier
+  rectangle "ViewServiceProxy" as VP $tier
+  rectangle "SubscriptionProxy" as SUB $tier
+}
+
+RL --> RM
+RM --> SC
+RM --> SS
+SC <--> SS
+SS --> HS
+SS --> NMS
+SS --> VS
+
+SP --> HP
+SP --> NMP
+SP --> VP
+SP --> SUB
+
+SP <--> SC : protocol transport
+
+@enduml

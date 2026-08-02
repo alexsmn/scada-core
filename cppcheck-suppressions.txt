@@ -1,0 +1,33 @@
+// Cppcheck suppressions file
+// Add suppressions in the format: [error id]:[filename]:[line]
+// Or just [error id] to suppress globally
+// See: https://cppcheck.sourceforge.io/manual.html#suppressions
+
+// Boost macros not recognized by cppcheck
+unknownMacro
+
+// cppcheck branch analysis limit (informational, not a real error)
+normalCheckLevelMaxBranches
+
+// False positive: browse_name is moved into aggregate init, not accessed after move
+accessMoved:*scada/node.cpp
+accessMoved:*scada\node.cpp
+
+passedByValue:*scada/node.cpp
+passedByValue:*scada\node.cpp
+
+// GoogleTest macros inside namespaces
+syntaxError
+
+// Protobuf generated code version checks
+preprocessorErrorDirective
+
+// Exclude external/third-party directories
+*:*\third_party\*
+*:*/third_party/*
+*:*\vcpkg\*
+*:*/vcpkg/*
+
+// Exclude build directory (generated files)
+*:*\build\*
+*:*/build/*
