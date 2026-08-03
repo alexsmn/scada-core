@@ -18,6 +18,7 @@
     "boost-program-options",
     "boost-random",
     "boost-range",
+    "boost-regex",
     "boost-signals2",
     "boost-smart-ptr",
     "boost-system",
