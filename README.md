@@ -41,63 +41,48 @@ A C++ library providing a distributed SCADA (Supervisory Control and Data Acquis
 
 ## Building
 
-### Using CMake Presets (Recommended)
+### Using CMake Presets
+
+core builds standalone. It consumes one other product, `net`, which must be
+checked out beside it as `../net`. Set `VCPKG_ROOT` in the environment;
+anything else machine-specific goes in `.scada-local.cmake` next to
+`build-support/`. See [build-support/README.md](build-support/README.md).
 
 ```bash
 # Configure
-cmake --preset ninja-multi
+cmake --preset ninja
 
 # Build all targets
-cmake --build build --config Release
+cmake --build --preset release
 
-# Build only core library
-cmake --build build --config Release --target core
+# Build only the core library
+cmake --build --preset release --target scada_core
 
 # Run tests
-ctest --preset release
+ctest --preset test-release
 ```
 
-### Manual Build
+Output lands in `build/ninja/bin/<config>/`.
+
+If `net` lives somewhere else, name it:
 
 ```bash
-# Configure (Linux)
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-# Configure (Windows)
-cmake -B build
-
-# Build
-cmake --build build --config Release
-
-# Run tests
-ctest --test-dir build --build-config Release
+cmake --preset ninja -DSCADA_PRODUCT_ROOT_NET=/path/to/net
 ```
 
-### Available CMake Presets
+### Available presets
 
-| Preset | Description |
-|--------|-------------|
-| `ninja-multi` | Ninja Multi-Config generator |
-| `ninja-multi-vcpkg` | Ninja with vcpkg toolchain |
-| `linux-gcc` | Linux with GCC |
-| `linux-clang` | Linux with Clang |
-| `windows-msvc` | Windows with MSVC |
-| `windows-msvc-vcpkg` | Windows with MSVC and vcpkg |
+Every product in the SCADA tree carries the same set, so the commands do not
+change from one to the next.
 
-### Build Presets
-
-| Preset | Description |
-|--------|-------------|
-| `debug` | Debug build |
-| `release` | Release build |
-| `relwithdebinfo` | Release with debug info |
-
-### Test Presets
-
-| Preset | Description |
-|--------|-------------|
-| `debug` | Run tests in Debug configuration |
-| `release` | Run tests in Release configuration |
+| Preset | Kind | Description |
+|--------|------|-------------|
+| `ninja` | configure | Ninja Multi-Config with the vcpkg toolchain |
+| `debug` | build | Debug build |
+| `release` | build | Release build |
+| `relwithdebinfo` | build | Release with debug info |
+| `test-debug` | test | Run tests in Debug |
+| `test-release` | test | Run tests in Release |
 
 ## Services Architecture
 

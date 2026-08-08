@@ -1,9 +1,13 @@
 # CI workflow for scada-core
 # Builds and tests on Windows (MSVC) and Linux (GCC, Clang)
 #
-# Note: Full builds require external dependencies (ChromiumBase, promise-hpp, Net)
-# that must be provided via CMAKE_PREFIX_PATH or installed system-wide.
-# Build jobs are marked as allowed to fail until dependencies are configured.
+# Note: core consumes one other product, `net`, which the standalone build
+# expects as a sibling checkout (`../net`); see build-support/README.md. This
+# workflow checks out core alone, so configure fails until that is wired up —
+# which is why the build jobs are allowed to fail. The compiler is selected
+# through CC/CXX rather than a per-compiler preset: every product carries the
+# same self-contained preset set (ADR 0011), and `ninja` is the only configure
+# preset there is.
 
 name: CI
 
@@ -26,13 +30,14 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gcc
-            preset: linux-gcc
+            cc: gcc
+            cxx: g++
           - os: ubuntu-latest
             compiler: clang
-            preset: linux-clang
+            cc: clang
+            cxx: clang++
           - os: windows-latest
             compiler: msvc
-            preset: windows-msvc-vcpkg
 
     steps:
     - name: Checkout repository
@@ -63,8 +68,9 @@ jobs:
 
     # Windows dependencies via vcpkg - only install required Boost components
     # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
-    - name: Setup vcpkg (Windows)
-      if: runner.os == 'Windows'
+    # Every product resolves its own vcpkg manifest, so the toolchain is needed
+    # on every platform, not only Windows (ADR 0010, ADR 0011).
+    - name: Setup vcpkg
       continue-on-error: true
       uses: lukka/run-vcpkg@v11
       with:
@@ -92,28 +98,30 @@ jobs:
 
     - name: Configure CMake
       id: cmake-configure
-      run: cmake --preset ${{ matrix.preset }}
+      run: cmake --preset ninja
       env:
         VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        CC: ${{ matrix.cc }}
+        CXX: ${{ matrix.cxx }}
       continue-on-error: true
 
     - name: Build (Debug)
       if: steps.cmake-configure.outcome == 'success'
-      run: cmake --build build --config Debug --parallel
+      run: cmake --build --preset debug --parallel
 
     - name: Build (Release)
       if: steps.cmake-configure.outcome == 'success'
-      run: cmake --build build --config Release --parallel
+      run: cmake --build --preset release --parallel
 
     - name: Test (Release)
       if: steps.cmake-configure.outcome == 'success'
-      run: ctest --test-dir build --build-config Release --output-on-failure --parallel
+      run: ctest --preset test-release --parallel
 
     - name: Report missing dependencies
       if: steps.cmake-configure.outcome == 'failure'
       run: |
-        echo "::warning::CMake configuration failed. This is expected if external dependencies (ChromiumBase, promise-hpp, Net) are not available."
-        echo "See CLAUDE.md for information about required dependencies."
+        echo "::warning::CMake configuration failed. This is expected while the `net` product is not checked out beside this repository."
+        echo "See CLAUDE.md and build-support/README.md for what a standalone core build needs."
 
     - name: Upload test results
       if: failure() && steps.cmake-configure.outcome == 'success'
@@ -121,8 +129,8 @@ jobs:
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.compiler }}
         path: |
-          build/Testing/
-          build/**/*test*.log
+          build/ninja/Testing/
+          build/ninja/**/*test*.log
         retention-days: 7
 
   # Static analysis job (Linux only) - primary CI check
