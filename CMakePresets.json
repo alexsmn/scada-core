@@ -7,98 +7,14 @@
   },
   "configurePresets": [
     {
-      "name": "base",
-      "hidden": true,
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "installDir": "${sourceDir}/install/${presetName}",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "23",
-        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_CXX_CPPCHECK": "cppcheck;--enable=warning,performance,portability;--inline-suppr;--suppressions-list=${sourceDir}/cppcheck-suppressions.txt;--error-exitcode=1"
-      }
-    },
-    {
       "name": "ninja",
       "displayName": "Ninja Multi-Config",
-      "inherits": "base",
+      "description": "Self-contained per ADR 0011: no shared preset file, no include. Machine-specific settings live in .scada-local.cmake beside build-support/; VCPKG_ROOT stays an environment variable because the toolchain runs before any of our CMake.",
       "generator": "Ninja Multi-Config",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/ninja",
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
-        "BUILD_NUMBER": "0",
-        "OUTPUT_DIR": "build/${presetName}/bin",
-        "CMAKE_MODULE_PATH": "${sourceDir};$env{THIRD_PARTY}/net;$env{THIRD_PARTY}/chromebase;$env{THIRD_PARTY}/iec60870;$env{THIRD_PARTY}/iec61850pp;$env{THIRD_PARTY}/sql;$env{THIRD_PARTY}/OPCFoundation"
-      }
-    },
-    {
-      "name": "ninja-vcpkg",
-      "displayName": "Ninja Multi-Config (vcpkg)",
-      "description": "Build with Ninja Multi-Config and vcpkg toolchain",
-      "inherits": "ninja",
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-      }
-    },
-    {
-      "name": "linux-gcc",
-      "displayName": "Linux GCC",
-      "description": "Build on Linux with GCC",
-      "inherits": "base",
-      "generator": "Ninja Multi-Config",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "linux-clang",
-      "displayName": "Linux Clang",
-      "description": "Build on Linux with Clang",
-      "inherits": "base",
-      "generator": "Ninja Multi-Config",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      }
-    },
-    {
-      "name": "windows-msvc",
-      "displayName": "Windows MSVC",
-      "description": "Build on Windows with Visual Studio",
-      "inherits": "base",
-      "generator": "Ninja Multi-Config",
-      "binaryDir": "${sourceDir}/build",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      }
-    },
-    {
-      "name": "windows-msvc-vcpkg",
-      "displayName": "Windows MSVC (vcpkg)",
-      "description": "Build on Windows with Visual Studio and vcpkg",
-      "inherits": "windows-msvc",
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "VCPKG_TARGET_TRIPLET": "x64-windows"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     }
   ],
@@ -124,7 +40,7 @@
   ],
   "testPresets": [
     {
-      "name": "debug",
+      "name": "test-debug",
       "displayName": "Debug Tests",
       "configurePreset": "ninja",
       "configuration": "Debug",
@@ -133,7 +49,7 @@
       }
     },
     {
-      "name": "release",
+      "name": "test-release",
       "displayName": "Release Tests",
       "configurePreset": "ninja",
       "configuration": "Release",

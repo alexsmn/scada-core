@@ -16,19 +16,29 @@ This document provides comprehensive guidance for AI assistants working with the
 
 ### Building with CMake Presets (Preferred)
 
+core builds standalone — it does not need the superproject. It consumes one
+other product, `net`, which must be checked out beside it (as `../net` in a
+standalone checkout, or as `third_party/net` in the monorepo, where the
+resolver finds it). Set `VCPKG_ROOT` in the environment; everything else
+machine-specific goes in `.scada-local.cmake` beside `build-support/`. See
+`build-support/README.md`.
+
 ```bash
 # Configure
-cmake --preset ninja-multi
+cmake --preset ninja
 
 # Build (all targets)
-cmake --build --preset relwithdebinfo
+cmake --build --preset release        # or: debug, relwithdebinfo
 
-# Build only core library
-cmake --build build --config RelWithDebInfo --target core
+# Build only the core library
+cmake --build --preset release --target scada_core
 
 # Run tests
-ctest --preset release
+ctest --preset test-release           # or: test-debug
 ```
+
+Output lands in this product's own `build/ninja/bin/<config>/`. There is no
+shared `bin/` across products.
 
 ### Building (Manual)
 
@@ -218,13 +228,13 @@ scada_module_unittests(module_name source_files)
 ### Running Tests
 ```bash
 # All tests
-ctest --test-dir build
+ctest --preset test-release
 
 # Specific module
-ctest --test-dir build -R scada_core_unittests
+ctest --preset test-release -R scada_core_unittests
 
-# Verbose output
-ctest --test-dir build --output-on-failure
+# Verbose output is already on for failures; for everything:
+ctest --preset test-release --verbose
 ```
 
 ### Test Utilities
