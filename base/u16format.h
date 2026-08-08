@@ -59,6 +59,19 @@ auto to_wide_arg(T&& arg) {
 }  // namespace u16format_detail
 
 template <typename... Args>
+std::u16string u16format(std::wstring_view fmt, Args&&... args);
+
+// Formats with a `char16_t` format string. Exists for translated formats: a
+// translator returns `std::u16string`, so a UI string carrying a placeholder
+// ("Events: {}") cannot reach the `wstring_view` overload without a conversion
+// at every call site.
+template <typename... Args>
+std::u16string u16format(std::u16string_view fmt, Args&&... args) {
+  const std::wstring wide_fmt = u16format_detail::ToWide(fmt);
+  return u16format(std::wstring_view{wide_fmt}, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
 std::u16string u16format(std::wstring_view fmt, Args&&... args) {
   // Store converted args in a tuple so they are lvalues for make_wformat_args.
   auto converted = std::make_tuple(
