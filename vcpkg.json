@@ -24,7 +24,6 @@
     "boost-system",
     "boost-uuid",
     "gtest",
-    "nspr",
     {
       "name": "opentelemetry-cpp",
       "features": [
