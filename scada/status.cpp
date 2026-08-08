@@ -6,7 +6,7 @@
 // reverse order trips an AppleClang 21 declaration-merging bug in libc++.
 import scada.base;
 #else
-#include "base/utf_convert.h"
+#include "base/ui_text.h"
 #endif
 
 namespace scada {
@@ -24,117 +24,120 @@ namespace {
 
 struct Entry {
   scada::StatusCode code;
+  // The enum spelling, for logs and wire diagnostics. Never translated.
   const char* error_string;
-  const wchar_t* localized_error_string;
+  // The operator-facing sentence, in English. `ToString16` runs it through
+  // `TranslateUiText`, so the Russian lives in the client's `client_ru.ts`
+  // catalog keyed by this exact string — change one and you must change the
+  // other, or the client silently falls back to English.
+  const char* display_string;
 };
 
 const Entry kEntries[] = {
-    {scada::StatusCode::Good, "Good", L"Операция выполнена успешно"},
-    {scada::StatusCode::Good_Pending, "Good_Pending", L"Операция выполняется"},
+    {scada::StatusCode::Good, "Good", "Operation completed successfully"},
+    {scada::StatusCode::Good_Pending, "Good_Pending", "Operation in progress"},
     {scada::StatusCode::Uncertain_StateWasNotChanged,
-     "Uncertain_StateWasNotChanged", L"Блокировка не была изменена"},
-    {scada::StatusCode::Bad, "Bad", L"Ошибка"},
+     "Uncertain_StateWasNotChanged", "The lock was not changed"},
+    {scada::StatusCode::Bad, "Bad", "Error"},
     {scada::StatusCode::Bad_WrongLoginCredentials, "Bad_WrongLoginCredentials",
-     L"Неверное имя пользователя или пароль"},
+     "Wrong user name or password"},
     {scada::StatusCode::Bad_UserIsAlreadyLoggedOn, "Bad_UserIsAlreadyLoggedOn",
-     L"Сессия данного пользователя уже установлена"},
+     "A session for this user is already open"},
     {scada::StatusCode::Bad_UnsupportedProtocolVersion,
-     "Bad_UnsupportedProtocolVersion", L"Версия протокола не поддерживается"},
+     "Bad_UnsupportedProtocolVersion", "Protocol version is not supported"},
     {scada::StatusCode::Bad_ObjectIsBusy, "Bad_ObjectIsBusy",
-     L"В данный момент выполняется другая команда"},
+     "Another command is already running"},
     {scada::StatusCode::Bad_WrongNodeId, "Bad_WrongNodeId",
-     L"Неправильный идентификатор узла"},
+     "Wrong node identifier"},
     {scada::StatusCode::Bad_WrongDeviceId, "Bad_WrongDeviceId",
-     L"Неправильный идентификатор устройства"},
-    {scada::StatusCode::Bad_Disconnected, "Bad_Disconnected",
-     L"Соединение не установлено"},
+     "Wrong device identifier"},
+    {scada::StatusCode::Bad_Disconnected, "Bad_Disconnected", "Not connected"},
     {scada::StatusCode::Bad_SessionForcedLogoff, "Bad_SessionForcedLogoff",
-     L"Сессия разорвана из-за повторного подключения данного пользователя"},
+     "Session closed because this user connected again"},
     {scada::StatusCode::Bad_Timeout, "Bad_Timeout",
-     L"Операция прервана по истечении времени ожидания"},
+     "Operation aborted after the wait timed out"},
     {scada::StatusCode::Bad_CantDeleteDependentNode,
      "Bad_CantDeleteDependentNode",
-     L"Невозможно удалить объект из-за наличия зависимых объектов"},
+     "Cannot delete the object because dependent objects exist"},
     {scada::StatusCode::Bad_ServerWasShutDown, "Bad_ServerWasShutDown",
-     L"Сессия разорвана из-за остановки сервера"},
+     "Session closed because the server stopped"},
     {scada::StatusCode::Bad_WrongMethodId, "Bad_WrongMethodId",
-     L"Команда не поддерживается данным объектом"},
+     "The command is not supported by this object"},
     {scada::StatusCode::Bad_CantDeleteOwnUser, "Bad_CantDeleteOwnUser",
-     L"Невозможно удалить пользователя из открытой им сессии"},
+     "Cannot delete a user from a session that user opened"},
     {scada::StatusCode::Bad_DuplicateNodeId, "Bad_DuplicateNodeId",
-     L"Объект с таким идентификатором уже существует"},
+     "An object with this identifier already exists"},
     {scada::StatusCode::Bad_UnsupportedFileVersion,
-     "Bad_UnsupportedFileVersion", L"Версия файла не поддерживается"},
+     "Bad_UnsupportedFileVersion", "File version is not supported"},
     {scada::StatusCode::Bad_WrongTypeId, "Bad_WrongTypeId",
-     L"Неправильный тип объекта"},
+     "Wrong object type"},
     {scada::StatusCode::Bad_WrongParentId, "Bad_WrongParentId",
-     L"Неправильный идентификатор родительского объекта"},
+     "Wrong parent object identifier"},
     {scada::StatusCode::Bad_SessionIsLoggedOff, "Bad_SessionIsLoggedOff",
-     L"Авторизация не выполнена"},
+     "Not logged on"},
     {scada::StatusCode::Bad_WrongSubscriptionId, "Bad_WrongSubscriptionId",
-     L"Неправильный номер подписки"},
-    {scada::StatusCode::Bad_WrongIndex, "Bad_WrongIndex",
-     L"Неправильный индекс"},
+     "Wrong subscription number"},
+    {scada::StatusCode::Bad_WrongIndex, "Bad_WrongIndex", "Wrong index"},
     {scada::StatusCode::Bad_Iec60870UnknownType, "Bad_IecUnknownType",
-     L"Неправильный тип ASDU протокола МЭК-60870"},
+     "Wrong IEC 60870-5 ASDU type"},
     {scada::StatusCode::Bad_Iec60870UnknownCot, "Bad_IecUnknownCot",
-     L"Неправильная причина передачи протокола МЭК-60870"},
+     "Wrong IEC 60870-5 cause of transmission"},
     {scada::StatusCode::Bad_Iec60870UnknownDevice, "Bad_IecUnknownDevice",
-     L"Неправильный адрес устройства протокола МЭК-60870"},
+     "Wrong IEC 60870-5 device address"},
     {scada::StatusCode::Bad_Iec60870UnknownAddress, "Bad_IecUnknownAddress",
-     L"Неправильный адрес объекта протокола МЭК-60870"},
+     "Wrong IEC 60870-5 information object address"},
     {scada::StatusCode::Bad_Iec60870UnknownError, "Bad_IecUnknownError",
-     L"Ошибка протокола МЭК-60870"},
+     "IEC 60870-5 protocol error"},
     {scada::StatusCode::Bad_WrongCallArguments, "Bad_WrongCallArguments",
-     L"Неправильные аргументы команды"},
+     "Wrong command arguments"},
     {scada::StatusCode::Bad_CantParseString, "Bad_CantParseString",
-     L"Невозможно преобразовать строку в значение данного типа"},
+     "Cannot convert the string to a value of this type"},
     {scada::StatusCode::Bad_TooLongString, "Bad_TooLongString",
-     L"Слишком длинная строка"},
+     "String is too long"},
     {scada::StatusCode::Bad_WrongPropertyId, "Bad_WrongPropertyId",
-     L"Неправильный атрибут объекта"},
+     "Wrong object attribute"},
     {scada::StatusCode::Bad_WrongReferenceId, "Bad_WrongReferenceId",
-     L"Неправильный тип ссылки"},
+     "Wrong reference type"},
     {scada::StatusCode::Bad_WrongNodeClass, "Bad_WrongNodeClass",
-     L"Неправильный класс узла"},
+     "Wrong node class"},
     {scada::StatusCode::Bad_Iec61850Error, "Bad_Iec61850Error",
-     L"Ошибка протокола МЭК-61850"},
-    {scada::StatusCode::Bad_NothingToDo, "Bad_NothingToDo", L"Запрос пуст"},
+     "IEC 61850 protocol error"},
+    {scada::StatusCode::Bad_NothingToDo, "Bad_NothingToDo",
+     "The request is empty"},
     {scada::StatusCode::Bad_BrowseNameInvalid, "Bad_BrowseNameInvalid",
-     L"Имя не найдено"},
+     "Name not found"},
     {scada::StatusCode::Bad_MonitoredItemIdInvalid,
-     "Bad_MonitoredItemIdInvalid", L"Неправильный номер элемента мониторинга"},
+     "Bad_MonitoredItemIdInvalid", "Wrong monitored item number"},
     {scada::StatusCode::Bad_MessageNotAvailable, "Bad_MessageNotAvailable",
-     L"Запрошенное сообщение больше недоступно"},
+     "The requested message is no longer available"},
     {scada::StatusCode::Bad_ApplicationSignatureInvalid,
-     "Bad_ApplicationSignatureInvalid", L"Неверная подпись приложения клиента"},
+     "Bad_ApplicationSignatureInvalid", "Invalid client application signature"},
     {scada::StatusCode::Bad_TooManyOperations, "Bad_TooManyOperations",
-     L"Слишком много операций в запросе"},
+     "Too many operations in the request"},
     {scada::StatusCode::Bad_TooManyMonitoredItems, "Bad_TooManyMonitoredItems",
-     L"Слишком много элементов мониторинга в запросе"},
+     "Too many monitored items in the request"},
     {scada::StatusCode::Bad_SequenceNumberUnknown, "Bad_SequenceNumberUnknown",
-     L"Неизвестный порядковый номер сообщения"},
+     "Unknown message sequence number"},
     {scada::StatusCode::Bad_NoContinuationPoints, "Bad_NoContinuationPoints",
-     L"Исчерпан лимит точек продолжения просмотра"},
+     "The browse continuation point limit is exhausted"},
     {scada::StatusCode::Bad_TimestampsToReturnInvalid,
-     "Bad_TimestampsToReturnInvalid",
-     L"Неправильное значение TimestampsToReturn"},
+     "Bad_TimestampsToReturnInvalid", "Wrong TimestampsToReturn value"},
     {scada::StatusCode::Bad_ViewIdUnknown, "Bad_ViewIdUnknown",
-     L"Неизвестный идентификатор представления"},
+     "Unknown view identifier"},
     {scada::StatusCode::Bad_HistoryOperationInvalid,
-     "Bad_HistoryOperationInvalid", L"Недопустимые параметры запроса истории"},
+     "Bad_HistoryOperationInvalid", "Invalid history request parameters"},
     {scada::StatusCode::Bad_NoSubscription, "Bad_NoSubscription",
-     L"Для сессии нет подписок"},
+     "The session has no subscriptions"},
     {scada::StatusCode::Bad_UserAccessDenied, "Bad_UserAccessDenied",
-     L"Недостаточно прав для выполнения операции"},
+     "Not enough rights to perform the operation"},
     {scada::StatusCode::Bad_NotSupported, "Bad_NotSupported",
-     L"Операция не поддерживается"},
+     "Operation is not supported"},
     {scada::StatusCode::Bad_LicenseExpired, "Bad_LicenseExpired",
-     L"Срок действия лицензии истёк"},
+     "The license has expired"},
     {scada::StatusCode::Bad_WaitingForInitialData, "Bad_WaitingForInitialData",
-     L"Значение от источника данных ещё не получено"},
+     "No value received from the data source yet"},
     {scada::StatusCode::Bad_OutOfRange, "Bad_OutOfRange",
-     L"Значение недопустимо и не будет сохранено"},
+     "The value is out of range and will not be stored"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
@@ -160,9 +163,10 @@ std::string ToString(scada::StatusCode status_code) {
 
 std::u16string ToString16(scada::StatusCode status_code) {
   if (auto* entry = FindEntry(status_code))
-    return UtfConvert<char16_t>(entry->localized_error_string);
+    return scada::TranslateUiText(entry->display_string);
 
-  return IsGood(status_code) ? u"Операция выполнена успешно" : u"Ошибка";
+  return scada::TranslateUiText(
+      IsGood(status_code) ? "Operation completed successfully" : "Error");
 }
 
 std::string ToString(const scada::Status& status) {

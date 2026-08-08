@@ -58,7 +58,7 @@ class Variant {
                             std::vector<LocalizedText>,
                             std::vector<NodeId>,
                             std::vector<ExpandedNodeId>,
-                            std::vector<ExtensionObject> >;
+                            std::vector<ExtensionObject>>;
 
  public:
   enum Type {
@@ -196,8 +196,14 @@ class Variant {
 
   void Dump(std::ostream& stream) const;
 
-  static const std::u16string_view kTrueString;
-  static const std::u16string_view kFalseString;
+  // The operator-facing spellings of a boolean, in the display locale. These
+  // are functions rather than constants because they go through
+  // `TranslateUiText`: a namespace-scope constant would be frozen at load
+  // time, before the client installs its catalog. `common/format.h`'s
+  // `StringToValue` parses them back, and also accepts the spellings older
+  // exports carry — see the note there.
+  static std::u16string TrueLabel();
+  static std::u16string FalseLabel();
 
  private:
   template <class T>

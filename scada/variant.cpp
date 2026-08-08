@@ -4,6 +4,7 @@
 #include "base/debug_util.h"
 #include "base/format.h"
 #include "base/format_time.h"
+#include "base/ui_text.h"
 #include "base/utf_convert.h"
 #include "scada/standard_node_ids.h"
 
@@ -70,8 +71,15 @@ static_assert(std::size(kBuiltInDataTypeNodeIds) ==
 
 }  // namespace
 
-const std::u16string_view Variant::kTrueString = u"Да";
-const std::u16string_view Variant::kFalseString = u"Нет";
+// static
+std::u16string Variant::TrueLabel() {
+  return TranslateUiText("Yes");
+}
+
+// static
+std::u16string Variant::FalseLabel() {
+  return TranslateUiText("No");
+}
 
 void Variant::clear() {
   data_ = std::monostate{};
@@ -222,8 +230,8 @@ struct FormatHelperT<String, bool> {
 template <>
 struct FormatHelperT<LocalizedText, bool> {
   static inline LocalizedText Format(const bool& value) {
-    return value ? LocalizedText{Variant::kTrueString}
-                 : LocalizedText{Variant::kFalseString};
+    return value ? LocalizedText{Variant::TrueLabel()}
+                 : LocalizedText{Variant::FalseLabel()};
   }
 };
 

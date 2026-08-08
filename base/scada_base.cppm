@@ -88,6 +88,7 @@ module;
 #include "base/timed_cache.h"
 #include "base/timer.h"
 #include "base/u16format.h"
+#include "base/ui_text.h"
 #include "base/uri.h"
 #include "base/utf_convert.h"
 #include "base/value_util.h"
@@ -217,6 +218,11 @@ export namespace scada {
 // time/time.h
 using scada::Duration;
 using scada::Time;
+
+// ui_text.h
+using scada::SetUiTextTranslator;
+using scada::TranslateUiText;
+using scada::UiTextTranslator;
 
 }  // namespace scada
 
