@@ -53,8 +53,14 @@ function(scada_module_unittests MODULE_NAME)
                          PROPERTIES TIMEOUT 60)
 
     target_link_libraries(${MODULE_NAME}_unittests PRIVATE ${MODULE_NAME} base_unittest)
+    # PROJECT_SOURCE_DIR, not CMAKE_SOURCE_DIR: this macro runs inside whichever
+    # product calls it, and CMAKE_SOURCE_DIR is the TOP-LEVEL project — the
+    # consumer's root whenever a product is spliced into another one (ADR 0011).
+    # A framework module's tests were getting the tier's root on their include
+    # path. Everything they actually include arrives through the linked targets'
+    # PUBLIC include directories.
     target_include_directories(${MODULE_NAME}_unittests PRIVATE
-      ${CMAKE_SOURCE_DIR})
+      ${PROJECT_SOURCE_DIR})
 
     if(MSVC)
       # Debug and RelWithDebInfo already use embedded object debug info via
@@ -91,8 +97,9 @@ function(scada_module_benchmarks MODULE_NAME)
     add_executable(${MODULE_NAME}_benchmarks EXCLUDE_FROM_ALL)
     target_link_libraries(${MODULE_NAME}_benchmarks PRIVATE
       ${MODULE_NAME} benchmark::benchmark benchmark::benchmark_main)
+    # Product-rooted, for the reason given in scada_module_unittests above.
     target_include_directories(${MODULE_NAME}_benchmarks PRIVATE
-      ${CMAKE_SOURCE_DIR})
+      ${PROJECT_SOURCE_DIR})
 
     if(MSVC)
       # Match scada_module_unittests: embedded object debug info via the preset,
