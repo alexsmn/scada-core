@@ -47,8 +47,15 @@ function(scada_module_unittests MODULE_NAME)
 
     include(GoogleTest)
     # PRE_TEST defers test discovery to ctest runtime, so individual tests
-    # are found even when only specific targets are built (without PRE_TEST,
-    # unbuilt executables get _NOT_BUILT placeholders at configure time).
+    # are found even when only specific targets are built -- POST_BUILD can
+    # only discover what a build actually produced. It does NOT avoid the
+    # _NOT_BUILT placeholder: CMake's GoogleTest.cmake writes the same
+    # `add_test(<target>_NOT_BUILT ...)` else branch in both modes, so an
+    # executable that was never built still registers a test whose command
+    # does not exist. Only where the binary is absent by design does that
+    # matter -- a consumer that splices this product in for its sources and
+    # builds none of its tests -- and it is the consumer's to drop, since the
+    # registration is correct for anyone who does build them.
     gtest_discover_tests(${MODULE_NAME}_unittests DISCOVERY_MODE PRE_TEST
                          PROPERTIES TIMEOUT 60)
 
