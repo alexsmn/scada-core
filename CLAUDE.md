@@ -282,10 +282,17 @@ auto value = co_await node.read_value();
 
 ## CI/CD
 
-GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`):
-- Triggers on push/PR to `release/2.5`
-- Matrix build: Windows (MSVC), Linux (GCC, Clang)
-- Steps: Configure, Build, Test
+GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`), which
+runs on the published export at `github.com/alexsmn/scada-core`:
+- Triggers on push/PR to `main` and `release/**`
+- `analyze` (Linux) is the only job that gates. It runs the same cppcheck
+  configuration the build runs — `--enable=warning,performance,portability`
+  against `cppcheck-suppressions.txt` — and fails on `error:` findings;
+  warnings are uploaded as an artifact but do not fail it.
+- `build` is a Windows (MSVC) / Linux (GCC, Clang) matrix that **cannot
+  currently build anything**: a standalone core configure needs the `net`
+  product as a sibling checkout, and `net` is not published, so the configure
+  step carries `continue-on-error` and the job reports a warning instead.
 
 ## Chromium-Base Dependencies
 

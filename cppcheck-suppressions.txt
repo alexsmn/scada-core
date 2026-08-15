@@ -9,12 +9,16 @@ unknownMacro
 // cppcheck branch analysis limit (informational, not a real error)
 normalCheckLevelMaxBranches
 
+// Paths are written with forward slashes only. cppcheck normalizes '\' to '/'
+// before matching, on every platform, so a backslash twin of an entry is not a
+// Windows variant of it -- it is the same suppression twice, and a duplicate is
+// a hard error ("suppression '...' already exists") that aborts the whole run
+// before a single file is checked.
+
 // False positive: browse_name is moved into aggregate init, not accessed after move
 accessMoved:*scada/node.cpp
-accessMoved:*scada\node.cpp
 
 passedByValue:*scada/node.cpp
-passedByValue:*scada\node.cpp
 
 // GoogleTest macros inside namespaces
 syntaxError
@@ -23,11 +27,8 @@ syntaxError
 preprocessorErrorDirective
 
 // Exclude external/third-party directories
-*:*\third_party\*
 *:*/third_party/*
-*:*\vcpkg\*
 *:*/vcpkg/*
 
 // Exclude build directory (generated files)
-*:*\build\*
 *:*/build/*

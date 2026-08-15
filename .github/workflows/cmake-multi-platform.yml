@@ -133,7 +133,17 @@ jobs:
           build/ninja/**/*test*.log
         retention-days: 7
 
-  # Static analysis job (Linux only) - primary CI check
+  # Static analysis (Linux only) — the only job here that can actually gate.
+  #
+  # It runs the SAME cppcheck configuration the build runs, and reads the same
+  # suppressions file: `scada_configure_cppcheck()` in
+  # build-support/ScadaProductBase.cmake picks `<product>/cppcheck-suppressions.txt`,
+  # so a finding suppressed for a local build is suppressed here too. Before
+  # 2026-08-15 this job hand-rolled a different flag set and passed no
+  # suppressions file at all, which made it rediscover 58 GoogleTest
+  # false positives (`syntaxError`, already suppressed in that file) and fail on
+  # every push since the repo was first published. It also analysed `model/`,
+  # which moved to common/model/ long ago.
   analyze:
     name: Static Analysis
     runs-on: ubuntu-latest
@@ -149,23 +159,20 @@ jobs:
 
     - name: Run cppcheck
       run: |
-        cppcheck --enable=warning,performance \
-          --suppress=missingIncludeSystem \
-          --suppress=missingInclude \
-          --suppress=unmatchedSuppression \
-          --suppress=unusedFunction \
-          --suppress=useStlAlgorithm \
+        cppcheck --enable=warning,performance,portability \
+          --suppressions-list=cppcheck-suppressions.txt \
           --inline-suppr \
           --std=c++20 \
-          -I base -I scada -I metrics -I model -I remote \
+          -I base -I scada -I metrics -I remote \
           --output-file=cppcheck-report.txt \
-          base/ scada/ metrics/ model/ remote/ \
+          base/ scada/ metrics/ remote/ \
           2>&1 || true
 
-        # Show report
         cat cppcheck-report.txt
 
-        # Fail only on errors (not style/performance warnings)
+        # Errors gate; warnings are reported but do not fail the job. cppcheck's
+        # own --error-exitcode cannot express that split — it fires on any
+        # finding — so the severity is read back out of the report.
         if grep -q "error:" cppcheck-report.txt; then
           echo "::error::cppcheck found errors"
           exit 1
