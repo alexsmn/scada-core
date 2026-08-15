@@ -90,6 +90,12 @@ class SessionService {
 
   virtual Awaitable<void> Disconnect() = 0;
 
+  // Whether a session is established. When `ping_delay` is non-null the
+  // implementation must assign it before returning `true` — callers read it
+  // unconditionally, and `scada::Duration` is a `std::chrono` duration whose
+  // default constructor leaves the representation uninitialized, so leaving it
+  // alone is an uninitialized read rather than a zero. Implementations with no
+  // real round trip to measure report `Duration::zero()`.
   virtual bool IsConnected(scada::Duration* ping_delay = nullptr) const = 0;
 
   virtual NodeId GetUserId() const = 0;
