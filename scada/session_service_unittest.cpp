@@ -19,7 +19,9 @@ class TestSessionService : public SessionService {
   }
   Awaitable<void> Reconnect() override { co_return; }
   Awaitable<void> Disconnect() override { co_return; }
-  bool IsConnected(scada::Duration* /*ping_delay*/) const override {
+  bool IsConnected(scada::Duration* ping_delay) const override {
+    if (ping_delay)
+      *ping_delay = scada::Duration::zero();
     return true;
   }
   NodeId GetUserId() const override { return {}; }
@@ -97,6 +99,19 @@ TEST(SessionServiceTest, ObserverMayOnlyRead) {
   EXPECT_FALSE(session.HasPermission(Permission::kWrite));
   EXPECT_FALSE(session.HasPermission(Permission::kCall));
   EXPECT_FALSE(session.HasPermission(Permission::kAddNode));
+}
+
+TEST(SessionServiceTest, ConnectedSessionsAssignThePingDelayOutParameter) {
+  // `IsConnected` must assign `ping_delay` before returning true: callers read
+  // it unconditionally, and `Duration`'s default constructor leaves the
+  // representation uninitialized, so a fake that skips the write hands back
+  // whatever the caller's stack held. A test double is where that goes
+  // unnoticed longest, so pin it on the one this suite owns.
+  const TestSessionService session{0};
+
+  Duration ping_delay = Duration::max();
+  EXPECT_TRUE(session.IsConnected(&ping_delay));
+  EXPECT_EQ(ping_delay, Duration::zero());
 }
 
 TEST(SessionServiceTest, SessionsAreAuthenticatedUnlessTheySayOtherwise) {
