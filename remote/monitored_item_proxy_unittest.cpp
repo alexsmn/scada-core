@@ -34,8 +34,11 @@ class MonitoredItemProxyTest : public Test {
   MessageSender::ResponseHandler response_handler_;
 
   inline static const scada::NodeId kNodeId{12, 34};
-  static const int kSubscriptionId = 567;
-  static const MonitoredItemId kMonitoredItemId = 11122;
+  // `inline`, like every other constant here: the state assertions below bind
+  // these by reference, which odr-uses them and needs a definition. Without it
+  // the Release build folds the value and links, and only Debug fails.
+  inline static const int kSubscriptionId = 567;
+  inline static const MonitoredItemId kMonitoredItemId = 11122;
   inline static const scada::Time kTimeStamp = scada::Now();
   inline static const scada::DataValue kDataValue{123,
                                                   {},
