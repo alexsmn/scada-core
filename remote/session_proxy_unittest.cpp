@@ -9,6 +9,7 @@
 #include "remote/session_stub.h"
 #include "scada/authentication_adapters.h"
 #include "scada/co_result.h"
+#include "scada/session_debugger.h"
 
 #include <boost/asio/this_coro.hpp>
 #include <boost/signals2/connection.hpp>
@@ -31,6 +32,8 @@ class SessionProxyTest : public Test {
   void SetUp() override { CreateSessionManager(); }
 
   void TearDown() override {
+    session_opened_connection_.disconnect();
+    session_closed_connection_.disconnect();
     session_manager_.reset();
     asio_env_.Poll();
   }
@@ -56,8 +59,18 @@ class SessionProxyTest : public Test {
             .endpoints_ = {transport::TransportString{
                 network_env_.server_transport_string}}});
 
+    session_opened_connection_ = session_manager_->SubscribeSessionOpened(
+        [this](SessionStub&) { ++sessions_opened_; });
+    session_closed_connection_ = session_manager_->SubscribeSessionClosed(
+        [this](SessionStub&) { ++sessions_closed_; });
+
     asio_env_.Wait(session_manager_->InitAsync());
   }
+
+  // Logical sessions the manager currently holds. Several cases below wait for
+  // it to react to a connection going away, and this is the observable that
+  // lets those waits end when it has rather than after a guessed span.
+  int live_sessions() const { return sessions_opened_ - sessions_closed_; }
 
   // Opens a raw framed connection, sends one CreateSession, and closes it
   // without waiting for the reply — a client killed with its logon in flight.
@@ -112,7 +125,12 @@ class SessionProxyTest : public Test {
   // in which a client can go away while its logon is still in flight.
   std::optional<scada::base::AsyncCompletion> auth_gate_;
   int authentications_started_ = 0;
+  int sessions_opened_ = 0;
+  int sessions_closed_ = 0;
   std::unique_ptr<RemoteSessionManager> session_manager_;
+  // Declared after the manager so they are torn down before it.
+  boost::signals2::scoped_connection session_opened_connection_;
+  boost::signals2::scoped_connection session_closed_connection_;
 
   inline static const scada::LocalizedText kUserName{u"username"};
   inline static const scada::LocalizedText kPassword{u"password"};
@@ -135,12 +153,35 @@ TEST_F(SessionProxyTest, DestroyConnectedSessionClosesChildChannels) {
     SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                           .transport_factory_ = asio_env_.transport_factory}};
 
+    // Watch the client's own request stream, so the wait below ends when the
+    // subscription channel is genuinely open instead of after a guessed span.
+    // The server's reply is the signal, not the outbound request: responses
+    // are titled by ResponseTitle() and are the only events that reach
+    // Succeeded, so this is "CreateSubscriptionResult" rather than
+    // "CreateSubscription", which is the Running request event.
+    bool subscription_opened = false;
+    boost::signals2::scoped_connection request_events =
+        session.GetSessionDebugger()->SubscribeRequestEvents(
+            [&](const scada::SessionDebugger::RequestEvent& event) {
+              if (event.title == "CreateSubscriptionResult" &&
+                  event.phase ==
+                      scada::SessionDebugger::RequestPhase::Succeeded) {
+                subscription_opened = true;
+              }
+            });
+
     asio_env_.Wait(session.Connect(GetConnectParams()));
     EXPECT_TRUE(session.IsConnected(nullptr));
 
     // Let the subscription proxy finish opening so destruction covers the
-    // same child-channel state used by a live client shutdown.
-    asio_env_.PumpFor(std::chrono::milliseconds{100});
+    // same child-channel state used by a live client shutdown. RunUntil
+    // rather than DrainUntil: the round trip goes over loopback TCP, so the
+    // response becomes ready through the reactor, which a drain never awaits.
+    ASSERT_TRUE(asio_env_.RunUntil([&] { return subscription_opened; },
+                                   std::chrono::milliseconds{1}))
+        << "the subscription channel never opened, so this case would be "
+           "destroying a session without the child channel it exists to "
+           "cover";
   }
 
   asio_env_.Poll();
@@ -207,9 +248,19 @@ TEST_F(SessionProxyTest, DroppedConnectionDoesNotKeepAccountLoggedOn) {
     SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                           .transport_factory_ = asio_env_.transport_factory}};
     asio_env_.Wait(session.Connect(GetConnectParams()));
+    // Pins that the wait below has something to wait for: a predicate that
+    // already holds would make this case pass without exercising the reclaim.
+    ASSERT_EQ(live_sessions(), 1);
     // Destroyed without Disconnect(): no DeleteSession is ever sent.
   }
-  asio_env_.PumpFor(std::chrono::milliseconds{100});
+  // The manager sees the drop as the connection's read failing, which arrives
+  // through the reactor -- hence RunUntil rather than DrainUntil. Waiting on
+  // the release itself also means this no longer passes by accident if the
+  // reclaim gets slower than a fixed span happened to be.
+  ASSERT_TRUE(asio_env_.RunUntil([this] { return live_sessions() == 0; },
+                                 std::chrono::milliseconds{1}))
+      << "the manager never released the session the dropped connection left "
+         "behind";
 
   SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
@@ -243,19 +294,27 @@ TEST_F(SessionProxyTest, LogonAbandonedDuringAuthDoesNotStrandTheSession) {
   // destroying a proxy with its connect coroutine in flight.
   SendCreateSessionAndDropConnection();
 
-  // Pump until the server is inside authentication, i.e. the request arrived
-  // and the connection is already gone.
-  for (int i = 0; i < 100 && authentications_started_ == 0; ++i) {
-    asio_env_.PumpFor(std::chrono::milliseconds{10});
-  }
-  ASSERT_EQ(authentications_started_, 1)
+  // Run until the server is inside authentication, i.e. the request arrived
+  // and the connection is already gone. This was already a predicate loop;
+  // RunUntil is the same thing with a 1 ms rather than a 10 ms granularity.
+  ASSERT_TRUE(
+      asio_env_.RunUntil([this] { return authentications_started_ == 1; },
+                         std::chrono::milliseconds{1}))
       << "authentication never started; the gate did not open the window "
          "this test needs";
 
   // Now let authentication finish, into a connection that is already gone.
+  // Same guard as above: nothing may have been released yet, or the wait
+  // below would be satisfied before the reclaim it is watching for.
+  ASSERT_EQ(sessions_closed_, 0);
   auth_gate_->Complete();
   auth_gate_.reset();
-  asio_env_.PumpFor(std::chrono::milliseconds{200});
+  // The stranded session is created and then released, so wait for the
+  // release rather than for a span long enough to have contained it.
+  ASSERT_TRUE(asio_env_.RunUntil([this] { return sessions_closed_ >= 1; },
+                                 std::chrono::milliseconds{1}))
+      << "the session created for the already-closed connection was never "
+         "released";
 
   SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
@@ -283,24 +342,26 @@ TEST_F(SessionProxyTest, LiveSessionStillRefusesASecondLogon) {
 }
 
 // Regression: both read loops (SessionProxy::Connect here, ServerConnection on
-// the other end) used to resize their receive buffer to protocol::kMaxMessageSize
-// before every read and back down to the message length after it, so each
-// message cost a 16 MiB value-initialization plus a 16 MiB destroy. On the Qt
-// client that runs on the thread which also drives the UI and every coroutine
-// continuation, and it pinned that thread at 100% CPU: the loop could not keep
-// up with a steady notification stream, the backlog grew without bound, and each
-// service response came back later than the last, so lazily-expanding views
-// (the object tree) never finished loading no matter how long they waited.
+// the other end) used to resize their receive buffer to
+// protocol::kMaxMessageSize before every read and back down to the message
+// length after it, so each message cost a 16 MiB value-initialization plus a 16
+// MiB destroy. On the Qt client that runs on the thread which also drives the
+// UI and every coroutine continuation, and it pinned that thread at 100% CPU:
+// the loop could not keep up with a steady notification stream, the backlog
+// grew without bound, and each service response came back later than the last,
+// so lazily-expanding views (the object tree) never finished loading no matter
+// how long they waited.
 //
-// This is a cost, not a behaviour, so the assertion is a time budget. The margin
-// is what keeps it non-fragile rather than the precision — measured on one macOS
-// arm64 Debug build, the two are 159x apart:
+// This is a cost, not a behaviour, so the assertion is a time budget. The
+// margin is what keeps it non-fragile rather than the precision — measured on
+// one macOS arm64 Debug build, the two are 159x apart:
 //
 //   pre-fix   33.5 s   (~168 ms per round trip: two 16 MiB resizes each side)
 //   fixed      0.21 s  (~1 ms per round trip)
 //
 // The 5 s budget therefore sits ~24x above the fixed cost and ~6.7x below the
-// regressed one, so neither a loaded machine nor a faster one flips the verdict.
+// regressed one, so neither a loaded machine nor a faster one flips the
+// verdict.
 TEST_F(SessionProxyTest, RoundTripsDoNotPayPerMessageBufferCost) {
   SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};
