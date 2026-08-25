@@ -20,6 +20,7 @@ set_property(TARGET base_unittest PROPERTY FOLDER ${scada_core_folder})
 
 add_executable(base_awaitable_unittests
   "any_executor_timer_unittest.cpp"
+  "asio_test_environment_unittest.cpp"
   "async_cache_unittest.cpp"
   "async_completion_unittest.cpp"
   "callback_awaitable_unittest.cpp"
@@ -32,6 +33,7 @@ target_link_libraries(base_awaitable_unittests PRIVATE
   scada_base
   GTest::gmock
   Transport::transport
+  scada_net
 )
 
 include(GoogleTest)

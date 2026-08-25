@@ -139,6 +139,12 @@ struct AsioTestEnvironment {
     }
   }
 
+  // Waits out `duration` in full, whatever happens. Prefer DrainUntil or
+  // RunUntil below: both end as soon as the thing being waited for has
+  // happened, so a test pays what the work costs rather than the budget its
+  // author guessed. A fixed span is still right when the wait is on something
+  // no predicate can observe -- a real timer deliberately NOT firing, for
+  // instance -- in which case say so in a comment at the call site.
   void PumpFor(std::chrono::milliseconds duration,
                std::chrono::milliseconds step = std::chrono::milliseconds{1}) {
     const auto deadline = std::chrono::steady_clock::now() + duration;
@@ -146,6 +152,43 @@ struct AsioTestEnvironment {
       RunOneReadyOrBlockFor(step);
     }
     Poll();
+  }
+
+  // Drains ready handlers until `predicate` holds, then drains once more so
+  // the handlers the satisfying one posted also run. Returns false if
+  // `max_iterations` passes go by without it holding, so a caller can assert
+  // the wait actually succeeded instead of proceeding on a silent timeout.
+  //
+  // Only for work that is handler-driven end to end: Poll() never blocks, so
+  // a wait that depends on the reactor -- socket readiness above all -- spins
+  // past it and times out. Use RunUntil for those.
+  template <class Predicate>
+  bool DrainUntil(Predicate&& predicate, int max_iterations = 1000) {
+    for (int i = 0; i < max_iterations && !predicate(); ++i) {
+      Poll();
+    }
+    if (!predicate()) {
+      return false;
+    }
+    Poll();
+    return true;
+  }
+
+  // As DrainUntil, but blocks for up to `step` whenever nothing is ready, so
+  // it also waits on reactor events. This is the general replacement for a
+  // fixed PumpFor whose wait has an observable outcome.
+  template <class Predicate, class Rep, class Period>
+  bool RunUntil(Predicate&& predicate,
+                const std::chrono::duration<Rep, Period>& step,
+                int max_iterations = 1000) {
+    for (int i = 0; i < max_iterations && !predicate(); ++i) {
+      RunOneReadyOrBlockFor(step);
+    }
+    if (!predicate()) {
+      return false;
+    }
+    Poll();
+    return true;
   }
 
   boost::asio::io_context io_context;
