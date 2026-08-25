@@ -1,7 +1,7 @@
 #include "remote/monitored_item_proxy.h"
 
 #include "remote/message_sender_mock.h"
-#include "remote/monitored_item_router_mock.h"
+#include "remote/monitored_item_router_fake.h"
 #include "remote/protocol_utils.h"
 
 using namespace testing;
@@ -26,7 +26,7 @@ class MonitoredItemProxyTest : public Test {
   CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful_DataChangeFailed_CloseChannel();
 
   StrictMock<DataChangeHandler> data_change_handler_;
-  StrictMock<MonitoredItemRouterMock> monitored_item_router_;
+  MonitoredItemRouterFake monitored_item_router_;
   StrictMock<MessageSenderMock> message_sender_;
 
   std::shared_ptr<MonitoredItemProxy> monitored_item_;
@@ -117,13 +117,14 @@ void MonitoredItemProxyTest::
 
   // Create stub successful
 
-  EXPECT_CALL(
-      monitored_item_router_,
-      AddMonitoredItemDataObserver(kMonitoredItemId, Ref(*monitored_item_)));
-
   ASSERT_TRUE(response_handler_);
   response_handler_(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
                                                     kMonitoredItemId));
+
+  EXPECT_THAT(monitored_item_router_.registered_ids(),
+              ElementsAre(kMonitoredItemId));
+  EXPECT_EQ(monitored_item_router_.observer(kMonitoredItemId),
+            monitored_item_.get());
 }
 
 void MonitoredItemProxyTest::
@@ -143,12 +144,11 @@ void MonitoredItemProxyTest::
 
   // Close channel
 
-  EXPECT_CALL(monitored_item_router_,
-              RemoveMonitoredItemDataObserver(kMonitoredItemId));
-
   EXPECT_CALL(data_change_handler_, OnDataChange(IsOnline(false)));
 
   monitored_item_->OnChannelClosed();
+
+  EXPECT_THAT(monitored_item_router_.registered_ids(), IsEmpty());
 }
 
 void MonitoredItemProxyTest::
@@ -157,11 +157,11 @@ void MonitoredItemProxyTest::
 
   // Data change failed
 
-  EXPECT_CALL(monitored_item_router_,
-              RemoveMonitoredItemDataObserver(kMonitoredItemId));
   EXPECT_CALL(data_change_handler_, OnDataChange(kDataValueFailed));
 
   monitored_item_->OnDataChange(kDataValueFailed);
+
+  EXPECT_THAT(monitored_item_router_.registered_ids(), IsEmpty());
 
   // Close channel
 
@@ -185,11 +185,11 @@ TEST_F(
 
   // Delete monitored item
 
-  EXPECT_CALL(monitored_item_router_,
-              RemoveMonitoredItemDataObserver(kMonitoredItemId));
   EXPECT_CALL(message_sender_, Request(IsDeleteMonitoredItemRequest(), _));
 
   monitored_item_.reset();
+
+  EXPECT_THAT(monitored_item_router_.registered_ids(), IsEmpty());
 }
 
 TEST_F(
@@ -246,21 +246,22 @@ TEST_F(
 
   // Create stub successful
 
-  EXPECT_CALL(
-      monitored_item_router_,
-      AddMonitoredItemDataObserver(kMonitoredItemId, Ref(*monitored_item_)));
-
   ASSERT_TRUE(response_handler);
   response_handler(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
                                                    kMonitoredItemId));
 
+  EXPECT_THAT(monitored_item_router_.registered_ids(),
+              ElementsAre(kMonitoredItemId));
+  EXPECT_EQ(monitored_item_router_.observer(kMonitoredItemId),
+            monitored_item_.get());
+
   // Delete monitored item
 
-  EXPECT_CALL(monitored_item_router_,
-              RemoveMonitoredItemDataObserver(kMonitoredItemId));
   EXPECT_CALL(message_sender_, Request(IsDeleteMonitoredItemRequest(), _));
 
   monitored_item_.reset();
+
+  EXPECT_THAT(monitored_item_router_.registered_ids(), IsEmpty());
 }
 
 TEST_F(
@@ -281,13 +282,17 @@ TEST_F(
 
   // Create stub successful
 
-  EXPECT_CALL(
-      monitored_item_router_,
-      AddMonitoredItemDataObserver(kMonitoredItemId, Ref(*monitored_item_)));
-
   ASSERT_TRUE(response_handler);
   response_handler(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
                                                    kMonitoredItemId));
+
+  // Re-registered under the same id after the channel came back -- the
+  // reopen path must not leave the router holding a stale entry, which the
+  // fake's duplicate-registration Check would have caught.
+  EXPECT_THAT(monitored_item_router_.registered_ids(),
+              ElementsAre(kMonitoredItemId));
+  EXPECT_EQ(monitored_item_router_.observer(kMonitoredItemId),
+            monitored_item_.get());
 
   // Data change
 
@@ -299,9 +304,9 @@ TEST_F(
 
   // Delete monitored item
 
-  EXPECT_CALL(monitored_item_router_,
-              RemoveMonitoredItemDataObserver(kMonitoredItemId));
   EXPECT_CALL(message_sender_, Request(IsDeleteMonitoredItemRequest(), _));
 
   monitored_item_.reset();
+
+  EXPECT_THAT(monitored_item_router_.registered_ids(), IsEmpty());
 }
