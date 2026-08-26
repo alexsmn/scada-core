@@ -316,7 +316,11 @@ distinct from the default-constructed value (the Unix epoch) — tested with
 µs-since-1601 wire/on-disk encoding is preserved behind
 `base/time/time_wire_codec.h`, and calendar/string conversions are the free
 functions in `base/time/calendar.h` (UTC via `std::chrono`, local time via the
-OS since libc++ ships no tzdb).
+OS since libc++ ships no tzdb — `std::chrono::time_zone`, `current_zone` and
+`zoned_time` all fail to compile on Apple clang 21, verified 2026-08-26.
+Upstream libc++ lists P0355R7 as only *Partial*
+([C++20 status](https://libcxx.llvm.org/Status/Cxx20.html)), so re-check this
+before assuming it still holds on a newer toolchain).
 
 ## Important Files Reference
 
