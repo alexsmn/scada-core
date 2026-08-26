@@ -143,11 +143,6 @@ NodeId NodeId::FromString(std::string_view string) {
     return {std::string{string_id}, namespace_index};
   }
 
-  if (boost::istarts_with(str, "s=")) {
-    auto string_id = str.substr(2);
-    return {std::string{string_id}, namespace_index};
-  }
-
   // TODO: g=
   // TODO: b=
 

@@ -82,3 +82,49 @@ TEST(NodeId, Format_EmbedsInStructFormatter) {
 
   EXPECT_EQ(out, "{node_id: \"ns=1;i=7\"}");
 }
+
+// `FromString` had no coverage at all until 486, which is how a verbatim
+// duplicate of the `s=` branch sat below the live one — unreachable, and
+// therefore invisible to every test and to the compiler. These pin the string
+// forms so an edit landing on the wrong copy of a branch is caught.
+
+TEST(NodeId, FromString_StringId) {
+  const auto node_id = scada::NodeId::FromString("s=some_tag");
+
+  EXPECT_EQ(node_id, scada::NodeId("some_tag", 0));
+}
+
+TEST(NodeId, FromString_StringIdWithNamespace) {
+  const auto node_id = scada::NodeId::FromString("ns=2;s=some_tag");
+
+  EXPECT_EQ(node_id, scada::NodeId("some_tag", 2));
+}
+
+TEST(NodeId, FromString_StringIdKeepsSeparatorsInTheIdentifier) {
+  // The identifier runs to the end of the input: everything after the first
+  // `s=` belongs to it, separators included.
+  const auto node_id = scada::NodeId::FromString("ns=1;s=a;b=c");
+
+  EXPECT_EQ(node_id, scada::NodeId("a;b=c", 1));
+}
+
+TEST(NodeId, FromString_NumericId) {
+  EXPECT_EQ(scada::NodeId::FromString("i=33"), scada::NodeId(33u, 0));
+  EXPECT_EQ(scada::NodeId::FromString("ns=2;i=33"), scada::NodeId(33u, 2));
+}
+
+TEST(NodeId, FromString_BareStringIsAStringId) {
+  EXPECT_EQ(scada::NodeId::FromString("some_tag"),
+            scada::NodeId("some_tag", 0));
+}
+
+TEST(NodeId, FromString_Empty_Null) {
+  EXPECT_TRUE(scada::NodeId::FromString("").is_null());
+}
+
+TEST(NodeId, FromString_RoundTripsToString) {
+  for (const auto& node_id : {scada::NodeId{33u, 2}, scada::NodeId{"tag", 1},
+                              scada::NodeId{"tag", 0}}) {
+    EXPECT_EQ(scada::NodeId::FromString(node_id.ToString()), node_id);
+  }
+}
