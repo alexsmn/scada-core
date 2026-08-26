@@ -137,19 +137,20 @@ Set `CXX_CPPCHECK ""` where cppcheck would see module units.
 
 ## How to build
 
-- macOS: `cmake --preset macos-local-modules && cmake --build --preset
-  release-macos-local-modules`; tests via
-  `ctest --preset test-release-macos-local-modules`.
-- Windows: `ninja-dev-modules` / `release-dev-modules` /
-  `test-release-dev-modules` (requires CMake >= 3.28 at
+- Any platform, from the `core` product directory: `cmake --preset ninja
+  -DSCADA_CXX_MODULES=ON && cmake --build --preset release`; tests via
+  `ctest --preset test-release`. Requires CMake >= 3.28 (on Windows, at
   `C:/Program Files/CMake`).
+- There are no dedicated `*-modules` presets. They lived in the root's
+  git-ignored `CMakeUserPresets.json`, which ADR 0011 removed along with the
+  whole-tree build; the option is a `-D` flag on the ordinary presets now.
 - Smoke coverage: per-library `module_test/` dirs — import-only TUs, mixed
   import+include TUs (base, scada, remote/pb), and a multi-import interop
   TU (model: scada.base + scada.core + scada.model in one TU).
 
 ## Cross-toolchain validation checklist (MSVC / GCC 14)
 
-The divergence-prone items to check when running `ninja-dev-modules` or a
+The divergence-prone items to check when running an MSVC or a
 GCC 14 build with `-DSCADA_CXX_MODULES=ON`:
 1. `ScadaCoreModuleSmoke.StdSpecializationsReachable` — GMF discarding of
    `std::hash`/`std::formatter` specializations differs by frontend; if it
