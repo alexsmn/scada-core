@@ -107,7 +107,7 @@ Core SCADA abstractions and services:
 - Provider/sink pattern for metric collection
 
 ### model/ - Data Model (MOVED)
-The model library moved out of core into the `common` submodule at
+The model library moved out of core into the `common` product at
 `common/model/`. The nodeset XML there is the single source of truth and the
 `namespaces.*` / `*_node_ids.h` headers are generated from it at build time. See
 `common/model/` and `common/CLAUDE.md`. `core` no longer depends on the model;
