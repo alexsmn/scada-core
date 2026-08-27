@@ -109,7 +109,7 @@ class SessionStub : public MessageSender,
   // MessageSender
   virtual void Send(protocol::Message& message) override;
   virtual void Request(protocol::Request& request,
-                       ResponseHandler response_handler) {}
+                       ResponseHandler response_handler) override {}
 
   BoostLogger logger_{LOG_NAME("SessionStub")};
 
