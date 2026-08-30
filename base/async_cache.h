@@ -41,12 +41,11 @@ class AsyncCache {
   template <class OnWaiter>
   [[nodiscard]] Awaitable<Value> Wait(Key key, OnWaiter&& on_waiter) {
     auto [value] = co_await CallbackToAwaitable<Value>(
-        executor_, [this, key = std::move(key),
-                    on_waiter = std::forward<OnWaiter>(on_waiter)](
-                       auto callback) mutable {
-          auto completion =
-              std::make_shared<std::decay_t<decltype(callback)>>(
-                  std::move(callback));
+        executor_,
+        [this, key = std::move(key),
+         on_waiter = std::forward<OnWaiter>(on_waiter)](auto callback) mutable {
+          auto completion = std::make_shared<std::decay_t<decltype(callback)>>(
+              std::move(callback));
           auto& entry = entries_[key];
 
           if (entry.value.has_value()) {
@@ -76,6 +75,25 @@ class AsyncCache {
   [[nodiscard]] bool TryStart(const Key& key) {
     auto& entry = entries_[key];
     if (entry.value.has_value() || entry.in_progress || entry.waiters.empty()) {
+      return false;
+    }
+
+    entry.in_progress = true;
+    return true;
+  }
+
+  // Claims `key` for a fetch that no one is waiting on yet, so an owner that
+  // already knows which keys a request will need can read them in one batch
+  // ahead of the code that consumes them one at a time. Returns false when the
+  // key already has a value or a fetch in flight.
+  //
+  // This is `TryStart` without its "somebody is waiting" precondition: the
+  // caller must `Complete` every key it claims, including on failure, or a
+  // waiter arriving later never wakes — `TryStart` would decline the key
+  // because the prefetch left it in progress.
+  [[nodiscard]] bool TryStartPrefetch(const Key& key) {
+    auto& entry = entries_[key];
+    if (entry.value.has_value() || entry.in_progress) {
       return false;
     }
 
