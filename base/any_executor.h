@@ -19,6 +19,18 @@ inline AnyExecutorFactory MakeSingleExecutorFactory(AnyExecutor executor) {
   return [executor = std::move(executor)] { return executor; };
 }
 
+// Runs `task` on `executor` after `delay`.
+//
+// The two delays take different routes, which matters in tests: a zero delay is
+// a plain post, but any other builds a `boost::asio::steady_timer` on the
+// executor's `execution_context` and waits on it. That timer needs someone to
+// run that context, and it reads the system clock — so a test harness that only
+// drains a task queue never fires it. In particular `TestExecutor::Advance` is
+// a virtual clock for tasks posted through *its own* `PostDelayedTask` member
+// and does not reach one routed through this function; the delayed task simply
+// never runs, and the test observes nothing rather than hanging or failing
+// loudly. Drive a real `io_context` (`AsioTestEnvironment`) or make the period
+// injectable and pass zero. See backlog 646.
 template <class Ex, class Task>
 inline void PostDelayedTask(
     const Ex& executor,

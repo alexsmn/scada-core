@@ -117,6 +117,20 @@ class TestExecutor {
     });
   }
 
+  // Runs every task this executor has queued whose remaining delay has run out,
+  // then ages the rest by `delta`. `Poll` is `Advance` by nothing: it runs only
+  // what is already due.
+  //
+  // This is a virtual clock for tasks posted through *this class's own*
+  // `PostTask`/`PostDelayedTask` members, and for nothing else. It does not
+  // reach a delayed task routed through the free `::PostDelayedTask`
+  // (`base/any_executor.h`), which builds a real `boost::asio::steady_timer` on
+  // `context()` — a context nobody runs here — so that task never fires however
+  // far this is advanced. Production code holding an `AnyExecutor` takes that
+  // route, so `Advance(1s)` against a debounce posted that way runs nothing at
+  // all and the test fails on whatever it asserted rather than saying why.
+  // Drive a real `io_context` (`AsioTestEnvironment`) for such code, or make
+  // the period injectable and pass zero. See backlog 646.
   void Poll() { Advance({}); }
 
   void Advance(Clock::duration delta) {
