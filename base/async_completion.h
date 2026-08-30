@@ -50,6 +50,23 @@ class AsyncCompletion {
     Finish(std::move(error));
   }
 
+  // Completes the gate unless it has completed already; returns true when this
+  // call was the one that completed it.
+  //
+  // `Complete()` panics on a second call, which is the right contract for a
+  // gate one owner settles exactly once. It is the wrong one where two parties
+  // legitimately race to settle the same gate -- a deadline against the work it
+  // bounds -- and every such site was hand-guarding with
+  // `if (!x.completed()) x.Complete();`, which reads as defensive noise rather
+  // than as the intended semantics.
+  bool TryComplete() const {
+    if (state_->completed) {
+      return false;
+    }
+    Finish({});
+    return true;
+  }
+
   [[nodiscard]] bool completed() const { return state_->completed; }
 
  private:
