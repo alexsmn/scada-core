@@ -106,8 +106,8 @@ enum class StatusCode : unsigned {
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.9.2
   Bad_ViewIdUnknown = Bad | 45,
   // The HistoryRead details parameter is not valid (e.g. a raw read with no
-  // time range and no continuation point) — OPC UA Part 11 §6.4 HistoryRead,
-  // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.4
+  // time range and no continuation point) — OPC UA Part 11 §6.5 HistoryReadDetails
+  // parameters, https://reference.opcfoundation.org/Core/Part11/v105/docs/6.5
   Bad_HistoryOperationInvalid = Bad | 46,
   // There is no subscription available for this session — OPC UA Part 4 §5.14.5
   // Publish, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.14.5
@@ -118,8 +118,8 @@ enum class StatusCode : unsigned {
   Bad_UserAccessDenied = Bad | 48,
   // The requested operation is not supported by this implementation (e.g. a
   // local-storage operation invoked on a remote-configuration tier). Maps to
-  // the OPC UA Bad_NotSupported concept — OPC UA Part 4 §7.39 Common
-  // StatusCodes, https://reference.opcfoundation.org/Core/Part4/v105/docs/7.39
+  // the OPC UA Bad_NotSupported concept — OPC UA Part 4 §7.38.2 Common
+  // StatusCodes, https://reference.opcfoundation.org/Core/Part4/v105/docs/7.38.2
   Bad_NotSupported = Bad | 49,
   // The server requires a valid license to serve requests but its license has
   // expired: the process and its listeners stay up, but service requests are
@@ -146,7 +146,7 @@ enum class StatusCode : unsigned {
   // distinct from Bad_UserAccessDenied, which is about WHO is asking. A
   // read-only observation (a runtime counter, say) is unwritable for everyone.
   // Maps to the OPC UA Bad_NotWritable code (0x803B0000) — OPC UA Part 3
-  // §5.6.2 AccessLevel,
+  // §5.6.2 Variable NodeClass (AccessLevel Attribute),
   // https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.2
   Bad_NotWritable = Bad | 53,
 };

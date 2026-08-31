@@ -14,7 +14,7 @@ namespace scada {
 // (namespace != 0) are NOT covered here: their ids are server-relative and must
 // be resolved against the owning server's address space.
 //
-// OPC UA Part 3 §7 ReferenceType hierarchy,
+// OPC UA Part 3 §7 Standard ReferenceTypes,
 // https://reference.opcfoundation.org/Core/Part3/v105/docs/7 .
 
 // The immediate supertype of a standard reference type within namespace 0, or 0

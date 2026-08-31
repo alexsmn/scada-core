@@ -19,10 +19,10 @@
 // The direction names keep the original proxy framing: "proxy" is the local /
 // fixed index space and "downstream" the remote one.
 //
-// OPC UA Part 3 §8.2.3 NamespaceArray,
-// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.3 ; Part 1
-// §5.3.7 server-to-server / aggregation,
-// https://reference.opcfoundation.org/Core/Part1/v105/docs/5.3 .
+// OPC UA Part 3 §8.2.2 NamespaceIndex,
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.2 ; Part 1
+// §5.3.7 Server to Server interactions,
+// https://reference.opcfoundation.org/Core/Part1/v105/docs/5.3.7 .
 
 #include "scada/proxy_namespace_table.h"
 

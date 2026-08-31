@@ -9,8 +9,8 @@
 // scada layer rather than the OPC UA bridge. A namespace whose URI already
 // appears maps to the
 // existing index, so shared namespaces merge; a new URI is appended and
-// assigned a fresh index. OPC UA Part 3 §8.2.3 NamespaceArray,
-// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.3 .
+// assigned a fresh index. OPC UA Part 3 §8.2.2 NamespaceIndex,
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.2 .
 
 #include "base/lifetime.h"
 #include "scada/basic_types.h"

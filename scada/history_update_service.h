@@ -13,8 +13,8 @@ namespace scada {
 // The standard OPC UA write interface to a historian — the write counterpart of
 // `HistoryService`. OPC UA Part 4 §5.11.5 HistoryUpdate,
 // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.5 and OPC UA
-// Part 11 §6.8 HistoryUpdate,
-// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8
+// Part 11 §6.9 HistoryUpdateDetails parameter,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.9
 //
 // Implementations may be the local historian or a proxy to an external OPC UA
 // historian; see docs/historian-opcua-pluggable-seam.md.
@@ -31,8 +31,8 @@ class HistoryUpdateService {
 
   // Inserts historical events for a node (UpdateEventDetails). Returns one
   // StatusCode per supplied event; an operation-level failure is reported via
-  // the StatusOr status. OPC UA Part 11 §6.8.4 UpdateEventDetails,
-  // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.4
+  // the StatusOr status. OPC UA Part 11 §6.9.4 UpdateEventDetails structure,
+  // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.9.4
   virtual CoStatusOr<std::vector<StatusCode>> HistoryUpdateEvent(
       ServiceContext context,
       UpdateEventDetails details) = 0;

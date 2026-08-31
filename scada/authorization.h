@@ -296,8 +296,8 @@ struct UserManagementDataType {
 };
 
 // One (role, permissions) entry of a node's RolePermissions /
-// UserRolePermissions attribute (OPC UA Part 3 §8.56 RolePermissionType).
-// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.56
+// UserRolePermissions attribute (OPC UA Part 3 §5.2.9 RolePermissions).
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/5.2.9
 struct RolePermissionType {
   NodeId role_id;
   Permission permissions = Permission::kNone;

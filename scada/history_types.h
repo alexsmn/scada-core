@@ -45,8 +45,8 @@ struct HistoryReadEventsResult {
 };
 
 // How a HistoryUpdate applies the supplied values.
-// OPC UA Part 11 §6.8.3 PerformUpdateType,
-// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.3
+// OPC UA Part 11 §6.8 PerformUpdateType Enumeration,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8
 enum class PerformUpdateType {
   Insert = 1,   // Insert; error if a value already exists at the timestamp.
   Replace = 2,  // Replace; error if no value exists at the timestamp.
@@ -55,8 +55,8 @@ enum class PerformUpdateType {
 };
 
 // Insert/replace historical data values for a node.
-// OPC UA Part 11 §6.8.2 UpdateDataDetails,
-// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.2
+// OPC UA Part 11 §6.9.2 UpdateDataDetails structure,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.9.2
 struct UpdateDataDetails {
   NodeId node_id;
   PerformUpdateType perform_insert_replace = PerformUpdateType::Update;
@@ -64,8 +64,8 @@ struct UpdateDataDetails {
 };
 
 // Insert historical events for a node.
-// OPC UA Part 11 §6.8.4 UpdateEventDetails,
-// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8.4
+// OPC UA Part 11 §6.9.4 UpdateEventDetails structure,
+// https://reference.opcfoundation.org/Core/Part11/v105/docs/6.9.4
 struct UpdateEventDetails {
   NodeId node_id;
   PerformUpdateType perform_insert_replace = PerformUpdateType::Insert;
