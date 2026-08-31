@@ -5,7 +5,6 @@
 #include "base/any_executor_dispatch.h"
 #include "base/awaitable.h"
 #include "base/range_util.h"
-#include "scada/node_id_log.h"
 #include "remote/connection.h"
 #include "remote/history_stub.h"
 #include "remote/node_management_stub.h"
@@ -16,6 +15,7 @@
 #include "scada/attribute_service.h"
 #include "scada/method_service.h"
 #include "scada/monitoring_parameters.h"
+#include "scada/node_id_log.h"
 #include "scada/service_context.h"
 #include "scada/write_flags.h"
 #include <boost/range/adaptor/transformed.hpp>
@@ -90,7 +90,12 @@ void SessionStub::ProcessMessage(const protocol::Message& message) {
 }
 
 void SessionStub::ProcessRequest(const protocol::Request& request) {
-  LOG_INFO(logger_)
+  // Debug rather than info: this fires once per client request and carries no
+  // outcome -- just which fields were set -- so it is trace, not an event. On a
+  // deployed proxy it was 38% of that process's entire log volume with no
+  // client attached but a health probe. Failures are logged by the handlers
+  // below, which is where the outcome actually is.
+  LOG_DEBUG(logger_)
       << "Process request" << LOG_TAG("RequestId", request.request_id())
       << LOG_TAG("HasPing", request.has_ping())
       << LOG_TAG("HasRead", request.has_read())
