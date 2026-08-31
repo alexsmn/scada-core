@@ -90,27 +90,27 @@ enum class StatusCode : unsigned {
   // CreateMonitoredItems requested more items than MaxMonitoredItemsPerCall.
   Bad_TooManyMonitoredItems = Bad | 41,
   // A Publish acknowledgement referenced a sequence number the server does not
-  // hold (unknown or already acknowledged) — OPC UA Part 4 §5.13.5 Publish,
-  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.5
+  // hold (unknown or already acknowledged) — OPC UA Part 4 §5.14.5 Publish,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.14.5
   Bad_SequenceNumberUnknown = Bad | 42,
   // The server has reached its maximum number of Browse continuation points and
-  // cannot allocate another — OPC UA Part 4 §5.8.2 Browse,
-  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.2
+  // cannot allocate another — OPC UA Part 4 §5.9.2 Browse,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.9.2
   Bad_NoContinuationPoints = Bad | 43,
   // The TimestampsToReturn enumeration of a Read/HistoryRead is out of range —
-  // OPC UA Part 4 §7.40 TimestampsToReturn,
-  // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.40
+  // OPC UA Part 4 §7.39 TimestampsToReturn,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.39
   Bad_TimestampsToReturnInvalid = Bad | 44,
   // The Browse view (ViewDescription.viewId) is not known to the server —
-  // OPC UA Part 4 §5.8.2 Browse,
-  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.2
+  // OPC UA Part 4 §5.9.2 Browse,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.9.2
   Bad_ViewIdUnknown = Bad | 45,
   // The HistoryRead details parameter is not valid (e.g. a raw read with no
   // time range and no continuation point) — OPC UA Part 11 §6.4 HistoryRead,
   // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.4
   Bad_HistoryOperationInvalid = Bad | 46,
-  // There is no subscription available for this session — OPC UA Part 4 §5.13.5
-  // Publish, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.13.5
+  // There is no subscription available for this session — OPC UA Part 4 §5.14.5
+  // Publish, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.14.5
   Bad_NoSubscription = Bad | 47,
   // The user identity was authenticated but is not authorized for the requested
   // operation — OPC UA Part 4 §5.7.3 ActivateSession / access control,
@@ -124,8 +124,8 @@ enum class StatusCode : unsigned {
   // The server requires a valid license to serve requests but its license has
   // expired: the process and its listeners stay up, but service requests are
   // refused until the license is renewed. Maps to the OPC UA Bad_LicenseExpired
-  // code (0x810E0000) — OPC UA Part 4 §7.39 Common StatusCodes,
-  // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.39
+  // code (0x810E0000) — OPC UA Part 4 §7.38.2 Common StatusCodes,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.38.2
   Bad_LicenseExpired = Bad | 50,
   // The server holds the node but the underlying data source has not delivered
   // a value for it yet, so the Value it would report carries no Variant at all.
@@ -136,8 +136,8 @@ enum class StatusCode : unsigned {
   Bad_WaitingForInitialData = Bad | 51,
   // A written value violates a Server-defined restriction — the Server will not
   // store it, and says so rather than accepting the write and dropping it.
-  // Maps to the OPC UA Bad_OutOfRange code (0x803C0000) — OPC UA Part 4 §5.10.4
-  // Write, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.10.4 :
+  // Maps to the OPC UA Bad_OutOfRange code (0x803C0000) — OPC UA Part 4 §5.11.4
+  // Write, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.4 :
   // a value "outside the valid range ... or other server-defined restrictions".
   // Part 4 permits refusing such a write; what it does not permit is answering
   // Good for a write that was not performed.

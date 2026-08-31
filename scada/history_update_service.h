@@ -11,8 +11,8 @@
 namespace scada {
 
 // The standard OPC UA write interface to a historian — the write counterpart of
-// `HistoryService`. OPC UA Part 4 §5.10.5 HistoryUpdate,
-// https://reference.opcfoundation.org/Core/Part4/v105/docs/5.10.5 and OPC UA
+// `HistoryService`. OPC UA Part 4 §5.11.5 HistoryUpdate,
+// https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.5 and OPC UA
 // Part 11 §6.8 HistoryUpdate,
 // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.8
 //

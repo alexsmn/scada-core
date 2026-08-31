@@ -99,8 +99,8 @@ class RemappingHistoryService : public scada::HistoryService {
 // The aggregating proxy does not forward HistoryUpdate, so this wrapper exists
 // for a tier's own serving boundary (ADR 0003): without it
 // `history_update_service_` would cross untranslated and write history against
-// wrong-namespace NodeIds. OPC UA Part 4 §5.10.5 HistoryUpdate,
-// https://reference.opcfoundation.org/Core/Part4/v105/docs/5.10.5 .
+// wrong-namespace NodeIds. OPC UA Part 4 §5.11.5 HistoryUpdate,
+// https://reference.opcfoundation.org/Core/Part4/v105/docs/5.11.5 .
 class RemappingHistoryUpdateService : public scada::HistoryUpdateService {
  public:
   RemappingHistoryUpdateService(scada::HistoryUpdateService& inner,
@@ -163,8 +163,8 @@ class RemappingMonitoredItemService : public scada::MonitoredItemService {
 // (proxy -> downstream) and the AddNodes result ids (downstream -> proxy).
 // This is the write half of file management through the proxy: a client's
 // AddNodes of a FileType node is forwarded to the downstream that owns the
-// file store. OPC UA Part 4 §5.7 NodeManagement,
-// https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7 .
+// file store. OPC UA Part 4 §5.8 NodeManagement,
+// https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8 .
 class RemappingNodeManagementService : public scada::NodeManagementService {
  public:
   RemappingNodeManagementService(scada::NodeManagementService& inner,
