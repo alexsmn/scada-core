@@ -1,9 +1,13 @@
 # C++20 Modules: the core/ facade modules
 
 Status: experimental, opt-in via `-DSCADA_CXX_MODULES=ON` (default OFF).
-Last verified against code: 2026-07-20 (macOS; AppleClang 21, Homebrew LLVM
-22 `clang-scan-deps`, CMake 4.3.3 — facade + smoke-test builds green; both
-workarounds below still required as of CMake 4.4 / ccache 4.13).
+Last verified against code: 2026-08-31 (the internal-linkage-constants bullet
+only: `model/namespaces.h` <!-- doc-citations: absent --> is generated into
+the build tree and is not a
+tracked header, which the bullet now says. The rest last verified 2026-07-20 —
+macOS; AppleClang 21, Homebrew LLVM 22 `clang-scan-deps`, CMake 4.3.3 — facade
++ smoke-test builds green; both workarounds below still required as of
+CMake 4.4 / ccache 4.13).
 When OFF, the build is unchanged — no module targets exist, nothing scans
 for imports, PCH stays enabled.
 
@@ -78,7 +82,9 @@ CMake plumbing lives in three helpers at the end of
   `REGISTER_DATA_SERVICES` (`scada/data_services_factory.h`).
 - **Internal-linkage constants**: namespace-scope non-inline `const` /
   `constexpr` objects — all node-id constants (`model/*_node_ids.h`,
-  `scada/standard_node_ids.h`), `NamespaceIndexes::*` (`model/namespaces.h`),
+  `scada/standard_node_ids.h`), `NamespaceIndexes::*` (`model/namespaces.h`
+  <!-- doc-citations: absent -->, generated into the build tree by
+  `common/model/CMakeLists.txt`),
   `protocol::kHeaderSize`. Exporting them is ill-formed
   ([module.interface]); the constant headers are also deliberately excluded
   from the model facade's GMF (pure BMI bloat). `inline constexpr` /

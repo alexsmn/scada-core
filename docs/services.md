@@ -81,7 +81,7 @@ The service interfaces are coroutine-native: methods such as
 `ViewService::Browse`, `HistoryService::HistoryReadRaw`, and
 `NodeManagementService::AddNodes` return `Awaitable<...>` directly, so
 consumers `co_await` the service methods without an adapter layer. (The
-historical `core/scada/service_awaitable.h` free-function wrappers —
+historical ~~`core/scada/service_awaitable.h`~~ free-function wrappers —
 `ReadAsync`, `WriteAsync`, `CallAsync`, and friends — have been removed.)
 
 The per-service headers declare these coroutine-native interfaces directly, so
