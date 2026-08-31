@@ -106,8 +106,9 @@ enum class StatusCode : unsigned {
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.9.2
   Bad_ViewIdUnknown = Bad | 45,
   // The HistoryRead details parameter is not valid (e.g. a raw read with no
-  // time range and no continuation point) — OPC UA Part 11 §6.5 HistoryReadDetails
-  // parameters, https://reference.opcfoundation.org/Core/Part11/v105/docs/6.5
+  // time range and no continuation point) — OPC UA Part 11 §6.5
+  // HistoryReadDetails parameters,
+  // https://reference.opcfoundation.org/Core/Part11/v105/docs/6.5
   Bad_HistoryOperationInvalid = Bad | 46,
   // There is no subscription available for this session — OPC UA Part 4 §5.14.5
   // Publish, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.14.5
@@ -119,7 +120,8 @@ enum class StatusCode : unsigned {
   // The requested operation is not supported by this implementation (e.g. a
   // local-storage operation invoked on a remote-configuration tier). Maps to
   // the OPC UA Bad_NotSupported concept — OPC UA Part 4 §7.38.2 Common
-  // StatusCodes, https://reference.opcfoundation.org/Core/Part4/v105/docs/7.38.2
+  // StatusCodes,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/7.38.2
   Bad_NotSupported = Bad | 49,
   // The server requires a valid license to serve requests but its license has
   // expired: the process and its listeners stay up, but service requests are
