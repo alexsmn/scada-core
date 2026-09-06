@@ -21,6 +21,10 @@ class MockSessionService : public SessionService {
     ON_CALL(*this, Connect(_))
         .WillByDefault(
             [](scada::SessionConnectParams) -> Awaitable<void> { co_return; });
+    ON_CALL(*this, ConnectStatus(_))
+        .WillByDefault([](scada::SessionConnectParams) -> CoStatus {
+          co_return StatusCode::Good;
+        });
     ON_CALL(*this, Reconnect()).WillByDefault([]() -> Awaitable<void> {
       co_return;
     });

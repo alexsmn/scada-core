@@ -9,6 +9,20 @@ namespace scada {
 
 class MockMethodService : public MethodService {
  public:
+  // An unstubbed `Awaitable<T>` return is gmock's `T()`: a null-frame
+  // awaitable whose `await_ready()` still answers false, so `co_await` on it
+  // segfaults inside the AWAITING coroutine, naming no mock. Every awaitable
+  // method therefore completes by default with the emptiest honest answer.
+  // See CLAUDE.md, "Unit Test Guidance"; the `*_mock_unittest.cpp` beside
+  // this header pins it.
+  MockMethodService() {
+    ON_CALL(*this, Call)
+        .WillByDefault([](NodeId, NodeId, std::vector<Variant>,
+                          ServiceContext) -> CoStatusOr<CallResult> {
+          co_return StatusCode::Bad_NotSupported;
+        });
+  }
+
   MOCK_METHOD(CoStatusOr<CallResult>,
               Call,
               (NodeId node_id,
