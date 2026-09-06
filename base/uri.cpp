@@ -1,6 +1,7 @@
 #include "base/uri.h"
 
 #include <cctype>
+#include <cstdint>
 
 const char kHexString[] = "0123456789ABCDEF";
 
