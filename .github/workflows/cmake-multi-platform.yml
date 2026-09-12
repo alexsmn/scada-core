@@ -41,7 +41,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         submodules: recursive
 
@@ -89,7 +89,7 @@ jobs:
 
     # Cache CMake build
     - name: Cache CMake build
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: build
         key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', 'CMakePresets.json') }}
@@ -125,7 +125,7 @@ jobs:
 
     - name: Upload test results
       if: failure() && steps.cmake-configure.outcome == 'success'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.compiler }}
         path: |
@@ -150,7 +150,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Install dependencies
       run: |
@@ -180,7 +180,7 @@ jobs:
 
     - name: Upload cppcheck report
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: cppcheck-report
         path: cppcheck-report.txt
