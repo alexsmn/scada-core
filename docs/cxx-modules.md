@@ -51,8 +51,7 @@ server libs link their deps PRIVATE.
 Not facaded in common: `node_service_v1/v2/v3/proxy` (implementation
 targets), `scada_common_opc` / `scada_common_vidicon*` (Windows-only —
 unbuildable on the macOS iteration platform). Additional common-specific
-exclusions: `vds_runtime_api.h` (extern-C plugin ABI) and
-`session_proxy_notifier.h` (its global SessionProxyNotifier template
+exclusion: `session_proxy_notifier.h` (its global SessionProxyNotifier template
 collides by name with core/remote's class — exporting both would make TUs
 importing scada.common and scada.remote together ill-formed).
 
