@@ -87,8 +87,9 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
   state_ = State::CREATING;
 
   protocol::Request request;
-  auto& create_subscription = *request.mutable_create_subscription();
-  create_subscription;
+  // Called for the side effect: it is the set `create_subscription` field
+  // that makes `SessionStub` recognise this request (`has_create_subscription`).
+  request.mutable_create_subscription();
 
   sender_->Request(
       request,

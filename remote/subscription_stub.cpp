@@ -49,9 +49,10 @@ void SubscriptionStub::OnCreateMonitoredItem(
     protocol::Message message;
     auto& response = *message.add_responses();
     response.set_request_id(request_id);
-    auto& create_monitored_item_result =
-        *response.mutable_create_monitored_item_result();
-    create_monitored_item_result;
+    // Called for the side effect: the set `create_monitored_item_result`
+    // field is what routes this response back to the monitored-item proxy
+    // (`SessionProxy` dispatches on `has_create_monitored_item_result`).
+    response.mutable_create_monitored_item_result();
     Convert(scada::Status{scada::StatusCode::Bad}, *response.mutable_status());
 
     if (auto locked_sender = sender_.lock())
@@ -78,7 +79,6 @@ void SubscriptionStub::OnCreateMonitoredItem(
     response.set_request_id(request_id);
     auto& create_monitored_item_result =
         *response.mutable_create_monitored_item_result();
-    create_monitored_item_result;
     Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
     create_monitored_item_result.set_monitored_item_id(monitored_item_id);
 

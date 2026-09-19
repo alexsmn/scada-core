@@ -25,12 +25,12 @@ namespace {
 struct Entry {
   scada::StatusCode code;
   // The enum spelling, for logs and wire diagnostics. Never translated.
-  const char* error_string;
+  const char* error_string = nullptr;
   // The operator-facing sentence, in English. `ToString16` runs it through
   // `TranslateUiText`, so the Russian lives in the client's `client_ru.ts`
   // catalog keyed by this exact string — change one and you must change the
   // other, or the client silently falls back to English.
-  const char* display_string;
+  const char* display_string = nullptr;
 };
 
 const Entry kEntries[] = {

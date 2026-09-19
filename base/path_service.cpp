@@ -24,8 +24,8 @@ namespace {
 
 struct ProviderEntry {
   PathProviderFunc func;
-  int key_start;
-  int key_end;
+  int key_start = 0;
+  int key_end = 0;
 };
 
 std::mutex& GetMutex() {

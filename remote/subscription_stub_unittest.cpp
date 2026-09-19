@@ -115,4 +115,32 @@ TEST_F(SubscriptionStubEventTest, SendsEventWithEventId) {
   EXPECT_EQ(sent.notifications(0).events(0).event_id(), 0x2au);
 }
 
+// `SessionProxy` routes a response by which optional field is set --
+// `has_create_monitored_item_result()` -- not by the request id it carries
+// (see `ResponseName` in session_proxy.cpp). The create reply therefore has
+// to set that field, and on the success path the only thing it puts in it is
+// the id. Pins the presence so a later cleanup cannot drop the
+// `mutable_create_monitored_item_result()` call as unused; task 312 removed
+// the bare `create_monitored_item_result;` statement beside it, which is dead
+// but sits one line from a call that is not.
+TEST_F(SubscriptionStubEventTest, CreateReplyCarriesTheResultField) {
+  std::vector<protocol::Message> sent;
+  EXPECT_CALL(*sender_, Send(_))
+      .WillRepeatedly(
+          [&sent](protocol::Message& message) { sent.push_back(message); });
+
+  stub_->OnCreateMonitoredItem(
+      /*request_id=*/7,
+      scada::ReadValueId{.node_id = scada::NodeId{42u},
+                         .attribute_id = scada::AttributeId::EventNotifier},
+      scada::MonitoringParameters{});
+  Drain();
+
+  ASSERT_GE(sent.size(), 1u);
+  ASSERT_EQ(sent.front().responses_size(), 1);
+  const protocol::Response& response = sent.front().responses(0);
+  EXPECT_EQ(response.request_id(), 7u);
+  EXPECT_TRUE(response.has_create_monitored_item_result());
+}
+
 }  // namespace
