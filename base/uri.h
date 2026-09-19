@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 // Escapes characters in text suitable for use as a query parameter value.
 // We %XX everything except alphanumerics and -_.!~*'()

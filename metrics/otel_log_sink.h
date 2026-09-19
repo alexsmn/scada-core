@@ -5,6 +5,7 @@
 #include <boost/log/sinks/basic_sink_backend.hpp>
 #include <boost/log/sinks/unlocked_frontend.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <memory>
 #include <opentelemetry/logs/logger.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 

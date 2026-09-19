@@ -3,6 +3,7 @@
 #include "scada/status.h"
 
 #include <functional>
+#include <vector>
 
 namespace scada {
 

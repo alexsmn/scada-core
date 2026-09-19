@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <cstdint>
+#include <string_view>
 
 const char kHexString[] = "0123456789ABCDEF";
 

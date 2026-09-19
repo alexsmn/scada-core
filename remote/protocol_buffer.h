@@ -3,6 +3,7 @@
 #include "base/check.h"
 
 #include <cstdint>
+#include <span>
 #include <string>
 
 namespace protocol {

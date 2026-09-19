@@ -5,6 +5,7 @@
 #include "base/no_destructor.h"
 
 #include "base/utf_convert.h"
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/time_formatters.hpp>
 #include <boost/filesystem.hpp>
@@ -15,7 +16,9 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/console.hpp>
 #include <boost/log/utility/setup/file.hpp>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 namespace {
 

@@ -5,6 +5,7 @@
 #include "base/utf_convert.h"
 
 #include <charconv>
+#include <cstdint>
 #include <format>
 
 std::string Format(double value) {

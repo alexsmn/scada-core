@@ -9,6 +9,8 @@
 
 #include "base/debug_util.h"
 
+#include <algorithm>
+
 namespace {
 
 inline bool ContainsNodeId(const std::vector<scada::DeleteNodesItem>& inputs,

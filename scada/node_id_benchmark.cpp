@@ -3,6 +3,7 @@
 #include <benchmark/benchmark.h>
 
 #include <format>
+#include <functional>
 #include <map>
 #include <string>
 #include <unordered_map>

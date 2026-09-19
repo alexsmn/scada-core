@@ -9,10 +9,13 @@
 #include <opentelemetry/sdk/logs/exporter.h>
 #include <opentelemetry/sdk/logs/read_write_log_record.h>
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace scada::metrics {

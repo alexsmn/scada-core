@@ -2,6 +2,8 @@
 
 #include "base/time/time.h"
 #include <chrono>
+#include <string>
+#include <string_view>
 
 std::string SerializeToString(scada::Duration delta);
 bool Deserialize(std::string_view str, scada::Duration& delta);

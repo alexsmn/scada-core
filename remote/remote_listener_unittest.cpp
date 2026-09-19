@@ -5,6 +5,7 @@
 
 #include <boost/asio/steady_timer.hpp>
 #include <gmock/gmock.h>
+#include <span>
 #include <transport/any_transport.h>
 
 using namespace std::chrono_literals;

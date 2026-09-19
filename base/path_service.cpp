@@ -1,6 +1,7 @@
 #include "base/path_service.h"
 
 #include <cassert>
+#include <cstdint>
 #include <mutex>
 #include <unordered_map>
 #include <vector>

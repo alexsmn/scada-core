@@ -3,6 +3,7 @@
 #include <boost/json.hpp>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 
 inline std::optional<boost::json::value> ReadBoostJsonFromFile(
     const std::filesystem::path& path) {

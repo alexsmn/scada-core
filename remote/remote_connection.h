@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <transport/any_transport.h>
 #include <transport/write_queue.h>
 #include <vector>

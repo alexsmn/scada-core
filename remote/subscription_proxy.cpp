@@ -8,6 +8,8 @@
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 
+#include <algorithm>
+
 // SubscriptionProxy
 
 SubscriptionProxy::SubscriptionProxy(const SubscriptionParams& params) {}

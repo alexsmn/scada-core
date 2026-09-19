@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/signals2/connection.hpp>
+#include <functional>
 #include <string>
 
 namespace scada {

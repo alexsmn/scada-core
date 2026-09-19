@@ -4,6 +4,7 @@
 #include <opentelemetry/metrics/provider.h>
 
 #include <mutex>
+#include <span>
 #include <unordered_map>
 #include <vector>
 

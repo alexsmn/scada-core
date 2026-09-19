@@ -8,6 +8,7 @@
 #include <opentelemetry/exporters/memory/in_memory_span_data.h>
 #include <opentelemetry/exporters/memory/in_memory_span_exporter.h>
 
+#include <span>
 #include <string>
 #include <thread>
 #include <vector>

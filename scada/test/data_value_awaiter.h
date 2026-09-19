@@ -5,6 +5,7 @@
 #include "scada/client_monitored_item.h"
 #include "scada/monitoring_parameters.h"
 
+#include <algorithm>
 #include <boost/asio/this_coro.hpp>
 
 namespace scada {

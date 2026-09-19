@@ -2,6 +2,7 @@
 // includes — every base name comes from `import scada.base;` — to prove the
 // exported surface is usable on its own.
 
+#include <chrono>
 // A TU that *defines* coroutines needs std::coroutine_traits textually even
 // when every coroutine-related name it uses comes from the import.
 #include <coroutine>

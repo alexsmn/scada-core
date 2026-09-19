@@ -3,6 +3,7 @@
 #include "base/check.h"
 #include "base/interval.h"
 
+#include <functional>
 #include <vector>
 
 // Cannot use `std::span` since `std::vector<Interval<T>>` doesn't case to

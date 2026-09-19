@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+#include <span>
 #include <transport/transport_interceptor.h>
 
 namespace scada {

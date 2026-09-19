@@ -2,6 +2,8 @@
 
 #include "metrics/trace_parent.h"
 
+#include <algorithm>
+#include <memory>
 #include <opentelemetry/trace/span_context.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/span_startoptions.h>

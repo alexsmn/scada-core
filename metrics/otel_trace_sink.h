@@ -6,6 +6,7 @@
 #include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/tracer.h>
 
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 
