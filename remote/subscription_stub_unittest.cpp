@@ -115,14 +115,17 @@ TEST_F(SubscriptionStubEventTest, SendsEventWithEventId) {
   EXPECT_EQ(sent.notifications(0).events(0).event_id(), 0x2au);
 }
 
-// `SessionProxy` routes a response by which optional field is set --
-// `has_create_monitored_item_result()` -- not by the request id it carries
-// (see `ResponseName` in session_proxy.cpp). The create reply therefore has
-// to set that field, and on the success path the only thing it puts in it is
-// the id. Pins the presence so a later cleanup cannot drop the
-// `mutable_create_monitored_item_result()` call as unused; task 312 removed
-// the bare `create_monitored_item_result;` statement beside it, which is dead
-// but sits one line from a call that is not.
+// The success reply has to carry `create_monitored_item_result`, because the
+// id it holds is the whole answer: `MonitoredItemProxy`'s response handler
+// reads `create_monitored_item_result().monitored_item_id()`, and an absent
+// message field would hand it a default-instance 0 rather than fail.
+//
+// Note what does NOT depend on it. A response is routed to its handler by
+// `request_id` (`SessionProxy` keeps a `requests_` map), not by which field
+// is set; `ResponseTitle` in session_proxy.cpp does test the fields, but only
+// to label an entry in the session debugger. The request direction is the
+// asymmetric one -- there `SessionStub` really does dispatch on presence, as
+// subscription_proxy_unittest.cpp records.
 TEST_F(SubscriptionStubEventTest, CreateReplyCarriesTheResultField) {
   std::vector<protocol::Message> sent;
   EXPECT_CALL(*sender_, Send(_))
