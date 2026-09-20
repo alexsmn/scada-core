@@ -70,11 +70,18 @@ jobs:
     # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
     # Every product resolves its own vcpkg manifest, so the toolchain is needed
     # on every platform, not only Windows (ADR 0010, ADR 0011).
+    # The pin was a34c873a9717a888f58dc05571dde15571f56e66, which does not
+    # exist in microsoft/vcpkg: the API answers 422, "No commit found for SHA"
+    # (checked 2026-09-20). Nothing noticed because this step, the configure and
+    # the dependency install are all `continue-on-error`, so the job reports
+    # success having built nothing -- the decoration tasks.md 316 describes.
+    # Replaced with the commit this tree's own vcpkg is at, so that if the
+    # continue-on-errors are ever removed the step has a chance of working.
     - name: Setup vcpkg
       continue-on-error: true
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgGitCommitId: 'a34c873a9717a888f58dc05571dde15571f56e66'
+        vcpkgGitCommitId: 'f3e10653cc27d62a37a3763cd84b38bca07c6075'
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'

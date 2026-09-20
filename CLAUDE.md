@@ -289,10 +289,20 @@ runs on the published export at `github.com/alexsmn/scada-core`:
   configuration the build runs — `--enable=warning,performance,portability`
   against `cppcheck-suppressions.txt` — and fails on `error:` findings;
   warnings are uploaded as an artifact but do not fail it.
-- `build` is a Windows (MSVC) / Linux (GCC, Clang) matrix that **cannot
-  currently build anything**: a standalone core configure needs the `net`
-  product as a sibling checkout, and `net` is not published, so the configure
-  step carries `continue-on-error` and the job reports a warning instead.
+- `build` is a Windows (MSVC) / Linux (GCC, Clang) matrix that **still builds
+  nothing, but no longer for the reason it says**. It checks core out alone, so
+  the configure cannot find the `net` product as a sibling and the step's
+  `continue-on-error` turns the failure into a warning — the job then reports
+  success having compiled nothing (superproject tasks.md 316).
+
+  What changed on 2026-09-20 is the premise: `net` **is** published now, as
+  `github.com/alexsmn/transport`, so a second `actions/checkout` into a `net`
+  directory is all that stands between this matrix and a real build.
+  `client/.github/workflows/ci.yml` does exactly that for a larger closure and
+  is the worked example. Two things to fix while you are there: the pin
+  `vcpkgGitCommitId` carried does not exist in microsoft/vcpkg (corrected the
+  same day), and every `continue-on-error` has to come off, or the job stays
+  decoration.
 
 ## Chromium-Base Dependencies
 
