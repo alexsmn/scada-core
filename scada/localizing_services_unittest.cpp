@@ -4,12 +4,17 @@
 #include "base/test/test_executor.h"
 
 #include "scada/co_result.h"
+#include "scada/event.h"
 #include "scada/locale_negotiation.h"
 #include "scada/service_context.h"
 
 #include <gtest/gtest.h>
 
+#include <any>
+#include <memory>
+#include <span>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace scada {
@@ -291,6 +296,154 @@ TEST(LocalizingAttributeServiceTest, WriteIsForwardedUnchanged) {
   ASSERT_TRUE(result.ok());
   ASSERT_EQ(1u, inner.recorded_write.size());
   EXPECT_EQ(Packed(), *inner.recorded_write[0].value.get_if<LocalizedText>());
+}
+
+// --- Event messages -------------------------------------------------------
+
+// Delivers one canned batch of notifications, recording the locales it was
+// created with.
+class FakeSubscription final : public scada::MonitoredItemSubscription {
+ public:
+  explicit FakeSubscription(std::vector<scada::MonitoredItemNotification> batch)
+      : batch_{std::move(batch)} {}
+
+  Awaitable<std::vector<scada::MonitoredItemCreateResult>> AddItems(
+      std::vector<scada::MonitoredItemCreateRequest> requests) override {
+    co_return std::vector<scada::MonitoredItemCreateResult>(requests.size());
+  }
+  Awaitable<std::vector<scada::Status>> RemoveItems(
+      std::span<const scada::MonitoredItemId> item_ids) override {
+    co_return std::vector<scada::Status>(item_ids.size(),
+                                        scada::Status{scada::StatusCode::Good});
+  }
+  scada::CoStatusOr<std::vector<scada::MonitoredItemNotification>> ReadNext(
+      std::size_t) override {
+    co_return batch_;
+  }
+  void Close(scada::Status) override { closed = true; }
+
+  bool closed = false;
+
+ private:
+  std::vector<scada::MonitoredItemNotification> batch_;
+};
+
+class FakeMonitoredItemService final : public scada::MonitoredItemService {
+ public:
+  std::vector<scada::MonitoredItemNotification> batch;
+
+  scada::StatusOr<std::unique_ptr<scada::MonitoredItemSubscription>>
+  CreateSubscription(scada::ServiceContext,
+                     scada::MonitoredItemSubscriptionOptions) override {
+    return std::unique_ptr<scada::MonitoredItemSubscription>{
+        std::make_unique<FakeSubscription>(batch)};
+  }
+};
+
+scada::Event EventWithPackedMessage() {
+  scada::Event event;
+  const std::vector<LocalizedText> translations{Ru(), En()};
+  event.message = EncodeMultiLanguage(translations);
+  return event;
+}
+
+// Reads the one event notification a wrapped subscription delivers.
+scada::Event ReadOneEvent(FakeMonitoredItemService& inner,
+                          std::vector<std::string> locale_ids) {
+  LocalizingMonitoredItemService service{inner};
+  TestExecutor executor;
+  auto subscription = service.CreateSubscription(
+      ContextFor(std::move(locale_ids)), scada::MonitoredItemSubscriptionOptions{});
+  EXPECT_TRUE(subscription.ok());
+  auto notifications = WaitAwaitable(executor, (*subscription)->ReadNext(10));
+  EXPECT_TRUE(notifications.ok());
+  EXPECT_EQ(1u, notifications->size());
+  const auto* event =
+      std::get_if<scada::EventNotification>(&notifications->front());
+  EXPECT_NE(nullptr, event);
+  const auto* payload = std::any_cast<scada::Event>(&event->event);
+  EXPECT_NE(nullptr, payload);
+  return payload ? *payload : scada::Event{};
+}
+
+TEST(LocalizingMonitoredItemServiceTest, AnEventMessageIsResolvedForTheSession) {
+  // The journal entry a session reads is in its own language — Part 5 §6.4.2
+  // makes Message localizable, and it reaches a client inside a std::any
+  // rather than as a plain field, which is what this wrapper is for.
+  FakeMonitoredItemService inner;
+  inner.batch = {scada::EventNotification{.event = EventWithPackedMessage()}};
+
+  EXPECT_EQ(En(), ReadOneEvent(inner, {"en"}).message);
+  EXPECT_EQ(Ru(), ReadOneEvent(inner, {"ru"}).message);
+}
+
+TEST(LocalizingMonitoredItemServiceTest, APlainMessageIsUnchanged) {
+  // Events produced before messages carried more than one language, and every
+  // message a catalog could only say one way.
+  FakeMonitoredItemService inner;
+  scada::Event plain;
+  plain.message = LocalizedText{u"Lock removed"};
+  inner.batch = {scada::EventNotification{.event = plain}};
+
+  EXPECT_EQ(LocalizedText{u"Lock removed"},
+            ReadOneEvent(inner, {"en"}).message);
+}
+
+TEST(LocalizingMonitoredItemServiceTest, ASessionWithNoLocalesIsNotWrapped) {
+  // Nothing to resolve against, so the subscription is handed back as it came
+  // — and a message must still never reach a client as packed JSON.
+  FakeMonitoredItemService inner;
+  inner.batch = {scada::EventNotification{.event = EventWithPackedMessage()}};
+
+  const scada::Event event = ReadOneEvent(inner, {});
+  EXPECT_EQ(String{"mul"}, event.message.locale);
+}
+
+TEST(LocalizingMonitoredItemServiceTest, NonEventNotificationsPassThrough) {
+  FakeMonitoredItemService inner;
+  scada::DataValue value;
+  value.value = scada::Variant{42.0};
+  inner.batch = {scada::DataChangeNotification{.value = value}};
+
+  LocalizingMonitoredItemService service{inner};
+  TestExecutor executor;
+  auto subscription = service.CreateSubscription(
+      ContextFor({"en"}), scada::MonitoredItemSubscriptionOptions{});
+  ASSERT_TRUE(subscription.ok());
+  auto notifications = WaitAwaitable(executor, (*subscription)->ReadNext(10));
+
+  ASSERT_TRUE(notifications.ok());
+  ASSERT_EQ(1u, notifications->size());
+  EXPECT_NE(nullptr,
+            std::get_if<scada::DataChangeNotification>(&notifications->front()));
+}
+
+TEST(ResolveEventMessageTest, ADeviceFrameEventIsResolvedThroughItsBase) {
+  // The other event type carrying a message; it holds the base by value, so
+  // resolving has to reach inside rather than any_cast to Event.
+  scada::DeviceFrameEvent event;
+  const std::vector<LocalizedText> translations{Ru(), En()};
+  event.base.message = EncodeMultiLanguage(translations);
+
+  const std::vector<String> english{"en"};
+  const std::any resolved = ResolveEventMessage(event, english);
+  const auto* typed = std::any_cast<scada::DeviceFrameEvent>(&resolved);
+  ASSERT_NE(nullptr, typed);
+  EXPECT_EQ(En(), typed->base.message);
+}
+
+TEST(ResolveEventMessageTest, AnEventTypeWithNoMessageIsUntouched) {
+  // ModelChangeEvent carries none; it must come back as itself rather than
+  // being rejected or emptied.
+  scada::ModelChangeEvent event;
+  const std::vector<String> english{"en"};
+  const std::any resolved = ResolveEventMessage(event, english);
+  EXPECT_NE(nullptr, std::any_cast<scada::ModelChangeEvent>(&resolved));
+}
+
+TEST(ResolveEventMessageTest, AnEmptyAnyIsUntouched) {
+  const std::vector<String> english{"en"};
+  EXPECT_FALSE(ResolveEventMessage(std::any{}, english).has_value());
 }
 
 }  // namespace

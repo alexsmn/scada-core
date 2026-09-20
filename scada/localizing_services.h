@@ -27,9 +27,26 @@
 
 #include "scada/attribute_service.h"
 #include "scada/co_result.h"
+#include "scada/monitored_item_service.h"
 #include "scada/view_service.h"
 
+#include <any>
+#include <memory>
+#include <span>
+
 namespace scada {
+
+// Resolves the Message of an event carried in a `std::any` against a
+// session's locale preferences, returning it unchanged when it carries none.
+//
+// An event Message is a LocalizedText and is explicitly localizable (OPC UA
+// Part 5 §6.4.2 BaseEventType,
+// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4.2), so it is
+// resolved per session like any other — but it travels inside a `std::any`,
+// which is why this exists rather than the value simply passing through a
+// field. Only `Event` and `DeviceFrameEvent` carry a message; the model- and
+// semantic-change events have none and come back untouched.
+std::any ResolveEventMessage(std::any event, std::span<const String> requested);
 
 // Wraps a ViewService, resolving the display name of every reference a Browse
 // returns.
@@ -66,6 +83,29 @@ class LocalizingAttributeService : public scada::AttributeService {
 
  private:
   scada::AttributeService& inner_;
+};
+
+// Wraps a MonitoredItemService so every event notification a subscription
+// delivers carries its Message in the subscribing session's language.
+//
+// The locales are captured when the subscription is created, because
+// `ReadNext` has no ServiceContext to carry them — a subscription belongs to
+// one session and its language is a property of that session. A client that
+// re-activates with a different language (Part 4 §5.7.3.2) therefore keeps
+// the old language on subscriptions it already holds, and gets the new one on
+// subscriptions it creates afterwards; a client that wants its journal to
+// follow a live language change re-subscribes, which the web client does.
+class LocalizingMonitoredItemService : public scada::MonitoredItemService {
+ public:
+  explicit LocalizingMonitoredItemService(scada::MonitoredItemService& inner)
+      : inner_{inner} {}
+
+  StatusOr<std::unique_ptr<MonitoredItemSubscription>> CreateSubscription(
+      ServiceContext context,
+      MonitoredItemSubscriptionOptions options) override;
+
+ private:
+  scada::MonitoredItemService& inner_;
 };
 
 }  // namespace scada
