@@ -209,5 +209,96 @@ TEST(LocaleNegotiationTest, EmptyLocaleNeverMatches) {
             SelectLocalizedText(translations, requested));
 }
 
+// --- Composing a message that exists in several languages -----------------
+
+TEST(LocaleNegotiationTest, AppendingToAPlainValueJustAppends) {
+  // An untranslated message composes exactly as it did before any of this.
+  EXPECT_EQ(LocalizedText(u"Value > 42"),
+            AppendToEachLanguage(LocalizedText{u"Value >"}, u" 42"));
+}
+
+TEST(LocaleNegotiationTest, AppendingReachesEveryLanguage) {
+  // The formatted limit is locale-neutral, but it has to land inside each
+  // translation rather than on the packed payload.
+  const std::vector<LocalizedText> translations{
+      {"en", u"Alarm: Value >"}, {"ru", u"Тревога: Значение >"}};
+  const LocalizedText appended =
+      AppendToEachLanguage(EncodeMultiLanguage(translations), u" 42");
+
+  EXPECT_EQ((std::vector<LocalizedText>{{"en", u"Alarm: Value > 42"},
+                                        {"ru", u"Тревога: Значение > 42"}}),
+            DecodeMultiLanguage(appended));
+}
+
+TEST(LocaleNegotiationTest, AppendingNothingChangesNothing) {
+  const LocalizedText packed = EncodeMultiLanguage(
+      std::vector<LocalizedText>{{"en", u"a"}, {"ru", u"б"}});
+  EXPECT_EQ(packed, AppendToEachLanguage(packed, u""));
+}
+
+TEST(LocaleNegotiationTest, JoiningMatchesLanguageToLanguage) {
+  // The point of the whole helper: one stored value that reads correctly in
+  // either language, rather than two fragments glued in whichever language
+  // the first one happened to be in.
+  const LocalizedText first = EncodeMultiLanguage(
+      std::vector<LocalizedText>{{"en", u"State change"},
+                                 {"ru", u"Изменение состояния"}});
+  const LocalizedText second = EncodeMultiLanguage(
+      std::vector<LocalizedText>{{"en", u"Manual input"},
+                                 {"ru", u"Ручной ввод"}});
+
+  EXPECT_EQ((std::vector<LocalizedText>{
+                {"en", u"State change; Manual input"},
+                {"ru", u"Изменение состояния; Ручной ввод"}}),
+            DecodeMultiLanguage(JoinLanguages(first, u"; ", second)));
+}
+
+TEST(LocaleNegotiationTest, JoiningAPlainFragmentUsesItForEveryLanguage) {
+  // A fragment the catalog has not translated: better a mixed-language
+  // message than a language that silently loses a sentence.
+  const LocalizedText first = EncodeMultiLanguage(
+      std::vector<LocalizedText>{{"en", u"State change"},
+                                 {"ru", u"Изменение состояния"}});
+
+  EXPECT_EQ((std::vector<LocalizedText>{{"en", u"State change; KP-02"},
+                                        {"ru", u"Изменение состояния; KP-02"}}),
+            DecodeMultiLanguage(
+                JoinLanguages(first, u"; ", LocalizedText{u"KP-02"})));
+}
+
+TEST(LocaleNegotiationTest, JoiningIgnoresLanguagesOnlyTheFragmentHas) {
+  // A de-only fragment must not create a German message holding nothing but
+  // that fragment.
+  const LocalizedText first = EncodeMultiLanguage(
+      std::vector<LocalizedText>{{"en", u"State change"},
+                                 {"ru", u"Изменение состояния"}});
+  const LocalizedText second = EncodeMultiLanguage(
+      std::vector<LocalizedText>{{"de", u"Handeingabe"},
+                                 {"en", u"Manual input"}});
+
+  const std::vector<LocalizedText> joined =
+      DecodeMultiLanguage(JoinLanguages(first, u"; ", second));
+  EXPECT_EQ(2u, joined.size());
+  EXPECT_EQ(u"State change; Manual input", joined[0].text);
+  // ru had no match, so it took the fragment's own authored language.
+  EXPECT_EQ(String{"ru"}, joined[1].locale);
+}
+
+TEST(LocaleNegotiationTest, JoiningAnEmptySideYieldsTheOther) {
+  // The first fragment of a message: there is nothing to join it to yet.
+  const LocalizedText packed = EncodeMultiLanguage(
+      std::vector<LocalizedText>{{"en", u"a"}, {"ru", u"б"}});
+  EXPECT_EQ(packed, JoinLanguages(LocalizedText{}, u"; ", packed));
+  EXPECT_EQ(packed, JoinLanguages(packed, u"; ", LocalizedText{}));
+}
+
+TEST(LocaleNegotiationTest, JoiningTwoPlainValuesStaysPlain) {
+  // Nothing translated anywhere: the result must not become a packed value.
+  const LocalizedText joined =
+      JoinLanguages(LocalizedText{u"a"}, u"; ", LocalizedText{u"b"});
+  EXPECT_EQ(LocalizedText(u"a; b"), joined);
+  EXPECT_TRUE(joined.locale.empty());
+}
+
 }  // namespace
 }  // namespace scada

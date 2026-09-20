@@ -99,6 +99,62 @@ std::vector<LocalizedText> DecodeMultiLanguage(const LocalizedText& text) {
   return translations;
 }
 
+LocalizedText AppendToEachLanguage(const LocalizedText& text,
+                                   std::u16string_view suffix) {
+  if (suffix.empty())
+    return text;
+  if (!IsSpecialLocale(text.locale)) {
+    LocalizedText appended = text;
+    appended.text.append(suffix);
+    return appended;
+  }
+
+  std::vector<LocalizedText> translations = DecodeMultiLanguage(text);
+  for (LocalizedText& translation : translations)
+    translation.text.append(suffix);
+  return EncodeMultiLanguage(translations);
+}
+
+LocalizedText JoinLanguages(const LocalizedText& first,
+                            std::u16string_view separator,
+                            const LocalizedText& second) {
+  if (first.empty())
+    return second;
+  if (second.empty())
+    return first;
+
+  const std::vector<LocalizedText> left = DecodeMultiLanguage(first);
+  const std::vector<LocalizedText> right = DecodeMultiLanguage(second);
+
+  // The left side decides which languages the result has, and in what order:
+  // it is the message so far, and the fragment being appended is the thing
+  // that might be missing a translation rather than the other way round.
+  std::vector<LocalizedText> joined;
+  joined.reserve(left.size());
+  for (const LocalizedText& piece : left) {
+    LocalizedText combined = piece;
+    const LocalizedText* match = nullptr;
+    for (const LocalizedText& candidate : right) {
+      if (EqualsIgnoreCase(candidate.locale, piece.locale)) {
+        match = &candidate;
+        break;
+      }
+    }
+    // No translation of the fragment in this language: fall back to the one
+    // the fragment does have rather than leaving the language short a
+    // sentence. `right.front()` is the fragment's own authored language.
+    const LocalizedText& tail = match ? *match : right.front();
+    combined.text.append(separator);
+    combined.text.append(tail.text);
+    joined.push_back(std::move(combined));
+  }
+
+  // Languages only the fragment has are dropped rather than added: a message
+  // that exists in ru+en gaining a de fragment would otherwise produce a
+  // German entry holding nothing but that one fragment.
+  return EncodeMultiLanguage(joined);
+}
+
 LocalizedText SelectLocalizedText(std::span<const LocalizedText> translations,
                                   std::span<const String> requested) {
   if (translations.empty())

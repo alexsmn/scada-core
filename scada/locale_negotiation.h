@@ -65,6 +65,30 @@ LocalizedText EncodeMultiLanguage(std::span<const LocalizedText> translations);
 // input yields an empty vector.
 std::vector<LocalizedText> DecodeMultiLanguage(const LocalizedText& text);
 
+// Appends locale-neutral text — a formatted number, a unit, a separator — to
+// EVERY language a value carries, and returns the same shape it was given.
+//
+// `LocalizedText::operator+=` cannot do this once a value is packed: it would
+// append to the JSON payload rather than to each translation, producing a
+// value that decodes to the original languages with the suffix stranded
+// outside them. A plain value is appended to directly, so an untranslated
+// message composes exactly as it did before.
+LocalizedText AppendToEachLanguage(const LocalizedText& text,
+                                   std::u16string_view suffix);
+
+// Joins two values language by language, with `separator` between them.
+//
+// Used to build a message out of translated fragments: "State change" +
+// "Manual input" has to become «Изменение состояния; Ручной ввод» for a
+// Russian session and "State change; Manual input" for an English one, from
+// ONE stored value. A language present in only one side is carried through
+// with just that side's text, so a fragment the catalog has not translated
+// degrades to a mixed-language message rather than dropping a language
+// entirely — Part 4 §5.4 would rather answer in some language than in none.
+LocalizedText JoinLanguages(const LocalizedText& first,
+                            std::u16string_view separator,
+                            const LocalizedText& second);
+
 // Picks the translation a session gets, per Part 4 §5.4.
 //
 // `translations` is everything the server holds for a single LocalizedText,
