@@ -7,6 +7,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace scada {
 
@@ -31,12 +32,22 @@ class [[nodiscard]] ServiceContext {
   // an in-process caller). The OTel `client.address` equivalent for request
   // logs and trace spans.
   const std::string& peer() const SCADA_LIFETIME_BOUND;
+  // The session's preferred locales, most preferred first, as the client
+  // supplied them at session activation (RFC 3066 ids such as "en" or
+  // "ru-RU"). Empty when the client named none, which Part 4 §5.4 leaves the
+  // server free to answer in any locale it has. Consume it through
+  // `scada::SelectLocalizedText` (scada/locale_negotiation.h) rather than by
+  // reading element 0 — the list is a preference order, not a single choice.
+  // OPC UA Part 4 §5.4 Locale Negotiation,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4
+  const std::vector<std::string>& locale_ids() const SCADA_LIFETIME_BOUND;
 
   ServiceContext with_user_id(const scada::NodeId& user_id) const;
   ServiceContext with_user_rights(uint32_t user_rights) const;
   ServiceContext with_request_id(uint64_t request_id) const;
   ServiceContext with_trace_id(const TraceId& trace_id) const;
   ServiceContext with_peer(std::string peer) const;
+  ServiceContext with_locale_ids(std::vector<std::string> locale_ids) const;
 
   friend std::ostream& operator<<(std::ostream& stream,
                                   const ServiceContext& context);

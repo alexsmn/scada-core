@@ -175,8 +175,9 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
         scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
   }
 
-  auto& session =
-      CreateNewSession(user_id, user_name, auth_result->user_rights);
+  auto& session = CreateNewSession(
+      user_id, user_name, auth_result->user_rights,
+      {create_session.locale_id().begin(), create_session.locale_id().end()});
 
   LOG_INFO(*logger_) << "CreateSessionAsync returning success"
                      << LOG_TAG("UserId", NodeIdToLogString(user_id));
@@ -235,7 +236,8 @@ bool RemoteSessionManager::CheckExistingSession(
 SessionStub& RemoteSessionManager::CreateNewSession(
     const scada::NodeId& user_id,
     const scada::LocalizedText& user_name,
-    unsigned user_rights) {
+    unsigned user_rights,
+    std::vector<std::string> locale_ids) {
   LOG_INFO(*logger_) << "Create session"
                      << LOG_TAG("UserId", NodeIdToLogString(user_id))
                      << LOG_TAG("UserName", ToString(user_name));
@@ -246,9 +248,10 @@ SessionStub& RemoteSessionManager::CreateNewSession(
   auto session = SessionStub::Create(SessionContext{
       .executor_ = executor_,
       .services_ = services_,
-      .service_context_ =
-          scada::ServiceContext{}.with_user_id(user_id).with_user_rights(
-              user_rights),
+      .service_context_ = scada::ServiceContext{}
+                              .with_user_id(user_id)
+                              .with_user_rights(user_rights)
+                              .with_locale_ids(std::move(locale_ids)),
       .tracer_ = tracer_});
 
   auto& session_ref = *session;

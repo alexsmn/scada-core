@@ -14,6 +14,7 @@
 #include <functional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace scada {
 
@@ -71,6 +72,13 @@ struct SessionConnectParams {
   LocalizedText user_name;
   LocalizedText password;
   bool allow_remote_logoff = false;
+  // The locales this client would like server-supplied text in, most
+  // preferred first (RFC 3066 ids such as "en" or "ru-RU"). Empty leaves the
+  // choice to the server, which Part 4 §5.4 allows. The server keeps them on
+  // the session and resolves every LocalizedText it returns against them.
+  // OPC UA Part 4 §5.4 Locale Negotiation,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4
+  std::vector<std::string> locale_ids;
   // How to negotiate endpoint security. Defaults to the legacy unsecured path.
   SessionSecuritySettings security;
 };

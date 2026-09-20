@@ -82,9 +82,18 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
   bool CheckExistingSession(const scada::NodeId& user_id,
                             const scada::LocalizedText& user_name,
                             bool delete_existing);
+  // `locale_ids` are the session's preferred locales in the client's
+  // preference order, carried on the session's ServiceContext for the whole
+  // of its life. OPC UA puts this parameter on ActivateSession and lets a
+  // client re-send it (Part 4 §5.7.3.2,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.3.2); this
+  // protocol has no separate activation step, so it arrives with
+  // CreateSession and a client changing language reconnects.
   SessionStub& CreateNewSession(const scada::NodeId& user_id,
                                 const scada::LocalizedText& user_name,
-                                unsigned user_rights) SCADA_LIFETIME_BOUND;
+                                unsigned user_rights,
+                                std::vector<std::string> locale_ids)
+      SCADA_LIFETIME_BOUND;
 
   SessionStub* FindUserSession(const scada::NodeId& user_id) const
       SCADA_LIFETIME_BOUND;

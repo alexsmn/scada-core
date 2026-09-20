@@ -60,7 +60,10 @@ class SessionProxyTest : public Test {
                 network_env_.server_transport_string}}});
 
     session_opened_connection_ = session_manager_->SubscribeSessionOpened(
-        [this](SessionStub&) { ++sessions_opened_; });
+        [this](SessionStub& session) {
+          ++sessions_opened_;
+          opened_locale_ids_ = session.service_context().locale_ids();
+        });
     session_closed_connection_ = session_manager_->SubscribeSessionClosed(
         [this](SessionStub&) { ++sessions_closed_; });
 
@@ -125,6 +128,9 @@ class SessionProxyTest : public Test {
   // in which a client can go away while its logon is still in flight.
   std::optional<scada::base::AsyncCompletion> auth_gate_;
   int authentications_started_ = 0;
+  // The locales the server put on the last session it opened, as its own
+  // ServiceContext carries them.
+  std::vector<std::string> opened_locale_ids_;
   int sessions_opened_ = 0;
   int sessions_closed_ = 0;
   std::unique_ptr<RemoteSessionManager> session_manager_;
@@ -136,6 +142,38 @@ class SessionProxyTest : public Test {
   inline static const scada::LocalizedText kPassword{u"password"};
   inline static const scada::NodeId kUserId{1, 1};
 };
+
+TEST_F(SessionProxyTest, ConnectCarriesTheClientLocalesToTheServerSession) {
+  // The client's preference list reaches the server's ServiceContext in
+  // order, which is what everything downstream resolves LocalizedText
+  // against. OPC UA Part 4 §5.4 Locale Negotiation,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                        .transport_factory_ = asio_env_.transport_factory}};
+
+  auto params = GetConnectParams();
+  params.locale_ids = {"en-GB", "en"};
+  asio_env_.Wait(session.Connect(params));
+
+  ASSERT_TRUE(session.IsConnected(nullptr));
+  EXPECT_EQ((std::vector<std::string>{"en-GB", "en"}), opened_locale_ids_);
+
+  asio_env_.Wait(session.Disconnect());
+}
+
+TEST_F(SessionProxyTest, ConnectWithoutLocalesLeavesTheSessionUnconstrained) {
+  // No LocaleIds is a legal request meaning "any locale you have" (§5.4), so
+  // it must arrive as an empty list rather than as a guessed default.
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                        .transport_factory_ = asio_env_.transport_factory}};
+
+  asio_env_.Wait(session.Connect(GetConnectParams()));
+
+  ASSERT_TRUE(session.IsConnected(nullptr));
+  EXPECT_TRUE(opened_locale_ids_.empty());
+
+  asio_env_.Wait(session.Disconnect());
+}
 
 TEST_F(SessionProxyTest, ConnectAndDisconnectAreAwaitable) {
   SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),

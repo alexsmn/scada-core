@@ -315,6 +315,12 @@ Awaitable<void> SessionProxy::AwaitCreateSessionAsync() {
   create_session.set_protocol_version_minor(protocol::PROTOCOL_VERSION_MINOR);
   if (allow_remote_logoff_)
     create_session.set_delete_existing(true);
+  // The session's locale preferences, kept across the reconnect loop so a
+  // dropped transport comes back in the same language. OPC UA Part 4 §5.4
+  // Locale Negotiation,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4
+  for (const std::string& locale_id : locale_ids_)
+    create_session.add_locale_id(locale_id);
 
   auto response = co_await RequestAsync(std::move(request));
 
@@ -515,6 +521,7 @@ scada::CoStatus SessionProxy::ConnectAsync(scada::SessionConnectParams params) {
                                            : MakeConnectionString(params.host);
 
   allow_remote_logoff_ = params.allow_remote_logoff;
+  locale_ids_ = std::move(params.locale_ids);
 
   co_await ReconnectAsync();
   co_return connect_status_;

@@ -47,6 +47,10 @@ const std::string& ServiceContext::peer() const {
   return rep_->peer;
 }
 
+const std::vector<std::string>& ServiceContext::locale_ids() const {
+  return rep_->locale_ids;
+}
+
 ServiceContext ServiceContext::with_user_id(
     const scada::NodeId& user_id) const {
   Rep rep = *rep_;
@@ -75,6 +79,13 @@ ServiceContext ServiceContext::with_trace_id(const TraceId& trace_id) const {
 ServiceContext ServiceContext::with_peer(std::string peer) const {
   Rep rep = *rep_;
   rep.peer = std::move(peer);
+  return ServiceContext{std::make_shared<Rep>(std::move(rep))};
+}
+
+ServiceContext ServiceContext::with_locale_ids(
+    std::vector<std::string> locale_ids) const {
+  Rep rep = *rep_;
+  rep.locale_ids = std::move(locale_ids);
   return ServiceContext{std::make_shared<Rep>(std::move(rep))};
 }
 

@@ -149,6 +149,10 @@ class SessionProxy : private SessionProxyContext,
   std::string host_;
   std::string connection_string_;
   bool allow_remote_logoff_ = false;
+  // The session's preferred locales as `Connect` was given them, most
+  // preferred first; re-sent on every CreateSession so a reconnect keeps the
+  // language.
+  std::vector<std::string> locale_ids_;
 
   scada::NodeId user_node_id_;
   unsigned user_rights_ = 0;
