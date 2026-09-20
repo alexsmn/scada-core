@@ -63,8 +63,9 @@ void SessionStub::Init() {
   }
 
   if (services_.history_service) {
-    history_stub_ = std::make_shared<HistoryStub>(*services_.history_service,
-                                                  sender, executor_, tracer_);
+    history_stub_ = std::make_shared<HistoryStub>(
+        *services_.history_service, sender, executor_,
+        service_context_.locale_ids(), tracer_);
   }
 }
 

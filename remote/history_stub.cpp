@@ -8,6 +8,7 @@
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "scada/history_service.h"
+#include "scada/locale_negotiation.h"
 #include "scada/node_id_log.h"
 
 #include "base/debug_util.h"
@@ -15,11 +16,13 @@
 HistoryStub::HistoryStub(scada::HistoryService& service,
                          std::weak_ptr<MessageSender> sender,
                          AnyExecutor executor,
+                         std::vector<std::string> locale_ids,
                          Tracer& tracer)
     : service_{service},
       sender_{std::move(sender)},
       executor_{std::move(executor)},
-      tracer_{tracer} {}
+      tracer_{tracer},
+      locale_ids_{std::move(locale_ids)} {}
 
 HistoryStub::~HistoryStub() {
   // Release continuation points.
@@ -191,6 +194,12 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
   response.set_request_id(request_id);
   Convert(result.status(), *response.mutable_status());
   if (result.ok() && !result->events.empty()) {
+    // A stored message carries every language the server could say it in
+    // when the event was produced; this session gets one of them. A message
+    // stored before events were multi-language resolves to itself.
+    for (scada::Event& event : result->events) {
+      event.message = scada::ResolveLocalizedText(event.message, locale_ids_);
+    }
     Convert(std::move(result->events),
             *response.mutable_history_read_events_result()->mutable_event());
   }

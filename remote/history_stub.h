@@ -8,6 +8,8 @@
 #include "scada/history_types.h"
 
 #include <map>
+#include <string>
+#include <vector>
 
 namespace boost::asio {
 class io_context;
@@ -25,9 +27,17 @@ class MessageSender;
 
 class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
  public:
+  // `locale_ids` are the session's language preferences, passed in because
+  // `HistoryService` carries no ServiceContext — a historical event's Message
+  // is a LocalizedText and is localizable like any other (OPC UA Part 5
+  // §6.4.2), and Part 11 states no exception for historical access, so the
+  // session's language governs here too. Resolving at this endpoint rather
+  // than widening the HistoryService interface keeps a sold API unchanged;
+  // the same gap is why these spans do not propagate downstream.
   HistoryStub(scada::HistoryService& service,
               std::weak_ptr<MessageSender> sender,
               AnyExecutor executor,
+              std::vector<std::string> locale_ids = {},
               Tracer& tracer = Tracer::None());
   ~HistoryStub();
 
@@ -55,6 +65,8 @@ class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
   const std::weak_ptr<MessageSender> sender_;
   const AnyExecutor executor_;
   Tracer& tracer_;
+  // The session's languages, fixed for the life of the session.
+  const std::vector<std::string> locale_ids_;
 
   BoostLogger logger_{LOG_NAME("HistoryStub")};
 
