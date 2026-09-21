@@ -31,11 +31,16 @@ class TwoLanguageHistoryService final : public scada::HistoryService {
         {"ru", u"Изменение состояния"},
         {"en", u"State change"},
     };
+    const scada::LocalizedText names[] = {
+        {"ru", u"Статистика сервера"},
+        {"en", u"Server statistics"},
+    };
     scada::Event event;
     event.event_id = 1;
     event.time = scada::Time{std::chrono::seconds{1}};
     event.severity = scada::kSeverityNormal;
     event.message = scada::EncodeMultiLanguage(translations);
+    event.source_name = scada::EncodeMultiLanguage(names);
     co_return scada::HistoryReadEventsResult{.events = {std::move(event)}};
   }
 };
@@ -100,6 +105,31 @@ TEST(HistoryStubTest, ASessionWithNoLocalesGetsPlainTextNotThePackedForm) {
   const auto received = ReadOneEvent({});
   EXPECT_NE(received.message_locale(), scada::kMultiLanguageLocale);
   EXPECT_THAT(received.message_utf8(), Not(HasSubstr("{\"t\":")));
+}
+
+// SourceName is the source node's DisplayName captured when the event was
+// produced, and it carries every language that name had — so the journal's
+// object column follows the session too, not just its message column. The
+// wire field is a plain string (OPC UA Part 5 §6.4.2 types SourceName as a
+// `String`), so what must differ between sessions is the string itself.
+//
+// Regression test for backlog 802: an English session read its journal's
+// object column in Russian while the same session's node tree was correct,
+// because the producer resolved the name once against an empty context.
+TEST(HistoryStubTest, AnEventSourceNameIsResolvedToTheSessionLanguage) {
+  const auto english = ReadOneEvent({"en"});
+  EXPECT_EQ(english.source_name(), "Server statistics");
+
+  const auto russian = ReadOneEvent({"ru"});
+  EXPECT_EQ(russian.source_name(), "Статистика сервера");
+}
+
+// And the packed payload must never reach the wire: the object column would
+// show raw JSON, which is worse than showing the wrong language.
+TEST(HistoryStubTest, ASourceNameIsNeverThePackedFormOnTheWire) {
+  const auto received = ReadOneEvent({});
+  EXPECT_FALSE(received.source_name().empty());
+  EXPECT_THAT(received.source_name(), Not(HasSubstr("{\"t\":")));
 }
 
 }  // namespace

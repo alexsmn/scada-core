@@ -352,7 +352,8 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
         Convert(source.as_node_id(), *target.mutable_node_id_value());
         break;
       case scada::Variant::DATE_TIME:
-        target.set_time_value_time(scada::base::EncodeWireMicroseconds(source.get<scada::Time>()));
+        target.set_time_value_time(
+            scada::base::EncodeWireMicroseconds(source.get<scada::Time>()));
         break;
       case scada::Variant::EXTENSION_OBJECT:
         Convert(source.get<scada::ExtensionObject>(),
@@ -471,7 +472,10 @@ void Convert(const protocol::Event& source, scada::Event& target) {
   target.severity = source.severity();
   if (source.has_source_node_id())
     Convert(source.source_node_id(), target.source_node_id);
-  target.source_name = source.source_name();
+  // The wire carries one string (Part 5 §6.4.2 types SourceName as a String),
+  // so what arrives is a single language with none declared.
+  target.source_name = scada::LocalizedText{
+      scada::String{}, UtfConvert<char16_t>(source.source_name())};
   if (source.has_user_node_id())
     Convert(source.user_node_id(), target.user_id);
   if (source.has_value())
@@ -496,8 +500,11 @@ void Convert(const scada::Event& source, protocol::Event& target) {
   target.set_severity(source.severity);
   if (!source.source_node_id.is_null())
     Convert(source.source_node_id, *target.mutable_source_node_id());
+  // Projected to the plain string the wire type is. Whatever language it is
+  // in was chosen at the client-facing boundary, which resolved it against
+  // this session's LocaleIds before handing the event here.
   if (!source.source_name.empty())
-    target.set_source_name(source.source_name);
+    target.set_source_name(UtfConvert<char>(source.source_name.text));
   if (!source.user_id.is_null())
     Convert(source.user_id, *target.mutable_user_node_id());
   if (!source.value.is_null())

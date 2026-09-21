@@ -65,12 +65,21 @@ struct Event {
   // Null when the event is not specific to a node.
   NodeId source_node_id;
   // Human-readable name of the event source; corresponds to `SourceName` of
-  // `BaseEventType` (OPC UA Part 5 §6.4.2). Resolved by the producing tier
-  // from the source node's DisplayName; forwarded events keep the origin
-  // tier's value. Empty when the event is not node-specific or the name
-  // could not be resolved (the projection then falls back to the NodeId
+  // `BaseEventType` SourceName (OPC UA Part 5 §6.4.2). Resolved by the
+  // producing tier from the source node's DisplayName; forwarded events keep
+  // the origin tier's value. Empty when the event is not node-specific or the
+  // name could not be resolved (the projection then falls back to the NodeId
   // string).
-  String source_name;
+  //
+  // A LocalizedText INTERNALLY, carrying every language the source node's
+  // DisplayName had when the event was produced, so a journal names its
+  // objects in the reading session's language — the same treatment `message`
+  // gets, and for the same reason: an event is written once and read by many.
+  // Part 5 §6.4.2 types SourceName as a `String`, so both wires still carry a
+  // plain string; the client-facing boundary resolves this down to one just
+  // before projecting it. Keeping the name AS IT WAS is deliberate — a
+  // renamed or deleted node does not rewrite history.
+  LocalizedText source_name;
   // `user_id` can be null.
   NodeId user_id;
   // `value` can be null.
@@ -113,8 +122,8 @@ struct ModelChangeEvent {
 
 // One protocol frame on a device link, reported as data rather than as prose in
 // the message (docs/ux/shell.md §2.8 in the client). It embeds the base event —
-// time, source device, severity, message — and adds the decoded frame fields, so
-// a consumer that only wants the log still has it.
+// time, source device, severity, message — and adds the decoded frame fields,
+// so a consumer that only wants the log still has it.
 //
 // The type id is a *member* rather than a compile-time constant, unlike
 // ModelChangeEvent and SemanticChangeEvent: `DeviceFrameEventType` lives in the
@@ -160,9 +169,9 @@ struct DeviceFrame {
 // log line still has it.
 //
 // The type id is carried in `base.event_type_id` rather than as a compile-time
-// constant, unlike ModelChangeEvent and SemanticChangeEvent: DeviceFrameEventType
-// lives in the SCADA model namespace (common/model), which core does not depend
-// on. The producer supplies it.
+// constant, unlike ModelChangeEvent and SemanticChangeEvent:
+// DeviceFrameEventType lives in the SCADA model namespace (common/model), which
+// core does not depend on. The producer supplies it.
 struct DeviceFrameEvent {
   bool operator==(const DeviceFrameEvent&) const = default;
 

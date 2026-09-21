@@ -199,6 +199,12 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
     // stored before events were multi-language resolves to itself.
     for (scada::Event& event : result->events) {
       event.message = scada::ResolveLocalizedText(event.message, locale_ids_);
+      // SourceName gets the same treatment: it is the source node's
+      // DisplayName as it was when the event was produced, carried with every
+      // language that name had. The wire field is a plain string (Part 5
+      // §6.4.2), so it must be one language by the time Convert projects it.
+      event.source_name =
+          scada::ResolveLocalizedText(event.source_name, locale_ids_);
     }
     Convert(std::move(result->events),
             *response.mutable_history_read_events_result()->mutable_event());

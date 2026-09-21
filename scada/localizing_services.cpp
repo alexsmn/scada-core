@@ -46,6 +46,13 @@ bool ResolveIn(std::any& event, std::span<const String> requested) {
     return false;
   scada::Event& base = EventBase(*typed);
   base.message = ResolveLocalizedText(base.message, requested);
+  // SourceName is resolved here too, and for the same reason: it is the
+  // source node's DisplayName captured when the event was produced, so it
+  // carries every language that name had. Part 5 §6.4.2 types SourceName as a
+  // `String` on the wire, so the projection just past this point takes
+  // `.text` — which is why it has to be one language by the time it gets
+  // there. Leaving it packed would put raw JSON in a journal's object column.
+  base.source_name = ResolveLocalizedText(base.source_name, requested);
   return true;
 }
 
@@ -74,7 +81,8 @@ class LocalizingSubscription final : public scada::MonitoredItemSubscription {
       co_return notifications;
     for (MonitoredItemNotification& notification : *notifications) {
       if (auto* event = std::get_if<EventNotification>(&notification))
-        event->event = ResolveEventMessage(std::move(event->event), locale_ids_);
+        event->event =
+            ResolveEventMessage(std::move(event->event), locale_ids_);
     }
     co_return notifications;
   }

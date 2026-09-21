@@ -17,7 +17,7 @@ Event MakeEvent(NodeId event_type_id) {
   event.change_mask = Event::EVT_VAL;
   event.severity = kSeverityWarning;
   event.source_node_id = NodeId{42, 2};
-  event.source_name = "Pump 42";
+  event.source_name = u"Pump 42";
   event.user_id = NodeId{7, 3};
   event.value = Variant{123};
   event.message = u"message";
