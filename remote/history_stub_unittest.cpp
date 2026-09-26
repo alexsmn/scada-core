@@ -139,4 +139,25 @@ TEST(HistoryStubTest, ASourceNameIsNeverThePackedFormOnTheWire) {
   EXPECT_THAT(received.source_name(), Not(HasSubstr("{\"t\":")));
 }
 
+// The same, for a session that asked for "mul" — which the test above could not
+// see, because it asks for nothing. This is the case that was actually broken:
+// resolving against {"mul"} correctly yields the PACKED value, and the proto's
+// SourceName field is a bare string with no locale beside it (unlike
+// `message_locale`), so `Convert` put the raw JSON on the wire. The historian's
+// own collector connects this way (`MakeSourceConnectParams`,
+// scada-tier-historian), which is what makes it worse than a display bug: the
+// JSON is what gets ARCHIVED, and no later per-session resolution can undo it.
+//
+// It stayed invisible because packing needs a source node whose DisplayName has
+// two languages; the demo's did not. Found while fixing backlog 819.
+TEST(HistoryStubTest, AMulSessionDoesNotGetThePackedSourceNameEither) {
+  const auto received =
+      ReadOneEvent({std::string{scada::kMultiLanguageLocale}});
+  EXPECT_FALSE(received.source_name().empty());
+  EXPECT_THAT(received.source_name(), Not(HasSubstr("{\"t\":")));
+  // One of the two real names, not a truncation of the payload.
+  EXPECT_THAT(received.source_name(),
+              AnyOf(Eq("Статистика сервера"), Eq("Server statistics")));
+}
+
 }  // namespace

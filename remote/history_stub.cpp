@@ -203,8 +203,22 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
       // DisplayName as it was when the event was produced, carried with every
       // language that name had. The wire field is a plain string (Part 5
       // §6.4.2), so it must be one language by the time Convert projects it.
+      //
+      // And "one language" has to be enforced separately, because resolving
+      // against a session that asked for "mul" correctly returns the PACKED
+      // value — which `Convert` would then put on the wire as raw JSON, since
+      // the proto's SourceName has no locale field beside it the way
+      // `message_locale` does. `message` is safe for exactly that reason and
+      // SourceName is not. Only a peer that asked for the private tier tag can
+      // be relied on to unpack it again, and nothing on this protocol asks for
+      // that yet — so today this always resolves down to one language. Found
+      // while fixing backlog 819; the archive is downstream of this, so a
+      // packed value escaping here would be stored rather than merely shown.
       event.source_name =
           scada::ResolveLocalizedText(event.source_name, locale_ids_);
+      if (!scada::RequestsPackedStrings(locale_ids_)) {
+        event.source_name = scada::ResolveLocalizedText(event.source_name, {});
+      }
     }
     Convert(std::move(result->events),
             *response.mutable_history_read_events_result()->mutable_event());
