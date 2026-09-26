@@ -56,7 +56,7 @@ class NodeManagementService {
   virtual ~NodeManagementService() = default;
 
   // `context` carries the caller identity and rights for authorization
-  // (OPC UA Part 4 §5.7 NodeManagement).
+  // (OPC UA Part 4 §5.8 NodeManagement).
   virtual CoStatusOr<std::vector<AddNodesResult>> AddNodes(
       ServiceContext context,
       std::vector<AddNodesItem> inputs) = 0;

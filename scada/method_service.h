@@ -16,12 +16,14 @@
 namespace scada {
 
 // The payload of a successful Call. Operation-level failure is reported by the
-// enclosing StatusOr, not by a field here — the convention `HistoryReadRawResult`
-// states — so a value being present already means the method succeeded.
+// enclosing StatusOr, not by a field here — the convention
+// `HistoryReadRawResult` states — so a value being present already means the
+// method succeeded.
 //
 // The wire's `inputArgumentResults` is deliberately not mirrored: OPC UA Part 4
-// §5.11.2 populates it only alongside Bad_InvalidArgument, which arrives here as
-// a StatusOr error with no value, so a field here could never be reached.
+// §5.12.2 Call populates it only alongside Bad_InvalidArgument, which arrives
+// here as a StatusOr error with no value, so a field here could never be
+// reached.
 struct CallResult {
   std::vector<Variant> output_arguments;
 };
