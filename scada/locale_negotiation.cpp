@@ -37,6 +37,16 @@ bool IsSpecialLocale(std::string_view locale_id) {
          EqualsIgnoreCase(locale_id, kSubstitutableLocale);
 }
 
+bool RequestsEveryLanguage(std::string_view locale_id) {
+  return IsSpecialLocale(locale_id) ||
+         EqualsIgnoreCase(locale_id, kTierMultiLanguageLocale);
+}
+
+bool RequestsPackedStrings(std::span<const String> requested) {
+  return !requested.empty() &&
+         EqualsIgnoreCase(requested.front(), kTierMultiLanguageLocale);
+}
+
 bool LocaleMatches(std::string_view available, std::string_view requested) {
   if (available.empty() || requested.empty())
     return false;
@@ -164,17 +174,24 @@ LocalizedText SelectLocalizedText(std::span<const LocalizedText> translations,
   // the list". Alone it asks for every language; followed by locales it
   // narrows to those, and asking for languages the server does not have still
   // has to answer something, so an empty narrowing degrades to everything.
-  if (!requested.empty() && IsSpecialLocale(requested.front())) {
-    const std::span<const String> wanted = requested.subspan(1);
-    if (wanted.empty())
-      return EncodeMultiLanguage(translations);
+  if (!requested.empty() && RequestsEveryLanguage(requested.front())) {
+    // The entries after the leading one narrow the answer to the languages
+    // they name. One that names no language — a second "mul", or the private
+    // tier tag — is skipped rather than matched against a translation's
+    // locale: a tier asking for {"x-scada-mul", "mul"} is asking for
+    // everything twice, not for a language called "mul". It asks twice on
+    // purpose, so that an upstream recognising only "mul" still answers packed.
     std::vector<LocalizedText> narrowed;
-    for (const String& locale : wanted) {
+    for (const String& locale : requested.subspan(1)) {
+      if (RequestsEveryLanguage(locale))
+        continue;
       for (const LocalizedText& candidate : translations) {
         if (LocaleMatches(candidate.locale, locale))
           narrowed.push_back(candidate);
       }
     }
+    // Naming nothing, and naming only languages the server does not have, both
+    // still have to answer something: Part 4 §5.4 degrades to everything.
     return narrowed.empty() ? EncodeMultiLanguage(translations)
                             : EncodeMultiLanguage(narrowed);
   }
@@ -184,7 +201,7 @@ LocalizedText SelectLocalizedText(std::span<const LocalizedText> translations,
   // same preference step, so a session asking for "en-GB" prefers an "en-GB"
   // translation to an "en-US" one even though both are acceptable.
   for (const String& wanted : requested) {
-    if (IsSpecialLocale(wanted))
+    if (RequestsEveryLanguage(wanted))
       continue;
     const LocalizedText* subtag_match = nullptr;
     for (const LocalizedText& candidate : translations) {

@@ -300,5 +300,79 @@ TEST(LocaleNegotiationTest, JoiningTwoPlainValuesStaysPlain) {
   EXPECT_TRUE(joined.locale.empty());
 }
 
+// --- the private tier tag (backlog 819) --------------------------------
+
+TEST(LocaleNegotiationTest,
+     TheTierTagAsksForEveryLanguageButIsNotAValueMarker) {
+  // The two questions are deliberately different. A REQUEST for the tier tag
+  // asks for everything; a VALUE labelled with it is not a packed payload, and
+  // must not be unpacked — nothing in this tree ever stores one, and treating
+  // it as packed would make a stray label parse a plain name as JSON.
+  EXPECT_TRUE(RequestsEveryLanguage(kTierMultiLanguageLocale));
+  EXPECT_TRUE(RequestsEveryLanguage(kMultiLanguageLocale));
+  EXPECT_TRUE(RequestsEveryLanguage(kSubstitutableLocale));
+  EXPECT_FALSE(RequestsEveryLanguage("en"));
+
+  EXPECT_FALSE(IsSpecialLocale(kTierMultiLanguageLocale));
+  const LocalizedText mislabelled{String{kTierMultiLanguageLocale},
+                                  u"{\"t\":[[\"en\",\"Voltage\"]]}"};
+  EXPECT_EQ(std::vector<LocalizedText>{mislabelled},
+            DecodeMultiLanguage(mislabelled));
+}
+
+TEST(LocaleNegotiationTest, OnlyALeadingTierTagLicensesPackedStrings) {
+  EXPECT_FALSE(RequestsPackedStrings({}));
+  EXPECT_FALSE(RequestsPackedStrings(std::vector<String>{"en"}));
+  // "mul" is what any third party may legally ask for, so it must NOT license
+  // packing a String-typed field. That distinction is the whole point of the
+  // tag: 50cd12402 packed for everyone and had to be reverted.
+  EXPECT_FALSE(
+      RequestsPackedStrings(std::vector<String>{String{kMultiLanguageLocale}}));
+  EXPECT_TRUE(RequestsPackedStrings(
+      std::vector<String>{String{kTierMultiLanguageLocale}}));
+  EXPECT_TRUE(RequestsPackedStrings(std::vector<String>{
+      String{kTierMultiLanguageLocale}, String{kMultiLanguageLocale}}));
+  // Behind a named language it is a preference for no language at all, and
+  // Part 4 §5.4 only gives the leading entry that meaning.
+  EXPECT_FALSE(RequestsPackedStrings(
+      std::vector<String>{"en", String{kTierMultiLanguageLocale}}));
+}
+
+TEST(LocaleNegotiationTest, TheTierTagSelectsEveryLanguageLikeMul) {
+  const std::vector<LocalizedText> translations{Ru(), En()};
+  const std::vector<String> tag{String{kTierMultiLanguageLocale}};
+  EXPECT_EQ(translations,
+            DecodeMultiLanguage(SelectLocalizedText(translations, tag)));
+}
+
+TEST(LocaleNegotiationTest, TheTierTagFollowedByMulStillSelectsEverything) {
+  // This is the list a tier actually sends: the tag for a peer that knows it,
+  // then "mul" so an older upstream — which sees an unknown tag and skips it —
+  // still answers packed. "mul" in the narrowing position names no language, so
+  // it must not be matched against "ru"/"en" and leave the answer empty.
+  const std::vector<LocalizedText> translations{Ru(), En()};
+  const std::vector<String> both{String{kTierMultiLanguageLocale},
+                                 String{kMultiLanguageLocale}};
+  EXPECT_EQ(translations,
+            DecodeMultiLanguage(SelectLocalizedText(translations, both)));
+}
+
+TEST(LocaleNegotiationTest, TheTierTagStillNarrowsToNamedLanguages) {
+  const std::vector<LocalizedText> translations{Ru(), En(), EnGb()};
+  const std::vector<String> narrowed{String{kTierMultiLanguageLocale}, "ru"};
+  EXPECT_EQ(std::vector<LocalizedText>{Ru()},
+            DecodeMultiLanguage(SelectLocalizedText(translations, narrowed)));
+}
+
+TEST(LocaleNegotiationTest, AnUpstreamThatIgnoresTheTierTagFallsBack) {
+  // What a server predating the tag does with it: no translation matches a
+  // private-use tag, so Part 4 §5.4's "return any one it has" applies and the
+  // caller gets one language instead of a packed value. A degradation, not a
+  // failure — this is what makes the tag safe to send upstream blind.
+  const std::vector<LocalizedText> translations{Ru(), En()};
+  const std::vector<String> unknown_to_this_server{"x-some-other-vendor-tag"};
+  EXPECT_EQ(Ru(), SelectLocalizedText(translations, unknown_to_this_server));
+}
+
 }  // namespace
 }  // namespace scada

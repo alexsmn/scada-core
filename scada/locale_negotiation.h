@@ -30,8 +30,55 @@ inline constexpr std::string_view kMultiLanguageLocale = "mul";
 inline constexpr std::string_view kSubstitutableLocale = "qst";
 
 // True for "mul" and "qst" (case-insensitive), the two locale ids whose text
-// payload is a JSON object instead of a plain string.
+// payload is a JSON object instead of a plain string. This is a question about
+// a *value*: it is what tells `DecodeMultiLanguage` that there is something to
+// unpack. For the matching question about a *request*, see
+// `RequestsEveryLanguage` below.
 bool IsSpecialLocale(std::string_view locale_id);
+
+// The locale id our own tiers request in place of "mul" when they open an
+// upstream session. It means everything "mul" means, and additionally licenses
+// packing a localizable field whose WIRE type is a plain `String` rather than a
+// LocalizedText — which today is an event's SourceName (OPC UA Part 5 §6.4.2
+// BaseEventType, https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4.2
+// types it as a `String`).
+//
+// It exists because "mul" alone cannot carry that licence. Any client may
+// legally ask for "mul", including a third party that has never heard of this
+// tree, and a `String` has nowhere to put the "mul" marker that would tell the
+// receiver to unpack it — so a packed payload sent through that field arrives
+// as raw JSON and is displayed verbatim. That was shipped to the demo once and
+// reverted the same day (50cd12402 / 96f99d7ab); the packing has to be gated
+// on something only a peer that knows how to unpack it would ever send.
+//
+// "x-scada-mul" is a whole-tag private use language tag, so it is well-formed
+// and cannot collide with a registered locale: RFC 5646 gives
+// `Language-Tag = langtag / privateuse / grandfathered` with
+// `privateuse = "x" 1*("-" (1*8alphanum))` (§2.2.7 Private Use Subtags,
+// https://www.rfc-editor.org/rfc/rfc5646#section-2.2.7 — ABNF read at the
+// primary source, verified 2026-09-26). A server that does not recognise it
+// matches no translation and falls back to one it has, which is Part 4 §5.4's
+// own rule and exactly the behaviour a tier got before this tag existed — so
+// an upstream that predates it degrades rather than failing.
+//
+// Tiers request it FOLLOWED BY "mul" (see `MakeHistorySessionParams`), so an
+// upstream that knows neither tag still resolves the LocalizedText fields the
+// packed way and only SourceName collapses.
+inline constexpr std::string_view kTierMultiLanguageLocale = "x-scada-mul";
+
+// True for a locale id that asks for every language the server has rather than
+// naming one: the spec's "mul" and "qst", and our private tier tag. This is the
+// question to ask of a REQUEST, and it is deliberately wider than
+// `IsSpecialLocale`, which asks it of a value — a stored value must never be
+// labelled with the private tag, and `DecodeMultiLanguage` must not unpack one.
+bool RequestsEveryLanguage(std::string_view locale_id);
+
+// True when `requested` licenses packing a `String`-typed localizable field —
+// that is, when its leading entry is `kTierMultiLanguageLocale`. Only the
+// leading entry counts, for the same reason Part 4 §5.4 gives for the special
+// locales: a preference further down the list names a language, and this is not
+// one.
+bool RequestsPackedStrings(std::span<const String> requested);
 
 // True when `available` satisfies a request for `requested`, comparing RFC
 // 3066 tags case-insensitively: either the whole tags are equal, or their
