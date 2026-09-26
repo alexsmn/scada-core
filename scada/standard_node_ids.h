@@ -72,14 +72,17 @@ constexpr NumericId Server_ServerCapabilities_LocaleIdArray = 2271;
 constexpr NumericId Server_ServerCapabilities_MinSupportedSampleRate = 2272;
 constexpr NumericId Server_ServerCapabilities_MaxBrowseContinuationPoints =
     2735;
+// Server.ServerCapabilities.MaxByteStringLength (OPC UA Part 5 §6.3.2
+// ServerCapabilitiesType,
+// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.3.2).
+constexpr NumericId Server_ServerCapabilities_MaxByteStringLength = 12911;
 constexpr NumericId Server_ServerCapabilities_OperationLimits = 11704;
 // Server.ServerCapabilities.HistoryServerCapabilities: advertises whether the
 // server serves historical data/event reads (OPC UA Part 11 §5.3,
 // https://reference.opcfoundation.org/Core/Part11/v105/docs/5.3). These are
 // the standard INSTANCE ids (the HistoryServerCapabilitiesType member ids
 // 2331/2332 are the type's InstanceDeclarations, not these nodes).
-constexpr NumericId Server_ServerCapabilities_HistoryServerCapabilities =
-    11192;
+constexpr NumericId Server_ServerCapabilities_HistoryServerCapabilities = 11192;
 constexpr NumericId HistoryServerCapabilities_AccessHistoryDataCapability =
     11193;
 constexpr NumericId HistoryServerCapabilities_AccessHistoryEventsCapability =
