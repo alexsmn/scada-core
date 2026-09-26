@@ -123,6 +123,15 @@ TEST(ProtocolUtils, NodeId) {
   EXPECT_EQ(node_id, restored_node_id);
 }
 
+TEST(ProtocolUtils, OpaqueNodeIdRoundTripsAsOpaque) {
+  const scada::NodeId node_id{scada::ByteString{'\x01', '\x02', '\x00'}, 2};
+  protocol::NodeId proto_node_id;
+  Convert(node_id, proto_node_id);
+  auto restored_node_id = ConvertTo<scada::NodeId>(proto_node_id);
+  EXPECT_EQ(restored_node_id.type(), scada::NodeIdType::Opaque);
+  EXPECT_EQ(node_id, restored_node_id);
+}
+
 // LocalizedText conversions
 
 TEST(ProtocolUtils, ConvertStringToLocalizedTextAscii) {

@@ -47,7 +47,11 @@ void Convert(const protocol::NodeId& source, scada::NodeId& target) {
   if (!source.string_id().empty())
     target = scada::NodeId(source.string_id(), namespace_index);
   else if (!source.opaque_id().empty())
-    target = scada::NodeId(source.opaque_id(), namespace_index);
+    // `opaque_id()` is a std::string, which alone would select the String
+    // constructor and decode an opaque id as a string one.
+    target = scada::NodeId(
+        scada::ByteString{source.opaque_id().begin(), source.opaque_id().end()},
+        namespace_index);
   else
     target = scada::NodeId(source.numeric_id(), namespace_index);
 }
