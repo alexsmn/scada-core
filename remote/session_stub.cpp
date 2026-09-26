@@ -341,13 +341,8 @@ Awaitable<void> SessionStub::OnCallAsync(
   span.SetAttribute("scada.object_node_id", node_id.ToString());
   span.SetAttribute("scada.method_node_id", method_id.ToString());
 
-  // The gRPC Call is deliberately status-only (scada.proto has no output
-  // arguments), so a method's outputs stop here. A caller that needs them must
-  // use OPC UA.
-  auto status = (co_await services_.method_service->Call(
-                     std::move(node_id), std::move(method_id),
-                     std::move(arguments), context))
-                    .status();
+  auto result = co_await services_.method_service->Call(
+      std::move(node_id), std::move(method_id), std::move(arguments), context);
 
   if (!connection_)
     co_return;
@@ -355,7 +350,13 @@ Awaitable<void> SessionStub::OnCallAsync(
   protocol::Message message;
   auto& response = *message.add_responses();
   response.set_request_id(request_id);
-  Convert(status, *response.mutable_status());
+  Convert(result.status(), *response.mutable_status());
+  // The outputs travel in `call_output_argument` (scada.proto). Until
+  // 2026-09-26 the gRPC Call was status-only and dropped them here, which is
+  // what left GetProfile unreadable over this protocol (backlog 743).
+  if (result.ok()) {
+    Convert(result->output_arguments, *response.mutable_call_output_argument());
+  }
   Send(message);
 }
 

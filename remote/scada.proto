@@ -292,6 +292,14 @@ message Response {
 
   BrowseResponse browse_result = 60;
   repeated BrowsePathResult browse_path_result = 61;
+
+  // A Call's output arguments, present only when `status` is good. Added
+  // without a protocol version bump on purpose: the field is additive, so an
+  // older peer ignores it and a caller talking to an older server simply sees
+  // none -- whereas raising PROTOCOL_VERSION_MINOR would make every older
+  // server refuse the session outright (RemoteSessionManager accepts only
+  // minor <= its own).
+  repeated Variant call_output_argument = 70;
 }
 
 message DataChange {

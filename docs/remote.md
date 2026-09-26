@@ -135,6 +135,21 @@ Responsibilities:
 dependencies from `SessionStub` rather than constructing local callback
 adapters.
 
+### Method calls carry their output arguments
+
+A `Call` answers its status in `Response.status` and, when that status is good,
+the method's output arguments in `Response.call_output_argument`. Until
+2026-09-26 the protocol was status-only here: `SessionStub` dropped a method's
+outputs and `SessionProxy::Call` answered an empty `CallResult`, so any method
+whose answer *is* its outputs succeeded and returned nothing.
+
+The field was added without raising `PROTOCOL_VERSION_MINOR`, and that is
+deliberate: `RemoteSessionManager` accepts a client only when its minor version
+is at or below the server's own, so a bump would make every older server refuse
+newer clients outright. An additive protobuf field is ignored by an older peer,
+and an older server's answer simply lacks it — so a caller must read "no
+outputs" as "this server cannot say", not as a malformed answer.
+
 ### `SessionProxy`
 
 Files:

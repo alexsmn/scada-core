@@ -9,6 +9,7 @@
 #include "remote/session_stub.h"
 #include "scada/authentication_adapters.h"
 #include "scada/co_result.h"
+#include "scada/method_service_mock.h"
 #include "scada/session_debugger.h"
 
 #include <boost/asio/this_coro.hpp>
@@ -43,6 +44,7 @@ class SessionProxyTest : public Test {
     session_manager_ =
         std::make_unique<RemoteSessionManager>(RemoteSessionManagerContext{
             .executor_ = asio_env_.any_executor_factory(),
+            .services_ = {.method_service = &method_service_},
             .authenticator_ = scada::MakeCoroutineAuthenticator(
                 [this](scada::LocalizedText, scada::LocalizedText)
                     -> scada::CoStatusOr<scada::AuthenticationResult> {
@@ -59,8 +61,8 @@ class SessionProxyTest : public Test {
             .endpoints_ = {transport::TransportString{
                 network_env_.server_transport_string}}});
 
-    session_opened_connection_ = session_manager_->SubscribeSessionOpened(
-        [this](SessionStub& session) {
+    session_opened_connection_ =
+        session_manager_->SubscribeSessionOpened([this](SessionStub& session) {
           ++sessions_opened_;
           opened_locale_ids_ = session.service_context().locale_ids();
         });
@@ -133,6 +135,8 @@ class SessionProxyTest : public Test {
   std::vector<std::string> opened_locale_ids_;
   int sessions_opened_ = 0;
   int sessions_closed_ = 0;
+  // Declared before the manager, whose stubs hold a pointer to it.
+  NiceMock<scada::MockMethodService> method_service_;
   std::unique_ptr<RemoteSessionManager> session_manager_;
   // Declared after the manager so they are torn down before it.
   boost::signals2::scoped_connection session_opened_connection_;
@@ -400,6 +404,47 @@ TEST_F(SessionProxyTest, LiveSessionStillRefusesASecondLogon) {
 // The 5 s budget therefore sits ~24x above the fixed cost and ~6.7x below the
 // regressed one, so neither a loaded machine nor a faster one flips the
 // verdict.
+// A method's output arguments reach the caller over the native protocol. Until
+// 2026-09-26 the gRPC Call was status-only: the stub dropped the outputs and
+// the proxy answered an empty result, so a read-style method such as
+// GetProfile succeeded and told the client nothing (backlog 743).
+TEST_F(SessionProxyTest, CallCarriesOutputArgumentsBack) {
+  const scada::NodeId kObjectId{12, 5};
+  const scada::NodeId kMethodId{15152, 7};
+  EXPECT_CALL(method_service_, Call(kObjectId, kMethodId, _, _))
+      .WillOnce(Return(ByMove(scada::MakeMethodCallResult(
+          {scada::String{"profile"}, scada::UInt64{3}}))));
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                        .transport_factory_ = asio_env_.transport_factory}};
+  asio_env_.Wait(session.Connect(GetConnectParams()));
+
+  auto result = asio_env_.Wait(
+      session.Call(kObjectId, kMethodId, {}, scada::ServiceContext{}));
+
+  ASSERT_TRUE(result.ok()) << result.status();
+  EXPECT_THAT(result->output_arguments,
+              ElementsAre(scada::Variant{scada::String{"profile"}},
+                          scada::Variant{scada::UInt64{3}}));
+  asio_env_.Wait(session.Disconnect());
+}
+
+// A failed call still answers its status and nothing else.
+TEST_F(SessionProxyTest, FailedCallCarriesItsStatus) {
+  EXPECT_CALL(method_service_, Call)
+      .WillOnce(Return(ByMove(
+          scada::MakeMethodCallResult(scada::StatusCode::Bad_WrongMethodId))));
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                        .transport_factory_ = asio_env_.transport_factory}};
+  asio_env_.Wait(session.Connect(GetConnectParams()));
+
+  auto result = asio_env_.Wait(session.Call(
+      scada::NodeId{12, 5}, scada::NodeId{1, 7}, {}, scada::ServiceContext{}));
+
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.status().code(), scada::StatusCode::Bad_WrongMethodId);
+  asio_env_.Wait(session.Disconnect());
+}
+
 TEST_F(SessionProxyTest, RoundTripsDoNotPayPerMessageBufferCost) {
   SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
                         .transport_factory_ = asio_env_.transport_factory}};

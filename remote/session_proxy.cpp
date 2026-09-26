@@ -21,10 +21,10 @@
 #include "remote/protocol_utils.h"
 #include "remote/session_proxy_debuger.h"
 #include "remote/subscription_proxy.h"
-#include "scada/method_service.h"
 #include "remote/view_service_proxy.h"
 #include "scada/co_result.h"
 #include "scada/item_factory_subscription.h"
+#include "scada/method_service.h"
 #include "scada/monitored_item.h"
 
 #include <boost/asio/co_spawn.hpp>
@@ -668,10 +668,11 @@ scada::CoStatusOr<std::vector<scada::StatusCode>> SessionProxy::Write(
   co_return ConvertTo<std::vector<scada::StatusCode>>(response.write_result());
 }
 
-scada::CoStatusOr<scada::CallResult> SessionProxy::Call(scada::NodeId node_id,
-                                   scada::NodeId method_id,
-                                   std::vector<scada::Variant> arguments,
-                                   scada::ServiceContext context) {
+scada::CoStatusOr<scada::CallResult> SessionProxy::Call(
+    scada::NodeId node_id,
+    scada::NodeId method_id,
+    std::vector<scada::Variant> arguments,
+    scada::ServiceContext context) {
   if (!session_created_) {
     co_return scada::StatusCode::Bad_Disconnected;
   }
@@ -686,9 +687,13 @@ scada::CoStatusOr<scada::CallResult> SessionProxy::Call(scada::NodeId node_id,
   Convert(arguments, *command.mutable_argument());
 
   auto response = co_await RequestAsync(std::move(request));
-  // scada.proto carries no output arguments, so a good status yields an empty
-  // result. MakeCallResult, not StatusOr{status}: the latter panics on ok.
-  co_return scada::MakeCallResult(ConvertTo<scada::Status>(response.status()));
+  // An older server sends no `call_output_argument`, so a good status from one
+  // yields an empty result -- the caller must treat missing outputs as "not
+  // supported", not as a malformed answer. MakeCallResult, not
+  // StatusOr{status}: the latter panics on ok.
+  co_return scada::MakeCallResult(
+      ConvertTo<scada::Status>(response.status()),
+      ConvertTo<std::vector<scada::Variant>>(response.call_output_argument()));
 }
 
 scada::StatusOr<std::unique_ptr<scada::MonitoredItemSubscription>>
