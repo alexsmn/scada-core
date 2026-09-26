@@ -173,6 +173,13 @@ message NodeTree {
   repeated Node node = 1;
 }
 
+// The nodes dragged out of a client view, in the order the view listed them.
+// Carried under the drag MIME type `application/telecontrol.scada.nodes`;
+// like NodeTree it never crosses the client/server wire.
+message DragNodes {
+  repeated NodeId node_id = 1;
+}
+
 enum BrowseDirection {
   FORWARD = 0;
   INVERSE = 1;
