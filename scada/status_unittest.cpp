@@ -61,28 +61,48 @@ TEST(StatusTest, ToStringBadDisconnected) {
 }
 
 // ToString16(StatusCode)
+//
+// Core owns no wording for a status code; the UI installs a provider. The
+// tests below pin both halves of that: the provider is what renders, and
+// without one the symbolic name does.
 
-TEST(StatusTest, ToString16Good) {
-  auto str = ToString16(scada::StatusCode::Good);
-  EXPECT_FALSE(str.empty());
+namespace {
+
+// Answers with a recognizable stand-in, so the assertions say plainly which
+// code was asked about without depending on a real catalog.
+std::u16string RecordingProvider(scada::StatusCode status_code) {
+  const std::string name = ToString(status_code);
+  return u"<" + std::u16string(name.begin(), name.end()) + u">";
 }
 
-TEST(StatusTest, ToString16Bad) {
-  auto str = ToString16(scada::StatusCode::Bad);
-  EXPECT_FALSE(str.empty());
+class StatusTextProviderTest : public ::testing::Test {
+ protected:
+  void TearDown() override { scada::SetStatusTextProvider(nullptr); }
+};
+
+}  // namespace
+
+TEST_F(StatusTextProviderTest, WithoutAProviderTheSymbolicNameRenders) {
+  EXPECT_EQ(ToString16(scada::StatusCode::Bad_Timeout), u"Bad_Timeout");
+  EXPECT_EQ(ToString16(scada::Status{scada::StatusCode::Bad_UserAccessDenied}),
+            u"Bad_UserAccessDenied");
 }
 
-TEST(StatusTest, ToString16UnknownGoodReturnsFallback) {
-  auto unknown = static_cast<scada::StatusCode>(0x0FFF);
-  auto str = ToString16(unknown);
-  EXPECT_FALSE(str.empty());
-}
-
-TEST(StatusTest, ToString16UnknownBadReturnsFallback) {
-  auto unknown = static_cast<scada::StatusCode>(
+TEST_F(StatusTextProviderTest, UnknownCodesFallBackToTheirSeverity) {
+  const auto unknown_good = static_cast<scada::StatusCode>(0x0FFF);
+  const auto unknown_bad = static_cast<scada::StatusCode>(
       (static_cast<unsigned>(scada::StatusSeverity::Bad) << 14) | 0x3FFF);
-  auto str = ToString16(unknown);
-  EXPECT_FALSE(str.empty());
+
+  EXPECT_EQ(ToString16(unknown_good), u"OK");
+  EXPECT_EQ(ToString16(unknown_bad), u"Error");
+}
+
+TEST_F(StatusTextProviderTest, TheInstalledProviderRenders) {
+  scada::SetStatusTextProvider(&RecordingProvider);
+
+  EXPECT_EQ(ToString16(scada::StatusCode::Bad_Timeout), u"<Bad_Timeout>");
+  EXPECT_EQ(ToString16(scada::Status{scada::StatusCode::Bad_UserAccessDenied}),
+            u"<Bad_UserAccessDenied>");
 }
 
 // ToString(Status) / ToString16(Status)
@@ -90,12 +110,6 @@ TEST(StatusTest, ToString16UnknownBadReturnsFallback) {
 TEST(StatusTest, ToStringStatus) {
   scada::Status status(scada::StatusCode::Good);
   EXPECT_EQ("Good", ToString(status));
-}
-
-TEST(StatusTest, ToString16Status) {
-  scada::Status status(scada::StatusCode::Bad_Timeout);
-  auto str = ToString16(status);
-  EXPECT_FALSE(str.empty());
 }
 
 // Status class

@@ -13,8 +13,10 @@ namespace scada {
 // Mirrors `scada::SetNamespaceNameResolver` in `core/scada/node_id_log.h`.
 //
 // It lives in `core/base` rather than `common` because the lowest layer needs
-// it: `scada/status.cpp`, `scada/qualifier.cpp` and `scada/variant.cpp` all
-// produce operator-facing text and cannot include anything from `common`.
+// it: `scada/qualifier.cpp` and `scada/variant.cpp` produce operator-facing
+// text and cannot include anything from `common`. Status codes do not use it:
+// core carries no wording for them at all, and the client supplies it through
+// `scada::SetStatusTextProvider` (`scada/status.h`).
 using UiTextTranslator = std::u16string (*)(std::string_view english);
 
 // Installs the translator used by `TranslateUiText`. The client installs its

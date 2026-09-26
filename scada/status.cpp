@@ -1,13 +1,6 @@
 ﻿#include "scada/status.h"
 
-#if defined(SCADA_USE_BASE_MODULE)
-// Modules-pilot consumer (SCADA_CXX_MODULES=ON): base names come from the
-// scada.base facade. The import sits after the textual includes because the
-// reverse order trips an AppleClang 21 declaration-merging bug in libc++.
-import scada.base;
-#else
-#include "base/ui_text.h"
-#endif
+#include <string_view>
 
 namespace scada {
 
@@ -18,138 +11,102 @@ Status Status::FromFullCode(unsigned full_code) {
   return result;
 }
 
+namespace {
+
+// Set once at startup by the UI layer and read thereafter; a function-local
+// static keeps it out of static-global-init ordering, as `SetUiTextTranslator`
+// does.
+StatusTextProvider& GetStatusTextProvider() {
+  static StatusTextProvider provider = nullptr;
+  return provider;
+}
+
+}  // namespace
+
+void SetStatusTextProvider(StatusTextProvider provider) {
+  GetStatusTextProvider() = provider;
+}
+
 }  // namespace scada
 
 namespace {
 
 struct Entry {
   scada::StatusCode code;
-  // The enum spelling, for logs and wire diagnostics. Never translated.
+  // The enum spelling, for logs, wire diagnostics and — when no UI has
+  // installed a text provider — for display. Never translated.
   const char* error_string = nullptr;
-  // The operator-facing sentence, in English. `ToString16` runs it through
-  // `TranslateUiText`, so the Russian lives in the client's `client_ru.ts`
-  // catalog keyed by this exact string — change one and you must change the
-  // other, or the client silently falls back to English.
-  const char* display_string = nullptr;
 };
 
 const Entry kEntries[] = {
-    {scada::StatusCode::Good, "Good", "Operation completed successfully"},
-    {scada::StatusCode::Good_Pending, "Good_Pending", "Operation in progress"},
+    {scada::StatusCode::Good, "Good"},
+    {scada::StatusCode::Good_Pending, "Good_Pending"},
     {scada::StatusCode::Uncertain_StateWasNotChanged,
-     "Uncertain_StateWasNotChanged", "The lock was not changed"},
-    {scada::StatusCode::Bad, "Bad", "Error"},
-    {scada::StatusCode::Bad_WrongLoginCredentials, "Bad_WrongLoginCredentials",
-     "Wrong user name or password"},
-    {scada::StatusCode::Bad_UserIsAlreadyLoggedOn, "Bad_UserIsAlreadyLoggedOn",
-     "A session for this user is already open"},
+     "Uncertain_StateWasNotChanged"},
+    {scada::StatusCode::Bad, "Bad"},
+    {scada::StatusCode::Bad_WrongLoginCredentials, "Bad_WrongLoginCredentials"},
+    {scada::StatusCode::Bad_UserIsAlreadyLoggedOn, "Bad_UserIsAlreadyLoggedOn"},
     {scada::StatusCode::Bad_UnsupportedProtocolVersion,
-     "Bad_UnsupportedProtocolVersion", "Protocol version is not supported"},
-    {scada::StatusCode::Bad_ObjectIsBusy, "Bad_ObjectIsBusy",
-     "Another command is already running"},
-    {scada::StatusCode::Bad_WrongNodeId, "Bad_WrongNodeId",
-     "Wrong node identifier"},
-    {scada::StatusCode::Bad_WrongDeviceId, "Bad_WrongDeviceId",
-     "Wrong device identifier"},
-    {scada::StatusCode::Bad_Disconnected, "Bad_Disconnected", "Not connected"},
-    {scada::StatusCode::Bad_SessionForcedLogoff, "Bad_SessionForcedLogoff",
-     "Session closed because this user connected again"},
-    {scada::StatusCode::Bad_Timeout, "Bad_Timeout",
-     "Operation aborted after the wait timed out"},
+     "Bad_UnsupportedProtocolVersion"},
+    {scada::StatusCode::Bad_ObjectIsBusy, "Bad_ObjectIsBusy"},
+    {scada::StatusCode::Bad_WrongNodeId, "Bad_WrongNodeId"},
+    {scada::StatusCode::Bad_WrongDeviceId, "Bad_WrongDeviceId"},
+    {scada::StatusCode::Bad_Disconnected, "Bad_Disconnected"},
+    {scada::StatusCode::Bad_SessionForcedLogoff, "Bad_SessionForcedLogoff"},
+    {scada::StatusCode::Bad_Timeout, "Bad_Timeout"},
     {scada::StatusCode::Bad_CantDeleteDependentNode,
-     "Bad_CantDeleteDependentNode",
-     "Cannot delete the object because dependent objects exist"},
-    {scada::StatusCode::Bad_ServerWasShutDown, "Bad_ServerWasShutDown",
-     "Session closed because the server stopped"},
-    {scada::StatusCode::Bad_WrongMethodId, "Bad_WrongMethodId",
-     "The command is not supported by this object"},
-    {scada::StatusCode::Bad_CantDeleteOwnUser, "Bad_CantDeleteOwnUser",
-     "Cannot delete a user from a session that user opened"},
-    {scada::StatusCode::Bad_DuplicateNodeId, "Bad_DuplicateNodeId",
-     "An object with this identifier already exists"},
+     "Bad_CantDeleteDependentNode"},
+    {scada::StatusCode::Bad_ServerWasShutDown, "Bad_ServerWasShutDown"},
+    {scada::StatusCode::Bad_WrongMethodId, "Bad_WrongMethodId"},
+    {scada::StatusCode::Bad_CantDeleteOwnUser, "Bad_CantDeleteOwnUser"},
+    {scada::StatusCode::Bad_DuplicateNodeId, "Bad_DuplicateNodeId"},
     {scada::StatusCode::Bad_UnsupportedFileVersion,
-     "Bad_UnsupportedFileVersion", "File version is not supported"},
-    {scada::StatusCode::Bad_WrongTypeId, "Bad_WrongTypeId",
-     "Wrong object type"},
-    {scada::StatusCode::Bad_WrongParentId, "Bad_WrongParentId",
-     "Wrong parent object identifier"},
-    {scada::StatusCode::Bad_SessionIsLoggedOff, "Bad_SessionIsLoggedOff",
-     "Not logged on"},
-    {scada::StatusCode::Bad_WrongSubscriptionId, "Bad_WrongSubscriptionId",
-     "Wrong subscription number"},
-    {scada::StatusCode::Bad_WrongIndex, "Bad_WrongIndex", "Wrong index"},
-    {scada::StatusCode::Bad_Iec60870UnknownType, "Bad_IecUnknownType",
-     "Wrong IEC 60870-5 ASDU type"},
-    {scada::StatusCode::Bad_Iec60870UnknownCot, "Bad_IecUnknownCot",
-     "Wrong IEC 60870-5 cause of transmission"},
-    {scada::StatusCode::Bad_Iec60870UnknownDevice, "Bad_IecUnknownDevice",
-     "Wrong IEC 60870-5 device address"},
-    {scada::StatusCode::Bad_Iec60870UnknownAddress, "Bad_IecUnknownAddress",
-     "Wrong IEC 60870-5 information object address"},
-    {scada::StatusCode::Bad_Iec60870UnknownError, "Bad_IecUnknownError",
-     "IEC 60870-5 protocol error"},
-    {scada::StatusCode::Bad_WrongCallArguments, "Bad_WrongCallArguments",
-     "Wrong command arguments"},
-    {scada::StatusCode::Bad_CantParseString, "Bad_CantParseString",
-     "Cannot convert the string to a value of this type"},
-    {scada::StatusCode::Bad_TooLongString, "Bad_TooLongString",
-     "String is too long"},
-    {scada::StatusCode::Bad_WrongPropertyId, "Bad_WrongPropertyId",
-     "Wrong object attribute"},
-    {scada::StatusCode::Bad_WrongReferenceId, "Bad_WrongReferenceId",
-     "Wrong reference type"},
-    {scada::StatusCode::Bad_WrongNodeClass, "Bad_WrongNodeClass",
-     "Wrong node class"},
-    {scada::StatusCode::Bad_WrongAttributeId, "Bad_WrongAttributeId",
-     "Wrong attribute"},
-    {scada::StatusCode::Bad_Iec61850Error, "Bad_Iec61850Error",
-     "IEC 61850 protocol error"},
-    {scada::StatusCode::Bad_NothingToDo, "Bad_NothingToDo",
-     "The request is empty"},
-    {scada::StatusCode::Bad_BrowseNameInvalid, "Bad_BrowseNameInvalid",
-     "Name not found"},
-    {scada::StatusCode::Bad_WrongTargetId, "Bad_WrongTargetId",
-     "Wrong reference target"},
+     "Bad_UnsupportedFileVersion"},
+    {scada::StatusCode::Bad_WrongTypeId, "Bad_WrongTypeId"},
+    {scada::StatusCode::Bad_WrongParentId, "Bad_WrongParentId"},
+    {scada::StatusCode::Bad_SessionIsLoggedOff, "Bad_SessionIsLoggedOff"},
+    {scada::StatusCode::Bad_WrongSubscriptionId, "Bad_WrongSubscriptionId"},
+    {scada::StatusCode::Bad_WrongIndex, "Bad_WrongIndex"},
+    {scada::StatusCode::Bad_Iec60870UnknownType, "Bad_IecUnknownType"},
+    {scada::StatusCode::Bad_Iec60870UnknownCot, "Bad_IecUnknownCot"},
+    {scada::StatusCode::Bad_Iec60870UnknownDevice, "Bad_IecUnknownDevice"},
+    {scada::StatusCode::Bad_Iec60870UnknownAddress, "Bad_IecUnknownAddress"},
+    {scada::StatusCode::Bad_Iec60870UnknownError, "Bad_IecUnknownError"},
+    {scada::StatusCode::Bad_WrongCallArguments, "Bad_WrongCallArguments"},
+    {scada::StatusCode::Bad_CantParseString, "Bad_CantParseString"},
+    {scada::StatusCode::Bad_TooLongString, "Bad_TooLongString"},
+    {scada::StatusCode::Bad_WrongPropertyId, "Bad_WrongPropertyId"},
+    {scada::StatusCode::Bad_WrongReferenceId, "Bad_WrongReferenceId"},
+    {scada::StatusCode::Bad_WrongNodeClass, "Bad_WrongNodeClass"},
+    {scada::StatusCode::Bad_WrongAttributeId, "Bad_WrongAttributeId"},
+    {scada::StatusCode::Bad_Iec61850Error, "Bad_Iec61850Error"},
+    {scada::StatusCode::Bad_NothingToDo, "Bad_NothingToDo"},
+    {scada::StatusCode::Bad_BrowseNameInvalid, "Bad_BrowseNameInvalid"},
+    {scada::StatusCode::Bad_WrongTargetId, "Bad_WrongTargetId"},
     {scada::StatusCode::Bad_MonitoredItemIdInvalid,
-     "Bad_MonitoredItemIdInvalid", "Wrong monitored item number"},
-    {scada::StatusCode::Bad_MessageNotAvailable, "Bad_MessageNotAvailable",
-     "The requested message is no longer available"},
+     "Bad_MonitoredItemIdInvalid"},
+    {scada::StatusCode::Bad_MessageNotAvailable, "Bad_MessageNotAvailable"},
     {scada::StatusCode::Bad_ApplicationSignatureInvalid,
-     "Bad_ApplicationSignatureInvalid", "Invalid client application signature"},
-    {scada::StatusCode::Bad_TooManyOperations, "Bad_TooManyOperations",
-     "Too many operations in the request"},
-    {scada::StatusCode::Bad_TooManyMonitoredItems, "Bad_TooManyMonitoredItems",
-     "Too many monitored items in the request"},
-    {scada::StatusCode::Bad_SequenceNumberUnknown, "Bad_SequenceNumberUnknown",
-     "Unknown message sequence number"},
-    {scada::StatusCode::Bad_NoContinuationPoints, "Bad_NoContinuationPoints",
-     "The browse continuation point limit is exhausted"},
+     "Bad_ApplicationSignatureInvalid"},
+    {scada::StatusCode::Bad_TooManyOperations, "Bad_TooManyOperations"},
+    {scada::StatusCode::Bad_TooManyMonitoredItems, "Bad_TooManyMonitoredItems"},
+    {scada::StatusCode::Bad_SequenceNumberUnknown, "Bad_SequenceNumberUnknown"},
+    {scada::StatusCode::Bad_NoContinuationPoints, "Bad_NoContinuationPoints"},
     {scada::StatusCode::Bad_TimestampsToReturnInvalid,
-     "Bad_TimestampsToReturnInvalid", "Wrong TimestampsToReturn value"},
-    {scada::StatusCode::Bad_ViewIdUnknown, "Bad_ViewIdUnknown",
-     "Unknown view identifier"},
+     "Bad_TimestampsToReturnInvalid"},
+    {scada::StatusCode::Bad_ViewIdUnknown, "Bad_ViewIdUnknown"},
     {scada::StatusCode::Bad_HistoryOperationInvalid,
-     "Bad_HistoryOperationInvalid", "Invalid history request parameters"},
-    {scada::StatusCode::Bad_NoSubscription, "Bad_NoSubscription",
-     "The session has no subscriptions"},
-    {scada::StatusCode::Bad_UserAccessDenied, "Bad_UserAccessDenied",
-     "Not enough rights to perform the operation"},
-    {scada::StatusCode::Bad_NotSupported, "Bad_NotSupported",
-     "Operation is not supported"},
-    {scada::StatusCode::Bad_LicenseExpired, "Bad_LicenseExpired",
-     "The license has expired"},
-    {scada::StatusCode::Bad_WaitingForInitialData, "Bad_WaitingForInitialData",
-     "No value received from the data source yet"},
-    {scada::StatusCode::Bad_OutOfRange, "Bad_OutOfRange",
-     "The value is out of range and will not be stored"},
-    {scada::StatusCode::Bad_NotWritable, "Bad_NotWritable",
-     "The value cannot be written"},
-    {scada::StatusCode::Bad_ResponseTooLarge, "Bad_ResponseTooLarge",
-     "The response is too large to send"},
-    {scada::StatusCode::Bad_InvalidState, "Bad_InvalidState",
-     "The object is not in a state that allows this operation"},
-    {scada::StatusCode::Bad_NotReadable, "Bad_NotReadable",
-     "The value cannot be read"},
+     "Bad_HistoryOperationInvalid"},
+    {scada::StatusCode::Bad_NoSubscription, "Bad_NoSubscription"},
+    {scada::StatusCode::Bad_UserAccessDenied, "Bad_UserAccessDenied"},
+    {scada::StatusCode::Bad_NotSupported, "Bad_NotSupported"},
+    {scada::StatusCode::Bad_LicenseExpired, "Bad_LicenseExpired"},
+    {scada::StatusCode::Bad_WaitingForInitialData, "Bad_WaitingForInitialData"},
+    {scada::StatusCode::Bad_OutOfRange, "Bad_OutOfRange"},
+    {scada::StatusCode::Bad_NotWritable, "Bad_NotWritable"},
+    {scada::StatusCode::Bad_ResponseTooLarge, "Bad_ResponseTooLarge"},
+    {scada::StatusCode::Bad_InvalidState, "Bad_InvalidState"},
+    {scada::StatusCode::Bad_NotReadable, "Bad_NotReadable"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
@@ -174,11 +131,14 @@ std::string ToString(scada::StatusCode status_code) {
 }
 
 std::u16string ToString16(scada::StatusCode status_code) {
-  if (auto* entry = FindEntry(status_code))
-    return scada::TranslateUiText(entry->display_string);
+  if (const scada::StatusTextProvider provider =
+          scada::GetStatusTextProvider()) {
+    return provider(status_code);
+  }
 
-  return scada::TranslateUiText(
-      IsGood(status_code) ? "Operation completed successfully" : "Error");
+  // No UI layer: the symbolic name. Always ASCII, so widening is lossless.
+  const std::string_view name = ToCString(status_code);
+  return std::u16string(name.begin(), name.end());
 }
 
 std::string ToString(const scada::Status& status) {

@@ -267,11 +267,28 @@ inline constexpr Status BadStatus() noexcept {
   return Status{StatusCode::Bad};
 }
 
+// Produces the operator-facing description of a status code, in the display
+// locale.
+using StatusTextProvider = std::u16string (*)(StatusCode status_code);
+
+// Installs the provider `ToString16` uses. Core deliberately carries no
+// operator-facing wording for status codes: a StatusCode is the contract, and
+// describing it is the client's job (OPC UA Part 4 §7.12 DiagnosticInfo —
+// without a server translation "the Client should use the invariant StatusCode
+// description from the specification",
+// https://reference.opcfoundation.org/Core/Part4/v105/docs/7.12). The Qt client
+// installs its catalog-backed table at startup; pass nullptr to remove it.
+void SetStatusTextProvider(StatusTextProvider provider);
+
 }  // namespace scada
 
 const char* ToCString(scada::StatusCode status_code);
 
+// The symbolic name (`Bad_Timeout`), for logs and diagnostics.
 std::string ToString(scada::StatusCode status_code);
+
+// Display text: the installed `scada::StatusTextProvider`'s description, or
+// the symbolic name when none is installed — the server, and unit tests.
 std::u16string ToString16(scada::StatusCode status_code);
 
 std::string ToString(const scada::Status& status);

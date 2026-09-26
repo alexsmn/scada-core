@@ -156,12 +156,14 @@ using scada::TimeRange;
 
 // status.h / status_or.h / status_callback.h
 using scada::MultiStatusCallback;
+using scada::SetStatusTextProvider;
 using scada::Status;
 using scada::StatusCallback;
 using scada::StatusCode;
 using scada::StatusLimit;
 using scada::StatusOr;
 using scada::StatusSeverity;
+using scada::StatusTextProvider;
 
 // attribute_ids.h / node_class.h / node_attributes.h
 using scada::AttributeId;
