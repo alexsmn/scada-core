@@ -100,12 +100,16 @@ const Entry kEntries[] = {
      "Wrong reference type"},
     {scada::StatusCode::Bad_WrongNodeClass, "Bad_WrongNodeClass",
      "Wrong node class"},
+    {scada::StatusCode::Bad_WrongAttributeId, "Bad_WrongAttributeId",
+     "Wrong attribute"},
     {scada::StatusCode::Bad_Iec61850Error, "Bad_Iec61850Error",
      "IEC 61850 protocol error"},
     {scada::StatusCode::Bad_NothingToDo, "Bad_NothingToDo",
      "The request is empty"},
     {scada::StatusCode::Bad_BrowseNameInvalid, "Bad_BrowseNameInvalid",
      "Name not found"},
+    {scada::StatusCode::Bad_WrongTargetId, "Bad_WrongTargetId",
+     "Wrong reference target"},
     {scada::StatusCode::Bad_MonitoredItemIdInvalid,
      "Bad_MonitoredItemIdInvalid", "Wrong monitored item number"},
     {scada::StatusCode::Bad_MessageNotAvailable, "Bad_MessageNotAvailable",
@@ -138,6 +142,10 @@ const Entry kEntries[] = {
      "No value received from the data source yet"},
     {scada::StatusCode::Bad_OutOfRange, "Bad_OutOfRange",
      "The value is out of range and will not be stored"},
+    {scada::StatusCode::Bad_NotWritable, "Bad_NotWritable",
+     "The value cannot be written"},
+    {scada::StatusCode::Bad_ResponseTooLarge, "Bad_ResponseTooLarge",
+     "The response is too large to send"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {

@@ -151,6 +151,12 @@ enum class StatusCode : unsigned {
   // §5.6.2 Variable NodeClass (AccessLevel Attribute),
   // https://reference.opcfoundation.org/Core/Part3/v105/docs/5.6.2
   Bad_NotWritable = Bad | 53,
+  // A response is larger than a message size limit set by the client or the
+  // server, so the server answered with this fault instead of the response.
+  // Maps to the OPC UA Bad_ResponseTooLarge code (0x80B90000) — OPC UA Part 4
+  // §5.3 Service results,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.3
+  Bad_ResponseTooLarge = Bad | 54,
 };
 
 enum class StatusLimit {
