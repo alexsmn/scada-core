@@ -4,7 +4,6 @@
 #include "base/debug_util.h"
 #include "base/format.h"
 #include "base/format_time.h"
-#include "base/ui_text.h"
 #include "base/utf_convert.h"
 #include "scada/standard_node_ids.h"
 
@@ -69,16 +68,31 @@ const scada::NumericId kBuiltInDataTypeNodeIds[] = {/*EMPTY=*/0,
 static_assert(std::size(kBuiltInDataTypeNodeIds) ==
               static_cast<size_t>(Variant::Type::COUNT));
 
+// Set once at startup by the UI layer and read thereafter; a function-local
+// static keeps it out of static-global-init ordering.
+BooleanTextProvider& GetBooleanTextProvider() {
+  static BooleanTextProvider provider = nullptr;
+  return provider;
+}
+
 }  // namespace
+
+void SetBooleanTextProvider(BooleanTextProvider provider) {
+  GetBooleanTextProvider() = provider;
+}
 
 // static
 std::u16string Variant::TrueLabel() {
-  return TranslateUiText("Yes");
+  if (const BooleanTextProvider provider = GetBooleanTextProvider())
+    return provider(true);
+  return u"true";
 }
 
 // static
 std::u16string Variant::FalseLabel() {
-  return TranslateUiText("No");
+  if (const BooleanTextProvider provider = GetBooleanTextProvider())
+    return provider(false);
+  return u"false";
 }
 
 void Variant::clear() {

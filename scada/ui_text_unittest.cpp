@@ -1,7 +1,4 @@
-#include "base/ui_text.h"
-
 #include "scada/qualifier.h"
-#include "scada/status.h"
 #include "scada/variant.h"
 
 #include <gtest/gtest.h>
@@ -9,46 +6,52 @@
 namespace scada {
 namespace {
 
-// Answers with a recognizable stand-in, so the assertions do not depend on a
-// real catalog and say plainly *which* English source was looked up.
-std::u16string RecordingTranslator(std::string_view english) {
-  return u"<" + std::u16string{english.begin(), english.end()} + u">";
+// Core carries no operator-facing words for quality flags or booleans: the
+// Qt client installs them through these providers. The regression the tests
+// guard is older than the providers — these strings were once Russian literals
+// compiled into `core`, then English ones, and either way a client running in
+// another language could not reach them.
+
+std::u16string RecordingBooleanText(bool value) {
+  return value ? u"<yes>" : u"<no>";
 }
 
 class CoreUiTextTest : public ::testing::Test {
  protected:
-  void TearDown() override { SetUiTextTranslator(nullptr); }
+  void TearDown() override {
+    SetQualifierFlagTextProvider(nullptr);
+    SetBooleanTextProvider(nullptr);
+  }
 };
 
-// The regression these guard: every one of these strings used to be a
-// Russian literal compiled into `core`, which no catalog could reach. A client
-// running in any other language rendered them in Russian permanently, and
-// nothing reported it. They must now go through the seam.
+TEST_F(CoreUiTextTest, QualifierFlagsGoThroughTheProvider) {
+  SetQualifierFlagTextProvider([](unsigned flag) -> std::u16string {
+    return flag == Qualifier::MANUAL    ? u"<manual>"
+           : flag == Qualifier::BAD     ? u"<bad>"
+           : flag == Qualifier::OFFLINE ? u"<offline>"
+                                        : u"<other>";
+  });
 
-TEST_F(CoreUiTextTest, QualifierFlagsGoThroughTheTranslator) {
-  SetUiTextTranslator(&RecordingTranslator);
-
-  EXPECT_EQ(ToString16(Qualifier{Qualifier::MANUAL}), u"<Manual> ");
+  EXPECT_EQ(ToString16(Qualifier{Qualifier::MANUAL}), u"<manual> ");
   EXPECT_EQ(ToString16(Qualifier{Qualifier::BAD | Qualifier::OFFLINE}),
-            u"<Bad quality> <No link> ");
+            u"<bad> <offline> ");
 }
 
-TEST_F(CoreUiTextTest, BooleanLabelsGoThroughTheTranslator) {
-  SetUiTextTranslator(&RecordingTranslator);
+TEST_F(CoreUiTextTest, BooleanLabelsGoThroughTheProvider) {
+  SetBooleanTextProvider(&RecordingBooleanText);
 
-  EXPECT_EQ(Variant::TrueLabel(), u"<Yes>");
-  EXPECT_EQ(Variant::FalseLabel(), u"<No>");
+  EXPECT_EQ(Variant::TrueLabel(), u"<yes>");
+  EXPECT_EQ(Variant::FalseLabel(), u"<no>");
 }
 
-// Without a catalog — the server, and every unit test that does not install
-// one — the English source is what renders. Not a placeholder: the tiers ship
-// no `.qm` files at all, so this is their permanent behaviour.
-TEST_F(CoreUiTextTest, WithoutATranslatorTheEnglishSourceRenders) {
-  SetUiTextTranslator(nullptr);
-
-  EXPECT_EQ(ToString16(Qualifier{Qualifier::STALE}), u"Stale ");
-  EXPECT_EQ(Variant::TrueLabel(), u"Yes");
-  EXPECT_EQ(Variant::FalseLabel(), u"No");
+// Without a provider — the server, and every unit test that does not install
+// one — the invariant forms render: flag enum names and `true`/`false`.
+TEST_F(CoreUiTextTest, WithoutAProviderTheInvariantFormsRender) {
+  EXPECT_EQ(ToString16(Qualifier{Qualifier::STALE}), u"STALE ");
+  EXPECT_EQ(ToString16(Qualifier{Qualifier::BAD | Qualifier::FAILED}),
+            u"BAD FAILED ");
+  EXPECT_EQ(Variant::TrueLabel(), u"true");
+  EXPECT_EQ(Variant::FalseLabel(), u"false");
 }
 
 // The compact letter form and the spelled-out form are driven by one table, so
@@ -58,7 +61,7 @@ TEST_F(CoreUiTextTest, LetterFormTracksTheSameFlags) {
                             Qualifier::STALE};
 
   EXPECT_EQ(ToString(qualifier), "BMT");
-  EXPECT_EQ(ToString16(qualifier), u"Bad quality Manual Stale ");
+  EXPECT_EQ(ToString16(qualifier), u"BAD MANUAL STALE ");
 }
 
 }  // namespace

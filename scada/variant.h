@@ -19,6 +19,15 @@
 
 namespace scada {
 
+// Produces the operator-facing spelling of a boolean value, in the display
+// locale.
+using BooleanTextProvider = std::u16string (*)(bool value);
+
+// Installs the provider `Variant::TrueLabel`/`FalseLabel` use. Core carries no
+// wording for booleans; the Qt client installs its catalog-backed words at
+// startup. Pass nullptr to remove it.
+void SetBooleanTextProvider(BooleanTextProvider provider);
+
 class Variant {
   // Declared before the constructors so the std::vector converting constructor
   // can be constrained on it (see below).
@@ -196,12 +205,12 @@ class Variant {
 
   void Dump(std::ostream& stream) const;
 
-  // The operator-facing spellings of a boolean, in the display locale. These
-  // are functions rather than constants because they go through
-  // `TranslateUiText`: a namespace-scope constant would be frozen at load
-  // time, before the client installs its catalog. `common/format.h`'s
-  // `StringToValue` parses them back, and also accepts the spellings older
-  // exports carry — see the note there.
+  // The operator-facing spellings of a boolean, in the display locale: the
+  // installed `BooleanTextProvider`'s words, or the invariant `true`/`false`
+  // when none is installed — the server, and unit tests. Functions rather
+  // than constants so a provider installed after load takes effect.
+  // `common/format.h`'s `StringToValue` parses them back, and also accepts the
+  // spellings older exports carry — see the note there.
   static std::u16string TrueLabel();
   static std::u16string FalseLabel();
 

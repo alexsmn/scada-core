@@ -14,8 +14,7 @@ Status Status::FromFullCode(unsigned full_code) {
 namespace {
 
 // Set once at startup by the UI layer and read thereafter; a function-local
-// static keeps it out of static-global-init ordering, as `SetUiTextTranslator`
-// does.
+// static keeps it out of static-global-init ordering.
 StatusTextProvider& GetStatusTextProvider() {
   static StatusTextProvider provider = nullptr;
   return provider;

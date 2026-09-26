@@ -185,7 +185,25 @@ inline Status Qualifier::ToStatus() const {
 
 }  // namespace scada
 
+namespace scada {
+
+// Produces the operator-facing word for one quality flag, in the display
+// locale. `flag` is a single `Qualifier` flag bit, e.g. `Qualifier::STALE`.
+using QualifierFlagTextProvider = std::u16string (*)(unsigned flag);
+
+// Installs the provider `ToString16(Qualifier)` uses. Core carries no wording
+// for quality flags, only their letters and enum names; the Qt client installs
+// its catalog-backed table at startup. Pass nullptr to remove it.
+void SetQualifierFlagTextProvider(QualifierFlagTextProvider provider);
+
+}  // namespace scada
+
+// The compact letter form (`BMT`), one letter per raised flag.
 std::string ToString(scada::Qualifier qualifier);
+
+// The spelled-out form: each raised flag's word followed by a space — the
+// installed `scada::QualifierFlagTextProvider`'s word, or the flag's enum name
+// (`STALE`) when none is installed.
 std::u16string ToString16(scada::Qualifier qualifier);
 
 namespace scada {

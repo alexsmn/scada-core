@@ -128,13 +128,17 @@ using scada::NumericId;
 using scada::LocalizedText;
 using scada::QualifiedName;
 using scada::Qualifier;
+using scada::QualifierFlagTextProvider;
+using scada::SetQualifierFlagTextProvider;
 using scada::ToLocalizedText;
 
 // variant.h / data_value.h / tvq.h / extension_object.h / shared_value.h
+using scada::BooleanTextProvider;
 using scada::DataValue;
 using scada::ExtensionObject;
 using scada::IsUpdate;
 using scada::ParseBuiltInType;
+using scada::SetBooleanTextProvider;
 using scada::ToBuiltInDataType;
 using scada::ToNodeId;
 using scada::Variant;
