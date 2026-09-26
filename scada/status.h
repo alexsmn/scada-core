@@ -157,6 +157,15 @@ enum class StatusCode : unsigned {
   // §5.3 Service results,
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.3
   Bad_ResponseTooLarge = Bad | 54,
+  // The object is in the wrong state for the operation — a file read that was
+  // opened for writing, say. Maps to the OPC UA Bad_InvalidState code
+  // (0x80AF0000) — OPC UA Part 20 §4.2.4 Read,
+  // https://reference.opcfoundation.org/Core/Part20/v105/docs/4.2.4
+  Bad_InvalidState = Bad | 55,
+  // The node or file cannot be read. Maps to the OPC UA Bad_NotReadable code
+  // (0x803A0000) — OPC UA Part 20 §4.4.3 GenerateFileForRead,
+  // https://reference.opcfoundation.org/Core/Part20/v105/docs/4.4.3
+  Bad_NotReadable = Bad | 56,
 };
 
 enum class StatusLimit {

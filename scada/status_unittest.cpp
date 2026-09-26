@@ -42,7 +42,7 @@ TEST(StatusTest, ToCStringUnknownBadReturnsFallback) {
 // describes nothing to the operator. Bad_NotWritable was added without one and
 // went unnoticed. Move kLast when a code is appended after it.
 TEST(StatusTest, EveryBadCodeHasAnEntry) {
-  constexpr auto kLast = scada::StatusCode::Bad_ResponseTooLarge;
+  constexpr auto kLast = scada::StatusCode::Bad_NotReadable;
   const unsigned bad = static_cast<unsigned>(scada::StatusCode::Bad);
   for (unsigned code = bad + 1; code <= static_cast<unsigned>(kLast); ++code) {
     EXPECT_STRNE("Error", ToCString(static_cast<scada::StatusCode>(code)))

@@ -146,6 +146,10 @@ const Entry kEntries[] = {
      "The value cannot be written"},
     {scada::StatusCode::Bad_ResponseTooLarge, "Bad_ResponseTooLarge",
      "The response is too large to send"},
+    {scada::StatusCode::Bad_InvalidState, "Bad_InvalidState",
+     "The object is not in a state that allows this operation"},
+    {scada::StatusCode::Bad_NotReadable, "Bad_NotReadable",
+     "The value cannot be read"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
