@@ -1,8 +1,13 @@
 #include "remote/monitored_item_proxy.h"
 
-#include "remote/message_sender_mock.h"
+#include "remote/message_sender_fake.h"
 #include "remote/monitored_item_router_fake.h"
 #include "remote/protocol_utils.h"
+
+#include <string>
+#include <vector>
+
+#include <gmock/gmock.h>
 
 using namespace testing;
 
@@ -25,13 +30,24 @@ class MonitoredItemProxyTest : public Test {
   void
   CreateMonitoredItem_OpenChannel_Subscribe_CreateStubSuccessful_DataChangeFailed_CloseChannel();
 
+  // The proxy only ever issues requests; it never sends a bare message. This
+  // is the strictness the StrictMock this fixture used to hold enforced.
+  void TearDown() override {
+    EXPECT_THAT(message_sender_.sent_messages(), IsEmpty());
+  }
+
+  // The kind of every request sent so far, oldest first: "create", "delete",
+  // or "other" for anything else.
+  std::vector<std::string> SentRequestKinds() const;
+
+  // Plays the server: completes the most recent request with `response`.
+  void RespondToLastRequest(const protocol::Response& response);
+
   StrictMock<DataChangeHandler> data_change_handler_;
   MonitoredItemRouterFake monitored_item_router_;
-  StrictMock<MessageSenderMock> message_sender_;
+  MessageSenderFake message_sender_;
 
   std::shared_ptr<MonitoredItemProxy> monitored_item_;
-
-  MessageSender::ResponseHandler response_handler_;
 
   inline static const scada::NodeId kNodeId{12, 34};
   // `inline`, like every other constant here: the state assertions below bind
@@ -47,14 +63,6 @@ class MonitoredItemProxyTest : public Test {
   inline static const scada::DataValue kDataValueFailed{scada::StatusCode::Bad,
                                                         kTimeStamp};
 };
-
-MATCHER(IsCreateMonitoredItemRequest, "IsCreateMonitoredItemRequest") {
-  return arg.has_create_monitored_item();
-}
-
-MATCHER(IsDeleteMonitoredItemRequest, "IsDeleteMonitoredItemRequest") {
-  return arg.has_delete_monitored_item();
-}
 
 MATCHER_P(IsOnline, online, "IsOnline") {
   return arg.qualifier.online() == online;
@@ -73,6 +81,30 @@ protocol::Response MakeCreateMonitoredItemResponse(
 }
 
 }  // namespace
+
+std::vector<std::string> MonitoredItemProxyTest::SentRequestKinds() const {
+  std::vector<std::string> kinds;
+  for (const auto& sent : message_sender_.requests()) {
+    if (sent.request.has_create_monitored_item())
+      kinds.push_back("create");
+    else if (sent.request.has_delete_monitored_item())
+      kinds.push_back("delete");
+    else
+      kinds.push_back("other");
+  }
+  return kinds;
+}
+
+void MonitoredItemProxyTest::RespondToLastRequest(
+    const protocol::Response& response) {
+  ASSERT_FALSE(message_sender_.requests().empty());
+  // Copied out first: the handler may send, and a send grows the vector the
+  // reference would point into.
+  MessageSender::ResponseHandler handler =
+      message_sender_.requests().back().response_handler;
+  ASSERT_TRUE(handler);
+  handler(response);
+}
 
 // Create monitored item
 //   Subscribe
@@ -108,10 +140,9 @@ void MonitoredItemProxyTest::CreateMonitoredItem_OpenChannel_Subscribe() {
 
   // Subscribe
 
-  EXPECT_CALL(message_sender_, Request(IsCreateMonitoredItemRequest(), _))
-      .WillOnce(SaveArg<1>(&response_handler_));
-
   monitored_item_->Subscribe(data_change_handler_.handler);
+
+  ASSERT_THAT(SentRequestKinds(), ElementsAre("create"));
 }
 
 void MonitoredItemProxyTest::
@@ -120,9 +151,8 @@ void MonitoredItemProxyTest::
 
   // Create stub successful
 
-  ASSERT_TRUE(response_handler_);
-  response_handler_(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
-                                                    kMonitoredItemId));
+  RespondToLastRequest(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
+                                                       kMonitoredItemId));
 
   EXPECT_THAT(monitored_item_router_.registered_ids(),
               ElementsAre(kMonitoredItemId));
@@ -180,6 +210,10 @@ TEST_F(MonitoredItemProxyTest,
   // TODO: Expect unsubscription.
 
   monitored_item_.reset();
+
+  // Today a pending create is abandoned without a delete; the StrictMock this
+  // fixture used to hold enforced that implicitly, so it is stated here.
+  EXPECT_THAT(SentRequestKinds(), ElementsAre("create"));
 }
 TEST_F(
     MonitoredItemProxyTest,
@@ -188,10 +222,9 @@ TEST_F(
 
   // Delete monitored item
 
-  EXPECT_CALL(message_sender_, Request(IsDeleteMonitoredItemRequest(), _));
-
   monitored_item_.reset();
 
+  EXPECT_THAT(SentRequestKinds(), ElementsAre("create", "delete"));
   EXPECT_THAT(monitored_item_router_.registered_ids(), IsEmpty());
 }
 
@@ -203,6 +236,9 @@ TEST_F(
   // Delete monitored item
 
   monitored_item_.reset();
+
+  // The channel is gone, so there is nobody to send a delete to.
+  EXPECT_THAT(SentRequestKinds(), ElementsAre("create"));
 }
 
 TEST_F(
@@ -220,11 +256,14 @@ TEST_F(
                          Field(&scada::DataValue::qualifier,
                                Property(&scada::Qualifier::failed, true)))));
 
-  response_handler_(MakeCreateMonitoredItemResponse(kErrorCode, 0));
+  RespondToLastRequest(MakeCreateMonitoredItemResponse(kErrorCode, 0));
 
   // Delete monitored item
 
   monitored_item_.reset();
+
+  // A create the server refused left nothing to delete.
+  EXPECT_THAT(SentRequestKinds(), ElementsAre("create"));
 }
 
 TEST_F(
@@ -240,18 +279,15 @@ TEST_F(
 
   EXPECT_CALL(data_change_handler_, OnDataChange(_));
 
-  MessageSender::ResponseHandler response_handler;
-  EXPECT_CALL(message_sender_, Request(IsCreateMonitoredItemRequest(), _))
-      .WillOnce(SaveArg<1>(&response_handler));
-
   monitored_item_->OnChannelOpened(monitored_item_router_, message_sender_,
                                    kSubscriptionId);
 
+  ASSERT_THAT(SentRequestKinds(), ElementsAre("create"));
+
   // Create stub successful
 
-  ASSERT_TRUE(response_handler);
-  response_handler(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
-                                                   kMonitoredItemId));
+  RespondToLastRequest(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
+                                                       kMonitoredItemId));
 
   EXPECT_THAT(monitored_item_router_.registered_ids(),
               ElementsAre(kMonitoredItemId));
@@ -260,10 +296,9 @@ TEST_F(
 
   // Delete monitored item
 
-  EXPECT_CALL(message_sender_, Request(IsDeleteMonitoredItemRequest(), _));
-
   monitored_item_.reset();
 
+  EXPECT_THAT(SentRequestKinds(), ElementsAre("create", "delete"));
   EXPECT_THAT(monitored_item_router_.registered_ids(), IsEmpty());
 }
 
@@ -274,20 +309,17 @@ TEST_F(
 
   // Open channel
 
-  MessageSender::ResponseHandler response_handler;
-  EXPECT_CALL(message_sender_, Request(IsCreateMonitoredItemRequest(), _))
-      .WillOnce(SaveArg<1>(&response_handler));
-
   EXPECT_CALL(data_change_handler_, OnDataChange(IsOnline(false)));
 
   monitored_item_->OnChannelOpened(monitored_item_router_, message_sender_,
                                    kSubscriptionId);
 
+  ASSERT_THAT(SentRequestKinds(), ElementsAre("create", "create"));
+
   // Create stub successful
 
-  ASSERT_TRUE(response_handler);
-  response_handler(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
-                                                   kMonitoredItemId));
+  RespondToLastRequest(MakeCreateMonitoredItemResponse(scada::StatusCode::Good,
+                                                       kMonitoredItemId));
 
   // Re-registered under the same id after the channel came back -- the
   // reopen path must not leave the router holding a stale entry, which the
@@ -307,9 +339,8 @@ TEST_F(
 
   // Delete monitored item
 
-  EXPECT_CALL(message_sender_, Request(IsDeleteMonitoredItemRequest(), _));
-
   monitored_item_.reset();
 
+  EXPECT_THAT(SentRequestKinds(), ElementsAre("create", "create", "delete"));
   EXPECT_THAT(monitored_item_router_.registered_ids(), IsEmpty());
 }

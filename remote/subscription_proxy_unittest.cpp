@@ -1,6 +1,6 @@
 #include "remote/subscription_proxy.h"
 
-#include "remote/message_sender_mock.h"
+#include "remote/message_sender_fake.h"
 #include "remote/protocol.h"
 #include "remote/subscription.h"
 
@@ -26,14 +26,12 @@ namespace {
 // the hazard underneath it.)
 TEST(SubscriptionProxyTest, OpeningTheChannelRequestsCreateSubscription) {
   auto proxy = std::make_shared<SubscriptionProxy>(SubscriptionParams{});
-  MessageSenderMock sender;
-
-  protocol::Request sent;
-  EXPECT_CALL(sender, Request(_, _)).WillOnce(SaveArg<0>(&sent));
+  MessageSenderFake sender;
 
   proxy->OnChannelOpened(sender);
 
-  EXPECT_TRUE(sent.has_create_subscription());
+  ASSERT_THAT(sender.requests(), SizeIs(1));
+  EXPECT_TRUE(sender.requests().front().request.has_create_subscription());
 }
 
 }  // namespace

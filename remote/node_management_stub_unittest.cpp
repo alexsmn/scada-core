@@ -1,7 +1,7 @@
 #include "remote/node_management_stub.h"
 
 #include "base/test/test_executor.h"
-#include "remote/message_sender_mock.h"
+#include "remote/message_sender_fake.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "scada/co_result.h"
@@ -51,23 +51,11 @@ class TestNodeManagementService final : public scada::NodeManagementService {
 
 TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
   TestExecutor executor;
-  auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
+  auto sender = std::make_shared<MessageSenderFake>();
   TestNodeManagementService service;
 
   auto stub = std::make_shared<NodeManagementStub>(
       executor, sender, service, scada::ServiceContext{}.with_user_id({1, 1}));
-
-  EXPECT_CALL(*sender, Send(_)).WillOnce(Invoke([](protocol::Message& message) {
-    ASSERT_EQ(message.responses_size(), 1);
-    const auto& response = message.responses(0);
-    EXPECT_EQ(response.request_id(), 17);
-    EXPECT_EQ(ConvertTo<scada::Status>(response.status()).code(),
-              scada::StatusCode::Good);
-    ASSERT_EQ(response.add_node_result_size(), 1);
-    EXPECT_EQ(
-        ConvertTo<scada::NodeId>(response.add_node_result(0).added_node_id()),
-        scada::NodeId(2, 3));
-  }));
 
   protocol::Request request;
   request.set_request_id(17);
@@ -78,6 +66,19 @@ TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
   stub->OnRequestReceived(request);
   executor.Poll();
 
+  ASSERT_THAT(sender->sent_messages(), SizeIs(1));
+  const protocol::Message& message = sender->sent_messages().front();
+  ASSERT_EQ(message.responses_size(), 1);
+  const auto& response = message.responses(0);
+  EXPECT_EQ(response.request_id(), 17);
+  EXPECT_EQ(ConvertTo<scada::Status>(response.status()).code(),
+            scada::StatusCode::Good);
+  ASSERT_EQ(response.add_node_result_size(), 1);
+  EXPECT_EQ(
+      ConvertTo<scada::NodeId>(response.add_node_result(0).added_node_id()),
+      scada::NodeId(2, 3));
+  EXPECT_THAT(sender->requests(), IsEmpty());
+
   ASSERT_TRUE(service.add_nodes_called);
   ASSERT_EQ(service.last_add_nodes_inputs.size(), 1u);
   EXPECT_EQ(service.last_add_nodes_inputs[0].requested_id, scada::NodeId(2, 3));
@@ -85,19 +86,11 @@ TEST(NodeManagementStubTest, AddNodesUsesCoroutineServiceBoundAtSessionEdge) {
 
 TEST(NodeManagementStubTest, DeleteNodesPreservesDeleteTargetReferencesFlag) {
   TestExecutor executor;
-  auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
+  auto sender = std::make_shared<MessageSenderFake>();
   TestNodeManagementService service;
 
   auto stub = std::make_shared<NodeManagementStub>(
       executor, sender, service, scada::ServiceContext{}.with_user_id({1, 1}));
-
-  EXPECT_CALL(*sender, Send(_)).WillOnce(Invoke([](protocol::Message& message) {
-    ASSERT_EQ(message.responses_size(), 1);
-    const auto& response = message.responses(0);
-    EXPECT_EQ(response.request_id(), 23);
-    EXPECT_EQ(ConvertTo<scada::Status>(response.status()).code(),
-              scada::StatusCode::Good);
-  }));
 
   protocol::Request request;
   request.set_request_id(23);
@@ -108,6 +101,15 @@ TEST(NodeManagementStubTest, DeleteNodesPreservesDeleteTargetReferencesFlag) {
 
   stub->OnRequestReceived(request);
   executor.Poll();
+
+  ASSERT_THAT(sender->sent_messages(), SizeIs(1));
+  const protocol::Message& message = sender->sent_messages().front();
+  ASSERT_EQ(message.responses_size(), 1);
+  const auto& response = message.responses(0);
+  EXPECT_EQ(response.request_id(), 23);
+  EXPECT_EQ(ConvertTo<scada::Status>(response.status()).code(),
+            scada::StatusCode::Good);
+  EXPECT_THAT(sender->requests(), IsEmpty());
 
   ASSERT_TRUE(service.delete_nodes_called);
   ASSERT_EQ(service.last_delete_nodes_inputs.size(), 1u);

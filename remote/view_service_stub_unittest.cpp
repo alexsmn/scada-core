@@ -1,7 +1,7 @@
 #include "remote/view_service_stub.h"
 
 #include "base/test/test_executor.h"
-#include "remote/message_sender_mock.h"
+#include "remote/message_sender_fake.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "scada/co_result.h"
@@ -51,7 +51,7 @@ class TestViewService final : public scada::ViewService {
 // through the base class and the Browse call reaches the real service.
 TEST(ViewServiceStubTest, BrowseRoutesToCoroutineServiceFromContext) {
   TestExecutor executor;
-  auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
+  auto sender = std::make_shared<MessageSenderFake>();
   TestViewService service;
 
   auto stub = std::make_shared<ViewServiceStub>(ViewServiceStubContext{
@@ -60,14 +60,6 @@ TEST(ViewServiceStubTest, BrowseRoutesToCoroutineServiceFromContext) {
       .service_context_ = scada::ServiceContext{}.with_user_id({1, 1}),
       .service_ = service,
   });
-
-  EXPECT_CALL(*sender, Send(_)).WillOnce(Invoke([](protocol::Message& message) {
-    ASSERT_EQ(message.responses_size(), 1);
-    const auto& response = message.responses(0);
-    EXPECT_EQ(response.request_id(), 42);
-    EXPECT_EQ(ConvertTo<scada::Status>(response.status()).code(),
-              scada::StatusCode::Good);
-  }));
 
   protocol::Request request;
   request.set_request_id(42);
@@ -78,6 +70,15 @@ TEST(ViewServiceStubTest, BrowseRoutesToCoroutineServiceFromContext) {
   while (executor.GetTaskCount() != 0) {
     executor.Poll();
   }
+
+  ASSERT_THAT(sender->sent_messages(), SizeIs(1));
+  const protocol::Message& message = sender->sent_messages().front();
+  ASSERT_EQ(message.responses_size(), 1);
+  const auto& response = message.responses(0);
+  EXPECT_EQ(response.request_id(), 42);
+  EXPECT_EQ(ConvertTo<scada::Status>(response.status()).code(),
+            scada::StatusCode::Good);
+  EXPECT_THAT(sender->requests(), IsEmpty());
 
   ASSERT_TRUE(service.browse_called);
   EXPECT_EQ(service.last_user_id, scada::NodeId(1, 1));

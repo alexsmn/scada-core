@@ -1,7 +1,7 @@
 #include "remote/history_stub.h"
 
 #include "base/test/test_executor.h"
-#include "remote/message_sender_mock.h"
+#include "remote/message_sender_fake.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
 #include "scada/history_service.h"
@@ -49,20 +49,11 @@ class TwoLanguageHistoryService final : public scada::HistoryService {
 // and returns the event the client would receive.
 protocol::Event ReadOneEvent(std::vector<std::string> locale_ids) {
   TestExecutor executor;
-  auto sender = std::make_shared<StrictMock<MessageSenderMock>>();
+  auto sender = std::make_shared<MessageSenderFake>();
   TwoLanguageHistoryService service;
 
   auto stub = std::make_shared<HistoryStub>(service, sender, executor,
                                             std::move(locale_ids));
-
-  protocol::Event received;
-  EXPECT_CALL(*sender, Send(_))
-      .WillOnce(Invoke([&received](protocol::Message& message) {
-        ASSERT_EQ(message.responses_size(), 1);
-        const auto& result = message.responses(0).history_read_events_result();
-        ASSERT_EQ(result.event_size(), 1);
-        received = result.event(0);
-      }));
 
   protocol::Request request;
   request.set_request_id(7);
@@ -73,7 +64,23 @@ protocol::Event ReadOneEvent(std::vector<std::string> locale_ids) {
   while (executor.GetTaskCount() != 0)
     executor.Poll();
 
-  return received;
+  EXPECT_THAT(sender->requests(), IsEmpty());
+  if (sender->sent_messages().size() != 1) {
+    ADD_FAILURE() << "expected one reply, got "
+                  << sender->sent_messages().size();
+    return {};
+  }
+  const protocol::Message& message = sender->sent_messages().front();
+  if (message.responses_size() != 1) {
+    ADD_FAILURE() << "expected one response, got " << message.responses_size();
+    return {};
+  }
+  const auto& result = message.responses(0).history_read_events_result();
+  if (result.event_size() != 1) {
+    ADD_FAILURE() << "expected one event, got " << result.event_size();
+    return {};
+  }
+  return result.event(0);
 }
 
 // A stored message holds every language the server could say it in; the

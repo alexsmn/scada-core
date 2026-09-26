@@ -1,7 +1,7 @@
 #include "remote/subscription_stub.h"
 
 #include "base/test/test_executor.h"
-#include "remote/message_sender_mock.h"
+#include "remote/message_sender_fake.h"
 #include "remote/protocol.h"
 #include "scada/event.h"
 #include "scada/item_factory_subscription.h"
@@ -78,8 +78,8 @@ class SubscriptionStubEventTest : public Test {
 
   TestExecutor executor_;
   FactoryMonitoredItemService service_;
-  std::shared_ptr<MessageSenderMock> sender_ =
-      std::make_shared<MessageSenderMock>();
+  std::shared_ptr<MessageSenderFake> sender_ =
+      std::make_shared<MessageSenderFake>();
   std::shared_ptr<SubscriptionStub> stub_ =
       std::make_shared<SubscriptionStub>(executor_,
                                          sender_,
@@ -96,20 +96,23 @@ class SubscriptionStubEventTest : public Test {
 // reassembled from a downstream tier's payload-less notification — and died.
 TEST_F(SubscriptionStubEventTest, DropsEventWithoutEventId) {
   ASSERT_NO_FATAL_FAILURE(CreateEventItem());
-  EXPECT_CALL(*sender_, Send(_)).Times(0);
+  const size_t sent_before = sender_->sent_messages().size();
 
   scada::Event event = MakeValidEvent();
   event.event_id = 0;
   FireEvent(event);
+
+  EXPECT_EQ(sender_->sent_messages().size(), sent_before);
 }
 
 TEST_F(SubscriptionStubEventTest, SendsEventWithEventId) {
   ASSERT_NO_FATAL_FAILURE(CreateEventItem());
-  protocol::Message sent;
-  EXPECT_CALL(*sender_, Send(_)).WillOnce(SaveArg<0>(&sent));
+  const size_t sent_before = sender_->sent_messages().size();
 
   FireEvent(MakeValidEvent());
 
+  ASSERT_EQ(sender_->sent_messages().size(), sent_before + 1);
+  const protocol::Message& sent = sender_->sent_messages().back();
   ASSERT_EQ(sent.notifications_size(), 1);
   ASSERT_EQ(sent.notifications(0).events_size(), 1);
   EXPECT_EQ(sent.notifications(0).events(0).event_id(), 0x2au);
@@ -127,11 +130,6 @@ TEST_F(SubscriptionStubEventTest, SendsEventWithEventId) {
 // asymmetric one -- there `SessionStub` really does dispatch on presence, as
 // subscription_proxy_unittest.cpp records.
 TEST_F(SubscriptionStubEventTest, CreateReplyCarriesTheResultField) {
-  std::vector<protocol::Message> sent;
-  EXPECT_CALL(*sender_, Send(_))
-      .WillRepeatedly(
-          [&sent](protocol::Message& message) { sent.push_back(message); });
-
   stub_->OnCreateMonitoredItem(
       /*request_id=*/7,
       scada::ReadValueId{.node_id = scada::NodeId{42u},
@@ -139,6 +137,7 @@ TEST_F(SubscriptionStubEventTest, CreateReplyCarriesTheResultField) {
       scada::MonitoringParameters{});
   Drain();
 
+  const std::vector<protocol::Message>& sent = sender_->sent_messages();
   ASSERT_GE(sent.size(), 1u);
   ASSERT_EQ(sent.front().responses_size(), 1);
   const protocol::Response& response = sent.front().responses(0);
