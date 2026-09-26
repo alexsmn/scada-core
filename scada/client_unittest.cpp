@@ -20,9 +20,11 @@ class ClientTest : public Test {
  protected:
   // Pumps the executor until `predicate` holds or a bounded number of spins
   // elapse. The subscription that backs single monitored items reads
-  // notifications through an asio `steady_timer`; resuming a parked read after
-  // a notification is pushed requires the timer service to fire, which a single
-  // `Drain` does not guarantee. This mirrors `WaitResult`'s drain/yield spin.
+  // notifications through an asio `steady_timer`, so resuming a parked read
+  // after a notification is pushed goes through the timer service. Since the
+  // TestExecutor polls that service itself (backlog 730) one `Drain` delivers
+  // it; before then the completion came from asio's own thread and this spin
+  // was what waited for it. It mirrors `WaitResult`'s drain/yield spin.
   void DrainUntil(const std::function<bool()>& predicate) {
     for (int i = 0; i < 1000 && !predicate(); ++i) {
       Drain(executor_);
