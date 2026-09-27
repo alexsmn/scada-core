@@ -47,8 +47,9 @@ TEST(OStreamFormatterTest, EmbedsInLargerFormatString) {
 
 TEST(OStreamFormatterTest, RejectsNonEmptyFormatSpec) {
   Point p;
-  EXPECT_THROW(std::vformat("{:5}", std::make_format_args(p)),
-               std::format_error);
+  EXPECT_THROW(
+      static_cast<void>(std::vformat("{:5}", std::make_format_args(p))),
+      std::format_error);
 }
 
 }  // namespace

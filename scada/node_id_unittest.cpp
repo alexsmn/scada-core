@@ -66,8 +66,9 @@ TEST(NodeId, Format_MatchesOstream) {
 
 TEST(NodeId, Format_RejectsFormatSpec) {
   scada::NodeId node_id{1};
-  EXPECT_THROW(std::vformat("{:5}", std::make_format_args(node_id)),
-               std::format_error);
+  EXPECT_THROW(
+      static_cast<void>(std::vformat("{:5}", std::make_format_args(node_id))),
+      std::format_error);
 }
 
 TEST(NodeId, Format_EmbedsInStructFormatter) {
