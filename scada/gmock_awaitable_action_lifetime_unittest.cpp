@@ -58,6 +58,9 @@ class CaptureTracker {
 class MockProbe {
  public:
   MOCK_METHOD(Awaitable<bool>, Run, (const LiveTrackers* trackers));
+  MOCK_METHOD(Awaitable<bool>,
+              Take,
+              (CaptureTracker tracker, const LiveTrackers* trackers));
 };
 
 // The action is written the way backlog 742 found it written: a capturing
@@ -130,6 +133,28 @@ TEST(GmockAwaitableActionLifetime,
 
   Awaitable<bool> pending = probe.Run(&trackers);
   EXPECT_TRUE(WaitAwaitable(executor, std::move(pending)));
+}
+
+// A second lazy-frame hazard, independent of the clause: gmock performs an
+// action on a by-value tuple of the call's arguments, which dies when the call
+// returns. A coroutine action taking a by-value mock parameter by *reference*
+// binds its frame to that tuple element, so even the safe `WillByDefault` reads
+// a dead argument. No action in the tree had this shape when this was written
+// (each reference parameter mirrors a `const&` mock parameter, whose tuple
+// element refers to the caller's still-live object).
+TEST(GmockAwaitableActionLifetime,
+     ReferenceParameterToByValueArgumentIsDeadInEveryClause) {
+  TestExecutor executor;
+  LiveTrackers trackers;
+  testing::NiceMock<MockProbe> probe;
+  ON_CALL(probe, Take(testing::_, testing::_))
+      .WillByDefault([](const CaptureTracker& tracker,
+                        const LiveTrackers* live) -> Awaitable<bool> {
+        co_return live->IsLive(&tracker);
+      });
+
+  Awaitable<bool> pending = probe.Take(CaptureTracker{trackers}, &trackers);
+  EXPECT_FALSE(WaitAwaitable(executor, std::move(pending)));
 }
 
 }  // namespace
