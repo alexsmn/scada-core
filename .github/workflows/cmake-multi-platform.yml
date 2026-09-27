@@ -1,13 +1,17 @@
-# CI workflow for scada-core
-# Builds and tests on Windows (MSVC) and Linux (GCC, Clang)
+# CI workflow for scada-core.
 #
-# Note: core consumes one other product, `net`, which the standalone build
-# expects as a sibling checkout (`../net`); see build-support/README.md. This
-# workflow checks out core alone, so configure fails until that is wired up —
-# which is why the build jobs are allowed to fail. The compiler is selected
-# through CC/CXX rather than a per-compiler preset: every product carries the
-# same self-contained preset set (ADR 0011), and `ninja` is the only configure
-# preset there is.
+# core consumes one other product, `net`, which a standalone build resolves as
+# a SIBLING directory named after the product (build-support/ScadaProducts.cmake
+# resolves `../net`). `net` publishes as `transport`, so its checkout names
+# `path: net` explicitly -- the directory name is what matters, never the
+# repository's. Everything else is core's own presets and its own vcpkg.json,
+# resolved by the toolchain during configure (ADR 0011).
+#
+# Until 2026-09-27 this matrix checked core out alone, could never configure,
+# and reported success anyway: every step that could fail was
+# `continue-on-error`, so each job spent an hour installing dependencies and
+# then built and tested nothing (superproject tasks.md 316). There is no
+# `continue-on-error` anywhere in this file now, on purpose.
 
 name: CI
 
@@ -19,128 +23,112 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }} - ${{ matrix.compiler }}
+    name: Build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
-    # Allow build to fail until external dependencies are configured
-    continue-on-error: true
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            compiler: gcc
-            cc: gcc
-            cxx: g++
-          - os: ubuntu-latest
-            compiler: clang
-            cc: clang
-            cxx: clang++
-          - os: windows-latest
-            compiler: msvc
+          - name: Windows / MSVC
+            os: windows-latest
+          - name: Ubuntu / GCC
+            os: ubuntu-latest
+          - name: macOS / AppleClang
+            os: macos-latest
+
+    env:
+      # A plain directory carried between runs by the restore/save steps below.
+      # Not `x-gha`: vcpkg has removed that backend.
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
+      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/vcpkg-cache,readwrite"
 
     steps:
-    - name: Checkout repository
+    - name: Check out scada-core
       uses: actions/checkout@v7
       with:
-        submodules: recursive
+        path: core
 
-    # Linux dependencies - only install required Boost components
-    # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
-    - name: Install dependencies (Linux)
+    # Publishes as `transport`; the directory must be `net`.
+    - name: Check out transport (the `net` product)
+      uses: actions/checkout@v7
+      with:
+        repository: alexsmn/transport
+        path: net
+
+    - name: Install Ninja (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          libboost-atomic-dev \
-          libboost-context-dev \
-          libboost-date-time-dev \
-          libboost-filesystem-dev \
-          libboost-json-dev \
-          libboost-log-dev \
-          libboost-program-options-dev \
-          libboost-regex-dev \
-          libboost-system-dev \
-          libboost-thread-dev \
-          libprotobuf-dev \
-          protobuf-compiler \
-          ninja-build
+        sudo apt-get install -y ninja-build
 
-    # Windows dependencies via vcpkg - only install required Boost components
-    # Required: atomic, context, date_time, filesystem, json, log, program_options, regex, system, thread
-    # Every product resolves its own vcpkg manifest, so the toolchain is needed
-    # on every platform, not only Windows (ADR 0010, ADR 0011).
-    # The pin was a34c873a9717a888f58dc05571dde15571f56e66, which does not
-    # exist in microsoft/vcpkg: the API answers 422, "No commit found for SHA"
-    # (checked 2026-09-20). Nothing noticed because this step, the configure and
-    # the dependency install are all `continue-on-error`, so the job reports
-    # success having built nothing -- the decoration tasks.md 316 describes.
-    # Replaced with the commit this tree's own vcpkg is at, so that if the
-    # continue-on-errors are ever removed the step has a chance of working.
-    - name: Setup vcpkg
-      continue-on-error: true
+    # GCC 14, not the runner's default GCC 13: GCC 13.3 hits an internal
+    # compiler error (`in build_special_member_call, at cp/call.cc:11096`) on
+    # core/scada/monitored_item_service_awaitable.cpp:60, deterministically
+    # (superproject docs/ops/deployment.md, "When the cross-build crashes the
+    # compiler"). The ubuntu-24.04 image ships 12.4, 13.3 and 14.2 side by side
+    # (actions/runner-images, images/ubuntu/Ubuntu2404-Readme.md, checked
+    # 2026-09-26). Set before vcpkg runs, so its ports build with it too.
+    - name: Select GCC 14 (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        echo "CC=gcc-14" >> "$GITHUB_ENV"
+        echo "CXX=g++-14" >> "$GITHUB_ENV"
+
+    - name: Install Ninja (macOS)
+      if: runner.os == 'macOS'
+      run: brew install ninja
+
+    # The presets carry no `environment` block (ADR 0011), so the MSVC
+    # toolchain has to be in the environment before cmake runs.
+    - name: Set up MSVC (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    # The commit the monorepo's own vcpkg is at, the pin the client's, opcuapp's
+    # and transport's workflows carry.
+    - name: Set up vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgGitCommitId: 'f3e10653cc27d62a37a3763cd84b38bca07c6075'
+        runVcpkgInstall: false
 
-    - name: Install dependencies (Windows)
-      if: runner.os == 'Windows'
-      continue-on-error: true
-      run: |
-        if (Get-Command vcpkg -ErrorAction SilentlyContinue) {
-          vcpkg install boost-system boost-date-time boost-json boost-log boost-program-options boost-filesystem boost-thread boost-atomic boost-context boost-regex protobuf --triplet x64-windows
-        } else {
-          Write-Host "::warning::vcpkg not available, skipping dependency installation"
-        }
-      shell: pwsh
+    - name: Create the binary cache directory
+      run: cmake -E make_directory "${{ github.workspace }}/vcpkg-cache"
 
-    # Cache CMake build
-    - name: Cache CMake build
-      uses: actions/cache@v6
+    - name: Restore the vcpkg binary cache
+      uses: actions/cache/restore@v6
       with:
-        path: build
-        key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', 'CMakePresets.json') }}
+        path: ${{ github.workspace }}/vcpkg-cache
+        key: vcpkg-${{ matrix.os }}-${{ hashFiles('core/vcpkg.json') }}-${{ github.run_id }}
         restore-keys: |
-          ${{ matrix.os }}-${{ matrix.compiler }}-
+          vcpkg-${{ matrix.os }}-${{ hashFiles('core/vcpkg.json') }}-
+          vcpkg-${{ matrix.os }}-
 
-    - name: Configure CMake
-      id: cmake-configure
+    - name: Configure
+      working-directory: core
       run: cmake --preset ninja
-      env:
-        VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-        CC: ${{ matrix.cc }}
-        CXX: ${{ matrix.cxx }}
-      continue-on-error: true
 
-    - name: Build (Debug)
-      if: steps.cmake-configure.outcome == 'success'
-      run: cmake --build --preset debug --parallel
-
+    # `-k 0`: report every compile error in one run rather than the first.
     - name: Build (Release)
-      if: steps.cmake-configure.outcome == 'success'
-      run: cmake --build --preset release --parallel
+      working-directory: core
+      run: cmake --build --preset release -- -k 0
 
-    - name: Test (Release)
-      if: steps.cmake-configure.outcome == 'success'
-      run: ctest --preset test-release --parallel
-
-    - name: Report missing dependencies
-      if: steps.cmake-configure.outcome == 'failure'
-      run: |
-        echo "::warning::CMake configuration failed. This is expected while the `net` product is not checked out beside this repository."
-        echo "See CLAUDE.md and build-support/README.md for what a standalone core build needs."
-
-    - name: Upload test results
-      if: failure() && steps.cmake-configure.outcome == 'success'
-      uses: actions/upload-artifact@v7
+    # Saved even when the build fails, so the ports that did build survive.
+    - name: Save the vcpkg binary cache
+      if: always()
+      uses: actions/cache/save@v6
       with:
-        name: test-results-${{ matrix.os }}-${{ matrix.compiler }}
-        path: |
-          build/ninja/Testing/
-          build/ninja/**/*test*.log
-        retention-days: 7
+        path: ${{ github.workspace }}/vcpkg-cache
+        key: vcpkg-${{ matrix.os }}-${{ hashFiles('core/vcpkg.json') }}-${{ github.run_id }}
 
-  # Static analysis (Linux only) — the only job here that can actually gate.
+    # Runs net's tests as well as core's: the consumed product is built into
+    # this tree. `--timeout 300` turns a hang into one named failure.
+    - name: Test (Release)
+      working-directory: core
+      run: ctest --preset test-release --output-on-failure --timeout 300
+
+  # Static analysis (Linux only). It gates, as the build matrix above now does.
   #
   # It runs the SAME cppcheck configuration the build runs, and reads the same
   # suppressions file: `scada_configure_cppcheck()` in

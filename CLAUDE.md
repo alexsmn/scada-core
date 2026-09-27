@@ -285,24 +285,22 @@ auto value = co_await node.read_value();
 GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`), which
 runs on the published export at `github.com/alexsmn/scada-core`:
 - Triggers on push/PR to `main` and `release/**`
-- `analyze` (Linux) is the only job that gates. It runs the same cppcheck
+- `analyze` (Linux) runs the same cppcheck
   configuration the build runs — `--enable=warning,performance,portability`
   against `cppcheck-suppressions.txt` — and fails on `error:` findings;
   warnings are uploaded as an artifact but do not fail it.
-- `build` is a Windows (MSVC) / Linux (GCC, Clang) matrix that **still builds
-  nothing, but no longer for the reason it says**. It checks core out alone, so
-  the configure cannot find the `net` product as a sibling and the step's
-  `continue-on-error` turns the failure into a warning — the job then reports
-  success having compiled nothing (superproject tasks.md 316).
+- `build` is a Windows (MSVC) / Ubuntu (GCC 14) / macOS (AppleClang) matrix
+  that configures, builds and tests core through its own presets, and gates.
+  It checks out `net` beside core as a sibling directory named `net` (the
+  product publishes as `github.com/alexsmn/transport`), since a standalone
+  build resolves consumed products by name, and nothing in it is
+  `continue-on-error`.
 
-  What changed on 2026-09-20 is the premise: `net` **is** published now, as
-  `github.com/alexsmn/transport`, so a second `actions/checkout` into a `net`
-  directory is all that stands between this matrix and a real build.
-  `client/.github/workflows/ci.yml` does exactly that for a larger closure and
-  is the worked example. Two things to fix while you are there: the pin
-  `vcpkgGitCommitId` carried does not exist in microsoft/vcpkg (corrected the
-  same day), and every `continue-on-error` has to come off, or the job stays
-  decoration.
+  Until 2026-09-27 it built nothing and reported success: it checked core out
+  alone, the configure could not find `net`, and every step that could fail
+  was `continue-on-error` (superproject tasks.md 316, closed by that change).
+  Ubuntu uses GCC 14 rather than the runner's default GCC 13, which crashes on
+  `scada/monitored_item_service_awaitable.cpp`; the workflow says why.
 
 ## Chromium-Base Dependencies
 
