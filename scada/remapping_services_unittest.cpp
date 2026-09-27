@@ -13,6 +13,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace scada::aggregation {
@@ -279,7 +280,7 @@ TEST(RemappingAttributeServiceTest, RemapsReadAndWriteTargets) {
   RemappingAttributeService service{inner, fixture.remapper};
   TestExecutor executor;
 
-  WaitAwaitable(
+  std::ignore = WaitAwaitable(
       executor,
       service.Read(scada::ServiceContext{},
                    std::vector<scada::ReadValueId>{
@@ -288,7 +289,7 @@ TEST(RemappingAttributeServiceTest, RemapsReadAndWriteTargets) {
   EXPECT_EQ(inner.recorded_read[0].node_id,
             scada::NodeId(7, fixture.downstream_ns));
 
-  WaitAwaitable(
+  std::ignore = WaitAwaitable(
       executor,
       service.Write(scada::ServiceContext{},
                     std::vector<scada::WriteValue>{
@@ -399,9 +400,10 @@ TEST(RemappingHistoryServiceTest, RemapsReadEventsSourceNode) {
   RemappingHistoryService service{inner, fixture.remapper};
   TestExecutor executor;
 
-  WaitAwaitable(executor, service.HistoryReadEvents(
-                              scada::NodeId{5, fixture.proxy_ns}, scada::Time{},
-                              scada::Time{}, scada::EventFilter{}));
+  std::ignore = WaitAwaitable(
+      executor, service.HistoryReadEvents(scada::NodeId{5, fixture.proxy_ns},
+                                          scada::Time{}, scada::Time{},
+                                          scada::EventFilter{}));
   EXPECT_EQ(inner.recorded_events_node,
             scada::NodeId(5, fixture.downstream_ns));
 }
@@ -467,8 +469,8 @@ TEST(RemappingNodeManagementServiceTest, RemapsDeleteAndReferenceTargets) {
   RemappingNodeManagementService service{inner, fixture.remapper};
   TestExecutor executor;
 
-  WaitAwaitable(executor,
-                service.DeleteNodes(
+  std::ignore = WaitAwaitable(
+      executor, service.DeleteNodes(
                     scada::ServiceContext{},
                     {scada::DeleteNodesItem{
                         .node_id = scada::NodeId{"f.txt", fixture.proxy_ns}}}));
@@ -476,8 +478,8 @@ TEST(RemappingNodeManagementServiceTest, RemapsDeleteAndReferenceTargets) {
   EXPECT_EQ(inner.recorded_delete[0].node_id,
             scada::NodeId("f.txt", fixture.downstream_ns));
 
-  WaitAwaitable(executor,
-                service.AddReferences(
+  std::ignore = WaitAwaitable(
+      executor, service.AddReferences(
                     scada::ServiceContext{},
                     {scada::AddReferencesItem{
                         .source_node_id = scada::NodeId{1, fixture.proxy_ns},
