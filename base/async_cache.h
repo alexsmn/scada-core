@@ -38,12 +38,20 @@ class AsyncCache {
 
   explicit AsyncCache(AnyExecutor executor) : executor_{std::move(executor)} {}
 
+  // `on_waiter` is taken BY VALUE, and must be: this is a lazy coroutine, whose
+  // frame copies a reference parameter as a reference. It took `OnWaiter&&`
+  // until 2026-09-27, so `StartAwaitable(executor, cache.Wait(k, [&]{...}))`
+  // -- anything but `co_await` in the same full expression -- destroyed the
+  // lambda at the end of the statement and then ran the body against it,
+  // which was an access violation on Windows
+  // (AsyncCache.WaitersShareOneStartedFetch, scada-core run 36324571715)
+  // and passed by luck elsewhere.
   template <class OnWaiter>
-  [[nodiscard]] Awaitable<Value> Wait(Key key, OnWaiter&& on_waiter) {
+  [[nodiscard]] Awaitable<Value> Wait(Key key, OnWaiter on_waiter) {
     auto [value] = co_await CallbackToAwaitable<Value>(
         executor_,
         [this, key = std::move(key),
-         on_waiter = std::forward<OnWaiter>(on_waiter)](auto callback) mutable {
+         on_waiter = std::move(on_waiter)](auto callback) mutable {
           auto completion = std::make_shared<std::decay_t<decltype(callback)>>(
               std::move(callback));
           auto& entry = entries_[key];
