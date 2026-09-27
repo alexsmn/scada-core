@@ -31,8 +31,8 @@ class NetBoostLoggerAdapter final : public transport::LogSink {
       case transport::LogSeverity::Fatal:
         return BoostLogSeverity::fatal;
       default:
+        // NotReached() is [[noreturn]]; a `return` after it is MSVC C4702.
         base::NotReached();
-        return BoostLogSeverity::info;
     }
   }
 
