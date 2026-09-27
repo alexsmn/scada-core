@@ -8,6 +8,7 @@ namespace scada {
 
 class SessionDebugger {
  public:
+  virtual ~SessionDebugger() = default;
   using RequestId = int;
 
   // All notifications must be in `Succeeded` phase, so they are not preserved
