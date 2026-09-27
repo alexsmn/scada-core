@@ -24,7 +24,9 @@ struct MockServices {
     });
   }
 
-  services services() {
+  // Qualified: an unqualified `services` return type, looked up in this class
+  // before the member below redeclares the name, is GCC -Wchanges-meaning.
+  ::scada::services services() {
     return {.monitored_item_service = &monitored_item_service,
             .session_service = &session_service};
   }
