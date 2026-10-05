@@ -155,6 +155,18 @@ std::uint8_t UserAccessLevel(std::uint8_t access_level,
                              std::uint32_t access_rights,
                              bool is_anonymous);
 
+// UserAccessLevel for a PROCESS node — a data item — narrowed by the
+// caller's process permissions (ProcessPermissionsForUser), so CurrentWrite
+// survives only for the Control right. A client deciding whether to offer a
+// write off this attribute then agrees with what the router enforces.
+std::uint8_t ProcessUserAccessLevel(std::uint8_t access_level,
+                                    std::uint32_t access_rights,
+                                    bool is_anonymous);
+
+// The narrowing both of the above apply, for an explicit permission set.
+std::uint8_t UserAccessLevelFrom(std::uint8_t access_level,
+                                 Permission permissions);
+
 // IdentityCriteriaType: how an identity mapping rule matches a session's
 // identity token (OPC UA Part 18 §4.4.4). The numeric values match the OPC UA
 // enumeration so they can be stored and surfaced on the wire directly. Only

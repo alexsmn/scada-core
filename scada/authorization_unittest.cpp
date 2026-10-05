@@ -162,6 +162,19 @@ TEST(AuthorizationTest, UserAccessLevelNarrowsWriteToPermittedRoles) {
   EXPECT_EQ(UserAccessLevel(kReadWrite, 0, true), access_level::kCurrentRead);
 }
 
+// Backlog 864: a data item advertises CurrentWrite only to the Control right,
+// so a client gating its write on UserAccessLevel agrees with the router.
+TEST(AuthorizationTest, ProcessUserAccessLevelWritesForControlOnly) {
+  constexpr std::uint8_t kReadWrite =
+      access_level::kCurrentRead | access_level::kCurrentWrite;
+  EXPECT_EQ(ProcessUserAccessLevel(kReadWrite, kControl, false), kReadWrite);
+  EXPECT_EQ(ProcessUserAccessLevel(kReadWrite, kRootRights, false), kReadWrite);
+  EXPECT_EQ(ProcessUserAccessLevel(kReadWrite, kConfigure, false),
+            access_level::kCurrentRead);
+  // The default narrowing still lets the Configure right write configuration.
+  EXPECT_EQ(UserAccessLevel(kReadWrite, kConfigure, false), kReadWrite);
+}
+
 TEST(AuthorizationTest, UserAccessLevelNarrowsHistoryAndWriteBits) {
   constexpr std::uint8_t kAll =
       access_level::kCurrentRead | access_level::kCurrentWrite |

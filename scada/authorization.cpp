@@ -79,9 +79,19 @@ bool IsPermitted(std::uint32_t access_rights,
 std::uint8_t UserAccessLevel(std::uint8_t access_level,
                              std::uint32_t access_rights,
                              bool is_anonymous) {
-  const Permission permissions =
-      PermissionsForUser(access_rights, is_anonymous);
+  return UserAccessLevelFrom(access_level,
+                             PermissionsForUser(access_rights, is_anonymous));
+}
 
+std::uint8_t ProcessUserAccessLevel(std::uint8_t access_level,
+                                    std::uint32_t access_rights,
+                                    bool is_anonymous) {
+  return UserAccessLevelFrom(
+      access_level, ProcessPermissionsForUser(access_rights, is_anonymous));
+}
+
+std::uint8_t UserAccessLevelFrom(std::uint8_t access_level,
+                                 Permission permissions) {
   std::uint8_t user = access_level;
   const auto clear_unless = [&](std::uint8_t bit, Permission needed) {
     if (!Contains(permissions, needed)) {
