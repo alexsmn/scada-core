@@ -11,10 +11,11 @@
 
 namespace scada {
 
-// OPC UA well-known roles (OPC UA Part 3 §4.8 / Part 18). The server derives a
-// caller's roles from its coarse access-rights bitmask (scada::AccessRight), so
-// the standard role/permission surface can be exposed without a per-user role
-// store. https://reference.opcfoundation.org/Core/Part3/v105/docs/4.8
+// OPC UA well-known roles (OPC UA Part 3 §4.9.2 Well Known Roles / Part 18).
+// The server derives a caller's roles from its coarse access-rights bitmask
+// (scada::AccessRight), so the standard role/permission surface can be exposed
+// without a per-user role store.
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.2
 enum class WellKnownRole {
   kAnonymous,
   kAuthenticatedUser,
@@ -202,7 +203,8 @@ enum class UserConfiguration : std::uint32_t {
   kMustChangePassword = 1u << 3,
 };
 
-constexpr UserConfiguration operator|(UserConfiguration a, UserConfiguration b) {
+constexpr UserConfiguration operator|(UserConfiguration a,
+                                      UserConfiguration b) {
   return static_cast<UserConfiguration>(static_cast<std::uint32_t>(a) |
                                         static_cast<std::uint32_t>(b));
 }
@@ -320,6 +322,34 @@ bool IsWellKnownRoleId(const NodeId& role_id);
 // with its default permission set. This is the admin-visible RolePermissions
 // attribute (OPC UA Part 3 §5.2.9), independent of the caller.
 std::vector<RolePermissionType> DefaultRolePermissions();
+
+// The node-specific RolePermissions every PROCESS node carries: a data item's
+// live value, its limits (setpoints), and the methods that command equipment
+// or enter values by hand. It is the default map with Write and Call removed
+// from every role except Operator, so the Control access right is the only
+// route to a control command, a manual input or a limit change.
+//
+// OPC UA Part 3 §4.9.2 Table 2 draws exactly this line: the Engineer role may
+// "read/write configuration data", while it is the Operator role that "is
+// allowed to write some live data and call some Methods". Node-specific
+// Permissions take precedence over the defaults (§4.9.3), which is what lets
+// an Engineer keep Write and Call for configuration nodes and methods while
+// being refused them here.
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.2
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.3
+std::vector<RolePermissionType> ProcessRolePermissions();
+
+// The caller's effective permissions on a process node — the union over the
+// roles it holds of ProcessRolePermissions().
+Permission ProcessPermissionsForUser(std::uint32_t access_rights,
+                                     bool is_anonymous);
+
+// True if the caller holds `required` on a process node. This is the check
+// for issuing a command, entering a value by hand or editing limits; the
+// server applies it, and a client gating those commands must ask it too.
+bool IsProcessPermitted(std::uint32_t access_rights,
+                        bool is_anonymous,
+                        Permission required);
 
 // The caller's UserRolePermissions: the roles the caller currently holds, each
 // paired with its effective permissions (OPC UA Part 3 §5.2.10). This is the

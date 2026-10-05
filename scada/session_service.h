@@ -142,6 +142,16 @@ class SessionService {
     return IsPermitted(GetAccessRights(), IsAnonymous(), permission);
   }
 
+  // True when the session holds `permission` on a PROCESS node — a data
+  // item's value and limits, and the methods that command equipment or enter
+  // values by hand (scada::ProcessRolePermissions). Gate control, manual input
+  // and limit editing with this rather than HasPermission(): the Configure
+  // right grants Write and Call on configuration but not here, which is the
+  // distinction the server enforces.
+  bool HasProcessPermission(Permission permission) const {
+    return IsProcessPermitted(GetAccessRights(), IsAnonymous(), permission);
+  }
+
   virtual std::string GetHostName() const = 0;
 
   // TODO: Describe and explain the need.

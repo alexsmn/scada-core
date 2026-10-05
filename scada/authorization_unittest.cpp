@@ -1,6 +1,7 @@
 #include "scada/authorization.h"
 
 #include <algorithm>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -69,6 +70,85 @@ TEST(AuthorizationTest, RootHasAllPermissions) {
   EXPECT_TRUE(IsPermitted(kRootRights, false, Permission::kDeleteHistory));
   EXPECT_TRUE(
       IsPermitted(kRootRights, false, Permission::kWriteRolePermissions));
+}
+
+// The four rights levels of the user manual (scada-docs/dev/users.md): 0
+// Руководитель, 1 Инженер АСУ и связи, 2 Диспетчер, 3 Администратор. Control —
+// commands, manual input, limits — is the Control right's alone (backlog 864);
+// configuration edits stay the Configure right's.
+struct RightsLevelCase {
+  const char* name;
+  std::uint32_t access_rights;
+  bool may_control;
+  bool may_configure;
+};
+
+class RightsLevelTest : public ::testing::TestWithParam<RightsLevelCase> {};
+
+TEST_P(RightsLevelTest, ProcessNodesNeedTheControlRight) {
+  const RightsLevelCase& level = GetParam();
+  for (const Permission bit : {Permission::kWrite, Permission::kCall}) {
+    EXPECT_EQ(IsProcessPermitted(level.access_rights, false, bit),
+              level.may_control)
+        << level.name;
+  }
+  // Reading a process node is everybody's, whatever the level.
+  EXPECT_TRUE(IsProcessPermitted(level.access_rights, false,
+                                 Permission::kBrowse | Permission::kRead))
+      << level.name;
+}
+
+TEST_P(RightsLevelTest, ConfigurationFollowsTheConfigureRight) {
+  const RightsLevelCase& level = GetParam();
+  EXPECT_EQ(IsPermitted(level.access_rights, false,
+                        Permission::kAddNode | Permission::kDeleteNode),
+            level.may_configure)
+      << level.name;
+  EXPECT_EQ(
+      IsProcessPermitted(level.access_rights, false, Permission::kAddNode),
+      level.may_configure)
+      << level.name;
+  // A configuration property is written with Write (Part 3 §8.55 bit 6), so
+  // both rights that write anything keep it on configuration nodes.
+  EXPECT_EQ(IsPermitted(level.access_rights, false, Permission::kWrite),
+            level.may_control || level.may_configure)
+      << level.name;
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ManualLevels,
+    RightsLevelTest,
+    ::testing::Values(
+        RightsLevelCase{"0 Руководитель", 0, false, false},
+        RightsLevelCase{"1 Инженер АСУ и связи", kConfigure, false, true},
+        RightsLevelCase{"2 Диспетчер", kControl, true, false},
+        RightsLevelCase{"3 Администратор", kRootRights, true, true}),
+    [](const ::testing::TestParamInfo<RightsLevelCase>& info) {
+      return "Level" + std::to_string(info.index);
+    });
+
+TEST(AuthorizationTest, AnonymousMayNotControl) {
+  EXPECT_FALSE(
+      IsProcessPermitted(0, /*is_anonymous=*/true, Permission::kWrite));
+  EXPECT_FALSE(IsProcessPermitted(0, /*is_anonymous=*/true, Permission::kCall));
+}
+
+TEST(AuthorizationTest, ProcessRolePermissionsGrantControlToOperatorOnly) {
+  const std::vector<RolePermissionType> defaults = DefaultRolePermissions();
+  const std::vector<RolePermissionType> process = ProcessRolePermissions();
+  ASSERT_EQ(process.size(), defaults.size());
+  constexpr Permission kControlBits = Permission::kWrite | Permission::kCall;
+  for (std::size_t i = 0; i < process.size(); ++i) {
+    EXPECT_EQ(process[i].role_id, defaults[i].role_id);
+    const bool is_operator =
+        process[i].role_id == WellKnownRoleId(WellKnownRole::kOperator);
+    EXPECT_EQ(Contains(process[i].permissions, kControlBits), is_operator)
+        << process[i].role_id.ToString();
+    // Everything but Write and Call is the default grant, untouched.
+    EXPECT_EQ(process[i].permissions | kControlBits,
+              defaults[i].permissions | kControlBits)
+        << process[i].role_id.ToString();
+  }
 }
 
 TEST(AuthorizationTest, UserAccessLevelNarrowsWriteToPermittedRoles) {
@@ -278,8 +358,7 @@ TEST(AccessRightsForRolesTest, IgnoresCustomAndUnknownRoles) {
   // A custom (group) Role grants through its namespace policy, not through
   // these two bits, so it must contribute neither — silently, because it is a
   // perfectly valid role, not an error.
-  const NodeId ids[] = {NodeId{1u, 30 /*ROLE namespace*/},
-                        NodeId{999999u, 0}};
+  const NodeId ids[] = {NodeId{1u, 30 /*ROLE namespace*/}, NodeId{999999u, 0}};
   EXPECT_EQ(AccessRightsForRoles(ids), 0u);
 
   EXPECT_EQ(AccessRightsForRoles({}), 0u);
@@ -311,22 +390,22 @@ TEST(UserConfigurationTest, MaskBitsMatchTheSpecPositions) {
 
   // An empty mask is a real answer -- an ordinary, enabled, deletable account
   // -- not an absent one.
-  EXPECT_FALSE(
-      HasUserConfiguration(UserConfiguration::kNone, UserConfiguration::kDisabled));
+  EXPECT_FALSE(HasUserConfiguration(UserConfiguration::kNone,
+                                    UserConfiguration::kDisabled));
 }
 
 TEST(PasswordOptionsTest, MaskBitsMatchTheSpecPositions) {
   // OPC UA Part 18 §5.2.2 Table 23.
-  EXPECT_EQ(
-      static_cast<std::uint32_t>(PasswordOptions::kSupportInitialPasswordChange),
-      1u);
+  EXPECT_EQ(static_cast<std::uint32_t>(
+                PasswordOptions::kSupportInitialPasswordChange),
+            1u);
   EXPECT_EQ(static_cast<std::uint32_t>(PasswordOptions::kSupportDisableUser),
             2u);
   EXPECT_EQ(
       static_cast<std::uint32_t>(PasswordOptions::kSupportDisableDeleteForUser),
       4u);
-  EXPECT_EQ(static_cast<std::uint32_t>(PasswordOptions::kSupportNoChangeForUser),
-            8u);
+  EXPECT_EQ(
+      static_cast<std::uint32_t>(PasswordOptions::kSupportNoChangeForUser), 8u);
   EXPECT_EQ(
       static_cast<std::uint32_t>(PasswordOptions::kSupportDescriptionForUser),
       16u);
@@ -366,15 +445,18 @@ TEST(CheckPasswordPolicyTest, LengthBoundsAreOptional) {
 }
 
 TEST(CheckPasswordPolicyTest, CharacterClassRequirements) {
-  EXPECT_EQ(CheckPasswordPolicy(
-                "lowercase", PasswordOptions::kRequiresUpperCaseCharacters, 0, 0),
-            PasswordPolicyViolation::kMissingUpperCase);
-  EXPECT_EQ(CheckPasswordPolicy(
-                "UPPERCASE", PasswordOptions::kRequiresLowerCaseCharacters, 0, 0),
-            PasswordPolicyViolation::kMissingLowerCase);
-  EXPECT_EQ(CheckPasswordPolicy("noDigitsHere",
-                                PasswordOptions::kRequiresDigitCharacters, 0, 0),
-            PasswordPolicyViolation::kMissingDigit);
+  EXPECT_EQ(
+      CheckPasswordPolicy("lowercase",
+                          PasswordOptions::kRequiresUpperCaseCharacters, 0, 0),
+      PasswordPolicyViolation::kMissingUpperCase);
+  EXPECT_EQ(
+      CheckPasswordPolicy("UPPERCASE",
+                          PasswordOptions::kRequiresLowerCaseCharacters, 0, 0),
+      PasswordPolicyViolation::kMissingLowerCase);
+  EXPECT_EQ(
+      CheckPasswordPolicy("noDigitsHere",
+                          PasswordOptions::kRequiresDigitCharacters, 0, 0),
+      PasswordPolicyViolation::kMissingDigit);
   EXPECT_EQ(
       CheckPasswordPolicy("nospecials1",
                           PasswordOptions::kRequiresSpecialCharacters, 0, 0),
@@ -391,26 +473,28 @@ TEST(CheckPasswordPolicyTest, CharacterClassRequirements) {
   // A kSupport* bit is a capability advertisement, never a password
   // requirement -- a server that supports disabling users must not thereby
   // reject every password.
-  EXPECT_EQ(CheckPasswordPolicy("a", PasswordOptions::kSupportDisableUser, 0, 0),
-            PasswordPolicyViolation::kNone);
+  EXPECT_EQ(
+      CheckPasswordPolicy("a", PasswordOptions::kSupportDisableUser, 0, 0),
+      PasswordPolicyViolation::kNone);
 }
 
 TEST(CheckPasswordPolicyTest, ClassifiesByAsciiByteNotLocale) {
   // Non-ASCII bytes count as "special" rather than as letters: the spec
   // defines the classes over ASCII, and deferring to <cctype> would make the
   // same password pass on one host's locale and fail on another's.
-  EXPECT_EQ(CheckPasswordPolicy("\xd0\x9f\xd0\xb0\xd1\x80\xd0\xbe\xd0\xbb\xd1\x8c",
-                                PasswordOptions::kRequiresSpecialCharacters, 0,
-                                0),
-            PasswordPolicyViolation::kNone);
-  EXPECT_EQ(CheckPasswordPolicy("\xd0\x9f\xd0\xb0\xd1\x80\xd0\xbe\xd0\xbb\xd1\x8c",
-                                PasswordOptions::kRequiresUpperCaseCharacters, 0,
-                                0),
-            PasswordPolicyViolation::kMissingUpperCase);
+  EXPECT_EQ(
+      CheckPasswordPolicy("\xd0\x9f\xd0\xb0\xd1\x80\xd0\xbe\xd0\xbb\xd1\x8c",
+                          PasswordOptions::kRequiresSpecialCharacters, 0, 0),
+      PasswordPolicyViolation::kNone);
+  EXPECT_EQ(
+      CheckPasswordPolicy("\xd0\x9f\xd0\xb0\xd1\x80\xd0\xbe\xd0\xbb\xd1\x8c",
+                          PasswordOptions::kRequiresUpperCaseCharacters, 0, 0),
+      PasswordPolicyViolation::kMissingUpperCase);
 
   // Length is measured in bytes, which is what a credential store hashes.
-  EXPECT_EQ(CheckPasswordPolicy("\xd0\x9f\xd0\xb0", PasswordOptions::kNone, 4, 0),
-            PasswordPolicyViolation::kNone);
+  EXPECT_EQ(
+      CheckPasswordPolicy("\xd0\x9f\xd0\xb0", PasswordOptions::kNone, 4, 0),
+      PasswordPolicyViolation::kNone);
 }
 
 TEST(UserManagementDataTypeTest, IsValueEqualityComparable) {

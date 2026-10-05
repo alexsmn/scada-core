@@ -161,6 +161,37 @@ std::vector<RolePermissionType> DefaultRolePermissions() {
   return RolePermissionsFor({std::begin(kAllRoles), std::end(kAllRoles)});
 }
 
+std::vector<RolePermissionType> ProcessRolePermissions() {
+  // Only the Operator role writes live data and calls the commanding methods
+  // (OPC UA Part 3 §4.9.2 Table 2,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.2). Every
+  // other role keeps what it may do anywhere else — reading, history,
+  // browsing — so an Engineer still sees the item it may not command.
+  constexpr Permission kProcessOnly = Permission::kWrite | Permission::kCall;
+  std::vector<RolePermissionType> role_permissions = DefaultRolePermissions();
+  for (RolePermissionType& entry : role_permissions) {
+    if (entry.role_id != WellKnownRoleId(WellKnownRole::kOperator)) {
+      entry.permissions = static_cast<Permission>(
+          static_cast<std::uint32_t>(entry.permissions) &
+          ~static_cast<std::uint32_t>(kProcessOnly));
+    }
+  }
+  return role_permissions;
+}
+
+Permission ProcessPermissionsForUser(std::uint32_t access_rights,
+                                     bool is_anonymous) {
+  return PermissionsForUserFrom(ProcessRolePermissions(), access_rights,
+                                is_anonymous);
+}
+
+bool IsProcessPermitted(std::uint32_t access_rights,
+                        bool is_anonymous,
+                        Permission required) {
+  return Contains(ProcessPermissionsForUser(access_rights, is_anonymous),
+                  required);
+}
+
 std::vector<RolePermissionType> UserRolePermissions(std::uint32_t access_rights,
                                                     bool is_anonymous) {
   return RolePermissionsFor(RolesForUser(access_rights, is_anonymous));
@@ -249,11 +280,13 @@ PasswordPolicyViolation CheckPasswordPolicy(std::string_view password,
     }
   }
 
-  if (HasPasswordOption(options, PasswordOptions::kRequiresUpperCaseCharacters) &&
+  if (HasPasswordOption(options,
+                        PasswordOptions::kRequiresUpperCaseCharacters) &&
       !has_upper) {
     return PasswordPolicyViolation::kMissingUpperCase;
   }
-  if (HasPasswordOption(options, PasswordOptions::kRequiresLowerCaseCharacters) &&
+  if (HasPasswordOption(options,
+                        PasswordOptions::kRequiresLowerCaseCharacters) &&
       !has_lower) {
     return PasswordPolicyViolation::kMissingLowerCase;
   }
