@@ -20,7 +20,7 @@ A C++ library providing a distributed SCADA (Supervisory Control and Data Acquis
 ## Requirements
 
 - C++20 compatible compiler
-- CMake 3.21+
+- CMake 3.27+
 - Ninja (recommended) or other CMake generator
 
 ### Dependencies
