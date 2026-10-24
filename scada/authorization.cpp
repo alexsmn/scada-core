@@ -189,6 +189,30 @@ std::vector<RolePermissionType> ProcessRolePermissions() {
   return role_permissions;
 }
 
+std::vector<RolePermissionType> ConfigurationRolePermissions() {
+  // The Operator role writes live data, not configuration (OPC UA Part 3
+  // §4.9.2 Table 2,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.2). It keeps
+  // Call: configuration and maintenance methods are judged on their own.
+  std::vector<RolePermissionType> role_permissions = DefaultRolePermissions();
+  for (RolePermissionType& entry : role_permissions) {
+    if (entry.role_id == WellKnownRoleId(WellKnownRole::kOperator)) {
+      entry.permissions = static_cast<Permission>(
+          static_cast<std::uint32_t>(entry.permissions) &
+          ~static_cast<std::uint32_t>(Permission::kWrite));
+    }
+  }
+  return role_permissions;
+}
+
+bool IsConfigurationPermitted(std::uint32_t access_rights,
+                              bool is_anonymous,
+                              Permission required) {
+  return Contains(PermissionsForUserFrom(ConfigurationRolePermissions(),
+                                         access_rights, is_anonymous),
+                  required);
+}
+
 Permission ProcessPermissionsForUser(std::uint32_t access_rights,
                                      bool is_anonymous) {
   return PermissionsForUserFrom(ProcessRolePermissions(), access_rights,

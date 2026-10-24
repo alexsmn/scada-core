@@ -351,6 +351,23 @@ std::vector<RolePermissionType> DefaultRolePermissions();
 // https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.3
 std::vector<RolePermissionType> ProcessRolePermissions();
 
+// The node-specific RolePermissions every CONFIGURATION node carries: the
+// default map with Write removed from the Operator role, so the Control right
+// cannot change the configuration (backlog 896). It is the mirror of
+// ProcessRolePermissions, and draws the same line of OPC UA Part 3 §4.9.2
+// Table 2 from the other side: it is the Engineer role that "is allowed to
+// browse, read/write configuration data", while the Operator role writes
+// "some live data". The router applies it to every write that is neither a
+// process write nor one of the few configuration writes a dispatcher keeps
+// (a device's Disabled flag).
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.2
+std::vector<RolePermissionType> ConfigurationRolePermissions();
+
+// True if the caller holds `required` on a configuration node.
+bool IsConfigurationPermitted(std::uint32_t access_rights,
+                              bool is_anonymous,
+                              Permission required);
+
 // The caller's effective permissions on a process node — the union over the
 // roles it holds of ProcessRolePermissions().
 Permission ProcessPermissionsForUser(std::uint32_t access_rights,

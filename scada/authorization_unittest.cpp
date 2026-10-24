@@ -108,11 +108,33 @@ TEST_P(RightsLevelTest, ConfigurationFollowsTheConfigureRight) {
       IsProcessPermitted(level.access_rights, false, Permission::kAddNode),
       level.may_configure)
       << level.name;
-  // A configuration property is written with Write (Part 3 §8.55 bit 6), so
-  // both rights that write anything keep it on configuration nodes.
-  EXPECT_EQ(IsPermitted(level.access_rights, false, Permission::kWrite),
-            level.may_control || level.may_configure)
+  // A configuration property is written with Write (Part 3 §8.55 bit 6), and
+  // on a configuration node only the Configure right holds it (backlog 896),
+  // whatever the role defaults say.
+  EXPECT_EQ(
+      IsConfigurationPermitted(level.access_rights, false, Permission::kWrite),
+      level.may_configure)
       << level.name;
+}
+
+TEST(AuthorizationTest, ConfigurationRolePermissionsDropOperatorWriteOnly) {
+  const std::vector<RolePermissionType> defaults = DefaultRolePermissions();
+  const std::vector<RolePermissionType> configuration =
+      ConfigurationRolePermissions();
+  ASSERT_EQ(configuration.size(), defaults.size());
+  for (std::size_t i = 0; i < configuration.size(); ++i) {
+    EXPECT_EQ(configuration[i].role_id, defaults[i].role_id);
+    const bool is_operator =
+        configuration[i].role_id == WellKnownRoleId(WellKnownRole::kOperator);
+    // The Operator keeps everything but Write — Call included.
+    EXPECT_EQ(configuration[i].permissions | Permission::kWrite,
+              defaults[i].permissions | Permission::kWrite)
+        << configuration[i].role_id.ToString();
+    EXPECT_EQ(
+        Contains(configuration[i].permissions, Permission::kWrite),
+        !is_operator && Contains(defaults[i].permissions, Permission::kWrite))
+        << configuration[i].role_id.ToString();
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
