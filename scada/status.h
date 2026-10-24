@@ -166,6 +166,35 @@ enum class StatusCode : unsigned {
   // (0x803A0000) — OPC UA Part 20 §4.4.3 GenerateFileForRead,
   // https://reference.opcfoundation.org/Core/Part20/v105/docs/4.4.3
   Bad_NotReadable = Bad | 56,
+  // The server has reached its maximum number of sessions (OPC UA Part 4
+  // §5.7.2.3 Service results,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.2.3).
+  Bad_TooManySessions = Bad | 57,
+  // The server has reached its maximum number of subscriptions (OPC UA
+  // Part 4 §5.14.2.3 Service results,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.14.2.3).
+  Bad_TooManySubscriptions = Bad | 58,
+  // The oldest queued Publish was dequeued past the server's limit (OPC UA
+  // Part 4 §5.14.5.1 Description,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.14.5.1).
+  Bad_TooManyPublishRequests = Bad | 59,
+  // The host dialled is not in the server certificate (OPC UA Part 4
+  // §6.1.3 Determining if a Certificate is trusted,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/6.1.3).
+  Bad_CertificateHostNameInvalid = Bad | 60,
+  // The applicationUri is not the certificate's SAN URI (Part 4 §6.1.3).
+  Bad_CertificateUriInvalid = Bad | 61,
+  // The certificate is not trusted (Part 4 §6.1.3); the one a user may
+  // choose to trust.
+  Bad_CertificateUntrusted = Bad | 62,
+  // The certificate could not be decoded (Part 4 §6.1.3).
+  Bad_CertificateInvalid = Bad | 63,
+  // The certificate has expired or is not yet valid (Part 4 §6.1.3).
+  Bad_CertificateTimeInvalid = Bad | 64,
+  // The operation is not permitted over an unsecured channel, which a
+  // server without SecurityPolicy=None serves for discovery only (OPC UA Part 4
+  // §5.5.1 Overview, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.5.1).
+  Bad_SecurityModeInsufficient = Bad | 65,
 };
 
 enum class StatusLimit {

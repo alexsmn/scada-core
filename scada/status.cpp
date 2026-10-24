@@ -106,6 +106,15 @@ const Entry kEntries[] = {
     {scada::StatusCode::Bad_ResponseTooLarge, "Bad_ResponseTooLarge"},
     {scada::StatusCode::Bad_InvalidState, "Bad_InvalidState"},
     {scada::StatusCode::Bad_NotReadable, "Bad_NotReadable"},
+    {scada::StatusCode::Bad_TooManySessions, "Bad_TooManySessions"},
+    {scada::StatusCode::Bad_TooManySubscriptions, "Bad_TooManySubscriptions"},
+    {scada::StatusCode::Bad_TooManyPublishRequests, "Bad_TooManyPublishRequests"},
+    {scada::StatusCode::Bad_CertificateHostNameInvalid, "Bad_CertificateHostNameInvalid"},
+    {scada::StatusCode::Bad_CertificateUriInvalid, "Bad_CertificateUriInvalid"},
+    {scada::StatusCode::Bad_CertificateUntrusted, "Bad_CertificateUntrusted"},
+    {scada::StatusCode::Bad_CertificateInvalid, "Bad_CertificateInvalid"},
+    {scada::StatusCode::Bad_CertificateTimeInvalid, "Bad_CertificateTimeInvalid"},
+    {scada::StatusCode::Bad_SecurityModeInsufficient, "Bad_SecurityModeInsufficient"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
