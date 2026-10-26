@@ -180,7 +180,9 @@ constexpr NumericId AuditWriteUpdateEventType = 2100;
 constexpr NumericId AuditUpdateMethodEventType = 2127;
 
 constexpr NumericId AggregateFunction_Average = 2342;
+constexpr NumericId AggregateFunction_TimeAverage2 = 11285;
 constexpr NumericId AggregateFunction_Total = 2344;
+constexpr NumericId AggregateFunction_Total2 = 11304;
 constexpr NumericId AggregateFunction_Minimum = 2346;
 constexpr NumericId AggregateFunction_Maximum = 2347;
 constexpr NumericId AggregateFunction_Count = 2352;
