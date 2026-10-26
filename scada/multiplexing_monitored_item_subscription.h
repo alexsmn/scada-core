@@ -6,6 +6,7 @@
 #include "scada/service_context.h"
 #include "scada/status_or.h"
 
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -48,12 +49,25 @@ using MonitoredItemRouter = std::function<std::vector<MonitoredItemRoute>(
 // CreateSubscription so a backend's subscription spans continue the caller's
 // trace instead of starting an unrelated root — which is what lets a routed
 // monitored item be attributed to the tier that answered it.
+//
+// A backend whose subscription fails (its session dropped: an aggregated tier
+// restarted) loses its items, not the client's. Each item bound to it is
+// reported with the failure status and kept, and the subscription routes it
+// again — calling `router` afresh — every `rebind_delay`, doubling up to
+// kMaxRebindDelay, until a backend accepts it. So an item outlives the
+// downstream that served it and resumes on whichever backend owns the node
+// once one does. Creation is unchanged: an item no backend owns when it is
+// added still fails with Bad_WrongNodeId.
+inline constexpr std::chrono::milliseconds kDefaultRebindDelay{1000};
+inline constexpr std::chrono::milliseconds kMaxRebindDelay{5000};
+
 StatusOr<std::unique_ptr<MonitoredItemSubscription>>
 MakeMultiplexingMonitoredItemSubscription(
     AnyExecutor executor,
     MonitoredItemRouter router,
     MonitoredItemSubscriptionOptions options,
     ServingGate* gate = nullptr,
-    ServiceContext context = {});
+    ServiceContext context = {},
+    std::chrono::milliseconds rebind_delay = kDefaultRebindDelay);
 
 }  // namespace scada
