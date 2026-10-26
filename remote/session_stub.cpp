@@ -250,9 +250,13 @@ void SessionStub::SendResponse(protocol::Response& response) {
   Send(message);
 }
 
-void SessionStub::OnSessionDeleted() {
+void SessionStub::OnSessionDeleted(scada::StatusCode reason) {
   protocol::Message message;
-  message.add_notifications()->mutable_session_deleted();
+  protocol::Notification& notification = *message.add_notifications();
+  notification.mutable_session_deleted();
+  // A client that predates the reason ignores the field: `status_code` only
+  // qualifies a notification's events, and this one carries none.
+  Convert(reason, *notification.mutable_status_code());
   Send(message);
 }
 

@@ -63,7 +63,12 @@ class SessionStub : public MessageSender,
 
   void ProcessMessage(const protocol::Message& message);
 
-  void OnSessionDeleted();
+  // Tells the client its session is gone, and why. The reason travels in the
+  // notification's `status_code`: `Bad_SessionForcedLogoff` is the one the
+  // client reads as a takeover and does not reconnect from; anything else is
+  // reported as the server going away, and the client reconnects.
+  void OnSessionDeleted(
+      scada::StatusCode reason = scada::StatusCode::Bad_ServerWasShutDown);
 
  private:
   explicit SessionStub(SessionContext&& context);

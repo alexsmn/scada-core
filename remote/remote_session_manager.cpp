@@ -219,7 +219,10 @@ bool RemoteSessionManager::CheckExistingSession(
                                  ToString(existing_session->service_context()));
     // Only an attached session has a connection to carry the notification;
     // sending it to a detached one just buffers a message nobody will read.
-    existing_session->OnSessionDeleted();
+    // The reason is what lets the displaced client say "logged in elsewhere"
+    // and stay down, rather than reconnecting and displacing the new logon.
+    existing_session->OnSessionDeleted(
+        scada::StatusCode::Bad_SessionForcedLogoff);
   } else {
     LOG_INFO(*logger_) << "Reclaiming detached session"
                        << LOG_TAG("UserId", NodeIdToLogString(user_id))

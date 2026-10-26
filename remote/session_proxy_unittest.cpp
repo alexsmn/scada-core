@@ -4,7 +4,9 @@
 #include "base/test/asio_test_environment.h"
 #include "base/test/network_test_environment.h"
 #include "remote/protocol.h"
+#include "remote/protocol_buffer.h"
 #include "remote/protocol_message_transport.h"
+#include "remote/protocol_utils.h"
 #include "remote/remote_session_manager.h"
 #include "remote/session_stub.h"
 #include "scada/authentication_adapters.h"
@@ -23,6 +25,7 @@
 #include <transport/transport_factory.h>
 #include <transport/transport_string.h>
 #include <tuple>
+#include <vector>
 
 using namespace testing;
 
@@ -381,6 +384,138 @@ TEST_F(SessionProxyTest, LiveSessionStillRefusesASecondLogon) {
   EXPECT_EQ(status.code(), scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
 
   asio_env_.Wait(first.Disconnect());
+}
+
+// Backlog 922: a server that closes an established session's connection
+// cleanly is a lost connection, which the client reconnects from -- never a
+// takeover, which it does not. Over TCP the clean close arrives as asio's
+// `eof` error rather than as a zero-byte read, so this pins the path a real
+// workstation takes when the proxy tier restarts.
+//
+// It also pins a crash found on the way: the stand-in answers the logon but
+// not the CreateSubscription that follows, as a server closing at that moment
+// would. The closing session fails that request first, and the failed result
+// left SubscriptionProxy in DELETED with its channel still set, so the
+// OnChannelClosed() right after it panicked the client.
+//
+// A stand-in rather than the manager, because the manager's own shutdown
+// closes the socket before any of this is in flight.
+TEST_F(SessionProxyTest, GracefulCloseIsALostConnectionNotATakeover) {
+  // The stand-in takes the manager's port, so the manager must let go of it.
+  asio_env_.Wait(session_manager_->ShutdownAsync());
+
+  bool closed_by_server = false;
+  // Named rather than invoked as a temporary: the coroutine frame refers to
+  // the closure, which has to outlive the frame's last resumption.
+  auto run_server = [&]() -> Awaitable<void> {
+    auto executor = co_await boost::asio::this_coro::executor;
+    auto listener = asio_env_.transport_factory.CreateTransport(
+        transport::TransportString{network_env_.server_transport_string},
+        executor, transport::log_source{});
+    if (!listener.ok() || co_await listener->open() != transport::OK) {
+      co_return;
+    }
+    auto accepted = co_await listener->accept();
+    if (!accepted.ok()) {
+      co_return;
+    }
+    transport::any_transport connection{
+        std::make_unique<ProtocolMessageTransport>(std::move(*accepted))};
+
+    std::vector<char> buffer(protocol::kMaxMessageSize);
+    auto bytes_read = co_await connection.read(buffer);
+    protocol::Message request;
+    if (!bytes_read.ok() ||
+        !request.ParseFromArray(buffer.data(), static_cast<int>(*bytes_read)) ||
+        request.requests_size() != 1) {
+      co_return;
+    }
+
+    protocol::Message reply;
+    auto& response = *reply.add_responses();
+    response.set_request_id(request.requests(0).request_id());
+    Convert(scada::Status{scada::StatusCode::Good}, *response.mutable_status());
+    response.mutable_create_session_result()->set_protocol_version_major(
+        protocol::PROTOCOL_VERSION_MAJOR);
+    std::string payload;
+    if (!reply.AppendToString(&payload) ||
+        !(co_await connection.write(payload)).ok()) {
+      co_return;
+    }
+
+    closed_by_server = co_await connection.close() == transport::OK;
+  };
+  asio_env_.Start(run_server());
+
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                        .transport_factory_ = asio_env_.transport_factory}};
+  std::optional<scada::Status> closed_status;
+  boost::signals2::scoped_connection state_connection =
+      session.SubscribeSessionStateChanged(
+          [&](bool connected, const scada::Status& status) {
+            if (!connected) {
+              closed_status = status;
+            }
+          });
+  ASSERT_EQ(asio_env_.Wait(session.ConnectStatus(GetConnectParams())).code(),
+            scada::StatusCode::Good);
+
+  ASSERT_TRUE(asio_env_.RunUntil([&] { return closed_status.has_value(); },
+                                 std::chrono::milliseconds{1}))
+      << "the proxy never noticed the server closing the connection";
+  EXPECT_TRUE(closed_by_server);
+  EXPECT_EQ(closed_status->code(), scada::StatusCode::Bad_Disconnected);
+}
+
+// The other half of 922: a takeover is reported only when the server says so,
+// in the SessionDeleted notification it sends the displaced session.
+TEST_F(SessionProxyTest, TakeoverByAnotherLogonIsReportedAsForcedLogoff) {
+  SessionProxy first{{.executor_ = asio_env_.any_executor_factory(),
+                      .transport_factory_ = asio_env_.transport_factory}};
+  std::optional<scada::Status> closed_status;
+  boost::signals2::scoped_connection state_connection =
+      first.SubscribeSessionStateChanged(
+          [&](bool connected, const scada::Status& status) {
+            if (!connected) {
+              closed_status = status;
+            }
+          });
+  asio_env_.Wait(first.Connect(GetConnectParams()));
+
+  auto params = GetConnectParams();
+  params.allow_remote_logoff = true;
+  SessionProxy second{{.executor_ = asio_env_.any_executor_factory(),
+                       .transport_factory_ = asio_env_.transport_factory}};
+  EXPECT_EQ(asio_env_.Wait(second.ConnectStatus(params)).code(),
+            scada::StatusCode::Good);
+
+  ASSERT_TRUE(asio_env_.RunUntil([&] { return closed_status.has_value(); },
+                                 std::chrono::milliseconds{1}))
+      << "the displaced session was never told it was closed";
+  EXPECT_EQ(closed_status->code(), scada::StatusCode::Bad_SessionForcedLogoff);
+
+  asio_env_.Wait(second.Disconnect());
+}
+
+// A session the server closes for any other reason -- here, its user was
+// deleted -- is not a takeover either.
+TEST_F(SessionProxyTest, SessionClosedByServerIsNotATakeover) {
+  SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                        .transport_factory_ = asio_env_.transport_factory}};
+  std::optional<scada::Status> closed_status;
+  boost::signals2::scoped_connection state_connection =
+      session.SubscribeSessionStateChanged(
+          [&](bool connected, const scada::Status& status) {
+            if (!connected) {
+              closed_status = status;
+            }
+          });
+  asio_env_.Wait(session.Connect(GetConnectParams()));
+
+  session_manager_->CloseUserSessions(kUserId);
+  ASSERT_TRUE(asio_env_.RunUntil([&] { return closed_status.has_value(); },
+                                 std::chrono::milliseconds{1}));
+  EXPECT_EQ(closed_status->code(), scada::StatusCode::Bad_ServerWasShutDown);
 }
 
 // Regression: both read loops (SessionProxy::Connect here, ServerConnection on

@@ -1,12 +1,12 @@
 #include "remote/subscription_proxy.h"
 
-#include "base/check.h"
 #include "base/cancelation.h"
-#include "scada/monitored_item_service.h"
+#include "base/check.h"
 #include "remote/message_sender.h"
 #include "remote/monitored_item_proxy.h"
 #include "remote/protocol.h"
 #include "remote/protocol_utils.h"
+#include "scada/monitored_item_service.h"
 
 #include <algorithm>
 
@@ -88,7 +88,8 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
 
   protocol::Request request;
   // Called for the side effect: it is the set `create_subscription` field
-  // that makes `SessionStub` recognise this request (`has_create_subscription`).
+  // that makes `SessionStub` recognise this request
+  // (`has_create_subscription`).
   request.mutable_create_subscription();
 
   sender_->Request(
@@ -102,7 +103,12 @@ void SubscriptionProxy::OnChannelOpened(MessageSender& sender) {
 }
 
 void SubscriptionProxy::OnChannelClosed() {
-  scada::base::Check(state_ != State::DELETED);
+  // `state_` may already be DELETED here: a CreateSubscription that failed --
+  // including one the closing session itself failed with Bad_Disconnected just
+  // before calling this -- leaves the channel open with no subscription. The
+  // channel is what this closes, so only `sender_` is an invariant. Checking
+  // the state too panicked the client whenever the server closed the
+  // connection while CreateSubscription was still in flight (backlog 922).
   scada::base::Check(sender_);
 
   sender_ = nullptr;

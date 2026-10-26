@@ -210,9 +210,16 @@ void SessionProxy::OnTransportClosed(transport::error_code error) {
   LOG_WARNING(*logger_) << "Transport closed"
                         << LOG_TAG("Status", transport::ErrorToString(error));
 
-  scada::Status status_code(error == transport::OK
-                                ? scada::StatusCode::Bad_SessionForcedLogoff
-                            : error == transport::ERR_SSL_BAD_PEER_PUBLIC_KEY
+  // A graceful close (`transport::OK`, a zero-byte read) is a lost connection
+  // like any other, and the client reconnects from it. A takeover by another
+  // logon arrives as an explicit `SessionDeleted` notification carrying
+  // Bad_SessionForcedLogoff (see OnMessageReceived), never as a bare close, so
+  // a close alone must not be read as one: the client then reports someone
+  // else logged in and stops reconnecting (backlog 922). Over TCP a clean
+  // close arrives as asio's `eof` error rather than as zero bytes, which
+  // already reached Bad_Disconnected; this keeps any transport that reports
+  // EOF as zero bytes on the same footing.
+  scada::Status status_code(error == transport::ERR_SSL_BAD_PEER_PUBLIC_KEY
                                 ? scada::StatusCode::Bad_UserIsAlreadyLoggedOn
                                 : scada::StatusCode::Bad_Disconnected);
   OnSessionError(status_code);
@@ -465,7 +472,11 @@ void SessionProxy::OnMessageReceived(const protocol::Message& message) {
     }
 
     if (notification.has_session_deleted()) {
-      OnSessionError(scada::StatusCode::Bad_ServerWasShutDown);
+      // The server states the reason in `status_code`; one that predates the
+      // field sends none, which reads as the server going away.
+      OnSessionError(scada::IsBad(status_code)
+                         ? status_code
+                         : scada::StatusCode::Bad_ServerWasShutDown);
       return;
     }
   }

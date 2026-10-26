@@ -2,6 +2,7 @@
 
 #include "remote/message_sender_fake.h"
 #include "remote/protocol.h"
+#include "remote/protocol_utils.h"
 #include "remote/subscription.h"
 
 #include <memory>
@@ -32,6 +33,32 @@ TEST(SubscriptionProxyTest, OpeningTheChannelRequestsCreateSubscription) {
 
   ASSERT_THAT(sender.requests(), SizeIs(1));
   EXPECT_TRUE(sender.requests().front().request.has_create_subscription());
+}
+
+// A failed CreateSubscription leaves the channel open with no subscription, and
+// closing that channel afterwards is ordinary. It panicked: the failed result
+// set the state to DELETED while the channel stayed set, and OnChannelClosed()
+// checked the state as well. A session closing while CreateSubscription is in
+// flight does exactly this -- it fails the pending request with
+// Bad_Disconnected and then closes the channel -- so a server restart at that
+// moment crashed the client (found under backlog 922).
+TEST(SubscriptionProxyTest, ClosingAfterAFailedCreateIsOrdinary) {
+  auto proxy = std::make_shared<SubscriptionProxy>(SubscriptionParams{});
+  MessageSenderFake sender;
+  proxy->OnChannelOpened(sender);
+  ASSERT_THAT(sender.requests(), SizeIs(1));
+
+  protocol::Response response;
+  response.set_request_id(1);
+  Convert(scada::Status{scada::StatusCode::Bad_Disconnected},
+          *response.mutable_status());
+  sender.requests().front().response_handler(response);
+
+  proxy->OnChannelClosed();
+
+  // And the channel can open again, as it does on reconnect.
+  proxy->OnChannelOpened(sender);
+  EXPECT_THAT(sender.requests(), SizeIs(2));
 }
 
 }  // namespace
