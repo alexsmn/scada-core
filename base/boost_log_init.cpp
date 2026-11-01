@@ -51,10 +51,16 @@ std::string EvaluateString(const std::u16string& value) {
 }
 
 std::string ToString(const boost::log::attribute_value& attr) {
-  // NOTE: It's not clear why long is required at least under Windows.
-  using Types = boost::mpl::vector<bool, int16_t, uint16_t, int32_t, uint32_t,
-                                   int64_t, uint64_t, long, float, double,
-                                   std::string, std::wstring, std::u16string>;
+  // `long` and `unsigned long` are listed besides the fixed-width types
+  // because each is a distinct type that one of them aliases only on some
+  // platforms: on macOS int64_t/uint64_t are `long long`, so a size_t tag
+  // (`unsigned long`) matched nothing and was dropped from the line, silently
+  // -- the proxy's "Downstream serves data items | Count = ..." printed no
+  // count there. A type missing from this list loses its tag, not the line.
+  using Types =
+      boost::mpl::vector<bool, int16_t, uint16_t, int32_t, uint32_t, int64_t,
+                         uint64_t, long, unsigned long, float, double,
+                         std::string, std::wstring, std::u16string>;
 
   std::string result;
   boost::log::visit<Types>(
