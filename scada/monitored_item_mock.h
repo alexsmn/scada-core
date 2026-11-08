@@ -12,10 +12,10 @@ class MockMonitoredItem : public MonitoredItem {
     ON_CALL(
         *this,
         Subscribe(testing::VariantWith<scada::DataChangeHandler>(testing::_)))
-        .WillByDefault(testing::Invoke([this](MonitoredItemHandler handler) {
+        .WillByDefault([this](MonitoredItemHandler handler) {
           data_change_handler =
               std::move(std::get<scada::DataChangeHandler>(handler));
-        }));
+        });
   }
 
   MOCK_METHOD(void, Subscribe, (MonitoredItemHandler handler), (override));

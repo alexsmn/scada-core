@@ -19,8 +19,6 @@
 namespace scada {
 namespace {
 
-using testing::Invoke;
-
 // Records which `CaptureTracker` objects are alive, by address only.
 class LiveTrackers {
  public:
@@ -83,7 +81,7 @@ TEST(GmockAwaitableActionLifetime,
   LiveTrackers trackers;
   MockProbe probe;
   EXPECT_CALL(probe, Run(testing::_))
-      .WillOnce(Invoke(MakeLifetimeReportingAction(trackers)));
+      .WillOnce(MakeLifetimeReportingAction(trackers));
 
   Awaitable<bool> pending = probe.Run(&trackers);
   EXPECT_TRUE(WaitAwaitable(executor, std::move(pending)));

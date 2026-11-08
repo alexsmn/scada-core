@@ -11,8 +11,6 @@
 namespace scada {
 namespace {
 
-using testing::Invoke;
-
 TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
   TestExecutor executor;
   testing::StrictMock<MockAttributeService> service;
@@ -21,16 +19,16 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
   const std::vector<ReadValueId> read_inputs(1, ReadValueId{.node_id = 1});
 
   EXPECT_CALL(service, Read(testing::_, testing::_))
-      .WillOnce(Invoke([&](ServiceContext actual_context,
-                           std::vector<ReadValueId> actual_inputs)
-                           -> CoStatusOr<std::vector<DataValue>> {
+      .WillOnce([&](ServiceContext actual_context,
+                    std::vector<ReadValueId> actual_inputs)
+                    -> CoStatusOr<std::vector<DataValue>> {
         EXPECT_EQ(actual_context.request_id(), context.request_id());
         EXPECT_EQ(actual_inputs.size(), 1u);
         if (actual_inputs.size() != 1u)
           co_return StatusCode::Bad;
         EXPECT_EQ(actual_inputs[0], read_inputs[0]);
         co_return std::vector{DataValue{Variant{42}, {}, {}, {}}};
-      }));
+      });
 
   auto read_result =
       WaitAwaitable(executor, service.Read(context, read_inputs));
@@ -41,16 +39,16 @@ TEST(AttributeServiceHelpers, ReadAndWriteForwardResults) {
   const std::vector<WriteValue> write_inputs(
       1, WriteValue{.node_id = 2, .value = Variant{11}});
   EXPECT_CALL(service, Write(testing::_, testing::_))
-      .WillOnce(Invoke([&](ServiceContext actual_context,
-                           std::vector<WriteValue> actual_inputs)
-                           -> CoStatusOr<std::vector<StatusCode>> {
+      .WillOnce([&](ServiceContext actual_context,
+                    std::vector<WriteValue> actual_inputs)
+                    -> CoStatusOr<std::vector<StatusCode>> {
         EXPECT_EQ(actual_context.request_id(), context.request_id());
         EXPECT_EQ(actual_inputs.size(), 1u);
         if (actual_inputs.size() != 1u)
           co_return StatusCode::Bad;
         EXPECT_EQ(actual_inputs[0], write_inputs[0]);
         co_return std::vector{StatusCode::Good};
-      }));
+      });
 
   auto write_result =
       WaitAwaitable(executor, service.Write(context, write_inputs));

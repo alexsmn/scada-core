@@ -146,12 +146,12 @@ TEST_F(RemoteServicesTest, Test) {
 
   EXPECT_CALL(data_change_handler, Call(_))
       .Times(AtLeast(1))
-      .WillRepeatedly(Invoke([&](const scada::DataValue& data_value) {
+      .WillRepeatedly([&](const scada::DataValue& data_value) {
         if (data_value.status_code == scada::StatusCode::Good &&
             data_value.value == scada::Variant{123}) {
           received = true;
         }
-      }));
+      });
 
   scada::monitored_item monitored_item;
   monitored_item.subscribe_value(client_.node(node_id), /*params=*/{},
