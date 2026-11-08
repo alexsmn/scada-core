@@ -1,7 +1,8 @@
 # C++20 Modules: the core/ facade modules
 
 Status: experimental, opt-in via `-DSCADA_CXX_MODULES=ON` (default OFF).
-Last verified against code: 2026-11-07 (build-cost measurement, the
+Last verified against code: 2026-11-08 (the facade drift check — see
+"Keeping the facades in step"). Before that, 2026-11-07 (build-cost measurement, the
 `scada.core` facade's locale exports, and the AppleClang configure flag — see
 "Measured cost" and "How to build"; core + common facade and smoke builds
 green on AppleClang 21, CMake 4.4.2). Before that, 2026-08-31 (the internal-linkage-constants bullet
@@ -202,9 +203,10 @@ from that facade's GMF (`co_result.h`, `event_id_codec.h`,
 `localizing_services.h`, `namespace_remapper.h`, `node_id_log.h`,
 `proxy_namespace_table.h`, `range_encoding.h`, `remapping_services.h`,
 `standard_reference_types.h`, `user_management_encoding.h`). None breaks a
-build today because no pilot TU needs them through the import. Nothing fails
-when a header lands without its facade entry, because the default build has
-the option OFF.
+build today because no pilot TU needs them through the import. Until
+2026-11-08 nothing failed when a header landed without its facade entry,
+because the default build has the option OFF; see "Keeping the facades in
+step" for the check that now catches it.
 
 What this does **not** settle: MSVC and GCC 14 are unmeasured (their
 BMI-versus-PCH trade-off differs, and on MSVC `import std` is the mature
@@ -212,6 +214,42 @@ path), and neither is the Qt-heavy `client` product. A re-measurement on
 either would be the evidence that changes the conclusion. On AppleClang, the
 platform this tree is developed on, the pilot costs build time rather than
 saving it.
+
+## Keeping the facades in step
+
+The pilot is kept rather than retired (decided 2026-11-08, after the
+measurement above), so the facades need a check that does not depend on
+somebody building ON. `scada_module_facades_check` (ctest, at the root;
+`tools/build/check_module_facades.py`, source-only, no configure) reads every
+`*.cppm` in the tree and fails when:
+
+- a header in the facade's **own directory** is neither included in its
+  global module fragment nor declared omitted. Subdirectories are separate
+  libraries and are not the facade's business. `*_mock.h`, `*_fake.h`,
+  `*-inl.h` and `*_win.h` are skipped without a marker;
+- a GMF include names no file — a header renamed or deleted under the facade;
+- a marker is wrong: missing its reason, naming no file, or naming a header
+  that is included anyway.
+
+A deliberate omission is declared in the facade, beside the prose that already
+explains it, so the reason and the exemption cannot drift apart:
+
+```cpp
+// facade-omits: base/lifetime.h -- macro-only (SCADA_LIFETIME_BOUND)
+// facade-generated: model/namespaces.h -- written from the nodeset CSV by gen/
+```
+
+`facade-generated` is for a GMF include with no source file because the build
+writes it. The 76 gaps that predate the check — the ten `core/scada` headers
+above among them — are a worklist in
+`tools/build/module_facades_baseline.json`. Close one by adding the header with
+its `export using` lines, or by marking it omitted, then delete the entry; the
+baseline is self-cleaning, so an entry that is no longer a gap fails the check.
+
+**What it cannot see** is a new name in a header the facade already includes,
+without a matching `export using`. Telling those apart needs the compiler, so
+an ON build (with the module smoke tests) remains the only full check, and
+nothing runs one routinely.
 
 ## Cross-toolchain validation checklist (MSVC / GCC 14)
 

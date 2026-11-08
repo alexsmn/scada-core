@@ -97,6 +97,7 @@ module;
 #endif
 // Not included: lifetime.h (macro-only), timer/timer.h (forwarding header for
 // base/timer.h), win/*.h (pilot keeps platform headers include-based).
+// facade-omits: base/lifetime.h -- macro-only (SCADA_LIFETIME_BOUND)
 
 export module scada.base;
 
