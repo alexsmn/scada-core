@@ -47,6 +47,7 @@ module;
 #include "scada/identity_mapping_rule_encoding.h"
 #include "scada/item_factory_subscription.h"
 #include "scada/legacy_monitored_item_adapter.h"
+#include "scada/locale_negotiation.h"
 #include "scada/localized_text.h"
 #include "scada/logging.h"
 #include "scada/method_service.h"
@@ -131,6 +132,22 @@ using scada::Qualifier;
 using scada::QualifierFlagTextProvider;
 using scada::SetQualifierFlagTextProvider;
 using scada::ToLocalizedText;
+
+// locale_negotiation.h (the k*Locale tags are inline constexpr, so they have
+// external linkage and are exportable)
+using scada::AppendToEachLanguage;
+using scada::DecodeMultiLanguage;
+using scada::EncodeMultiLanguage;
+using scada::IsSpecialLocale;
+using scada::JoinLanguages;
+using scada::kMultiLanguageLocale;
+using scada::kSubstitutableLocale;
+using scada::kTierMultiLanguageLocale;
+using scada::LocaleMatches;
+using scada::RequestsEveryLanguage;
+using scada::RequestsPackedStrings;
+using scada::ResolveLocalizedText;
+using scada::SelectLocalizedText;
 
 // variant.h / data_value.h / tvq.h / extension_object.h / shared_value.h
 using scada::BooleanTextProvider;

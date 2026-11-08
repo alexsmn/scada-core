@@ -1,7 +1,10 @@
 # C++20 Modules: the core/ facade modules
 
 Status: experimental, opt-in via `-DSCADA_CXX_MODULES=ON` (default OFF).
-Last verified against code: 2026-08-31 (the internal-linkage-constants bullet
+Last verified against code: 2026-11-07 (build-cost measurement, the
+`scada.core` facade's locale exports, and the AppleClang configure flag — see
+"Measured cost" and "How to build"; core + common facade and smoke builds
+green on AppleClang 21, CMake 4.4.2). Before that, 2026-08-31 (the internal-linkage-constants bullet
 only: `model/namespaces.h` <!-- doc-citations: absent --> is generated into
 the build tree and is not a
 tracked header, which the bullet now says. The rest last verified 2026-07-20 —
@@ -138,7 +141,7 @@ Set `CXX_CPPCHECK ""` where cppcheck would see module units.
 | CMake | >= 3.28 | `FILE_SET CXX_MODULES` with Ninja; configure-time guard |
 | MSVC | cl >= 19.34 | supported natively by CMake |
 | GCC (Linux) | >= 14 | P1689 scanning; GCC 13 fails configure fast when ON |
-| AppleClang | 21 tested | two workarounds in `core/CMakeLists.txt` / presets: CMake wires no scanner for AppleClang (mirrored `Clang-CXX.cmake` block, Homebrew LLVM `clang-scan-deps` + explicit `-isysroot`), and named modules parse only behind `-fcxx-modules` |
+| AppleClang | 21 tested | two workarounds in `core/CMakeLists.txt`: CMake wires no scanner for AppleClang (mirrored `Clang-CXX.cmake` block, Homebrew LLVM `clang-scan-deps` + explicit `-isysroot`), and named modules parse only behind `-fcxx-modules`. CMake's own compiler list names MSVC, LLVM/Clang, clang-cl and GCC but not AppleClang ([cmake-cxxmodules(7)](https://cmake.org/cmake/help/latest/manual/cmake-cxxmodules.7.html), 4.5.0-rc3 docs, verified 2026-11-07); drop the workaround when AppleClang is listed there |
 
 ## How to build
 
@@ -146,12 +149,69 @@ Set `CXX_CPPCHECK ""` where cppcheck would see module units.
   -DSCADA_CXX_MODULES=ON && cmake --build --preset release`; tests via
   `ctest --preset test-release`. Requires CMake >= 3.28 (on Windows, at
   `C:/Program Files/CMake`).
+- **On a Mac with only the Command Line Tools, add
+  `-DCMAKE_CXX_COMPILER_CLANG_SCAN_DEPS=/opt/homebrew/opt/llvm/bin/clang-scan-deps`**
+  (`brew install llvm`). The CLT ship no `clang-scan-deps`, and the configure
+  stops with a message saying so. The deleted modules presets used to supply
+  this value, so the bare command above fails on such a Mac.
 - There are no dedicated `*-modules` presets. They lived in the root's
   git-ignored `CMakeUserPresets.json`, which ADR 0011 removed along with the
   whole-tree build; the option is a `-D` flag on the ordinary presets now.
 - Smoke coverage: per-library `module_test/` dirs — import-only TUs, mixed
   import+include TUs (base, scada, remote/pb), and a multi-import interop
   TU (model: scada.base + scada.core + scada.model in one TU).
+
+## Measured cost (2026-11-07): ON is slower on every axis
+
+Measured to answer "should the pilot be extended to the whole tree?". The
+`common` product (which splices `core`) was built in two scratch trees,
+`-DSCADA_CXX_MODULES=OFF` and `=ON`, Debug, `-j 18`, AppleClang 21, CMake
+4.4.2, no ccache. Peer sessions held the load average between 11 and 76
+throughout, so wall-clock times are noise. **Read the CPU columns**: they are
+user+sys for the whole ninja run, which load does not inflate much.
+
+| Case | OFF CPU s | ON CPU s | ON vs OFF |
+|---|---|---|---|
+| Clean build, run 1 / run 2 (ON and OFF alternated) | 991 / 1000 | 1139 / 1179 | +15–18% |
+| Rebuild after every dependant of `scada/node_id.h` is invalidated, run 1 / 2 | 594 / 610 | 656 / 742 | +10–22% |
+| The 10 core/common pilot TUs, each compiled alone, min of 3 | 12.6 total | 15.6 total | +24%; **every one** slower, +6% to +90% |
+
+Where the clean-build extra goes (ninja's per-edge log, last build only, so
+proportions rather than CPU): about 25% the 12 facade interface units, 15%
+the ON-only `*_module_unittests` smoke targets, 13% the P1689 scan and
+collate edges, and the remaining ~45% the pilot targets themselves, which lose the
+`REUSE_FROM scada_base` PCH (see "Rules for CMake targets" above).
+
+**Why an import loses to the PCH here.** A facade's GMF includes the
+library's *whole* public header set, Boost and all, so `import scada.core;`
+loads far more than the handful of headers a TU used to include, and the PCH
+it replaces had already removed most of the repeated parsing. Header units
+would be the way to modularise Boost, protobuf and Qt, and CMake supports
+them under no generator (cmake-cxxmodules(7), above). So the cost of the
+facade design does not shrink as more TUs import. The dependency graph also
+gets wider: invalidating `node_id.h` rebuilds 204 outputs ON against 192 OFF,
+because each facade depends on every header in its GMF.
+
+**The facades drift with no build to catch it.** The ON build was broken on
+`main` when this was measured: `common/opcua_bridge/remote_history_service.cpp`
+imports `scada.core` for `scada::kTierMultiLanguageLocale` and
+`kMultiLanguageLocale`, but `scada/locale_negotiation.h` had been added to
+`core/scada/` without being added to `scada_core.cppm`. Fixed in the same
+change as this section. Ten more `core/scada/*.h` headers are still absent
+from that facade's GMF (`co_result.h`, `event_id_codec.h`,
+`localizing_services.h`, `namespace_remapper.h`, `node_id_log.h`,
+`proxy_namespace_table.h`, `range_encoding.h`, `remapping_services.h`,
+`standard_reference_types.h`, `user_management_encoding.h`). None breaks a
+build today because no pilot TU needs them through the import. Nothing fails
+when a header lands without its facade entry, because the default build has
+the option OFF.
+
+What this does **not** settle: MSVC and GCC 14 are unmeasured (their
+BMI-versus-PCH trade-off differs, and on MSVC `import std` is the mature
+path), and neither is the Qt-heavy `client` product. A re-measurement on
+either would be the evidence that changes the conclusion. On AppleClang, the
+platform this tree is developed on, the pilot costs build time rather than
+saving it.
 
 ## Cross-toolchain validation checklist (MSVC / GCC 14)
 
