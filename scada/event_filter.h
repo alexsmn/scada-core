@@ -41,6 +41,24 @@ struct EventFilter {
 
   std::vector<NodeId> of_type;
   std::vector<NodeId> child_of;
+
+  // Which event fields a live subscription asks the server for.
+  enum class Fields {
+    // Nothing named: our own server projects its full SCADA field list, which
+    // carries every scada::Event member.
+    kScada,
+    // The BaseEventType fields any OPC UA server can project (OPC UA Part 5
+    // §6.4.2 BaseEventType,
+    // https://reference.opcfoundation.org/Core/Part5/v105/docs/6.4.2).
+    kStandard,
+    // kStandard plus a Condition's ConditionId and AckedState/Id (OPC UA
+    // Part 9 §5.5.2 ConditionType and §5.7.2 AcknowledgeableConditionType,
+    // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.5.2).
+    kStandardWithConditions,
+  };
+  // A third-party server knows nothing of the SCADA extension fields, and a
+  // strict one rejects a filter that names them (backlog 1055).
+  Fields fields = Fields::kScada;
 };
 
 std::ostream& operator<<(std::ostream& stream, const EventFilter& event_filter);

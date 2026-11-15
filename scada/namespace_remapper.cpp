@@ -241,6 +241,8 @@ scada::Event NamespaceRemapper::ToProxy(const scada::Event& event) const {
   result.user_id = ToProxy(event.user_id);
   result.acknowledged_user_id = ToProxy(event.acknowledged_user_id);
   result.value = ToProxy(event.value);
+  // The Condition object an Acknowledge is later called on (backlog 1055).
+  result.condition_id = ToProxy(event.condition_id);
   return result;
 }
 

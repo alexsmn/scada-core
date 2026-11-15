@@ -92,6 +92,20 @@ struct Event {
   Time acknowledged_time = scada::kNullTime;
   // `acknowledged_user_id` can be null if `acked` is true.
   NodeId acknowledged_user_id;
+
+  // The EventId exactly as a third-party server sent it, when it is not our
+  // own 8-byte layout; empty otherwise, and always empty from our server.
+  // `event_id` is then a local id derived from it. Only these bytes can be
+  // handed back to that server's Acknowledge method (OPC UA Part 9 §5.7.3
+  // Acknowledge Method,
+  // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.7.3).
+  ByteString foreign_event_id;
+  // The ConditionId of a Condition's state notification on a third-party
+  // server: the NodeId of the Condition instance, the object its Acknowledge
+  // is called on (OPC UA Part 9 §5.5.2 ConditionType,
+  // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.5.2). Null for
+  // a plain event, and always null from our server, which raises none.
+  NodeId condition_id;
 };
 
 struct ModelChangeEvent {
