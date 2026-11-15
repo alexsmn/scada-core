@@ -379,4 +379,4 @@ they are persisted in user configuration databases (see the
 - Add appropriate `constexpr` and `noexcept` specifiers
 - Prefer `StatusOr<T>` over exceptions for expected failures
 - Keep backward compatibility with Protocol Buffers (don't reuse field numbers)
-- Run tests after changes: `ctest --test-dir build`
+- Run tests after changes: `ctest --preset test-release`
