@@ -154,7 +154,13 @@ class SessionService {
 
   virtual std::string GetHostName() const = 0;
 
-  // TODO: Describe and explain the need.
+  // True when the server at the other end is a Telecontrol SCADA server, so
+  // its SCADA-specific address space (DataItems, devices, files, users, the
+  // per-item Control object) is there to use; false for any other server.
+  // A client withholds its SCADA-only surfaces on false instead of failing
+  // into nodes the server does not have. A transport that cannot tell answers
+  // false; the Qt client decides it from the server's NamespaceArray
+  // (`client/services/server_kind.h`).
   virtual bool IsScada() const = 0;
 
   using SessionStateChangedCallback =
