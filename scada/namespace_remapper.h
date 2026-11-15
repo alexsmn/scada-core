@@ -33,6 +33,7 @@
 #include "scada/variant.h"
 #include "scada/view_service.h"
 
+#include <optional>
 #include <span>
 #include <string>
 #include <unordered_map>
@@ -80,26 +81,41 @@ class NamespaceRemapper {
 
   // Builds the remapper an OPC UA *client* applies to a remote server whose
   // NamespaceArray need not match the client's own index space — which is any
-  // tier that publishes only the namespaces it serves (ADR 0003).
+  // tier that publishes only the namespaces it serves (ADR 0003), and every
+  // third-party server.
   //
-  // Both arrays are supplied by the caller and matched by URI equality:
-  // `remote_uris` is the server's Server_NamespaceArray (i=2255), `local_uris`
-  // the client's own. Nothing here is compiled in — a client learns a server's
-  // namespaces from what that server publishes, which is the whole point, since
-  // assuming they match is the defect this remapper exists to fix.
+  // `remote_uris` is the server's Server_NamespaceArray (i=2255);
+  // `local_table` is the client's own index space, matched by URI equality.
+  // Nothing here is compiled in — a client learns a server's namespaces from
+  // what that server publishes, which is the whole point, since assuming they
+  // match is the defect this remapper exists to fix.
   //
   // The client's indexes take the "proxy" role and the server's the
   // "downstream" one, so
   //   - ToDownstream : local -> remote, for a request sent to the server, and
   //   - ToProxy      : remote -> local, for the response,
-  // which is the polarity the RemappingXxxService wrappers already apply. A
-  // remote URI absent from `local_uris` gets no mapping and is left
-  // untranslated, the same treatment any unknown namespace receives.
+  // which is the polarity the RemappingXxxService wrappers already apply.
   //
-  // OPC UA Part 3 §8.2.3 makes the URI the stable identity,
+  // A remote URI absent from `local_table` is appended to it, so it gets a
+  // fresh local index of its own and maps back to its remote index — never
+  // onto whichever of the client's namespaces happens to share its number
+  // (backlog 1053). Keep `local_table` for the life of the connection so a
+  // namespace keeps its local index across reconnects.
+  //
+  // A local namespace the server does not publish has no remote index, so
+  // ToDownstream sends it as kUnpublishedNamespaceIndex, which the server
+  // reports as an unknown node, rather than under the same number, where it
+  // would name one of the server's own namespaces. An empty `remote_uris` (the
+  // array could not be read) yields the identity remapper.
+  //
+  // OPC UA Part 3 §8.2.3 NamespaceArray makes the URI the stable identity,
   // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.3 .
-  static NamespaceRemapper BuildByUri(std::span<const std::string> local_uris,
+  static NamespaceRemapper BuildByUri(ProxyNamespaceTable& local_table,
                                       std::span<const std::string> remote_uris);
+
+  // The NamespaceIndex a BuildByUri remapper sends for a local namespace the
+  // remote server does not publish. No server publishes 65536 namespaces.
+  static constexpr scada::NamespaceIndex kUnpublishedNamespaceIndex = 0xFFFF;
 
   // True if `proxy_index` denotes a namespace this downstream server owns, i.e.
   // a proxy->downstream translation is defined for it.
@@ -144,6 +160,10 @@ class NamespaceRemapper {
   // proxy_index -> downstream_index, for the namespaces this downstream owns.
   std::unordered_map<scada::NamespaceIndex, scada::NamespaceIndex>
       to_downstream_;
+  // What ToDownstream sends for a proxy index absent from `to_downstream_`;
+  // nullopt leaves it untranslated (Build/BuildFromPairs, where a router has
+  // already chosen this downstream by OwnsProxyNamespace).
+  std::optional<scada::NamespaceIndex> unowned_to_downstream_;
 };
 
 }  // namespace scada::aggregation

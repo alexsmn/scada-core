@@ -78,27 +78,20 @@ NamespaceRemapper NamespaceRemapper::BuildFromPairs(
 
 // static
 NamespaceRemapper NamespaceRemapper::BuildByUri(
-    std::span<const std::string> local_uris,
+    ProxyNamespaceTable& local_table,
     std::span<const std::string> remote_uris) {
-  // (downstream, proxy) = (remote, local): the server's published index space
-  // is the "downstream" side and the client's own is the "proxy" side.
-  std::vector<std::pair<scada::NamespaceIndex, scada::NamespaceIndex>> pairs;
-  for (std::size_t remote = 0; remote < remote_uris.size(); ++remote) {
-    if (remote_uris[remote].empty()) {
-      continue;
-    }
-    const auto local =
-        std::find(local_uris.begin(), local_uris.end(), remote_uris[remote]);
-    if (local == local_uris.end()) {
-      // A namespace the client does not know: leave it untranslated rather than
-      // guess an index for it.
-      continue;
-    }
-    pairs.emplace_back(
-        static_cast<scada::NamespaceIndex>(remote),
-        static_cast<scada::NamespaceIndex>(local - local_uris.begin()));
+  if (remote_uris.empty()) {
+    // The server's NamespaceArray was not read: nothing to match against, so
+    // translate nothing rather than declare every local namespace unpublished.
+    return NamespaceRemapper{};
   }
-  return BuildFromPairs(pairs);
+  // (downstream, proxy) = (remote, local): the server's published index space
+  // is the "downstream" side and the client's own is the "proxy" side. Build
+  // matches each remote URI against the local table and appends the ones the
+  // client does not know, exactly as an Aggregating Server merges a downstream.
+  NamespaceRemapper remapper = Build(remote_uris, local_table);
+  remapper.unowned_to_downstream_ = kUnpublishedNamespaceIndex;
+  return remapper;
 }
 
 bool NamespaceRemapper::OwnsProxyNamespace(
@@ -120,7 +113,9 @@ scada::NamespaceIndex NamespaceRemapper::MapToDownstream(
   if (it != to_downstream_.end()) {
     return it->second;
   }
-  return proxy_index;  // Not this downstream's namespace: leave untranslated.
+  // Not this downstream's namespace: unreachable for a client remapper, else
+  // untranslated.
+  return unowned_to_downstream_.value_or(proxy_index);
 }
 
 namespace {

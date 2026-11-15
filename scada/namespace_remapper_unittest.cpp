@@ -272,5 +272,87 @@ TEST(NamespaceRemapperTest, RemapsEventPayloadFields) {
             scada::NodeId(11, proxy_ns));
 }
 
+// A client's local index space: OPC UA plus two of its own namespaces, so a
+// foreign server's ns=1/ns=2 would collide with them if left untranslated.
+std::vector<std::string> ClientUris() {
+  return {kUa, "urn:client:a", "urn:client:b"};
+}
+
+TEST(NamespaceRemapperBuildByUriTest, MatchesKnownNamespacesByUri) {
+  ProxyNamespaceTable local{ClientUris()};
+  // The server publishes the client's namespaces in a different order.
+  const std::vector<std::string> remote{kUa, "urn:client:b", "urn:client:a"};
+  const NamespaceRemapper remapper =
+      NamespaceRemapper::BuildByUri(local, remote);
+
+  EXPECT_EQ(remapper.ToProxy(scada::NodeId{7, 1}), (scada::NodeId{7, 2}));
+  EXPECT_EQ(remapper.ToProxy(scada::NodeId{7, 2}), (scada::NodeId{7, 1}));
+  EXPECT_EQ(remapper.ToDownstream(scada::NodeId{7, 1}), (scada::NodeId{7, 2}));
+  EXPECT_EQ(local.uris().size(), 3u);  // nothing new to add
+}
+
+// Backlog 1053: a server namespace the client does not know used to keep its
+// number, landing on whichever client namespace shared it.
+TEST(NamespaceRemapperBuildByUriTest, UnknownRemoteNamespaceGetsFreshIndex) {
+  ProxyNamespaceTable local{ClientUris()};
+  const std::vector<std::string> remote{kUa, "urn:foreign:app", "urn:client:a",
+                                        "urn:foreign:plant"};
+  const NamespaceRemapper remapper =
+      NamespaceRemapper::BuildByUri(local, remote);
+
+  ASSERT_EQ(local.uris().size(), 5u);
+  EXPECT_EQ(local.uris()[3], "urn:foreign:app");
+  EXPECT_EQ(local.uris()[4], "urn:foreign:plant");
+
+  // To the client: the foreign namespaces land on the fresh indexes.
+  EXPECT_EQ(remapper.ToProxy(scada::NodeId{5, 1}), (scada::NodeId{5, 3}));
+  EXPECT_EQ(remapper.ToProxy(scada::NodeId{5, 2}), (scada::NodeId{5, 1}));
+  EXPECT_EQ(remapper.ToProxy(scada::NodeId{5, 3}), (scada::NodeId{5, 4}));
+  EXPECT_EQ(remapper.ToProxy(scada::QualifiedName{"Plant", 3}),
+            (scada::QualifiedName{"Plant", 4}));
+  // To the wire: the fresh indexes map back to the server's own.
+  EXPECT_EQ(remapper.ToDownstream(scada::NodeId{5, 3}), (scada::NodeId{5, 1}));
+  EXPECT_EQ(remapper.ToDownstream(scada::NodeId{5, 4}), (scada::NodeId{5, 3}));
+  EXPECT_EQ(remapper.ToDownstream(scada::QualifiedName{"Plant", 4}),
+            (scada::QualifiedName{"Plant", 3}));
+}
+
+// A client namespace the server does not publish must not go to the wire under
+// its own number, which on that server names one of the server's namespaces.
+TEST(NamespaceRemapperBuildByUriTest, UnpublishedLocalNamespaceIsUnreachable) {
+  ProxyNamespaceTable local{ClientUris()};
+  const std::vector<std::string> remote{kUa, "urn:foreign:app",
+                                        "urn:foreign:plant"};
+  const NamespaceRemapper remapper =
+      NamespaceRemapper::BuildByUri(local, remote);
+
+  EXPECT_EQ(remapper.ToDownstream(scada::NodeId{9, 2}).namespace_index(),
+            NamespaceRemapper::kUnpublishedNamespaceIndex);
+  EXPECT_EQ(remapper.ToDownstream(scada::NodeId{9, 0}), (scada::NodeId{9, 0}));
+}
+
+// The table outlives one connection, so a reconnect to a server that has
+// reordered its array keeps each namespace on the local index it already had.
+TEST(NamespaceRemapperBuildByUriTest, FreshIndexesSurviveReconnect) {
+  ProxyNamespaceTable local{ClientUris()};
+  const std::vector<std::string> first{kUa, "urn:foreign:x", "urn:foreign:y"};
+  const NamespaceRemapper before = NamespaceRemapper::BuildByUri(local, first);
+  const std::vector<std::string> second{kUa, "urn:foreign:y", "urn:foreign:x"};
+  const NamespaceRemapper after = NamespaceRemapper::BuildByUri(local, second);
+
+  EXPECT_EQ(before.ToProxy(scada::NodeId{1, 1}).namespace_index(), 3u);
+  EXPECT_EQ(after.ToProxy(scada::NodeId{1, 2}).namespace_index(), 3u);
+  EXPECT_EQ(local.uris().size(), 5u);
+}
+
+// An unread NamespaceArray gives nothing to match, so nothing is translated.
+TEST(NamespaceRemapperBuildByUriTest, EmptyRemoteArrayIsIdentity) {
+  ProxyNamespaceTable local{ClientUris()};
+  const NamespaceRemapper remapper = NamespaceRemapper::BuildByUri(local, {});
+  EXPECT_EQ(remapper.ToProxy(scada::NodeId{4, 2}), (scada::NodeId{4, 2}));
+  EXPECT_EQ(remapper.ToDownstream(scada::NodeId{4, 2}), (scada::NodeId{4, 2}));
+  EXPECT_EQ(local.uris().size(), 3u);
+}
+
 }  // namespace
 }  // namespace scada::aggregation
