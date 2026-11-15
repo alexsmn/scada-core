@@ -108,8 +108,8 @@ class NamespaceRemapper {
   // would name one of the server's own namespaces. An empty `remote_uris` (the
   // array could not be read) yields the identity remapper.
   //
-  // OPC UA Part 3 §8.2.3 NamespaceArray makes the URI the stable identity,
-  // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.3 .
+  // OPC UA Part 3 §8.2.2 NamespaceIndex makes the URI the stable identity,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.2 .
   static NamespaceRemapper BuildByUri(ProxyNamespaceTable& local_table,
                                       std::span<const std::string> remote_uris);
 

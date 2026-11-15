@@ -36,8 +36,8 @@ TEST(ProxyNamespaceTableTest, GetOrAddDedupesAndAppends) {
 // slots sharing a URI (in particular the historical "" placeholders) would
 // collapse onto one proxy index when an Aggregating Server merges a
 // downstream's NamespaceArray, silently mis-remapping every NodeId in the
-// collapsed namespaces. OPC UA Part 3 §8.2.3 requires a URI per entry.
-// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.3
+// collapsed namespaces. OPC UA Part 3 §8.2.2 requires a URI per entry.
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.2
 TEST(NamespaceRemapperTest, EmptyDownstreamUrisStayIdentityMappedAndUnmerged) {
   ProxyNamespaceTable table;
   const std::vector<std::string> downstream{kUa, "", "urn:server", ""};

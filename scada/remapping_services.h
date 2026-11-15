@@ -5,7 +5,7 @@
 // QualifiedName / ExpandedNodeId in a request is translated proxy -> downstream
 // before the call, and every one in the response is translated downstream ->
 // proxy. This is the per-request half of OPC UA aggregation (Part 1 §5.3.7);
-// the namespace mapping itself lives in NamespaceRemapper (Part 3 §8.2.3).
+// the namespace mapping itself lives in NamespaceRemapper (Part 3 §8.2.2).
 //
 // Scope: structural identifiers (request targets, Browse reference
 // descriptions, browse-path targets, monitored-item targets, method/object ids)

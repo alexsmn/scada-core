@@ -29,10 +29,10 @@ NamespaceRemapper NamespaceRemapper::Build(
        downstream_index < downstream_uris.size(); ++downstream_index) {
     // A downstream slot without a URI identifies no namespace; leave it
     // identity-mapped instead of merging every empty slot onto the table's
-    // first empty entry. OPC UA Part 3 §8.2.3 requires NamespaceArray entries
+    // first empty entry. OPC UA Part 3 §8.2.2 requires NamespaceArray entries
     // to be namespace URIs, so an empty slot is a downstream defect (e.g. a
     // pre-fix build whose static table still had empty entries).
-    // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.3
+    // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.2
     if (downstream_uris[downstream_index].empty()) {
       ++empty_uri_count;
       remapper.to_proxy_[downstream_index] =
@@ -48,7 +48,7 @@ NamespaceRemapper NamespaceRemapper::Build(
   if (empty_uri_count > 0) {
     LOG_WARNING(Logger())
         << "Downstream NamespaceArray has empty namespace URIs; leaving them "
-           "identity-mapped (OPC UA Part 3 §8.2.3 requires a URI per entry — "
+           "identity-mapped (OPC UA Part 3 §8.2.2 requires a URI per entry — "
            "likely a stale downstream build)"
         << LOG_TAG("EmptyUriCount", empty_uri_count)
         << LOG_TAG("NamespaceCount", downstream_uris.size());
