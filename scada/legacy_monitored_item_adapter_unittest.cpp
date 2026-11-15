@@ -221,6 +221,41 @@ TEST(LegacyMonitoredItemAdapter, FansOutDataChangesByClientHandle) {
   EXPECT_THAT(values2, ElementsAre(22));
 }
 
+// opcuapp answers AddItems Good before the server replies and reports a later
+// refusal as a bad data change, whatever the item monitors. An event item's
+// subscriber must hear it: a third-party server refusing an EventFilter was
+// otherwise silent, and the client never fell back (backlog 1055).
+TEST(LegacyMonitoredItemAdapter, BadDataChangeOnAnEventItemReachesItsHandler) {
+  TestExecutor executor;
+  auto subscription_state =
+      std::make_shared<FakeMonitoredItemSubscription::State>();
+  FakeMonitoredItemService service{subscription_state};
+  LegacyMonitoredItemAdapter pump{executor, service};
+  auto item = pump.CreateMonitoredItem(
+      {.node_id = NodeId{2253, 0}, .attribute_id = AttributeId::EventNotifier},
+      {});
+  std::vector<Status> statuses;
+  item->Subscribe(EventHandler{[&](Status status, const std::any& event) {
+    statuses.push_back(status);
+    EXPECT_FALSE(event.has_value());
+  }});
+  Drain(executor);
+
+  service.PushRead(std::vector<MonitoredItemNotification>{
+      DataChangeNotification{
+          .item_id = 100,
+          .client_handle = 1,
+          .value = DataValue{StatusCode::Bad_WrongNodeId, scada::Now()}},
+      // A good data change is not an event, and still not delivered.
+      DataChangeNotification{
+          .item_id = 100, .client_handle = 1, .value = GoodValue(1)},
+  });
+  Drain(executor);
+
+  ASSERT_THAT(statuses, SizeIs(1));
+  EXPECT_EQ(statuses[0].code(), StatusCode::Bad_WrongNodeId);
+}
+
 TEST(LegacyMonitoredItemAdapter, DestroyingItemRemovesSubscriptionItem) {
   TestExecutor executor;
   auto subscription_state =

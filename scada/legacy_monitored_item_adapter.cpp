@@ -248,14 +248,26 @@ void LegacyMonitoredItemAdapter::OnNotifications(
       if (!item_state)
         continue;
       DataChangeHandler handler;
+      EventHandler event_handler;
       {
         std::lock_guard item_lock{item_state->mutex};
         if (item_state->closed)
           continue;
         handler = item_state->data_change_handler;
+        event_handler = item_state->event_handler;
       }
-      if (handler)
+      if (handler) {
         handler(data_change->value);
+      } else if (event_handler && IsBad(data_change->value.status_code)) {
+        // opcuapp reports a server's refusal of an item it had already
+        // answered Good for (its AddItems promises before the
+        // CreateMonitoredItems response) as a bad data change, whatever the
+        // item monitors (`ClientSubscription::SpawnCreateMonitoredItem`). For
+        // an event item that is its status; dropped here, the subscriber
+        // never learned that a third-party server refused its EventFilter
+        // (backlog 1055).
+        event_handler(Status{data_change->value.status_code}, {});
+      }
     } else if (const auto* event =
                    std::get_if<EventNotification>(&notification)) {
       auto item_state = resolve_item(event->client_handle);
