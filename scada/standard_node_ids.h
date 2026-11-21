@@ -124,8 +124,9 @@ constexpr NumericId UserManagementDataType_Encoding_DefaultBinary = 24292;
 constexpr NumericId PasswordOptionsMask = 24277;
 constexpr NumericId UserConfigurationMask = 24279;
 // Server.Namespaces and the NamespaceMetadataType of its per-namespace
-// metadata objects (OPC UA Part 5 §6.3.12/§6.3.13,
-// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.3.12). Ids per
+// metadata objects (OPC UA Part 5 §6.3.14 NamespacesType / §6.3.13
+// NamespaceMetadataType,
+// https://reference.opcfoundation.org/Core/Part5/v105/docs/6.3.13). Ids per
 // the official 1.05 NodeIds.csv.
 constexpr NumericId Server_Namespaces = 11715;
 constexpr NumericId NamespaceMetadataType = 11616;
