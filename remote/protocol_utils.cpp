@@ -15,6 +15,9 @@
 #include "scada/standard_node_ids.h"
 
 #include <any>
+#include <array>
+#include <cstdint>
+#include <optional>
 
 namespace {
 
@@ -44,7 +47,14 @@ inline Target CastConvertTo(const Source& source) {
 void Convert(const protocol::NodeId& source, scada::NodeId& target) {
   auto namespace_index =
       static_cast<scada::NamespaceIndex>(source.namespace_index());
-  if (!source.string_id().empty())
+  if (!source.guid_id().empty()) {
+    // A malformed Guid (not 16 bytes) is wire data and must not panic; it
+    // reads as the null id, as an unknown field would.
+    const std::optional<scada::Guid> guid =
+        scada::Guid::FromBytes(source.guid_id());
+    target = guid.has_value() ? scada::NodeId(*guid, namespace_index)
+                              : scada::NodeId{};
+  } else if (!source.string_id().empty())
     target = scada::NodeId(source.string_id(), namespace_index);
   else if (!source.opaque_id().empty())
     // `opaque_id()` is a std::string, which alone would select the String
@@ -72,6 +82,11 @@ void Convert(const scada::NodeId& source, protocol::NodeId& target) {
       target.set_opaque_id(source.opaque_id().data(),
                            source.opaque_id().size());
       break;
+    case scada::NodeIdType::Guid: {
+      const std::array<std::uint8_t, 16> bytes = source.guid_id().ToBytes();
+      target.set_guid_id(bytes.data(), bytes.size());
+      break;
+    }
     default:
       scada::base::NotReached();
   }

@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <boost/container_hash/hash.hpp>
+#include <optional>
 
 #if defined(SCADA_USE_BASE_MODULE)
 // Modules-pilot consumer (SCADA_CXX_MODULES=ON): base names come from the
@@ -35,6 +36,14 @@ std::size_t hash<scada::NodeId>::operator()(
     case scada::NodeIdType::Opaque:
       boost::hash_combine(seed, node_id.opaque_id());
       break;
+    case scada::NodeIdType::Guid: {
+      const scada::Guid& guid = node_id.guid_id();
+      boost::hash_combine(seed, guid.data1);
+      boost::hash_combine(seed, guid.data2);
+      boost::hash_combine(seed, guid.data3);
+      boost::hash_combine(seed, guid.data4);
+      break;
+    }
     default:
       break;
   }
@@ -103,6 +112,9 @@ String NodeId::ToString() const {
       result += std::format("b={}", encoded);
       break;
     }
+    case NodeIdType::Guid:
+      result += std::format("g={}", guid_id().ToString());
+      break;
     default:
       result += "<invalid>";
   }
@@ -143,8 +155,21 @@ NodeId NodeId::FromString(std::string_view string) {
     return {std::string{string_id}, namespace_index};
   }
 
-  // TODO: g=
-  // TODO: b=
+  // OPC UA Part 6 §5.3.1.10 NodeId, the g= and b= forms,
+  // https://reference.opcfoundation.org/Core/Part6/v105/docs/5.3.1.10
+  if (boost::istarts_with(str, "g=")) {
+    const std::optional<Guid> guid = Guid::FromString(str.substr(2));
+    if (!guid.has_value())
+      return {};
+    return {*guid, namespace_index};
+  }
+
+  if (boost::istarts_with(str, "b=")) {
+    std::string decoded;
+    if (!base::Base64Decode(str.substr(2), &decoded))
+      return {};
+    return {ByteString{decoded.begin(), decoded.end()}, namespace_index};
+  }
 
   return {std::string{str}, namespace_index};
 }

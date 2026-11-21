@@ -40,6 +40,7 @@ module;
 #include "scada/event_filter.h"
 #include "scada/event_util.h"
 #include "scada/expanded_node_id.h"
+#include "scada/guid.h"
 #include "scada/extension_object.h"
 #include "scada/history_service.h"
 #include "scada/history_types.h"
@@ -119,8 +120,9 @@ using scada::UInt32;
 using scada::UInt64;
 using scada::UInt8;
 
-// node_id.h / expanded_node_id.h
+// node_id.h / expanded_node_id.h / guid.h
 using scada::ExpandedNodeId;
+using scada::Guid;
 using scada::NodeId;
 using scada::NodeIdType;
 using scada::NumericId;

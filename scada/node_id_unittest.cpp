@@ -124,8 +124,77 @@ TEST(NodeId, FromString_Empty_Null) {
 }
 
 TEST(NodeId, FromString_RoundTripsToString) {
-  for (const auto& node_id : {scada::NodeId{33u, 2}, scada::NodeId{"tag", 1},
-                              scada::NodeId{"tag", 0}}) {
+  const scada::Guid guid =
+      *scada::Guid::FromString("C496578A-0DFE-4B8F-870A-745238C6AEAE");
+  for (const auto& node_id :
+       {scada::NodeId{33u, 2}, scada::NodeId{"tag", 1}, scada::NodeId{"tag", 0},
+        scada::NodeId{guid, 3}, scada::NodeId{guid, 0},
+        scada::NodeId{scada::ByteString{'\x01', '\x00', '\xfe'}, 2}}) {
     EXPECT_EQ(scada::NodeId::FromString(node_id.ToString()), node_id);
   }
+}
+
+TEST(NodeId, GuidId) {
+  const scada::Guid guid =
+      *scada::Guid::FromString("C496578A-0DFE-4B8F-870A-745238C6AEAE");
+  const scada::NodeId node_id{guid, 2};
+
+  EXPECT_EQ(node_id.type(), scada::NodeIdType::Guid);
+  EXPECT_TRUE(node_id.is_guid());
+  EXPECT_FALSE(node_id.is_null());
+  EXPECT_EQ(node_id.guid_id(), guid);
+  EXPECT_EQ(node_id.ToString(), "ns=2;g=C496578A-0DFE-4B8F-870A-745238C6AEAE");
+}
+
+// A null Guid is still a Guid id, not the null NodeId: the tree treats only
+// Numeric 0 in namespace 0 as null, for every form alike.
+TEST(NodeId, NullGuidIsNotTheNullNodeId) {
+  EXPECT_FALSE(scada::NodeId(scada::Guid{}, 0).is_null());
+}
+
+TEST(NodeId, GuidIdEqualityHashAndOrdering) {
+  const scada::Guid a =
+      *scada::Guid::FromString("C496578A-0DFE-4B8F-870A-745238C6AEAE");
+  scada::Guid b = a;
+  b.data4[7] = 0xAF;
+
+  EXPECT_EQ(scada::NodeId(a, 1), scada::NodeId(a, 1));
+  EXPECT_NE(scada::NodeId(a, 1), scada::NodeId(a, 2));
+  EXPECT_NE(scada::NodeId(a, 1), scada::NodeId(b, 1));
+  EXPECT_LT(scada::NodeId(a, 1), scada::NodeId(b, 1));
+  EXPECT_EQ(std::hash<scada::NodeId>{}(scada::NodeId(a, 1)),
+            std::hash<scada::NodeId>{}(scada::NodeId(a, 1)));
+
+  // Guid sorts after every form that existed before it.
+  EXPECT_LT(scada::NodeId(4000000000u, 9), scada::NodeId(a, 0));
+  EXPECT_LT(scada::NodeId("zzz", 9), scada::NodeId(a, 0));
+  EXPECT_LT(scada::NodeId(scada::ByteString{'\xff'}, 9), scada::NodeId(a, 0));
+}
+
+TEST(NodeId, FromString_GuidId) {
+  const scada::Guid guid =
+      *scada::Guid::FromString("C496578A-0DFE-4B8F-870A-745238C6AEAE");
+  EXPECT_EQ(
+      scada::NodeId::FromString("ns=4;g=c496578a-0dfe-4b8f-870a-745238c6aeae"),
+      scada::NodeId(guid, 4));
+}
+
+TEST(NodeId, FromString_MalformedGuidIsNull) {
+  EXPECT_TRUE(scada::NodeId::FromString("ns=4;g=not-a-guid").is_null());
+}
+
+// ToString has always written opaque ids as b=<base64>; FromString used to
+// read that back as a String id "b=...".
+TEST(NodeId, FromString_OpaqueId) {
+  const scada::NodeId node_id = scada::NodeId::FromString("ns=2;b=AQL+");
+  ASSERT_EQ(node_id.type(), scada::NodeIdType::Opaque);
+  EXPECT_EQ(node_id,
+            scada::NodeId(scada::ByteString{'\x01', '\x02', '\xfe'}, 2));
+}
+
+TEST(NodeId, MoveFromGuidLeavesNull) {
+  scada::NodeId source{scada::Guid{.data1 = 1}, 2};
+  const scada::NodeId target{std::move(source)};
+  EXPECT_TRUE(target.is_guid());
+  EXPECT_TRUE(source.is_null());  // NOLINT(bugprone-use-after-move)
 }

@@ -56,6 +56,10 @@ message NodeId {
   uint32 numeric_id = 2;
   string string_id = 3;
   bytes opaque_id = 4;
+  // 16 bytes in OPC UA Binary order (Data1..Data3 little-endian, then Data4;
+  // OPC UA Part 6 §5.2.2.6). Added for backlog 826: a peer that predates it
+  // ignores the field and reads the id as null, as it did before.
+  bytes guid_id = 5;
 }
 
 message ExpandedNodeId {

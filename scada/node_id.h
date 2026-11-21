@@ -3,6 +3,7 @@
 #include "base/check.h"
 #include "base/lifetime.h"
 #include "scada/basic_types.h"
+#include "scada/guid.h"
 #include "scada/shared_value.h"
 #include "scada/string.h"
 
@@ -15,7 +16,11 @@
 
 namespace scada {
 
-enum class NodeIdType { Numeric, String, Opaque };
+// The identifier forms a NodeId can carry. Guid is last, after the three forms
+// the tree mints itself, so that adding it (backlog 826) left the relative
+// ordering of every existing id unchanged. OPC UA Part 3 §8.2.3 IdType,
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.2.3
+enum class NodeIdType { Numeric, String, Opaque, Guid };
 
 using NumericId = uint32_t;
 
@@ -26,6 +31,8 @@ class NodeId {
                    NamespaceIndex namespace_index = 0) noexcept;
   NodeId(String string_id, NamespaceIndex namespace_index);
   NodeId(ByteString opaque_id, NamespaceIndex namespace_index);
+  constexpr NodeId(const Guid& guid_id,
+                   NamespaceIndex namespace_index) noexcept;
 
   NodeId(const NodeId& source) = default;
   NodeId& operator=(const NodeId& source) = default;
@@ -46,6 +53,7 @@ class NodeId {
   constexpr bool is_string() const noexcept {
     return type() == NodeIdType::String;
   }
+  constexpr bool is_guid() const noexcept { return type() == NodeIdType::Guid; }
 
   constexpr NamespaceIndex namespace_index() const noexcept {
     return namespace_index_;
@@ -57,6 +65,7 @@ class NodeId {
   constexpr NumericId numeric_id() const;
   const String& string_id() const SCADA_LIFETIME_BOUND;
   const ByteString& opaque_id() const SCADA_LIFETIME_BOUND;
+  constexpr const Guid& guid_id() const SCADA_LIFETIME_BOUND;
 
   // Equality and ordering. Both special-case the numeric/numeric pair — by far
   // the most common NodeId — comparing the inline uint32 and namespace directly
@@ -94,7 +103,9 @@ class NodeId {
   static NodeId FromString(std::string_view string);
 
  private:
-  std::variant<NumericId, SharedValue<String>, SharedValue<ByteString>>
+  // The alternatives are in NodeIdType order. A Guid is 16 bytes, small enough
+  // to hold inline; the variable-size forms are shared.
+  std::variant<NumericId, SharedValue<String>, SharedValue<ByteString>, Guid>
       identifier_;
 
   NamespaceIndex namespace_index_ = 0;
@@ -103,6 +114,10 @@ class NodeId {
 inline constexpr NodeId::NodeId(NumericId numeric_id,
                                 NamespaceIndex namespace_index) noexcept
     : identifier_{numeric_id}, namespace_index_{namespace_index} {}
+
+inline constexpr NodeId::NodeId(const Guid& guid_id,
+                                NamespaceIndex namespace_index) noexcept
+    : identifier_{guid_id}, namespace_index_{namespace_index} {}
 
 inline constexpr bool NodeId::is_null() const noexcept {
   if (namespace_index_ != 0)
@@ -121,6 +136,11 @@ inline constexpr bool NodeId::is_namespace_only() const noexcept {
 inline constexpr NumericId NodeId::numeric_id() const {
   base::Check(type() == NodeIdType::Numeric);
   return std::get<NumericId>(identifier_);
+}
+
+inline constexpr const Guid& NodeId::guid_id() const {
+  base::Check(type() == NodeIdType::Guid);
+  return std::get<Guid>(identifier_);
 }
 
 inline constexpr bool operator==(const NodeId& a, NumericId b) noexcept {

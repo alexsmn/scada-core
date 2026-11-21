@@ -36,8 +36,8 @@ std::string NodeIdToLogString(const NodeId& node_id) {
                          std::string{node_id.string_id()});
 
     default:
-      // Opaque identifiers have no log-string form; callers treat an empty
-      // result as unsupported.
+      // Opaque and Guid identifiers have no log-string form; callers treat an
+      // empty result as unsupported.
       return {};
   }
 }

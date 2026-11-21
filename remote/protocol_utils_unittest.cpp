@@ -132,6 +132,25 @@ TEST(ProtocolUtils, OpaqueNodeIdRoundTripsAsOpaque) {
   EXPECT_EQ(node_id, restored_node_id);
 }
 
+TEST(ProtocolUtils, GuidNodeIdRoundTripsAsGuid) {
+  const scada::NodeId node_id{
+      *scada::Guid::FromString("C496578A-0DFE-4B8F-870A-745238C6AEAE"), 3};
+  protocol::NodeId proto_node_id;
+  Convert(node_id, proto_node_id);
+  EXPECT_EQ(proto_node_id.guid_id().size(), 16u);
+  auto restored_node_id = ConvertTo<scada::NodeId>(proto_node_id);
+  EXPECT_EQ(restored_node_id.type(), scada::NodeIdType::Guid);
+  EXPECT_EQ(node_id, restored_node_id);
+}
+
+// Wire data never panics: a guid_id of the wrong length reads as null.
+TEST(ProtocolUtils, MalformedGuidNodeIdIsNull) {
+  protocol::NodeId proto_node_id;
+  proto_node_id.set_namespace_index(3);
+  proto_node_id.set_guid_id("short");
+  EXPECT_TRUE(ConvertTo<scada::NodeId>(proto_node_id).is_null());
+}
+
 // LocalizedText conversions
 
 TEST(ProtocolUtils, ConvertStringToLocalizedTextAscii) {
