@@ -20,6 +20,9 @@
 #include "scada/status_or.h"
 
 #include <algorithm>
+#include <boost/asio/redirect_error.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <ranges>
 #include <transport/transport_factory.h>
 #include <transport/transport_string.h>
@@ -39,6 +42,23 @@ CreateSessionResult MakeCreateSessionResult(scada::Status status) {
       .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
 }
 
+// Waits out a login delay on `executor` without blocking it.
+Awaitable<void> SleepOn(AnyExecutor executor, Clock::duration delay) {
+  boost::asio::steady_timer timer{executor};
+  timer.expires_after(delay);
+  boost::system::error_code ec;
+  co_await timer.async_wait(
+      boost::asio::redirect_error(boost::asio::use_awaitable, ec));
+}
+
+std::shared_ptr<LoginThrottle> MakeDefaultLoginThrottle(AnyExecutor executor) {
+  return std::make_shared<LoginThrottle>(
+      LoginThrottlePolicy{}, [] { return Clock::now(); },
+      [executor = std::move(executor)](Clock::duration delay) {
+        return SleepOn(executor, delay);
+      });
+}
+
 }  // namespace
 
 // RemoteSessionManager
@@ -46,6 +66,9 @@ CreateSessionResult MakeCreateSessionResult(scada::Status status) {
 RemoteSessionManager::RemoteSessionManager(
     RemoteSessionManagerContext&& context)
     : RemoteSessionManagerContext{std::move(context)} {
+  if (!login_throttle_) {
+    login_throttle_ = MakeDefaultLoginThrottle(executor_);
+  }
   LOG_INFO(*logger_) << "Initialization";
 }
 
@@ -131,7 +154,8 @@ Awaitable<void> RemoteSessionManager::ShutdownAsync() {
 }
 
 Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
-    protocol::CreateSession create_session) {
+    protocol::CreateSession create_session,
+    std::string peer) {
   auto user_name = scada::ToLocalizedText(
       UtfConvert<char16_t>(create_session.user_name_utf8()));
   auto password = scada::ToLocalizedText(
@@ -151,14 +175,55 @@ Awaitable<CreateSessionResult> RemoteSessionManager::CreateSessionAsync(
         scada::StatusCode::Bad_UnsupportedProtocolVersion);
   }
 
+  // Failed logins are throttled per user name and per remote address
+  // (LoginThrottle). Whatever the throttle decides, a refused client sees the
+  // same Bad_WrongLoginCredentials a wrong password gets, so the reply says
+  // nothing about which part failed or that a lockout is in force.
+  std::weak_ptr<bool> alive = alive_;
+  const std::shared_ptr<LoginThrottle> throttle = login_throttle_;
+  const LoginThrottle::Keys throttle_keys{
+      .user_name = create_session.user_name_utf8(),
+      .address = LoginThrottlePeerAddress(peer)};
+  const LoginThrottle::Admission admission =
+      throttle->BeginAttempt(throttle_keys);
+
+  if (admission.delay > Clock::duration::zero()) {
+    LOG_WARNING(*logger_)
+        << "Delaying login after repeated failures"
+        << LOG_TAG("UserName", ToString(user_name)) << LOG_TAG("Peer", peer)
+        << LOG_TAG("DelayMs",
+                   std::chrono::duration_cast<std::chrono::milliseconds>(
+                       admission.delay)
+                       .count());
+    co_await throttle->Sleep(admission.delay);
+    if (alive.expired()) {
+      co_return MakeCreateSessionResult(scada::StatusCode::Bad_Disconnected);
+    }
+  }
+
+  if (admission.locked_out) {
+    LOG_WARNING(*logger_) << "Login refused: address locked out after "
+                             "repeated failures"
+                          << LOG_TAG("UserName", ToString(user_name))
+                          << LOG_TAG("Peer", peer);
+    co_return MakeCreateSessionResult(
+        scada::StatusCode::Bad_WrongLoginCredentials);
+  }
+
   auto auth_result = co_await authenticator_->Authenticate(user_name, password);
+  if (alive.expired()) {
+    co_return MakeCreateSessionResult(scada::StatusCode::Bad_Disconnected);
+  }
   if (!auth_result.ok()) {
     LOG_WARNING(*logger_) << "Authorization error"
                           << LOG_TAG("UserName", ToString(user_name))
+                          << LOG_TAG("Peer", peer)
                           << LOG_TAG("ErrorString",
                                      ToString(auth_result.status()));
     co_return MakeCreateSessionResult(auth_result.status());
   }
+
+  throttle->RecordSuccess(throttle_keys);
 
   auto& user_id = auth_result->user_id;
   LOG_INFO(*logger_) << "Authorization succeeded"
@@ -324,6 +389,9 @@ SessionStub* RemoteSessionManager::FindUserSession(
 
 void RemoteSessionManager::OnSessionAccepted(
     transport::any_transport transport) {
+  // Read before wrapping: the framing wrapper does not forward `peer()`.
+  std::string peer = transport.peer();
+
   if (!transport.message_oriented()) {
     transport = transport::any_transport{
         std::make_unique<ProtocolMessageTransport>(std::move(transport))};
@@ -333,7 +401,8 @@ void RemoteSessionManager::OnSessionAccepted(
   ServerConnectionContext connection_context;
   connection_context.transport_ = std::move(transport);
   connection_context.create_session_handler_ =
-      [this, alive](protocol::CreateSession create_session)
+      [this, alive,
+       peer = std::move(peer)](protocol::CreateSession create_session)
       -> Awaitable<CreateSessionResult> {
     if (alive.expired()) {
       co_return CreateSessionResult{
@@ -341,7 +410,7 @@ void RemoteSessionManager::OnSessionAccepted(
           .protocol_version_major = protocol::PROTOCOL_VERSION_MAJOR,
           .protocol_version_minor = protocol::PROTOCOL_VERSION_MINOR};
     }
-    co_return co_await CreateSessionAsync(std::move(create_session));
+    co_return co_await CreateSessionAsync(std::move(create_session), peer);
   };
   connection_context.delete_session_handler_ = [this,
                                                 alive](SessionStub& session) {

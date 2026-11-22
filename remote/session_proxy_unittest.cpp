@@ -3,6 +3,7 @@
 #include "base/async_completion.h"
 #include "base/test/asio_test_environment.h"
 #include "base/test/network_test_environment.h"
+#include "remote/login_throttle.h"
 #include "remote/protocol.h"
 #include "remote/protocol_buffer.h"
 #include "remote/protocol_message_transport.h"
@@ -31,6 +32,12 @@ using namespace testing;
 
 namespace {
 
+// What the test throttle's sleep returns: already complete, so a delay costs
+// no real time.
+Awaitable<void> NoWait() {
+  co_return;
+}
+
 class SessionProxyTest : public Test {
  public:
   void SetUp() override { CreateSessionManager(); }
@@ -51,6 +58,7 @@ class SessionProxyTest : public Test {
             .authenticator_ = scada::MakeCoroutineAuthenticator(
                 [this](scada::LocalizedText, scada::LocalizedText)
                     -> scada::CoStatusOr<scada::AuthenticationResult> {
+                  ++authenticate_calls_;
                   if (auth_failure_status_) {
                     co_return *auth_failure_status_;
                   }
@@ -62,7 +70,8 @@ class SessionProxyTest : public Test {
                 }),
             .transport_factory_ = asio_env_.transport_factory,
             .endpoints_ = {transport::TransportString{
-                network_env_.server_transport_string}}});
+                network_env_.server_transport_string}},
+            .login_throttle_ = login_throttle_});
 
     session_opened_connection_ =
         session_manager_->SubscribeSessionOpened([this](SessionStub& session) {
@@ -126,9 +135,32 @@ class SessionProxyTest : public Test {
             .password = kPassword};
   }
 
+  // Logs on once with a new client and returns the status the client sees.
+  scada::Status ConnectOnce() {
+    SessionProxy session{{.executor_ = asio_env_.any_executor_factory(),
+                          .transport_factory_ = asio_env_.transport_factory}};
+    return asio_env_.Wait(session.ConnectStatus(GetConnectParams()));
+  }
+
   AsioTestEnvironment asio_env_;
   NetworkTestEnvironment network_env_;
   std::optional<scada::StatusCode> auth_failure_status_;
+  int authenticate_calls_ = 0;
+  // Every delay the manager asked the throttle to wait out, in order.
+  std::vector<Clock::duration> throttle_delays_;
+  // One free failure, then 1 s doubling to a 4 s cap; the address locks out at
+  // three failures. The sleep records the delay and completes at once.
+  std::shared_ptr<LoginThrottle> login_throttle_ =
+      std::make_shared<LoginThrottle>(
+          LoginThrottlePolicy{.free_failures = 1,
+                              .base_delay = std::chrono::seconds{1},
+                              .max_delay = std::chrono::seconds{4},
+                              .lockout_failures = 3},
+          [] { return TimePoint{} + std::chrono::hours{1}; },
+          [this](Clock::duration delay) {
+            throttle_delays_.push_back(delay);
+            return NoWait();
+          });
   // When set, authentication suspends until the test completes it — the window
   // in which a client can go away while its logon is still in flight.
   std::optional<scada::base::AsyncCompletion> auth_gate_;
@@ -240,6 +272,49 @@ TEST_F(SessionProxyTest, ConnectStatusReturnsBadCredentials) {
 
   auto status = asio_env_.Wait(session.ConnectStatus(GetConnectParams()));
   EXPECT_EQ(status.code(), scada::StatusCode::Bad_WrongLoginCredentials);
+}
+
+TEST_F(SessionProxyTest, FailedLoginsAreDelayedThenRefusedWithTheSameError) {
+  using std::chrono::seconds;
+  auth_failure_status_ = scada::StatusCode::Bad_WrongLoginCredentials;
+
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(ConnectOnce().code(),
+              scada::StatusCode::Bad_WrongLoginCredentials)
+        << i;
+  }
+  EXPECT_EQ(authenticate_calls_, 3);
+  EXPECT_EQ(throttle_delays_,
+            (std::vector<Clock::duration>{seconds{1}, seconds{2}}));
+
+  // The address is now locked out: the attempt is delayed and refused without
+  // consulting the authenticator, and the client sees exactly what a wrong
+  // password gets.
+  EXPECT_EQ(ConnectOnce().code(), scada::StatusCode::Bad_WrongLoginCredentials);
+  EXPECT_EQ(authenticate_calls_, 3);
+  EXPECT_EQ(throttle_delays_,
+            (std::vector<Clock::duration>{seconds{1}, seconds{2}, seconds{4}}));
+
+  // Even the right password is refused while the lockout holds.
+  auth_failure_status_.reset();
+  EXPECT_EQ(ConnectOnce().code(), scada::StatusCode::Bad_WrongLoginCredentials);
+  EXPECT_EQ(authenticate_calls_, 3);
+}
+
+TEST_F(SessionProxyTest, SuccessfulLoginResetsTheThrottle) {
+  auth_failure_status_ = scada::StatusCode::Bad_WrongLoginCredentials;
+  EXPECT_EQ(ConnectOnce().code(), scada::StatusCode::Bad_WrongLoginCredentials);
+  EXPECT_EQ(ConnectOnce().code(), scada::StatusCode::Bad_WrongLoginCredentials);
+  ASSERT_EQ(throttle_delays_.size(), 1u);
+
+  auth_failure_status_.reset();
+  EXPECT_TRUE(ConnectOnce().good());
+  ASSERT_EQ(throttle_delays_.size(), 2u);  // the success itself waited
+
+  // Counting starts again: the next failure is a free one.
+  auth_failure_status_ = scada::StatusCode::Bad_WrongLoginCredentials;
+  EXPECT_EQ(ConnectOnce().code(), scada::StatusCode::Bad_WrongLoginCredentials);
+  EXPECT_EQ(throttle_delays_.size(), 2u);
 }
 
 TEST_F(SessionProxyTest, ReconnectIsAwaitable) {

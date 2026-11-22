@@ -5,6 +5,7 @@
 #include "base/boost_log.h"
 #include "base/lifetime.h"
 #include "metrics/tracer.h"
+#include "remote/login_throttle.h"
 #include "scada/authentication.h"
 #include "scada/co_result.h"
 #include "scada/services.h"
@@ -44,6 +45,10 @@ struct RemoteSessionManagerContext {
   const std::vector<transport::TransportString> endpoints_;
   // Passed to every session stub for inbound request SERVER spans.
   Tracer& tracer_ = Tracer::None();
+  // Slows down and locks out repeated failed logins (LoginThrottle). Null
+  // means the default policy, the steady clock and a timer on `executor_`;
+  // tests pass their own to control time.
+  std::shared_ptr<LoginThrottle> login_throttle_ = nullptr;
 };
 
 // Remote login/session lifecycle coordinator. Owns listeners, accepted
@@ -72,8 +77,11 @@ class RemoteSessionManager final : private RemoteSessionManagerContext {
       const SessionClosedCallback& callback);
 
  private:
+  // `peer` is the connection's remote "address:port", empty when the
+  // transport cannot name it; failed logins are throttled per its address.
   [[nodiscard]] Awaitable<CreateSessionResult> CreateSessionAsync(
-      protocol::CreateSession create_session);
+      protocol::CreateSession create_session,
+      std::string peer);
 
   // Removes `session` from the session map and notifies close observers.
   // A no-op if the map no longer holds that session for its user.
