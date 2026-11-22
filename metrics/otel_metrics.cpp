@@ -11,6 +11,7 @@
 #include <opentelemetry/sdk/instrumentationscope/instrumentation_scope.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
 #include <opentelemetry/sdk/metrics/meter_context_factory.h>
+#include <opentelemetry/sdk/metrics/meter_provider.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
 #include <opentelemetry/sdk/metrics/view/view_registry_factory.h>
 #include <opentelemetry/sdk/resource/resource.h>
@@ -154,7 +155,8 @@ class ObservingInMemoryMetricData final : public memory::InMemoryMetricData {
 class OpenTelemetryMetrics::Impl {
  public:
   explicit Impl(OpenTelemetryMetricsOptions options)
-      : in_memory_data_{std::make_shared<ObservingInMemoryMetricData>()} {
+      : in_memory_data_{std::make_shared<ObservingInMemoryMetricData>()},
+        shutdown_timeout_{options.export_timeout + kShutdownSlack} {
     metrics_sdk::PeriodicExportingMetricReaderOptions reader_options;
     reader_options.export_interval_millis = options.export_interval;
     reader_options.export_timeout_millis = options.export_timeout;
@@ -195,13 +197,27 @@ class OpenTelemetryMetrics::Impl {
 
     auto provider =
         metrics_sdk::MeterProviderFactory::Create(std::move(context));
+    sdk_provider_ = provider.get();
     provider_ = opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
         provider.release());
     previous_provider_ = metrics_api::Provider::GetMeterProvider();
     metrics_api::Provider::SetMeterProvider(provider_);
   }
 
-  ~Impl() { metrics_api::Provider::SetMeterProvider(previous_provider_); }
+  ~Impl() {
+    metrics_api::Provider::SetMeterProvider(previous_provider_);
+    // Shut down with a deadline instead of leaving it to ~MeterProvider, which
+    // waits without one. The periodic reader's shutdown flush (opentelemetry-
+    // cpp 1.30.0 PeriodicExportingMetricReader::OnForceFlush) can lose the
+    // worker's wakeup: the worker notifies force_flush_cv_ without holding the
+    // flusher's mutex, so a notify landing between the flusher's predicate
+    // check and its wait is missed, and the flusher sleeps out a whole export
+    // interval before re-checking. With a long interval that is a hang at exit
+    // (a 1-hour interval timed out scada-client's macOS CI). A bounded
+    // Shutdown caps each wait at the remaining budget. The later
+    // ~MeterProvider shutdown is then a no-op.
+    sdk_provider_->Shutdown(shutdown_timeout_);
+  }
 
   std::optional<MetricValue> GetMetricValue(std::string_view scope_name,
                                             std::string_view metric_name,
@@ -217,7 +233,13 @@ class OpenTelemetryMetrics::Impl {
   }
 
  private:
+  // Room beyond the export timeout for the final collect and the worker join.
+  static constexpr std::chrono::milliseconds kShutdownSlack{1000};
+
   std::shared_ptr<ObservingInMemoryMetricData> in_memory_data_;
+  const std::chrono::milliseconds shutdown_timeout_;
+  // Owned by `provider_`; the SDK type is needed for the bounded Shutdown.
+  metrics_sdk::MeterProvider* sdk_provider_ = nullptr;
   opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider> provider_;
   opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>
       previous_provider_;
