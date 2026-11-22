@@ -3,6 +3,7 @@
 #include "base/struct_format.h"
 
 #include <format>
+#include <functional>
 #include <sstream>
 
 #include <gmock/gmock.h>
