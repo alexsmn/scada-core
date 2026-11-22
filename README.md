@@ -2,7 +2,7 @@
 
 A C++ library providing a distributed SCADA (Supervisory Control and Data Acquisition) system framework. It implements OPC UA-like semantics for industrial control and data acquisition, with support for remote communication, metrics, and a hierarchical node-based data model.
 
-- **Language:** C++20
+- **Language:** C++23
 - **Build System:** CMake
 - **License:** GPLv3
 - **Version:** 2.6.0
@@ -19,7 +19,7 @@ A C++ library providing a distributed SCADA (Supervisory Control and Data Acquis
 
 ## Requirements
 
-- C++20 compatible compiler
+- C++23 compatible compiler
 - CMake 3.27+
 - Ninja (recommended) or other CMake generator
 

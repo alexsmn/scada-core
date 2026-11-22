@@ -160,7 +160,7 @@ jobs:
         cppcheck --enable=warning,performance,portability \
           --suppressions-list=cppcheck-suppressions.txt \
           --inline-suppr \
-          --std=c++20 \
+          --std=c++23 \
           -I base -I scada -I metrics -I remote \
           --output-file=cppcheck-report.txt \
           base/ scada/ metrics/ remote/ \
