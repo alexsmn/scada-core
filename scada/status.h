@@ -195,6 +195,10 @@ enum class StatusCode : unsigned {
   // server without SecurityPolicy=None serves for discovery only (OPC UA Part 4
   // §5.5.1 Overview, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.5.1).
   Bad_SecurityModeInsufficient = Bad | 65,
+  // The server does not change the user of a live session; an ActivateSession
+  // presenting another identity is refused (OPC UA Part 4 §5.7.3.3 Service
+  // results, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.3.3).
+  Bad_IdentityChangeNotSupported = Bad | 66,
 };
 
 enum class StatusLimit {

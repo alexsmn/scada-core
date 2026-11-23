@@ -115,6 +115,7 @@ const Entry kEntries[] = {
     {scada::StatusCode::Bad_CertificateInvalid, "Bad_CertificateInvalid"},
     {scada::StatusCode::Bad_CertificateTimeInvalid, "Bad_CertificateTimeInvalid"},
     {scada::StatusCode::Bad_SecurityModeInsufficient, "Bad_SecurityModeInsufficient"},
+    {scada::StatusCode::Bad_IdentityChangeNotSupported, "Bad_IdentityChangeNotSupported"},
 };
 
 const Entry* FindEntry(scada::StatusCode status_code) {
