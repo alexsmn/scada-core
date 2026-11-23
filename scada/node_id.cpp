@@ -3,6 +3,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <format>
+#include <limits>
 
 #include <atomic>
 #include <boost/container_hash/hash.hpp>
@@ -137,6 +138,11 @@ NodeId NodeId::FromString(std::string_view string) {
       return {};
     unsigned id = 0;
     if (!Parse(str.substr(3, index - 3), id))
+      return {};
+    // NamespaceIndex is 16 bits (scada/basic_types.h). Narrowing a larger
+    // value would silently name a different namespace — "ns=70000" became
+    // ns=4464 — so it is rejected like any other malformed id.
+    if (id > std::numeric_limits<NamespaceIndex>::max())
       return {};
     namespace_index = static_cast<NamespaceIndex>(id);
     str = str.substr(index + 1);

@@ -193,7 +193,8 @@ enum class StatusCode : unsigned {
   Bad_CertificateTimeInvalid = Bad | 64,
   // The operation is not permitted over an unsecured channel, which a
   // server without SecurityPolicy=None serves for discovery only (OPC UA Part 4
-  // §5.5.1 Overview, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.5.1).
+  // §5.5.1 Overview,
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.5.1).
   Bad_SecurityModeInsufficient = Bad | 65,
   // The server does not change the user of a live session; an ActivateSession
   // presenting another identity is refused (OPC UA Part 4 §5.7.3.3 Service
@@ -215,8 +216,12 @@ enum class StatusLimit {
   Constant,
 };
 
+// The severity is the code's top two bits (bits 14-15). The mask matters: a
+// StatusCode decoded from the wire can carry bits above 15, which would
+// otherwise yield a "severity" that is none of the four and reads as neither
+// good, uncertain nor bad.
 inline constexpr StatusSeverity GetSeverity(StatusCode code) noexcept {
-  return static_cast<StatusSeverity>(static_cast<unsigned>(code) >> 14);
+  return static_cast<StatusSeverity>((static_cast<unsigned>(code) >> 14) & 3u);
 }
 
 inline constexpr std::uint16_t GetSubCode(StatusCode code) noexcept {
@@ -237,8 +242,14 @@ inline constexpr bool IsUncertain(StatusCode code) noexcept {
   return GetSeverity(code) == StatusSeverity::Uncertain;
 }
 
+// Bad or Reserved: "All Clients should treat a StatusCode with this severity
+// as Bad" (OPC UA Part 4 §7.38.1 General, Table 176 StatusCode bit
+// assignments, https://reference.opcfoundation.org/Core/Part4/v105/docs/7.38.1,
+// verified 2026-11-23). A code with
+// the reserved severity arrives only from a peer, and treating it as success
+// would let a malformed or future status pass as a usable result.
 inline constexpr bool IsBad(StatusCode code) noexcept {
-  return GetSeverity(code) == StatusSeverity::Bad;
+  return GetSeverity(code) >= StatusSeverity::Bad;
 }
 
 class Status {
@@ -261,8 +272,9 @@ class Status {
   constexpr bool uncertain() const noexcept {
     return severity() == StatusSeverity::Uncertain;
   }
+  // Bad or Reserved, as IsBad().
   constexpr bool bad() const noexcept {
-    return severity() == StatusSeverity::Bad;
+    return severity() >= StatusSeverity::Bad;
   }
 
   StatusLimit limit() const noexcept {

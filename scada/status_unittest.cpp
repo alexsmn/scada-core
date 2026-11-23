@@ -283,3 +283,23 @@ TEST(StatusTest, StatusOrErrorPanicsWithValuePresent) {
       "status_unittest.cpp");
 }
 #endif
+
+// The reserved severity (binary 11) is Bad to every client (OPC UA Part 4
+// §7.38.1 General, Table 176). It used to read as neither good nor bad, so a
+// Status holding it converted to `true` — success.
+TEST(StatusTest, ReservedSeverityIsBad) {
+  const scada::Status reserved = scada::Status::FromFullCode(0xC0000000u);
+  EXPECT_EQ(reserved.severity(), scada::StatusSeverity::Reserved);
+  EXPECT_TRUE(reserved.bad());
+  EXPECT_FALSE(static_cast<bool>(reserved));
+  EXPECT_TRUE(scada::IsBad(static_cast<scada::StatusCode>(0xC000u)));
+}
+
+// A code decoded from the wire may carry bits above the 16 a StatusCode
+// holds. Its severity is still its bits 14-15, never a fifth value.
+TEST(StatusTest, SeverityIgnoresBitsAboveTheCode) {
+  const auto code = static_cast<scada::StatusCode>(0x18000u);
+  EXPECT_EQ(scada::GetSeverity(code), scada::StatusSeverity::Bad);
+  EXPECT_TRUE(scada::IsBad(code));
+  EXPECT_FALSE(scada::IsGood(code));
+}

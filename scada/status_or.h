@@ -22,8 +22,9 @@ namespace scada {
 //  - fail-stop accessors: value()/operator*/operator->/error() panic via
 //    base::Panic in every build type instead of throwing
 //    (std::expected::value) or being undefined (std::expected::operator*);
-//  - the invariant that a value-less StatusOr always carries a non-good
-//    status, enforced at construction.
+//  - the invariant that a value-less StatusOr always carries a bad status
+//    (Bad or Reserved severity; an Uncertain one panics too), enforced at
+//    construction.
 // The std::expected base additionally provides has_value(), value_or() and
 // the monadic operations (and_then/transform/or_else); their std::expected
 // results convert back to StatusOr implicitly.

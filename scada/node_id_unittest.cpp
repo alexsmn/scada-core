@@ -199,3 +199,10 @@ TEST(NodeId, MoveFromGuidLeavesNull) {
   EXPECT_TRUE(target.is_guid());
   EXPECT_TRUE(source.is_null());  // NOLINT(bugprone-use-after-move)
 }
+
+// A namespace index is 16 bits; a larger one used to be narrowed silently
+// into a different namespace ("ns=70000" became ns=4464).
+TEST(NodeId, FromString_RejectsOutOfRangeNamespace) {
+  EXPECT_TRUE(scada::NodeId::FromString("ns=70000;i=1").is_null());
+  EXPECT_EQ(scada::NodeId::FromString("ns=65535;i=1"), scada::NodeId(1, 65535));
+}

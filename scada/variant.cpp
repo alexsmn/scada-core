@@ -108,6 +108,14 @@ bool Variant::get(bool& value) const {
     return true;
   }
 
+  // Not through Int64, whose range holds only half of UInt64's. A Double still
+  // truncates through Int64 as it always has, so 0.5 reads as false; one
+  // outside Int64's range now fails to convert instead of being undefined.
+  if (type() == UINT64) {
+    value = get<UInt64>() != 0;
+    return true;
+  }
+
   Int64 int64_value;
   if (!get(int64_value))
     return false;
@@ -146,13 +154,48 @@ bool Variant::get(Int64& value) const {
       value = get<Int64>();
       return true;
     case UINT64:
+      // A value above Int64's range would wrap to a negative number.
+      if (get<UInt64>() >
+          static_cast<UInt64>(std::numeric_limits<Int64>::max()))
+        return false;
       value = static_cast<Int64>(get<UInt64>());
       return true;
-    case DOUBLE:
-      value = static_cast<Int64>(get<Double>());
+    case DOUBLE: {
+      // Converting a double that does not fit — NaN, an infinity, or a
+      // magnitude of 2^63 or more — is undefined behaviour ([conv.fpint]),
+      // and these values arrive from devices and the wire. The bounds are
+      // exact doubles: -2^63 fits, 2^63 does not.
+      const Double d = get<Double>();
+      if (!(d >= -9223372036854775808.0 && d < 9223372036854775808.0))
+        return false;
+      value = static_cast<Int64>(d);
       return true;
+    }
     default:
       return false;
+  }
+}
+
+bool Variant::get(UInt64& value) const {
+  if (!is_scalar())
+    return false;
+
+  // Directly, not through Int64, whose range holds only half of UInt64's.
+  switch (type()) {
+    case UINT64:
+      value = get<UInt64>();
+      return true;
+    case DOUBLE: {
+      // As in get(Int64&): an out-of-range conversion is undefined. 2^64 is
+      // an exact double.
+      const Double d = get<Double>();
+      if (!(d >= 0.0 && d < 18446744073709551616.0))
+        return false;
+      value = static_cast<UInt64>(d);
+      return true;
+    }
+    default:
+      return get_int<UInt64>(value);
   }
 }
 
@@ -166,6 +209,9 @@ bool Variant::get(Double& value) const {
       return true;
     case DOUBLE:
       value = as_double();
+      return true;
+    case UINT64:
+      value = static_cast<Double>(get<UInt64>());
       return true;
     default:
       break;
@@ -286,6 +332,11 @@ bool Variant::ToStringHelper(String& string_value) const {
     case DATE_TIME:
       string_value = FormatHelper<String>(get<Time>());
       return true;
+    case UINT64:
+      // Not through Int64, which would print a value above its range as a
+      // negative number.
+      string_value = FormatHelper<String>(get<UInt64>());
+      return true;
     default: {
       Int64 int64_value;
       if (get(int64_value)) {
@@ -320,7 +371,8 @@ bool Variant::get(NodeId& node_id) const {
 }
 
 bool Variant::ChangeType(Variant::Type new_type) {
-  base::Check(new_type != Variant::Type::EMPTY);
+  if (new_type == Variant::Type::EMPTY)
+    return false;
 
   if (!is_scalar())
     return false;
@@ -358,7 +410,10 @@ bool Variant::ChangeType(Variant::Type new_type) {
     case NODE_ID:
       return ChangeTypeTo<NodeId>();
     default:
-      base::NotReached();
+      // No conversion into ByteString, ExpandedNodeId, ExtensionObject or
+      // DateTime. The target is often a node's DataType and the value
+      // external (a written property, a database row), so this used to be a
+      // NotReached() that a client could trigger; it is a failed conversion.
       return false;
   }
 }

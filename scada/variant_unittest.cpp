@@ -117,3 +117,63 @@ TEST(VariantTest, DumpsScalarsThroughOstreamOperator) {
   s_string << scada::Variant{std::string{"hello"}};
   EXPECT_EQ(s_string.str(), "hello");
 }
+
+// -1 used to read back as UInt64's maximum: the narrowing round trip that
+// guards the other widths cannot see a sign change.
+TEST(VariantTest, NegativeDoesNotReadAsUInt64) {
+  scada::UInt64 value = 7;
+  EXPECT_FALSE(scada::Variant{scada::Int64{-1}}.get(value));
+  EXPECT_EQ(value, 7u);
+}
+
+// UInt64 values above Int64's range read, print and convert unwrapped.
+TEST(VariantTest, LargeUInt64KeepsItsValue) {
+  const scada::UInt64 big = 18446744073709551615ull;
+  const scada::Variant variant{big};
+
+  scada::UInt64 as_uint64 = 0;
+  EXPECT_TRUE(variant.get(as_uint64));
+  EXPECT_EQ(as_uint64, big);
+
+  scada::Int64 as_int64 = 0;
+  EXPECT_FALSE(variant.get(as_int64));
+
+  EXPECT_EQ(ToString(variant), "18446744073709551615");
+}
+
+// Converting a double that does not fit an integer is undefined behaviour;
+// the conversion now fails instead.
+TEST(VariantTest, UnrepresentableDoubleDoesNotConvertToInteger) {
+  scada::Int64 as_int64 = 0;
+  EXPECT_FALSE(
+      scada::Variant{std::numeric_limits<double>::quiet_NaN()}.get(as_int64));
+  EXPECT_FALSE(
+      scada::Variant{std::numeric_limits<double>::infinity()}.get(as_int64));
+  EXPECT_FALSE(scada::Variant{1e30}.get(as_int64));
+
+  scada::UInt64 as_uint64 = 0;
+  EXPECT_FALSE(scada::Variant{-1.0}.get(as_uint64));
+  EXPECT_TRUE(scada::Variant{42.9}.get(as_int64));
+  EXPECT_EQ(as_int64, 42);
+}
+
+// ChangeType into a type it cannot convert to fails rather than aborting:
+// the target is often a node's DataType and the value a client's.
+TEST(VariantTest, ChangeTypeToUnsupportedTypeFails) {
+  scada::Variant variant{scada::Int32{5}};
+  EXPECT_FALSE(variant.ChangeType(scada::Variant::DATE_TIME));
+  EXPECT_FALSE(variant.ChangeType(scada::Variant::BYTE_STRING));
+  EXPECT_FALSE(variant.ChangeType(scada::Variant::EXTENSION_OBJECT));
+  EXPECT_FALSE(variant.ChangeType(scada::Variant::EMPTY));
+  EXPECT_EQ(variant, scada::Variant{scada::Int32{5}});
+}
+
+// Double equality forgives rounding noise relative to the values, not an
+// absolute epsilon that made every tiny value equal to every other.
+TEST(VariantTest, DoubleEqualityIsRelative) {
+  EXPECT_NE(scada::Variant{1e-20}, scada::Variant{5e-20});
+  EXPECT_EQ(scada::Variant{0.1 + 0.2}, scada::Variant{0.3});
+  EXPECT_EQ(scada::Variant{std::numeric_limits<double>::infinity()},
+            scada::Variant{std::numeric_limits<double>::infinity()});
+  EXPECT_NE(scada::Variant{0.0}, scada::Variant{1e-300});
+}

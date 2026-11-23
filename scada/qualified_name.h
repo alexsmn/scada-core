@@ -16,8 +16,10 @@ class QualifiedName {
   QualifiedName(String name, NamespaceIndex namespace_index = 0)
       : name_{std::move(name)}, namespace_index_{namespace_index} {}
 
+  // A null `name` is an empty one, as Variant(const char*) treats it;
+  // constructing a std::string from nullptr is undefined.
   QualifiedName(const char* name, NamespaceIndex namespace_index = 0)
-      : name_{name}, namespace_index_{namespace_index} {}
+      : name_{name ? name : ""}, namespace_index_{namespace_index} {}
 
   NamespaceIndex namespace_index() const { return namespace_index_; }
   const String& name() const SCADA_LIFETIME_BOUND { return name_; }

@@ -11,10 +11,13 @@
 #include "scada/qualified_name.h"
 #include "scada/string.h"
 
+#include <cmath>
 #include <concepts>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <variant>
 
 namespace scada {
@@ -172,7 +175,7 @@ class Variant {
   bool get(Int32& value) const { return get_int<Int32>(value); }
   bool get(UInt32& value) const { return get_int<UInt32>(value); }
   bool get(Int64& value) const;
-  bool get(UInt64& value) const { return get_int<UInt64>(value); }
+  bool get(UInt64& value) const;
   bool get(Double& value) const;
   bool get(String& value) const;
   bool get(QualifiedName& value) const;
@@ -235,11 +238,22 @@ inline constexpr bool Variant::is_scalar() const noexcept {
   return data_.index() < static_cast<size_t>(Type::COUNT);
 }
 
+// A Double on either side compares numerically, forgiving rounding noise at
+// the values' own magnitude. The tolerance used to be the absolute machine
+// epsilon (2.2e-16), which made any two values below that magnitude equal —
+// 1e-20 and 5e-20 — so a change between them was never reported, and it made
+// +inf unequal to itself, since inf - inf is NaN.
 inline constexpr bool Variant::operator==(const Variant& other) const noexcept {
   if (type() == Type::DOUBLE || other.type() == DOUBLE) {
     double a = 0.0, b = 0.0;
-    return get(a) && other.get(b) &&
-           std::abs(a - b) < std::numeric_limits<double>::epsilon();
+    if (!get(a) || !other.get(b))
+      return false;
+    if (a == b)
+      return true;
+    const double magnitude =
+        std::abs(a) > std::abs(b) ? std::abs(a) : std::abs(b);
+    return std::abs(a - b) <=
+           std::numeric_limits<double>::epsilon() * magnitude;
   }
 
   return data_ == other.data_;
@@ -268,6 +282,13 @@ inline constexpr bool Variant::get_int(T& value) const {
   Int64 int64_value;
   if (!get(int64_value))
     return false;
+
+  // The round trip below cannot see a sign change: -1 narrows to UInt64's
+  // maximum and widens straight back to -1.
+  if constexpr (std::is_unsigned_v<T>) {
+    if (int64_value < 0)
+      return false;
+  }
 
   value = static_cast<T>(int64_value);
   return static_cast<Int64>(value) == int64_value;
