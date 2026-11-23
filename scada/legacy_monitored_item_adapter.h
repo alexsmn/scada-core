@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 #include "scada/monitored_item.h"
 #include "scada/monitored_item_service.h"
+#include "scada/service_context.h"
 
 #include <memory>
 
@@ -13,9 +14,14 @@ namespace scada {
 // same subscription and receives only its matching data-change notifications.
 class LegacyMonitoredItemAdapter {
  public:
+  // `context` is the caller the shared subscription is created for: the
+  // service judges by it what the items may receive (a server withholds events
+  // the caller lacks ReceiveEvents for, OPC UA Part 3 §8.55 bit 11). The
+  // default is anonymous.
   LegacyMonitoredItemAdapter(AnyExecutor executor,
                              MonitoredItemService& service,
-                             MonitoredItemSubscriptionOptions options = {});
+                             MonitoredItemSubscriptionOptions options = {},
+                             ServiceContext context = {});
   ~LegacyMonitoredItemAdapter();
 
   LegacyMonitoredItemAdapter(const LegacyMonitoredItemAdapter&) = delete;

@@ -23,6 +23,7 @@ class TwoLanguageHistoryService final : public scada::HistoryService {
   }
 
   scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(
+      scada::ServiceContext,
       scada::NodeId,
       scada::Time,
       scada::Time,
@@ -52,8 +53,9 @@ protocol::Event ReadOneEvent(std::vector<std::string> locale_ids) {
   auto sender = std::make_shared<MessageSenderFake>();
   TwoLanguageHistoryService service;
 
-  auto stub = std::make_shared<HistoryStub>(service, sender, executor,
-                                            std::move(locale_ids));
+  auto stub = std::make_shared<HistoryStub>(
+      service, sender, executor,
+      scada::ServiceContext{}.with_locale_ids(std::move(locale_ids)));
 
   protocol::Request request;
   request.set_request_id(7);

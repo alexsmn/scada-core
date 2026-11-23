@@ -205,6 +205,21 @@ std::vector<RolePermissionType> ConfigurationRolePermissions() {
   return role_permissions;
 }
 
+std::vector<RolePermissionType> AuditEventRolePermissions() {
+  // Who signed in, who failed to, and every account and role change: only the
+  // security administrator receives them (OPC UA Part 2 §4.14.1,
+  // https://reference.opcfoundation.org/Core/Part2/v105/docs/4.14).
+  std::vector<RolePermissionType> role_permissions = DefaultRolePermissions();
+  for (RolePermissionType& entry : role_permissions) {
+    if (entry.role_id != WellKnownRoleId(WellKnownRole::kSecurityAdmin)) {
+      entry.permissions = static_cast<Permission>(
+          static_cast<std::uint32_t>(entry.permissions) &
+          ~static_cast<std::uint32_t>(Permission::kReceiveEvents));
+    }
+  }
+  return role_permissions;
+}
+
 bool IsConfigurationPermitted(std::uint32_t access_rights,
                               bool is_anonymous,
                               Permission required) {

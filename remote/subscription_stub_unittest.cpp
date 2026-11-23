@@ -12,6 +12,7 @@
 
 #include <any>
 #include <memory>
+#include <vector>
 
 #include <gmock/gmock.h>
 
@@ -25,8 +26,9 @@ namespace {
 class FactoryMonitoredItemService final : public scada::MonitoredItemService {
  public:
   scada::StatusOr<std::unique_ptr<scada::MonitoredItemSubscription>>
-  CreateSubscription(scada::ServiceContext,
+  CreateSubscription(scada::ServiceContext context,
                      scada::MonitoredItemSubscriptionOptions options) override {
+    contexts.push_back(std::move(context));
     return scada::MakeItemFactorySubscription(
         [this](const scada::ReadValueId&, const scada::MonitoringParameters&) {
           item = std::make_shared<scada::TestMonitoredItem>();
@@ -36,6 +38,7 @@ class FactoryMonitoredItemService final : public scada::MonitoredItemService {
   }
 
   std::shared_ptr<scada::TestMonitoredItem> item;
+  std::vector<scada::ServiceContext> contexts;
 };
 
 class SubscriptionStubEventTest : public Test {
@@ -85,8 +88,27 @@ class SubscriptionStubEventTest : public Test {
                                          sender_,
                                          service_,
                                          /*subscription_id=*/1,
-                                         SubscriptionParams{});
+                                         SubscriptionParams{},
+                                         SessionContext());
+
+  // The session's caller: an operator.
+  static scada::ServiceContext SessionContext() {
+    return scada::ServiceContext{}
+        .with_user_id(scada::NodeId{13, 5})
+        .with_user_rights(2);
+  }
 };
+
+// The service creates the subscription for the session's caller, so it judges
+// what the session may receive (OPC UA Part 3 §8.55 PermissionType bit 11
+// ReceiveEvents, https://reference.opcfoundation.org/Core/Part3/v105/docs/8.55)
+// instead of treating every gRPC subscriber as anonymous.
+TEST_F(SubscriptionStubEventTest, SubscribesAsTheSessionCaller) {
+  ASSERT_NO_FATAL_FAILURE(CreateEventItem());
+  ASSERT_THAT(service_.contexts, SizeIs(1));
+  EXPECT_EQ(service_.contexts[0].user_id(), scada::NodeId(13, 5));
+  EXPECT_EQ(service_.contexts[0].user_rights(), 2u);
+}
 
 // An event that crossed a tier boundary is external input and must never panic
 // this process. protocol_utils' Convert() requires a non-zero event id (OPC UA

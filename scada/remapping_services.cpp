@@ -97,14 +97,16 @@ RemappingHistoryService::HistoryReadRaw(scada::HistoryReadRawDetails details) {
 }
 
 scada::CoStatusOr<scada::HistoryReadEventsResult>
-RemappingHistoryService::HistoryReadEvents(scada::NodeId node_id,
+RemappingHistoryService::HistoryReadEvents(scada::ServiceContext context,
+                                           scada::NodeId node_id,
                                            scada::Time from,
                                            scada::Time to,
                                            scada::EventFilter filter) {
   // Only the source NodeId lives in the downstream's namespaces here. Event
   // payloads (std::any) are not yet remapped — the same untranslated surface as
   // the monitored-item event notifications.
-  co_return co_await inner_.HistoryReadEvents(remapper_.ToDownstream(node_id),
+  co_return co_await inner_.HistoryReadEvents(std::move(context),
+                                              remapper_.ToDownstream(node_id),
                                               from, to, std::move(filter));
 }
 

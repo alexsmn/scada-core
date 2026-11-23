@@ -63,9 +63,9 @@ void SessionStub::Init() {
   }
 
   if (services_.history_service) {
-    history_stub_ = std::make_shared<HistoryStub>(
-        *services_.history_service, sender, executor_,
-        service_context_.locale_ids(), tracer_);
+    history_stub_ =
+        std::make_shared<HistoryStub>(*services_.history_service, sender,
+                                      executor_, service_context_, tracer_);
   }
 }
 
@@ -198,7 +198,7 @@ void SessionStub::OnCreateSubscription(int request_id) {
 
   auto subscription = std::make_shared<SubscriptionStub>(
       executor_, sender, *services_.monitored_item_service, subscription_id,
-      params);
+      params, service_context_);
   subscriptions_.emplace(subscription_id, std::move(subscription));
 
   protocol::Message message;

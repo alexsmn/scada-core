@@ -58,7 +58,8 @@ scada::CoStatusOr<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
 }
 
 scada::CoStatusOr<scada::HistoryReadEventsResult>
-HistoryProxy::HistoryReadEvents(scada::NodeId node_id,
+HistoryProxy::HistoryReadEvents(scada::ServiceContext /*context*/,
+                                scada::NodeId node_id,
                                 scada::Time from,
                                 scada::Time to,
                                 scada::EventFilter filter) {

@@ -16,13 +16,14 @@
 HistoryStub::HistoryStub(scada::HistoryService& service,
                          std::weak_ptr<MessageSender> sender,
                          AnyExecutor executor,
-                         std::vector<std::string> locale_ids,
+                         scada::ServiceContext service_context,
                          Tracer& tracer)
     : service_{service},
       sender_{std::move(sender)},
       executor_{std::move(executor)},
       tracer_{tracer},
-      locale_ids_{std::move(locale_ids)} {}
+      service_context_{std::move(service_context)},
+      locale_ids_{service_context_.locale_ids()} {}
 
 HistoryStub::~HistoryStub() {
   // Release continuation points.
@@ -180,8 +181,9 @@ Awaitable<void> HistoryStub::OnHistoryReadEventsAsync(
                                 TraceSpanKind::kServer, trace_id);
   span.SetAttribute("scada.node_id", node_id.ToString());
 
-  auto result = co_await service_.HistoryReadEvents(std::move(node_id), from,
-                                                    to, std::move(filter));
+  auto result = co_await service_.HistoryReadEvents(
+      service_context_.with_trace_id(trace_id), std::move(node_id), from, to,
+      std::move(filter));
 
   LOG_INFO(logger_) << "History read events completed"
                     << LOG_TAG("RequestId", request_id)

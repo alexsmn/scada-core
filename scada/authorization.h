@@ -363,6 +363,19 @@ std::vector<RolePermissionType> ProcessRolePermissions();
 // https://reference.opcfoundation.org/Core/Part3/v105/docs/4.9.2
 std::vector<RolePermissionType> ConfigurationRolePermissions();
 
+// The node-specific RolePermissions every standard AUDIT EventType carries
+// (AuditEventType and its namespace-0 subtypes): the default map with
+// ReceiveEvents removed from every role except SecurityAdmin. A Client
+// receives an Event only if ReceiveEvents is set on the Node its EventTypeId
+// names (OPC UA Part 3 §8.55 PermissionType bit 11,
+// https://reference.opcfoundation.org/Core/Part3/v105/docs/8.55), and audit
+// records "could contain sensitive or private information, thus the ability
+// to subscribe for Audit Events is restricted to appropriate users and/or
+// applications" (OPC UA Part 2 §4.14.1 General,
+// https://reference.opcfoundation.org/Core/Part2/v105/docs/4.14). Every role
+// keeps browsing and reading the type node itself.
+std::vector<RolePermissionType> AuditEventRolePermissions();
+
 // True if the caller holds `required` on a configuration node.
 bool IsConfigurationPermitted(std::uint32_t access_rights,
                               bool is_anonymous,

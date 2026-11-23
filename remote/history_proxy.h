@@ -17,6 +17,7 @@ class HistoryProxy : public scada::HistoryService {
   virtual scada::CoStatusOr<scada::HistoryReadRawResult> HistoryReadRaw(
       scada::HistoryReadRawDetails details) override;
   virtual scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(
+      scada::ServiceContext context,
       scada::NodeId node_id,
       scada::Time from,
       scada::Time to,

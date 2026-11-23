@@ -30,14 +30,17 @@ struct LegacyMonitoredItemAdapter::ItemState {
 struct LegacyMonitoredItemAdapter::State {
   State(AnyExecutor executor,
         MonitoredItemService& service,
-        MonitoredItemSubscriptionOptions options)
+        MonitoredItemSubscriptionOptions options,
+        ServiceContext context)
       : executor{std::move(executor)},
         service{service},
-        options{std::move(options)} {}
+        options{std::move(options)},
+        context{std::move(context)} {}
 
   AnyExecutor executor;
   MonitoredItemService& service;
   MonitoredItemSubscriptionOptions options;
+  ServiceContext context;
   std::mutex mutex;
   std::unique_ptr<MonitoredItemSubscriptionPump> pump;
   std::unordered_map<std::uint32_t, std::weak_ptr<ItemState>>
@@ -101,10 +104,12 @@ class LegacyMonitoredItemAdapter::SubscriptionBackedMonitoredItem final
 LegacyMonitoredItemAdapter::LegacyMonitoredItemAdapter(
     AnyExecutor executor,
     MonitoredItemService& service,
-    MonitoredItemSubscriptionOptions options)
+    MonitoredItemSubscriptionOptions options,
+    ServiceContext context)
     : state_{std::make_shared<State>(std::move(executor),
                                      service,
-                                     std::move(options))} {}
+                                     std::move(options),
+                                     std::move(context))} {}
 
 LegacyMonitoredItemAdapter::~LegacyMonitoredItemAdapter() {
   Close(StatusCode::Bad_Disconnected);
@@ -150,19 +155,19 @@ void LegacyMonitoredItemAdapter::AddItem(
                 co_return;
               }
 
-              if (!state->pump) {
-                state->pump = std::make_unique<MonitoredItemSubscriptionPump>(
-                    state->executor, state->service, state->options,
-                    [weak_state = std::weak_ptr<State>{state}](
-                        std::vector<MonitoredItemNotification> notifications) {
-                      OnNotifications(std::move(weak_state),
-                                      std::move(notifications));
-                    },
-                    [weak_state = std::weak_ptr<State>{state}](Status status) {
-                      CloseAll(std::move(weak_state), std::move(status));
-                    });
-                start_status = state->pump->Start();
-              }
+          if (!state->pump) {
+            state->pump = std::make_unique<MonitoredItemSubscriptionPump>(
+                state->executor, state->service, state->options,
+                [weak_state = std::weak_ptr<State>{state}](
+                    std::vector<MonitoredItemNotification> notifications) {
+                  OnNotifications(std::move(weak_state),
+                                  std::move(notifications));
+                },
+                [weak_state = std::weak_ptr<State>{state}](Status status) {
+                  CloseAll(std::move(weak_state), std::move(status));
+                });
+            start_status = state->pump->Start(state->context);
+          }
 
               if (!start_status) {
                 state->closed = true;

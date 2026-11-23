@@ -17,10 +17,18 @@ SubscriptionStub::SubscriptionStub(
     std::weak_ptr<MessageSender> sender,
     scada::MonitoredItemService& monitored_item_service,
     int subscription_id,
-    const SubscriptionParams& params)
+    const SubscriptionParams& params,
+    scada::ServiceContext service_context)
     : executor_{std::move(executor)},
       sender_{std::move(sender)},
       monitored_item_service_{monitored_item_service},
+      // The session's caller, so the server delivers only what it may receive
+      // (OPC UA Part 3 §8.55 PermissionType bit 11 ReceiveEvents,
+      // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.55).
+      monitored_item_adapter_{executor_,
+                              monitored_item_service_,
+                              {},
+                              std::move(service_context)},
       subscription_id_(subscription_id) {
   LOG_BIND_TAG(logger_, "SubscriptionId", subscription_id_);
 }

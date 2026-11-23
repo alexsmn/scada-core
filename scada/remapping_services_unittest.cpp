@@ -96,6 +96,7 @@ class FakeHistoryService : public scada::HistoryService {
   }
 
   scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(
+      scada::ServiceContext /*context*/,
       scada::NodeId node_id,
       scada::Time,
       scada::Time,
@@ -401,9 +402,9 @@ TEST(RemappingHistoryServiceTest, RemapsReadEventsSourceNode) {
   TestExecutor executor;
 
   std::ignore = WaitAwaitable(
-      executor, service.HistoryReadEvents(scada::NodeId{5, fixture.proxy_ns},
-                                          scada::Time{}, scada::Time{},
-                                          scada::EventFilter{}));
+      executor, service.HistoryReadEvents(
+                    scada::ServiceContext{}, scada::NodeId{5, fixture.proxy_ns},
+                    scada::Time{}, scada::Time{}, scada::EventFilter{}));
   EXPECT_EQ(inner.recorded_events_node,
             scada::NodeId(5, fixture.downstream_ns));
 }

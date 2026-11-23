@@ -25,7 +25,8 @@ class SubscriptionStub : public std::enable_shared_from_this<SubscriptionStub> {
                    std::weak_ptr<MessageSender> sender,
                    scada::MonitoredItemService& monitored_item_service,
                    int subscription_id,
-                   const SubscriptionParams& params);
+                   const SubscriptionParams& params,
+                   scada::ServiceContext service_context = {});
   ~SubscriptionStub();
 
   void OnCreateMonitoredItem(int request_id,
@@ -45,8 +46,7 @@ class SubscriptionStub : public std::enable_shared_from_this<SubscriptionStub> {
   scada::MonitoredItemService& monitored_item_service_;
   // Bridges the service's subscription API to the single-item API this stub
   // exposes to remote clients.
-  scada::LegacyMonitoredItemAdapter monitored_item_adapter_{
-      executor_, monitored_item_service_};
+  scada::LegacyMonitoredItemAdapter monitored_item_adapter_;
   const int subscription_id_;
 
   BoostLogger logger_{LOG_NAME("SubscriptionStub")};

@@ -137,6 +137,39 @@ TEST(AuthorizationTest, ConfigurationRolePermissionsDropOperatorWriteOnly) {
   }
 }
 
+// The audit trail is the security administrator's (OPC UA Part 2 §4.14.1):
+// the audit types' RolePermissions keep ReceiveEvents for SecurityAdmin alone
+// and leave every other permission as the defaults have it.
+TEST(AuthorizationTest,
+     AuditEventRolePermissionsKeepReceiveEventsForSecurityAdmin) {
+  const std::vector<RolePermissionType> defaults = DefaultRolePermissions();
+  const std::vector<RolePermissionType> audit = AuditEventRolePermissions();
+  ASSERT_EQ(audit.size(), defaults.size());
+  for (std::size_t i = 0; i < audit.size(); ++i) {
+    EXPECT_EQ(audit[i].role_id, defaults[i].role_id);
+    const bool is_security_admin =
+        audit[i].role_id == WellKnownRoleId(WellKnownRole::kSecurityAdmin);
+    EXPECT_EQ(audit[i].permissions | Permission::kReceiveEvents,
+              defaults[i].permissions | Permission::kReceiveEvents)
+        << audit[i].role_id.ToString();
+    EXPECT_EQ(Contains(audit[i].permissions, Permission::kReceiveEvents),
+              is_security_admin)
+        << audit[i].role_id.ToString();
+  }
+}
+
+TEST_P(RightsLevelTest, AuditEventsFollowTheConfigureRight) {
+  const RightsLevelCase& level = GetParam();
+  EXPECT_EQ(Contains(PermissionsForUserFrom(AuditEventRolePermissions(),
+                                            level.access_rights, false),
+                     Permission::kReceiveEvents),
+            level.may_configure)
+      << level.name;
+  EXPECT_FALSE(
+      Contains(PermissionsForUserFrom(AuditEventRolePermissions(), 0, true),
+               Permission::kReceiveEvents));
+}
+
 INSTANTIATE_TEST_SUITE_P(
     ManualLevels,
     RightsLevelTest,

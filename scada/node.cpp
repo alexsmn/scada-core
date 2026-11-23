@@ -231,7 +231,7 @@ CoStatusOr<std::vector<Event>> node::read_event_history(
   }
 
   auto result = co_await services_.history_service->HistoryReadEvents(
-      node_id_, details.from, details.to, details.filter);
+      ServiceContext{}, node_id_, details.from, details.to, details.filter);
   if (!result.ok()) {
     co_return result.status();
   }
