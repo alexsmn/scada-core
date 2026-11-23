@@ -12,6 +12,7 @@ HistoryProxy::HistoryProxy(AnyExecutor executor)
     : executor_{std::move(executor)} {}
 
 scada::CoStatusOr<scada::HistoryReadRawResult> HistoryProxy::HistoryReadRaw(
+    scada::ServiceContext context,
     scada::HistoryReadRawDetails details) {
   if (!sender_) {
     co_return scada::StatusCode::Bad_Disconnected;

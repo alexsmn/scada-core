@@ -71,12 +71,18 @@ CoStatusOr<scada::node> client::add_node(AddNodesItem item) const {
   if (!results.ok()) {
     co_return results.status();
   }
-  base::Check(results->size() == 1);
+  // The results come from the server: a wrong count or a good result naming
+  // no node is its fault, not a reason to abort this process.
+  if (results->size() != 1) {
+    co_return StatusCode::Bad;
+  }
   const auto& [status_code, node_id] = (*results)[0];
   if (!IsGood(status_code)) {
     co_return status_code;
   }
-  base::Check(!node_id.is_null());
+  if (node_id.is_null()) {
+    co_return StatusCode::Bad;
+  }
   co_return node(node_id);
 }
 

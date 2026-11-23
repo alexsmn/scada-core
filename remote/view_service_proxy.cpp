@@ -56,6 +56,7 @@ scada::CoStatusOr<std::vector<scada::BrowseResult>> ViewServiceProxy::Browse(
 
 scada::CoStatusOr<std::vector<scada::BrowsePathResult>>
 ViewServiceProxy::TranslateBrowsePaths(
+    scada::ServiceContext context,
     std::vector<scada::BrowsePath> browse_paths) {
   if (!sender_)
     co_return scada::Status{scada::StatusCode::Bad_Disconnected};

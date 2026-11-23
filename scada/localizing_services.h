@@ -59,6 +59,7 @@ class LocalizingViewService : public scada::ViewService {
       std::vector<scada::BrowseDescription> inputs) override;
 
   scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      scada::ServiceContext context,
       std::vector<scada::BrowsePath> inputs) override;
 
  private:

@@ -61,8 +61,7 @@ class NodeManagementService {
       ServiceContext context,
       std::vector<AddNodesItem> inputs) = 0;
 
-  // Delete record from table. If |return_dependencies| is true and deletion
-  // fails, it gets list of related records, which must be deleted before.
+  // Deletes nodes; returns one StatusCode per input.
   virtual CoStatusOr<std::vector<StatusCode>> DeleteNodes(
       ServiceContext context,
       std::vector<DeleteNodesItem> inputs) = 0;
@@ -86,7 +85,11 @@ inline Awaitable<AddNodesResult> AddNode(NodeManagementService& service,
   if (!results.ok()) {
     co_return AddNodesResult{.status_code = results.status().code()};
   }
-  base::Check(results->size() == 1);
+  // A remote server may answer with the wrong count; that is a bad result,
+  // never a reason to abort this process.
+  if (results->size() != 1) {
+    co_return AddNodesResult{.status_code = StatusCode::Bad};
+  }
   co_return std::move(results->front());
 }
 
@@ -99,7 +102,9 @@ inline CoStatus DeleteNode(NodeManagementService& service,
   if (!results.ok()) {
     co_return results.status();
   }
-  base::Check(results->size() == 1);
+  if (results->size() != 1) {
+    co_return StatusCode::Bad;
+  }
   co_return Status{results->front()};
 }
 

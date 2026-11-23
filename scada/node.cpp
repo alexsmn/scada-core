@@ -30,7 +30,9 @@ CoStatus WriteNodeAsync(services services,
   if (!statuses.ok()) {
     co_return statuses.status();
   }
-  base::Check(statuses->size() == 1);
+  if (statuses->size() != 1) {
+    co_return StatusCode::Bad;
+  }
   co_return (*statuses)[0];
 }
 
@@ -69,7 +71,11 @@ CoStatusOr<DataValue> ReadNodeAsync(services services,
   if (!results.ok()) {
     co_return results.status();
   }
-  base::Check(results->size() == 1);
+  // The results may come from a remote server: a wrong count is its fault,
+  // not a reason to abort this process.
+  if (results->size() != 1) {
+    co_return StatusCode::Bad;
+  }
   if (!IsGood((*results)[0].status_code)) {
     co_return (*results)[0].status_code;
   }
@@ -110,7 +116,11 @@ CoStatusOr<std::vector<ReferenceDescription>> node::browse(
   if (!results.ok()) {
     co_return results.status();
   }
-  base::Check(results->size() == 1);
+  // The results may come from a remote server: a wrong count is its fault,
+  // not a reason to abort this process.
+  if (results->size() != 1) {
+    co_return StatusCode::Bad;
+  }
   if (!IsGood((*results)[0].status_code)) {
     co_return (*results)[0].status_code;
   }
@@ -136,12 +146,16 @@ CoStatusOr<std::vector<BrowsePathTarget>> node::translate_browse_path(
 
   std::vector<BrowsePath> paths{
       {.node_id = node_id_, .relative_path = std::move(relative_path)}};
-  auto results =
-      co_await services_.view_service->TranslateBrowsePaths(std::move(paths));
+  auto results = co_await services_.view_service->TranslateBrowsePaths(
+      context_, std::move(paths));
   if (!results.ok()) {
     co_return results.status();
   }
-  base::Check(results->size() == 1);
+  // The results may come from a remote server: a wrong count is its fault,
+  // not a reason to abort this process.
+  if (results->size() != 1) {
+    co_return StatusCode::Bad;
+  }
   if (!IsGood((*results)[0].status_code)) {
     co_return (*results)[0].status_code;
   }
@@ -221,7 +235,7 @@ CoStatusOr<HistoryReadRawResult> node::read_value_history_chunk(
   auto sanitized_details = std::move(details);
   sanitized_details.node_id = node_id_;
   co_return co_await services_.history_service->HistoryReadRaw(
-      std::move(sanitized_details));
+      context_, std::move(sanitized_details));
 }
 
 CoStatusOr<std::vector<Event>> node::read_event_history(

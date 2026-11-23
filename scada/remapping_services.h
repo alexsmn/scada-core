@@ -39,6 +39,7 @@ class RemappingViewService : public scada::ViewService {
       std::vector<scada::BrowseDescription> inputs) override;
 
   scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      scada::ServiceContext context,
       std::vector<scada::BrowsePath> inputs) override;
 
  private:
@@ -78,6 +79,7 @@ class RemappingHistoryService : public scada::HistoryService {
       : inner_{inner}, remapper_{remapper} {}
 
   scada::CoStatusOr<scada::HistoryReadRawResult> HistoryReadRaw(
+      scada::ServiceContext context,
       scada::HistoryReadRawDetails details) override;
 
   scada::CoStatusOr<scada::HistoryReadEventsResult> HistoryReadEvents(
@@ -129,10 +131,11 @@ class RemappingMethodService : public scada::MethodService {
                          const NamespaceRemapper& remapper)
       : inner_{inner}, remapper_{remapper} {}
 
-  scada::CoStatusOr<scada::CallResult> Call(scada::NodeId node_id,
-                       scada::NodeId method_id,
-                       std::vector<scada::Variant> arguments,
-                       scada::ServiceContext context) override;
+  scada::CoStatusOr<scada::CallResult> Call(
+      scada::NodeId node_id,
+      scada::NodeId method_id,
+      std::vector<scada::Variant> arguments,
+      scada::ServiceContext context) override;
 
  private:
   scada::MethodService& inner_;
@@ -209,6 +212,7 @@ class MountViewService : public scada::ViewService {
       std::vector<scada::BrowseDescription> inputs) override;
 
   scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      scada::ServiceContext context,
       std::vector<scada::BrowsePath> inputs) override;
 
  private:

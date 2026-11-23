@@ -40,6 +40,7 @@ class FakeViewService : public scada::ViewService {
   }
 
   scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      scada::ServiceContext context,
       std::vector<scada::BrowsePath> inputs) override {
     recorded_paths = std::move(inputs);
     co_return translate_response;
@@ -90,14 +91,14 @@ ServiceContext ContextFor(std::vector<std::string> locale_ids) {
 
 TEST(LocalizingViewServiceTest, ReferenceDisplayNameIsResolvedForTheSession) {
   FakeViewService inner;
-  inner.browse_response = {
-      scada::BrowseResult{.references = {scada::ReferenceDescription{
-                              .display_name = Packed()}}}};
+  inner.browse_response = {scada::BrowseResult{
+      .references = {scada::ReferenceDescription{.display_name = Packed()}}}};
 
   LocalizingViewService service{inner};
   TestExecutor executor;
   auto result = WaitAwaitable(
-      executor, service.Browse(ContextFor({"en"}), {scada::BrowseDescription{}}));
+      executor,
+      service.Browse(ContextFor({"en"}), {scada::BrowseDescription{}}));
 
   ASSERT_TRUE(result.ok());
   ASSERT_EQ(1u, result->size());
@@ -108,16 +109,17 @@ TEST(LocalizingViewServiceTest, ReferenceDisplayNameIsResolvedForTheSession) {
 TEST(LocalizingViewServiceTest, ADifferentSessionGetsADifferentLanguage) {
   // The whole point: two sessions, one stored address space, two answers.
   FakeViewService inner;
-  inner.browse_response = {
-      scada::BrowseResult{.references = {scada::ReferenceDescription{
-                              .display_name = Packed()}}}};
+  inner.browse_response = {scada::BrowseResult{
+      .references = {scada::ReferenceDescription{.display_name = Packed()}}}};
 
   LocalizingViewService service{inner};
   TestExecutor executor;
   const auto english = WaitAwaitable(
-      executor, service.Browse(ContextFor({"en"}), {scada::BrowseDescription{}}));
+      executor,
+      service.Browse(ContextFor({"en"}), {scada::BrowseDescription{}}));
   const auto russian = WaitAwaitable(
-      executor, service.Browse(ContextFor({"ru"}), {scada::BrowseDescription{}}));
+      executor,
+      service.Browse(ContextFor({"ru"}), {scada::BrowseDescription{}}));
 
   ASSERT_TRUE(english.ok());
   ASSERT_TRUE(russian.ok());
@@ -130,16 +132,17 @@ TEST(LocalizingViewServiceTest, EveryReferenceOfEveryResultIsResolved) {
   inner.browse_response = {
       scada::BrowseResult{
           .references = {scada::ReferenceDescription{.display_name = Packed()},
-                         scada::ReferenceDescription{.display_name = Packed()}}},
-      scada::BrowseResult{.references = {
-                              scada::ReferenceDescription{.display_name =
-                                                              Packed()}}}};
+                         scada::ReferenceDescription{.display_name =
+                                                         Packed()}}},
+      scada::BrowseResult{.references = {scada::ReferenceDescription{
+                              .display_name = Packed()}}}};
 
   LocalizingViewService service{inner};
   TestExecutor executor;
   auto result = WaitAwaitable(
-      executor, service.Browse(ContextFor({"en"}), {scada::BrowseDescription{},
-                                                    scada::BrowseDescription{}}));
+      executor,
+      service.Browse(ContextFor({"en"}),
+                     {scada::BrowseDescription{}, scada::BrowseDescription{}}));
 
   ASSERT_TRUE(result.ok());
   for (const scada::BrowseResult& browse_result : *result) {
@@ -161,7 +164,8 @@ TEST(LocalizingViewServiceTest, APlainDisplayNameIsUnchanged) {
   LocalizingViewService service{inner};
   TestExecutor executor;
   auto result = WaitAwaitable(
-      executor, service.Browse(ContextFor({"de"}), {scada::BrowseDescription{}}));
+      executor,
+      service.Browse(ContextFor({"de"}), {scada::BrowseDescription{}}));
 
   ASSERT_TRUE(result.ok());
   EXPECT_EQ(LocalizedText{u"Server"}, (*result)[0].references[0].display_name);
@@ -174,8 +178,8 @@ TEST(LocalizingViewServiceTest, TheSessionContextReachesTheInnerService) {
   LocalizingViewService service{inner};
   TestExecutor executor;
   auto result = WaitAwaitable(
-      executor, service.Browse(ContextFor({"en", "ru"}),
-                               {scada::BrowseDescription{}}));
+      executor,
+      service.Browse(ContextFor({"en", "ru"}), {scada::BrowseDescription{}}));
 
   ASSERT_TRUE(result.ok());
   EXPECT_EQ((std::vector<std::string>{"en", "ru"}), inner.recorded_locale_ids);
@@ -186,8 +190,9 @@ TEST(LocalizingViewServiceTest, TranslateBrowsePathsIsForwardedUnchanged) {
   inner.translate_response = {scada::BrowsePathResult{}};
   LocalizingViewService service{inner};
   TestExecutor executor;
-  auto result =
-      WaitAwaitable(executor, service.TranslateBrowsePaths({scada::BrowsePath{}}));
+  auto result = WaitAwaitable(
+      executor, service.TranslateBrowsePaths(scada::ServiceContext{},
+                                             {scada::BrowsePath{}}));
 
   ASSERT_TRUE(result.ok());
   EXPECT_EQ(1u, result->size());
@@ -213,7 +218,8 @@ TEST(LocalizingAttributeServiceTest, AScalarLocalizedTextValueIsResolved) {
   EXPECT_EQ(En(), *(*result)[0].value.get_if<LocalizedText>());
 }
 
-TEST(LocalizingAttributeServiceTest, AnArrayOfLocalizedTextIsResolvedElementwise) {
+TEST(LocalizingAttributeServiceTest,
+     AnArrayOfLocalizedTextIsResolvedElementwise) {
   FakeAttributeService inner;
   scada::DataValue value;
   value.value = std::vector<LocalizedText>{Packed(), LocalizedText{u"plain"}};
@@ -313,8 +319,8 @@ class FakeSubscription final : public scada::MonitoredItemSubscription {
   }
   Awaitable<std::vector<scada::Status>> RemoveItems(
       std::span<const scada::MonitoredItemId> item_ids) override {
-    co_return std::vector<scada::Status>(item_ids.size(),
-                                        scada::Status{scada::StatusCode::Good});
+    co_return std::vector<scada::Status>(
+        item_ids.size(), scada::Status{scada::StatusCode::Good});
   }
   scada::CoStatusOr<std::vector<scada::MonitoredItemNotification>> ReadNext(
       std::size_t) override {
@@ -352,8 +358,9 @@ scada::Event ReadOneEvent(FakeMonitoredItemService& inner,
                           std::vector<std::string> locale_ids) {
   LocalizingMonitoredItemService service{inner};
   TestExecutor executor;
-  auto subscription = service.CreateSubscription(
-      ContextFor(std::move(locale_ids)), scada::MonitoredItemSubscriptionOptions{});
+  auto subscription =
+      service.CreateSubscription(ContextFor(std::move(locale_ids)),
+                                 scada::MonitoredItemSubscriptionOptions{});
   EXPECT_TRUE(subscription.ok());
   auto notifications = WaitAwaitable(executor, (*subscription)->ReadNext(10));
   EXPECT_TRUE(notifications.ok());
@@ -366,7 +373,8 @@ scada::Event ReadOneEvent(FakeMonitoredItemService& inner,
   return payload ? *payload : scada::Event{};
 }
 
-TEST(LocalizingMonitoredItemServiceTest, AnEventMessageIsResolvedForTheSession) {
+TEST(LocalizingMonitoredItemServiceTest,
+     AnEventMessageIsResolvedForTheSession) {
   // The journal entry a session reads is in its own language — Part 5 §6.4.2
   // makes Message localizable, and it reaches a client inside a std::any
   // rather than as a plain field, which is what this wrapper is for.
@@ -414,8 +422,8 @@ TEST(LocalizingMonitoredItemServiceTest, NonEventNotificationsPassThrough) {
 
   ASSERT_TRUE(notifications.ok());
   ASSERT_EQ(1u, notifications->size());
-  EXPECT_NE(nullptr,
-            std::get_if<scada::DataChangeNotification>(&notifications->front()));
+  EXPECT_NE(nullptr, std::get_if<scada::DataChangeNotification>(
+                         &notifications->front()));
 }
 
 TEST(ResolveEventMessageTest, ADeviceFrameEventIsResolvedThroughItsBase) {

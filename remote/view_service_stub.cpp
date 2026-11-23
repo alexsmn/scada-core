@@ -60,12 +60,18 @@ void ViewServiceStub::OnBrowsePaths(const protocol::Request& request) {
   auto inputs =
       ConvertTo<std::vector<scada::BrowsePath>>(request.browse_path());
 
+  scada::ServiceContext context =
+      service_context_.with_request_id(request.request_id())
+          .with_trace_id(request.trace_id());
+
   auto self = shared_from_this();
-  CoSpawn(executor_,
-          [self, request_id = request.request_id(),
-           inputs = std::move(inputs)]() mutable -> Awaitable<void> {
-            co_await self->OnBrowsePathsAsync(request_id, std::move(inputs));
-          });
+  CoSpawn(
+      executor_,
+      [self, request_id = request.request_id(), context = std::move(context),
+       inputs = std::move(inputs)]() mutable -> Awaitable<void> {
+        co_await self->OnBrowsePathsAsync(request_id, std::move(context),
+                                          std::move(inputs));
+      });
 }
 
 Awaitable<void> ViewServiceStub::OnBrowseAsync(
@@ -115,8 +121,10 @@ Awaitable<void> ViewServiceStub::OnBrowseAsync(
 
 Awaitable<void> ViewServiceStub::OnBrowsePathsAsync(
     unsigned request_id,
+    scada::ServiceContext context,
     std::vector<scada::BrowsePath> inputs) {
-  auto result = co_await service_.TranslateBrowsePaths(std::move(inputs));
+  auto result = co_await service_.TranslateBrowsePaths(std::move(context),
+                                                       std::move(inputs));
   auto status = result.status();
   auto results = std::move(result).value_or({});
 

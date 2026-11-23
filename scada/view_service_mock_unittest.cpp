@@ -23,7 +23,8 @@ TEST(ViewServiceMockTest, EveryUnstubbedAwaitableCompletes) {
     EXPECT_TRUE(browsed.has_value() && browsed->size() == 2);
 
     StatusOr<std::vector<BrowsePathResult>> translated =
-        co_await service.TranslateBrowsePaths(std::vector<BrowsePath>(1));
+        co_await service.TranslateBrowsePaths(scada::ServiceContext{},
+                                              std::vector<BrowsePath>(1));
     EXPECT_TRUE(translated.has_value() && translated->size() == 1);
 
     completed = true;

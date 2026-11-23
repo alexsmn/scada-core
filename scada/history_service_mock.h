@@ -11,9 +11,10 @@ class MockHistoryService : public HistoryService {
  public:
   MockHistoryService() {
     using namespace testing;
-    ON_CALL(*this, HistoryReadRaw(_))
+    ON_CALL(*this, HistoryReadRaw(_, _))
         .WillByDefault(
-            [](HistoryReadRawDetails) -> CoStatusOr<HistoryReadRawResult> {
+            [](ServiceContext,
+               HistoryReadRawDetails) -> CoStatusOr<HistoryReadRawResult> {
               co_return HistoryReadRawResult{};
             });
     ON_CALL(*this, HistoryReadEvents(_, _, _, _, _))
@@ -25,7 +26,7 @@ class MockHistoryService : public HistoryService {
 
   MOCK_METHOD(CoStatusOr<HistoryReadRawResult>,
               HistoryReadRaw,
-              (HistoryReadRawDetails details),
+              (ServiceContext context, HistoryReadRawDetails details),
               (override));
 
   MOCK_METHOD(CoStatusOr<HistoryReadEventsResult>,

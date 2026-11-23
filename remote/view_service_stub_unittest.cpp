@@ -30,6 +30,7 @@ class TestViewService final : public scada::ViewService {
   }
 
   scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      scada::ServiceContext,
       std::vector<scada::BrowsePath>) override {
     co_return std::vector<scada::BrowsePathResult>{};
   }

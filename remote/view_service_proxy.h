@@ -17,7 +17,8 @@ class ViewServiceProxy : public scada::ViewService {
       scada::ServiceContext context,
       std::vector<scada::BrowseDescription> nodes) override;
   [[nodiscard]] scada::CoStatusOr<std::vector<scada::BrowsePathResult>>
-  TranslateBrowsePaths(std::vector<scada::BrowsePath> browse_paths) override;
+  TranslateBrowsePaths(scada::ServiceContext context,
+                       std::vector<scada::BrowsePath> browse_paths) override;
 
  private:
   MessageSender* sender_ = nullptr;

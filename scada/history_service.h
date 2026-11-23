@@ -13,7 +13,16 @@ class HistoryService {
  public:
   virtual ~HistoryService() = default;
 
+  // Reads the raw (or aggregated) value history of `details.node_id`.
+  // `context` is the caller: a server answers only a caller holding the
+  // ReadHistory permission on the node (OPC UA Part 3 §8.55 PermissionType
+  // bit 7 ReadHistory,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.55). A
+  // client-side implementation ignores it: the session it speaks through
+  // carries the identity. A server-internal reader names itself with an
+  // explicit context rather than passing a default one, which is anonymous.
   virtual CoStatusOr<HistoryReadRawResult> HistoryReadRaw(
+      ServiceContext context,
       HistoryReadRawDetails details) = 0;
 
   // Reads the event history of `node_id`. `context` is the caller: a server

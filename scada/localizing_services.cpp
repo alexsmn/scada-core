@@ -146,11 +146,11 @@ LocalizingViewService::Browse(scada::ServiceContext context,
 
 scada::CoStatusOr<std::vector<scada::BrowsePathResult>>
 LocalizingViewService::TranslateBrowsePaths(
+    scada::ServiceContext context,
     std::vector<scada::BrowsePath> inputs) {
   // BrowsePathResult carries NodeIds and no text, so there is nothing to
-  // resolve — and the service signature carries no ServiceContext to resolve
-  // against.
-  return inner_.TranslateBrowsePaths(std::move(inputs));
+  // resolve; the context only travels on for authorization.
+  return inner_.TranslateBrowsePaths(std::move(context), std::move(inputs));
 }
 
 scada::CoStatusOr<std::vector<scada::DataValue>>

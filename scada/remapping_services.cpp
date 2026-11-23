@@ -33,6 +33,7 @@ RemappingViewService::Browse(scada::ServiceContext context,
 
 scada::CoStatusOr<std::vector<scada::BrowsePathResult>>
 RemappingViewService::TranslateBrowsePaths(
+    scada::ServiceContext context,
     std::vector<scada::BrowsePath> inputs) {
   for (auto& path : inputs) {
     path.node_id = remapper_.ToDownstream(path.node_id);
@@ -42,7 +43,8 @@ RemappingViewService::TranslateBrowsePaths(
       element.target_name = remapper_.ToDownstream(element.target_name);
     }
   }
-  auto result = co_await inner_.TranslateBrowsePaths(std::move(inputs));
+  auto result = co_await inner_.TranslateBrowsePaths(std::move(context),
+                                                     std::move(inputs));
   if (result.ok()) {
     for (auto& path_result : *result) {
       for (auto& target : path_result.targets) {
@@ -81,9 +83,11 @@ RemappingAttributeService::Write(scada::ServiceContext context,
 }
 
 scada::CoStatusOr<scada::HistoryReadRawResult>
-RemappingHistoryService::HistoryReadRaw(scada::HistoryReadRawDetails details) {
+RemappingHistoryService::HistoryReadRaw(scada::ServiceContext context,
+                                        scada::HistoryReadRawDetails details) {
   details.node_id = remapper_.ToDownstream(details.node_id);
-  auto result = co_await inner_.HistoryReadRaw(std::move(details));
+  auto result =
+      co_await inner_.HistoryReadRaw(std::move(context), std::move(details));
   if (!result.ok()) {
     co_return result.status();
   }
@@ -346,7 +350,8 @@ scada::CoStatusOr<std::vector<scada::BrowseResult>> MountViewService::Browse(
 }
 
 scada::CoStatusOr<std::vector<scada::BrowsePathResult>>
-MountViewService::TranslateBrowsePaths(std::vector<scada::BrowsePath> inputs) {
+MountViewService::TranslateBrowsePaths(scada::ServiceContext context,
+                                       std::vector<scada::BrowsePath> inputs) {
   // Browse paths resolve against the proxy's own Objects folder; the mount only
   // contributes Browse references.
   co_return std::vector<scada::BrowsePathResult>(inputs.size());

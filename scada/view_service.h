@@ -134,7 +134,14 @@ class ViewService {
       ServiceContext context,
       std::vector<BrowseDescription> inputs) = 0;
 
+  // `context` is the caller: a server resolves no path that starts in, or
+  // leads into, a namespace the caller may not browse (OPC UA Part 3 §8.55
+  // PermissionType bit 0 Browse,
+  // https://reference.opcfoundation.org/Core/Part3/v105/docs/8.55), so a
+  // translation cannot reveal that a hidden node exists. A client-side
+  // implementation ignores it.
   virtual CoStatusOr<std::vector<BrowsePathResult>> TranslateBrowsePaths(
+      ServiceContext context,
       std::vector<BrowsePath> inputs) = 0;
 };
 
@@ -148,20 +155,28 @@ inline Awaitable<BrowseResult> Browse(ViewService& view_service,
   if (!results.ok()) {
     co_return BrowseResult{.status_code = results.status().code()};
   }
-  base::Check(results->size() == 1);
+  // A remote server may answer with the wrong count; that is a bad result,
+  // never a reason to abort this process.
+  if (results->size() != 1) {
+    co_return BrowseResult{.status_code = StatusCode::Bad};
+  }
   co_return std::move(results->front());
 }
 
 inline Awaitable<BrowsePathResult> TranslateBrowsePath(
     ViewService& view_service,
+    scada::ServiceContext context,
     BrowsePath browse_path) {
   std::vector<BrowsePath> inputs;
   inputs.emplace_back(std::move(browse_path));
-  auto results = co_await view_service.TranslateBrowsePaths(std::move(inputs));
+  auto results = co_await view_service.TranslateBrowsePaths(std::move(context),
+                                                            std::move(inputs));
   if (!results.ok()) {
     co_return BrowsePathResult{.status_code = results.status().code()};
   }
-  base::Check(results->size() == 1);
+  if (results->size() != 1) {
+    co_return BrowsePathResult{.status_code = StatusCode::Bad};
+  }
   co_return std::move(results->front());
 }
 

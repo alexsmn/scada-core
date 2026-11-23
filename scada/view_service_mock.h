@@ -28,10 +28,11 @@ class MockViewService : public ViewService {
               co_return std::vector<BrowseResult>(inputs.size());
             });
     ON_CALL(*this, TranslateBrowsePaths)
-        .WillByDefault([](std::vector<BrowsePath> browse_paths)
-                           -> CoStatusOr<std::vector<BrowsePathResult>> {
-          co_return std::vector<BrowsePathResult>(browse_paths.size());
-        });
+        .WillByDefault(
+            [](scada::ServiceContext, std::vector<BrowsePath> browse_paths)
+                -> CoStatusOr<std::vector<BrowsePathResult>> {
+              co_return std::vector<BrowsePathResult>(browse_paths.size());
+            });
   }
 
   MOCK_METHOD((CoStatusOr<std::vector<BrowseResult>>),
@@ -42,7 +43,8 @@ class MockViewService : public ViewService {
 
   MOCK_METHOD((CoStatusOr<std::vector<BrowsePathResult>>),
               TranslateBrowsePaths,
-              (std::vector<BrowsePath> browse_paths),
+              (scada::ServiceContext context,
+               std::vector<BrowsePath> browse_paths),
               (override));
 };
 

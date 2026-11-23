@@ -30,6 +30,7 @@ class FakeViewService : public ViewService {
   }
 
   CoStatusOr<std::vector<BrowsePathResult>> TranslateBrowsePaths(
+      scada::ServiceContext context,
       std::vector<BrowsePath> inputs) override {
     co_return StatusCode::Bad_NotSupported;
   }

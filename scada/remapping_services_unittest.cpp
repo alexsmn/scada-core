@@ -36,6 +36,7 @@ class FakeViewService : public scada::ViewService {
   }
 
   scada::CoStatusOr<std::vector<scada::BrowsePathResult>> TranslateBrowsePaths(
+      scada::ServiceContext context,
       std::vector<scada::BrowsePath> inputs) override {
     recorded_paths = inputs;
     co_return translate_response;
@@ -72,10 +73,11 @@ class FakeMethodService : public scada::MethodService {
 
   std::vector<scada::Variant> outputs;
 
-  scada::CoStatusOr<scada::CallResult> Call(scada::NodeId node_id,
-                                            scada::NodeId method_id,
-                                            std::vector<scada::Variant> arguments,
-                                            scada::ServiceContext) override {
+  scada::CoStatusOr<scada::CallResult> Call(
+      scada::NodeId node_id,
+      scada::NodeId method_id,
+      std::vector<scada::Variant> arguments,
+      scada::ServiceContext) override {
     recorded_object = node_id;
     recorded_method = method_id;
     recorded_arguments = std::move(arguments);
@@ -90,6 +92,7 @@ class FakeHistoryService : public scada::HistoryService {
   scada::NodeId recorded_events_node;
 
   scada::CoStatusOr<scada::HistoryReadRawResult> HistoryReadRaw(
+      scada::ServiceContext context,
       scada::HistoryReadRawDetails details) override {
     recorded_raw = details;
     co_return scada::HistoryReadRawResult{.values = raw_response};
@@ -256,7 +259,8 @@ TEST(RemappingViewServiceTest, RemapsTranslateBrowsePathsRequestAndTargets) {
   path.relative_path = {scada::RelativePathElement{
       .reference_type_id = scada::NodeId{47, 0},
       .target_name = scada::QualifiedName{"y", fixture.proxy_ns}}};
-  auto result = WaitAwaitable(executor, service.TranslateBrowsePaths({path}));
+  auto result = WaitAwaitable(
+      executor, service.TranslateBrowsePaths(scada::ServiceContext{}, {path}));
 
   // Request: proxy -> downstream.
   ASSERT_EQ(inner.recorded_paths.size(), 1u);
@@ -334,10 +338,10 @@ TEST(RemappingMethodServiceTest, RemapsIdentifierValuesInOutputArguments) {
   RemappingMethodService service{inner, fixture.remapper};
   TestExecutor executor;
 
-  auto result = WaitAwaitable(
-      executor, service.Call(scada::NodeId{10, fixture.proxy_ns},
-                             scada::NodeId{11, fixture.proxy_ns}, {},
-                             scada::ServiceContext{}));
+  auto result =
+      WaitAwaitable(executor, service.Call(scada::NodeId{10, fixture.proxy_ns},
+                                           scada::NodeId{11, fixture.proxy_ns},
+                                           {}, scada::ServiceContext{}));
 
   ASSERT_TRUE(result.ok());
   ASSERT_EQ(result->output_arguments.size(), 2u);
@@ -380,8 +384,10 @@ TEST(RemappingHistoryServiceTest, RemapsReadRawRequestAndIdentifierValues) {
   RemappingHistoryService service{inner, fixture.remapper};
   TestExecutor executor;
   auto result = WaitAwaitable(
-      executor, service.HistoryReadRaw(scada::HistoryReadRawDetails{
-                    .node_id = scada::NodeId{7, fixture.proxy_ns}}));
+      executor, service.HistoryReadRaw(
+                    scada::ServiceContext{},
+                    scada::HistoryReadRawDetails{
+                        .node_id = scada::NodeId{7, fixture.proxy_ns}}));
 
   // Request: proxy -> downstream.
   EXPECT_EQ(inner.recorded_raw.node_id,

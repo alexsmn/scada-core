@@ -33,10 +33,10 @@ HistoryStub::~HistoryStub() {
       details.continuation_point = std::move(continuation_point);
       auto& service = service_;
       CoSpawn(executor_,
-              [&service,
+              [&service, context = service_context_,
                details = std::move(details)]() mutable -> Awaitable<void> {
-                auto result =
-                    co_await service.HistoryReadRaw(std::move(details));
+                auto result = co_await service.HistoryReadRaw(
+                    std::move(context), std::move(details));
                 if (result.ok()) {
                   scada::base::Check(result->values.empty());
                   scada::base::Check(result->continuation_point.empty());
@@ -138,7 +138,11 @@ Awaitable<void> HistoryStub::OnHistoryReadRawAsync(
                                 TraceSpanKind::kServer, trace_id);
   span.SetAttribute("scada.node_id", details.node_id.ToString());
 
-  auto result = co_await service_.HistoryReadRaw(details);
+  // The session's caller travels with the read so the server can require
+  // ReadHistory (OPC UA Part 3 §8.55 PermissionType bit 7).
+  auto result = co_await service_.HistoryReadRaw(
+      service_context_.with_request_id(request_id).with_trace_id(trace_id),
+      details);
 
   LOG_INFO(logger_) << "History read raw completed"
                     << LOG_TAG("RequestId", request_id)

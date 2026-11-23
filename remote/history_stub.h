@@ -35,8 +35,8 @@ class HistoryStub : public std::enable_shared_from_this<HistoryStub> {
   // locale_ids also resolve each event's Message here: a historical event's
   // Message is a LocalizedText and is localizable like any other (OPC UA
   // Part 5 §6.4.2), and Part 11 states no exception for historical access,
-  // so the session's language governs here too. HistoryReadRaw still carries
-  // no ServiceContext, so its spans do not propagate downstream.
+  // so the session's language governs here too. HistoryReadRaw carries the
+  // same caller, so the service can require ReadHistory (bit 7).
   HistoryStub(scada::HistoryService& service,
               std::weak_ptr<MessageSender> sender,
               AnyExecutor executor,

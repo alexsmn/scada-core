@@ -65,7 +65,10 @@ inline Awaitable<DataValue> Read(AttributeService& attribute_service,
       std::move(context), std::vector<ReadValueId>(1, std::move(input)));
   if (!results.ok())
     co_return MakeReadError(results.status().code());
-  base::Check(results->size() == 1);
+  // A remote server may answer with the wrong count; that is a bad result,
+  // never a reason to abort this process.
+  if (results->size() != 1)
+    co_return MakeReadError(StatusCode::Bad);
   co_return std::move(results->front());
 }
 
@@ -76,7 +79,8 @@ inline CoStatus Write(AttributeService& attribute_service,
       std::move(context), std::vector<WriteValue>(1, std::move(input)));
   if (!results.ok())
     co_return results.status();
-  base::Check(results->size() == 1);
+  if (results->size() != 1)
+    co_return StatusCode::Bad;
   co_return Status{results->front()};
 }
 

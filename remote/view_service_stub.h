@@ -49,6 +49,7 @@ class ViewServiceStub final
   void OnBrowsePaths(const protocol::Request& request);
   [[nodiscard]] Awaitable<void> OnBrowsePathsAsync(
       unsigned request_id,
+      scada::ServiceContext context,
       std::vector<scada::BrowsePath> inputs);
 
   BoostLogger logger_{LOG_NAME("ViewServiceStub")};

@@ -18,6 +18,7 @@ namespace {
 class TwoLanguageHistoryService final : public scada::HistoryService {
  public:
   scada::CoStatusOr<scada::HistoryReadRawResult> HistoryReadRaw(
+      scada::ServiceContext,
       scada::HistoryReadRawDetails) override {
     co_return scada::HistoryReadRawResult{};
   }
