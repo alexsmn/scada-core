@@ -8,7 +8,8 @@ namespace scada {
 
 std::ostream& operator<<(std::ostream& stream,
                          const EventFilter& event_filter) {
-  constexpr std::string_view kTypeBitStrings[] = {"ACKED", "UNACKED"};
+  constexpr std::string_view kTypeBitStrings[] = {"ACKED", "UNACKED",
+                                                  "RETAINED"};
 
   StructWriter{stream}
       .AddBitMaskField("types", event_filter.types, kTypeBitStrings)

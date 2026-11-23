@@ -509,6 +509,9 @@ void Convert(const protocol::Event& source, scada::Event& target) {
   }
   if (source.has_acknowledge_user_id())
     Convert(source.acknowledge_user_id(), target.acknowledged_user_id);
+  if (source.has_condition_id())
+    Convert(source.condition_id(), target.condition_id);
+  target.active = source.active();
 }
 
 void Convert(const scada::Event& source, protocol::Event& target) {
@@ -542,6 +545,10 @@ void Convert(const scada::Event& source, protocol::Event& target) {
         scada::base::EncodeWireMicroseconds(source.acknowledged_time));
   if (!source.acknowledged_user_id.is_null())
     Convert(source.acknowledged_user_id, *target.mutable_acknowledge_user_id());
+  if (!source.condition_id.is_null()) {
+    Convert(source.condition_id, *target.mutable_condition_id());
+    target.set_active(source.active);
+  }
 }
 
 void Convert(const protocol::EventFilter& source, scada::EventFilter& target) {
@@ -550,6 +557,8 @@ void Convert(const protocol::EventFilter& source, scada::EventFilter& target) {
     target.types |= scada::EventFilter::ACKED;
   if (source.unacked())
     target.types |= scada::EventFilter::UNACKED;
+  if (source.retained())
+    target.types |= scada::EventFilter::RETAINED;
 
   Convert(source.of_type(), target.of_type);
   Convert(source.child_of(), target.child_of);
@@ -560,6 +569,8 @@ void Convert(const scada::EventFilter& source, protocol::EventFilter& target) {
     target.set_acked(true);
   if (source.types & scada::EventFilter::UNACKED)
     target.set_unacked(true);
+  if (source.types & scada::EventFilter::RETAINED)
+    target.set_retained(true);
 
   Convert(source.of_type, *target.mutable_of_type());
   Convert(source.child_of, *target.mutable_child_of());

@@ -242,4 +242,9 @@ message Event {
   // Locale of `message_utf8` (RFC 3066 id, e.g. "en"/"ru"); empty when
   // unspecified. Mirrors the OPC UA LocalizedText Locale field.
   string message_locale = 14;
+  // OPC UA Part 9 ConditionId of a Condition notification; unset for a plain
+  // event (scada::Event::condition_id, backlog 1117).
+  NodeId condition_id = 15;
+  // The Condition's ActiveState/Id; meaningful only with `condition_id`.
+  bool active = 16;
 }

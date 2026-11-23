@@ -127,6 +127,9 @@ message EventFilter {
   bool unacked = 2;
   repeated NodeId of_type = 3;
   repeated NodeId child_of = 4;
+  // scada::EventFilter::RETAINED: also the latest notification of every
+  // Condition still active although acknowledged (backlog 1117).
+  bool retained = 5;
 }
 
 message HistoryReadEvents {

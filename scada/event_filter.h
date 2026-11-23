@@ -8,7 +8,14 @@
 namespace scada {
 
 struct EventFilter {
-  enum EventType { ACKED = 1 << 0, UNACKED = 1 << 1 };
+  // RETAINED widens UNACKED: it also selects the latest notification of every
+  // Condition still active although acknowledged — Part 9's Retain (OPC UA
+  // Part 9 §5.5.2 ConditionType,
+  // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.5.2; see
+  // `IsRetained` in scada/event.h). Send it together with UNACKED: a server
+  // built before backlog 1117 then still answers the unacknowledged set rather
+  // than every event it holds.
+  enum EventType { ACKED = 1 << 0, UNACKED = 1 << 1, RETAINED = 1 << 2 };
 
   static const unsigned ALL_TYPES = 0;
 
@@ -55,6 +62,12 @@ struct EventFilter {
     // Part 9 §5.5.2 ConditionType and §5.7.2 AcknowledgeableConditionType,
     // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.5.2).
     kStandardWithConditions,
+    // kScada plus our own server's Condition fields, ConditionId and
+    // ActiveState/Id (OPC UA Part 9 §5.8.2 AlarmConditionType,
+    // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.8.2), named
+    // explicitly so a client built before them still gets kScada's list
+    // (backlog 1117).
+    kScadaWithConditions,
   };
   // A third-party server knows nothing of the SCADA extension fields, and a
   // strict one rejects a filter that names them (backlog 1055).

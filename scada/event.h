@@ -100,13 +100,35 @@ struct Event {
   // Acknowledge Method,
   // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.7.3).
   ByteString foreign_event_id;
-  // The ConditionId of a Condition's state notification on a third-party
-  // server: the NodeId of the Condition instance, the object its Acknowledge
-  // is called on (OPC UA Part 9 §5.5.2 ConditionType,
+  // The ConditionId of a Condition's state notification: the NodeId of the
+  // Condition instance (OPC UA Part 9 §5.5.2 ConditionType,
   // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.5.2). Null for
-  // a plain event, and always null from our server, which raises none.
+  // a plain event. Every notification of one Condition carries the same id
+  // and a new `event_id`, so a current-alarm display keys on this.
+  //
+  // On a third-party server it is the Condition object its Acknowledge is
+  // called on. Our server raises no Condition objects; it stamps the source
+  // data item's NodeId here on a limit-band change, the one alarm state an
+  // item has (backlog 1117, docs/server/events-opcua-alignment.md §6).
   NodeId condition_id;
+  // The Condition's ActiveState/Id when this notification was raised (OPC UA
+  // Part 9 §5.8.2 AlarmConditionType,
+  // https://reference.opcfoundation.org/Core/Part9/v105/docs/5.8.2): true while
+  // the alarm stands, false once it has returned to normal. Meaningful only
+  // when `condition_id` is set; a plain event has no alarm state.
+  bool active = false;
 };
+
+// Whether `event` is still of interest to a current-alarm display: an
+// unacknowledged event, or a Condition that is still active even though it was
+// acknowledged. This is Part 9's Retain derived from the two states it
+// summarises (OPC UA Part 9 §5.5.2 ConditionType,
+// https://reference.opcfoundation.org/Core/Part9/v105/docs/5.5.2), and the
+// ISA-18.2 rule that an alarm leaves the alarm list only once it is both
+// acknowledged and returned to normal.
+inline bool IsRetained(const Event& event) {
+  return !event.acked || (!event.condition_id.is_null() && event.active);
+}
 
 struct ModelChangeEvent {
   enum Verb : uint8_t {
