@@ -161,8 +161,12 @@ NodeId NodeId::FromString(std::string_view string) {
     return {std::string{string_id}, namespace_index};
   }
 
-  // OPC UA Part 6 §5.3.1.10 NodeId, the g= and b= forms,
-  // https://reference.opcfoundation.org/Core/Part6/v105/docs/5.3.1.10
+  // The g= and b= forms: OPC UA Part 6 §5.1.12 QualifiedName, NodeId and
+  // ExpandedNodeId String Encoding, Table 5,
+  // https://reference.opcfoundation.org/Core/Part6/v105/docs/5.1.12
+  // (§5.3.1.10, cited here before, is the XML encoding, which defers to it).
+  // This reader is lenient — unknown text becomes a string id — and has no
+  // "nsu=" form; scada/node_id_string.h has the strict, self-contained one.
   if (boost::istarts_with(str, "g=")) {
     const std::optional<Guid> guid = Guid::FromString(str.substr(2));
     if (!guid.has_value())
