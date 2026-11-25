@@ -1,12 +1,27 @@
 #pragma once
 
 #include "base/lifetime.h"
+#include "scada/basic_types.h"
 #include "scada/expanded_node_id.h"
 
 #include <any>
+#include <optional>
 #include <ostream>
 
 namespace scada {
+
+class ExtensionObject;
+
+// Encodes an ExtensionObject's payload in a canonical binary form, or returns
+// nullopt when it cannot. Core encodes no payload type itself; the OPC UA
+// bridge installs one built on the generated codec
+// (opcua_bridge::InstallExtensionObjectEncoder).
+using ExtensionObjectEncoder =
+    std::optional<ByteString> (*)(const ExtensionObject& object);
+
+// Installs the encoder ExtensionObject::operator== compares payloads with. Set
+// once at process start-up; pass nullptr to remove it.
+void SetExtensionObjectEncoder(ExtensionObjectEncoder encoder);
 
 class ExtensionObject {
  public:
@@ -34,7 +49,14 @@ class ExtensionObject {
     return *this;
   }
 
-  bool operator==(const ExtensionObject& other) const { return false; }
+  // Equal when the data type ids match and either neither holds a payload or
+  // both payloads encode to the same bytes with the installed
+  // ExtensionObjectEncoder. A payload the encoder cannot encode, or any payload
+  // when no encoder is installed, compares unequal — the only answer a
+  // std::any allows. This used to be unequal always, even to itself, so a
+  // Variant holding RolePermissions never compared equal and every re-read
+  // reported a change.
+  bool operator==(const ExtensionObject& other) const;
 
   /*template<class T>
   static ExtensionObject Encode(ExpandedNodeId data_type_id, T&& object) {
