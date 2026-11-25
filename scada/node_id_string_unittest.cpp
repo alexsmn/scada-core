@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -11,137 +12,154 @@
 namespace scada {
 namespace {
 
-// One text both written and read: the identifier and URI it stands for.
+// One vector of node_id_string_vectors.inc, as the file spells it.
 struct Vector {
   std::string_view text;
   std::string_view namespace_uri;  // empty: no URI in the text
-  NodeId node_id;                  // namespace index 0 for the URI forms
+  NamespaceIndex namespace_index = 0;
+  char kind = 'i';  // 'i', 's', 'g' or 'b'
+  std::string_view value;
 };
 
-ByteString Bytes(std::string_view text) {
-  return ByteString{text.begin(), text.end()};
+#define NODE_ID_STRING_NONE(...)
+#define NODE_ID_STRING_CANONICAL_ROW(text, uri, kind, value) \
+  {text, uri, 0, kind, value},
+#define NODE_ID_STRING_READ_ROW(text, uri, ns, kind, value) \
+  {text, uri, ns, kind, value},
+#define NODE_ID_STRING_REJECTED_ROW(text) {text},
+
+// Written exactly as `text` and read back. Three come from the examples in
+// OPC UA Part 6 §5.1.12 QualifiedName, NodeId and ExpandedNodeId String
+// Encoding, https://reference.opcfoundation.org/Core/Part6/v105/docs/5.1.12 .
+constexpr Vector kCanonical[] = {
+#define NODE_ID_STRING_CANONICAL NODE_ID_STRING_CANONICAL_ROW
+#define NODE_ID_STRING_WRITTEN NODE_ID_STRING_NONE
+#define NODE_ID_STRING_READ NODE_ID_STRING_NONE
+#define NODE_ID_STRING_REJECTED NODE_ID_STRING_NONE
+#include "scada/node_id_string_vectors.inc"
+#undef NODE_ID_STRING_CANONICAL
+#undef NODE_ID_STRING_WRITTEN
+#undef NODE_ID_STRING_READ
+#undef NODE_ID_STRING_REJECTED
+};
+
+// Written as `text`, read back as another URI.
+constexpr Vector kWritten[] = {
+#define NODE_ID_STRING_CANONICAL NODE_ID_STRING_NONE
+#define NODE_ID_STRING_WRITTEN NODE_ID_STRING_CANONICAL_ROW
+#define NODE_ID_STRING_READ NODE_ID_STRING_NONE
+#define NODE_ID_STRING_REJECTED NODE_ID_STRING_NONE
+#include "scada/node_id_string_vectors.inc"
+#undef NODE_ID_STRING_CANONICAL
+#undef NODE_ID_STRING_WRITTEN
+#undef NODE_ID_STRING_READ
+#undef NODE_ID_STRING_REJECTED
+};
+
+// Read, but not what the writer writes.
+constexpr Vector kRead[] = {
+#define NODE_ID_STRING_CANONICAL NODE_ID_STRING_NONE
+#define NODE_ID_STRING_WRITTEN NODE_ID_STRING_NONE
+#define NODE_ID_STRING_READ NODE_ID_STRING_READ_ROW
+#define NODE_ID_STRING_REJECTED NODE_ID_STRING_NONE
+#include "scada/node_id_string_vectors.inc"
+#undef NODE_ID_STRING_CANONICAL
+#undef NODE_ID_STRING_WRITTEN
+#undef NODE_ID_STRING_READ
+#undef NODE_ID_STRING_REJECTED
+};
+
+// Not exactly one form.
+constexpr Vector kRejected[] = {
+#define NODE_ID_STRING_CANONICAL NODE_ID_STRING_NONE
+#define NODE_ID_STRING_WRITTEN NODE_ID_STRING_NONE
+#define NODE_ID_STRING_READ NODE_ID_STRING_NONE
+#define NODE_ID_STRING_REJECTED NODE_ID_STRING_REJECTED_ROW
+#include "scada/node_id_string_vectors.inc"
+#undef NODE_ID_STRING_CANONICAL
+#undef NODE_ID_STRING_WRITTEN
+#undef NODE_ID_STRING_READ
+#undef NODE_ID_STRING_REJECTED
+};
+
+ByteString FromHex(std::string_view hex) {
+  ByteString bytes;
+  for (size_t i = 0; i + 1 < hex.size(); i += 2)
+    bytes.push_back(static_cast<char>(
+        std::stoi(std::string{hex.substr(i, 2)}, nullptr, 16)));
+  return bytes;
 }
 
-// The canonical forms: FormatNodeIdString writes exactly `text`, and
-// ParseNodeIdString reads it back. Three come from the examples in OPC UA
-// Part 6 §5.1.12 QualifiedName, NodeId and ExpandedNodeId String Encoding,
-// https://reference.opcfoundation.org/Core/Part6/v105/docs/5.1.12 .
-std::vector<Vector> CanonicalVectors() {
-  return {
-      {"i=13", "", NodeId{13u, 0}},
-      {"i=2258", "", NodeId{2258u, 0}},
-      {"nsu=urn:open62541.server.application;s=Plant.Temperature",
-       "urn:open62541.server.application",
-       NodeId{String{"Plant.Temperature"}, 0}},
-      {"nsu=http://widgets.com/schemas/hello;s=水 World",
-       "http://widgets.com/schemas/hello", NodeId{String{"水 World"}, 0}},
-      {"nsu=tag:acme.com,2023:schemas:data#off%3B;b=M/RbKBsRVkePCePcx24oRA==",
-       "tag:acme.com,2023:schemas:data#off;",
-       NodeId{Bytes("\x33\xF4\x5B\x28\x1B\x11\x56\x47\x8F\x09\xE3\xDC\xC7\x6E"
-                    "\x28\x44"),
-              0}},
-      {"nsu=http://telecontrol.ru/opcua/data_items/DiscreteItemType;i=1379",
-       "http://telecontrol.ru/opcua/data_items/DiscreteItemType",
-       NodeId{1379u, 0}},
-      {"nsu=urn:x;g=09087E75-8E5E-499B-954F-F2A9603DB28A", "urn:x",
-       NodeId{*Guid::FromString("09087e75-8e5e-499b-954f-f2a9603db28a"), 0}},
-      // A namespace "URI" that is not one: every byte outside RFC 3986 is
-      // escaped, '%' and '}' included, so a braced formula never ends early.
-      {"nsu=my%20plant%7Bv%25%7D;s=a", "my plant{v%}", NodeId{String{"a"}, 0}},
-      {"nsu=urn:x;s=", "urn:x", NodeId{String{}, 0}},
-  };
+// The NodeId a vector stands for.
+NodeId NodeIdOf(const Vector& vector) {
+  switch (vector.kind) {
+    case 'i':
+      return NodeId{
+          static_cast<NumericId>(std::stoul(std::string{vector.value})),
+          vector.namespace_index};
+    case 's':
+      return NodeId{String{vector.value}, vector.namespace_index};
+    case 'g':
+      return NodeId{*Guid::FromString(vector.value), vector.namespace_index};
+    default:
+      return NodeId{FromHex(vector.value), vector.namespace_index};
+  }
+}
+
+TEST(NodeIdStringTest, TheSharedVectorsAreThere) {
+  EXPECT_GE(std::size(kCanonical), 10u);
+  EXPECT_GE(std::size(kWritten), 1u);
+  EXPECT_GE(std::size(kRead), 5u);
+  EXPECT_GE(std::size(kRejected), 10u);
 }
 
 TEST(NodeIdStringTest, FormatWritesTheCanonicalForm) {
-  for (const Vector& vector : CanonicalVectors()) {
+  for (const Vector& vector : kCanonical) {
     SCOPED_TRACE(vector.text);
-    EXPECT_EQ(FormatNodeIdString(vector.node_id, vector.namespace_uri),
+    EXPECT_EQ(FormatNodeIdString(NodeIdOf(vector), vector.namespace_uri),
+              vector.text);
+  }
+  for (const Vector& vector : kWritten) {
+    SCOPED_TRACE(vector.text);
+    EXPECT_EQ(FormatNodeIdString(NodeIdOf(vector), vector.namespace_uri),
               vector.text);
   }
 }
 
+void ExpectReads(const Vector& vector) {
+  SCOPED_TRACE(vector.text);
+  const std::optional<ParsedNodeIdString> parsed =
+      ParseNodeIdString(vector.text);
+  ASSERT_TRUE(parsed.has_value());
+  EXPECT_EQ(parsed->node_id, NodeIdOf(vector));
+  if (vector.namespace_uri.empty()) {
+    EXPECT_FALSE(parsed->namespace_uri.has_value());
+  } else {
+    EXPECT_EQ(parsed->namespace_uri, std::string{vector.namespace_uri});
+  }
+}
+
 TEST(NodeIdStringTest, ParseReadsTheCanonicalForm) {
-  for (const Vector& vector : CanonicalVectors()) {
+  for (const Vector& vector : kCanonical)
+    ExpectReads(vector);
+}
+
+TEST(NodeIdStringTest, ParseReadsTheOtherForms) {
+  for (const Vector& vector : kRead)
+    ExpectReads(vector);
+}
+
+TEST(NodeIdStringTest, RejectsWhatIsNotExactlyOneForm) {
+  for (const Vector& vector : kRejected) {
     SCOPED_TRACE(vector.text);
-    const std::optional<ParsedNodeIdString> parsed =
-        ParseNodeIdString(vector.text);
-    ASSERT_TRUE(parsed.has_value());
-    EXPECT_EQ(parsed->node_id, vector.node_id);
-    if (vector.namespace_uri.empty()) {
-      EXPECT_FALSE(parsed->namespace_uri.has_value());
-    } else {
-      EXPECT_EQ(parsed->namespace_uri, std::string{vector.namespace_uri});
-    }
+    EXPECT_FALSE(ParseNodeIdString(vector.text).has_value());
   }
 }
 
 TEST(NodeIdStringTest, FormatIgnoresTheNodeIdsOwnIndex) {
   // The URI names the namespace; a session's index for it is never written.
   EXPECT_EQ(FormatNodeIdString(NodeId{7u, 38}, "urn:x"), "nsu=urn:x;i=7");
-}
-
-TEST(NodeIdStringTest, TheOpcUaNamespaceIsWrittenBare) {
-  // Part 6 §5.1.12: namespace 0 uses only the <identifier> form.
-  EXPECT_EQ(
-      FormatNodeIdString(NodeId{2258u, 0}, "http://opcfoundation.org/UA/"),
-      "i=2258");
   EXPECT_EQ(FormatNodeIdString(NodeId{2258u, 5}, ""), "i=2258");
-}
-
-TEST(NodeIdStringTest, ReadsTheOpcUaNamespaceUriAsTheBareForm) {
-  const auto parsed =
-      ParseNodeIdString("nsu=http://opcfoundation.org/UA/;i=2258");
-  ASSERT_TRUE(parsed.has_value());
-  EXPECT_FALSE(parsed->namespace_uri.has_value());
-  EXPECT_EQ(parsed->node_id, NodeId(2258u, 0));
-}
-
-TEST(NodeIdStringTest, ReadsTheIndexForm) {
-  const auto parsed = ParseNodeIdString("ns=10;i=12345");
-  ASSERT_TRUE(parsed.has_value());
-  EXPECT_FALSE(parsed->namespace_uri.has_value());
-  EXPECT_EQ(parsed->node_id, NodeId(12345u, 10));
-}
-
-TEST(NodeIdStringTest, PrefixesMatchInAnyCase) {
-  // ABNF quoted strings are case-insensitive (RFC 5234 §2.3).
-  const auto parsed = ParseNodeIdString("NSU=urn:x;I=5");
-  ASSERT_TRUE(parsed.has_value());
-  EXPECT_EQ(parsed->namespace_uri, std::string{"urn:x"});
-  EXPECT_EQ(parsed->node_id, NodeId(5u, 0));
-}
-
-TEST(NodeIdStringTest, AStringIdentifierKeepsSemicolonsAndEquals) {
-  // Only the first ';' ends the namespace part; the rest is the identifier.
-  const auto parsed = ParseNodeIdString("nsu=urn:x;s=a;b=c");
-  ASSERT_TRUE(parsed.has_value());
-  EXPECT_EQ(parsed->node_id, NodeId(String{"a;b=c"}, 0));
-}
-
-TEST(NodeIdStringTest, RejectsWhatIsNotExactlyOneForm) {
-  for (const std::string_view text : {
-           "",
-           "Plant.Temperature",  // NodeId::FromString would take this
-           "TS.1379",
-           "i=",
-           "i=12x",
-           "i=-1",
-           "i=4294967296",
-           "ns=65536;i=1",
-           "ns=;i=1",
-           "ns=1",
-           "ns=1;Plant",
-           "nsu=urn:x",
-           "nsu=;i=1",
-           "nsu=urn%2;i=1",
-           "nsu=urn%zz;i=1",
-           "g=not-a-guid",
-           "b=AB$CD",
-           "x=1",
-       }) {
-    SCOPED_TRACE(text);
-    EXPECT_FALSE(ParseNodeIdString(text).has_value());
-  }
 }
 
 TEST(NodeIdStringTest, EncodingRoundTripsEveryByte) {
