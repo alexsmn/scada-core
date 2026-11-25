@@ -1,8 +1,12 @@
 #pragma once
 
+#include "scada/basic_types.h"
 #include "scada/services.h"
 
+#include <functional>
 #include <memory>
+#include <optional>
+#include <string_view>
 
 namespace scada {
 class HistoryService;
@@ -83,4 +87,16 @@ struct DataServices {
   // `LegacyMonitoredItemAdapter` backing single monitored items). Must be
   // carried here so `as_services()` round-trips do not silently drop it.
   AnyExecutor monitored_item_executor_;
+
+  // This connection's NamespaceIndex for a namespace URI, so that a NodeId
+  // stored as text in the self-contained "nsu=" form (scada/node_id_string.h)
+  // names the same node whatever index the server gives its namespace. A
+  // backend that remaps a server's namespaces onto the client's own index space
+  // sets it, and returns an index for every URI, appending one the connection
+  // has not seen: a node named in a namespace the server does not publish then
+  // fails at the server as unknown rather than landing in another namespace.
+  // Empty for a backend whose indexes are the client's canonical ones. Not
+  // carried by `as_services()`, which holds service pointers only.
+  std::function<std::optional<scada::NamespaceIndex>(std::string_view uri)>
+      namespace_index_for_uri_;
 };
