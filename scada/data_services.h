@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
 
 namespace scada {
@@ -99,4 +100,11 @@ struct DataServices {
   // carried by `as_services()`, which holds service pointers only.
   std::function<std::optional<scada::NamespaceIndex>(std::string_view uri)>
       namespace_index_for_uri_;
+
+  // The reverse of `namespace_index_for_uri_`: this connection's namespace URI
+  // for one of its own indexes, or nullopt for an index it has not handed out.
+  // Lets a NodeId be written in the "nsu=" form before it is stored. Set by the
+  // same backends; empty for one whose indexes are the canonical ones.
+  std::function<std::optional<std::string>(scada::NamespaceIndex index)>
+      namespace_uri_for_index_;
 };
