@@ -10,10 +10,11 @@
 namespace scada::base {
 namespace {
 
-// Golden characterization of the on-wire / on-disk time encodings. These pin the
-// EXACT values that gRPC messages, SQLite history rows, the sync resume cursor,
-// and saved graph-view files depend on, so any future change to Time's in-memory
-// representation that would alter a persisted/transmitted timestamp fails here.
+// Golden characterization of the on-wire / on-disk time encodings. These pin
+// the EXACT values that gRPC messages, SQLite history rows, the sync resume
+// cursor, and saved graph-view files depend on, so any future change to Time's
+// in-memory representation that would alter a persisted/transmitted timestamp
+// fails here.
 
 // Microseconds from the Windows 1601 epoch to the Unix 1970 epoch.
 constexpr int64_t kUnixEpochWire = 11644473600000000LL;
@@ -81,6 +82,22 @@ TEST(TimeWireCodecTest, DoubleTUsesUnixEpochAndPreservesNullQuirk) {
   const Time t = DecodeWireTime(kUnixEpochWire + 1'500'000);
   EXPECT_EQ(EncodeDoubleT(t), 1.5);
   EXPECT_EQ(DecodeDoubleT(1.5), t);
+}
+
+// A wire value close to INT64_MIN used to overflow a signed integer once the
+// 1601 epoch's offset was added; it saturates to the range sentinel instead.
+TEST(TimeWireCodecTest, DecodeWireTimeSaturatesBelowTheRange) {
+  EXPECT_EQ(DecodeWireTime(std::numeric_limits<int64_t>::min() + 1), kMinTime);
+  EXPECT_EQ(DecodeWireTime(std::numeric_limits<int64_t>::max() - 1) - kNullTime,
+            std::chrono::microseconds{std::numeric_limits<int64_t>::max() - 1});
+}
+
+// An infinite or huge double used to be converted to int64 microseconds,
+// which is undefined; it saturates instead.
+TEST(TimeWireCodecTest, DecodeDoubleTSaturatesOutsideTheRange) {
+  EXPECT_EQ(DecodeDoubleT(std::numeric_limits<double>::infinity()), kMaxTime);
+  EXPECT_EQ(DecodeDoubleT(-std::numeric_limits<double>::infinity()), kMinTime);
+  EXPECT_EQ(DecodeDoubleT(1e300), kMaxTime);
 }
 
 }  // namespace

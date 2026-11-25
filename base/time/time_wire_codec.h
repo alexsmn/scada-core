@@ -46,7 +46,12 @@ inline int64_t EncodeWireMicroseconds(Time time) {
 inline Time DecodeWireTime(int64_t wire_us) {
   if (wire_us == std::numeric_limits<int64_t>::max())
     return kMaxTime;
-  if (wire_us == std::numeric_limits<int64_t>::min())
+  // The 1601 epoch sits at a negative offset from the Unix one, so adding a
+  // wire value close to INT64_MIN overflows a signed integer, which is
+  // undefined. Such a value is from a peer, never from EncodeWireMicroseconds;
+  // it saturates to the range sentinel.
+  if (wire_us <= std::numeric_limits<int64_t>::min() -
+                     kNullTime.time_since_epoch().count())
     return kMinTime;
   return kNullTime + std::chrono::microseconds{wire_us};
 }
@@ -80,6 +85,14 @@ inline double EncodeDoubleT(Time time) {
 inline Time DecodeDoubleT(double unix_seconds) {
   if (unix_seconds == 0.0 || std::isnan(unix_seconds))
     return kNullTime;
+  // Converting a double that does not fit int64 microseconds is undefined
+  // ([conv.fpint]); an infinity or a magnitude past ~292,000 years saturates
+  // to the range sentinels instead. 9.2e12 s is just inside the int64 range.
+  constexpr double kLimitSeconds = 9.2e12;
+  if (unix_seconds >= kLimitSeconds)
+    return kMaxTime;
+  if (unix_seconds <= -kLimitSeconds)
+    return kMinTime;
   return Time{} + std::chrono::duration_cast<std::chrono::microseconds>(
                       std::chrono::duration<double>{unix_seconds});
 }

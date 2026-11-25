@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 
 #include "remote/protocol_utils.h"
+#include "scada/attribute_ids.h"
 #include "scada/authorization.h"
 #include "scada/event.h"
 #include "scada/extension_object.h"
@@ -50,8 +51,7 @@ TEST(ProtocolUtils, ExtensionObjectUserManagementUserRoundTrip) {
       .user_configuration = scada::UserConfiguration::kDisabled |
                             scada::UserConfiguration::kMustChangePassword,
       .description = "Dispatcher, north"};
-  const auto original =
-      scada::EncodeUserManagementUsers(std::vector{user});
+  const auto original = scada::EncodeUserManagementUsers(std::vector{user});
 
   protocol::Variant proto;
   Convert(original, proto);
@@ -219,4 +219,59 @@ TEST(ProtocolUtils, ConvertEventEmptyMessage) {
   protocol::Event proto;
   Convert(source, proto);
   EXPECT_TRUE(proto.message_utf8().empty());
+}
+
+// A Variant type this wire cannot carry degrades to null on encode; it used
+// to hit NotReached() and abort the server answering the read.
+TEST(ProtocolUtils, UnencodableVariantEncodesAsNull) {
+  const scada::Variant expanded{scada::ExpandedNodeId{scada::NodeId{5u, 2}}};
+  EXPECT_TRUE(ConvertTo<scada::Variant>(ConvertTo<protocol::Variant>(expanded))
+                  .is_null());
+
+  const scada::Variant node_ids{
+      std::vector<scada::NodeId>{scada::NodeId{1u, 2}, scada::NodeId{2u, 2}}};
+  EXPECT_TRUE(ConvertTo<scada::Variant>(ConvertTo<protocol::Variant>(node_ids))
+                  .is_null());
+}
+
+// A peer's sub_code at or above 0x4000 used to spill into the severity bits,
+// so a Good code arrived Bad.
+TEST(ProtocolUtils, StatusCodeSubCodeCannotChangeTheSeverity) {
+  protocol::StatusCode proto;
+  proto.set_severity(protocol::Good);
+  proto.set_sub_code(0x8000u);
+  EXPECT_TRUE(scada::IsGood(ConvertTo<scada::StatusCode>(proto)));
+}
+
+// Re-encoding what a peer sent must not abort: an event with id 0 and an
+// invalid model-change event both used to fail a Check.
+TEST(ProtocolUtils, PeerSuppliedEventsEncodeWithoutAborting) {
+  scada::Event event;
+  event.event_id = 0;
+  EXPECT_EQ(ConvertTo<protocol::Event>(event).event_id(), 0u);
+
+  scada::ModelChangeEvent model_change;  // no node, no verb: invalid
+  EXPECT_FALSE(
+      ConvertTo<protocol::ModelChangeEvent>(model_change).node_added());
+}
+
+// A target on another server cannot be expressed on this wire; it is left
+// out instead of failing a Check and aborting.
+TEST(ProtocolUtils, BrowsePathResultLeavesOutNonLocalTargets) {
+  scada::BrowsePathResult result;
+  result.targets.push_back(
+      {.target_id = scada::ExpandedNodeId{scada::NodeId{1u, 2}}});
+  result.targets.push_back({.target_id = scada::ExpandedNodeId{
+                                scada::NodeId{2u, 2}, "urn:other", 1}});
+  const auto proto = ConvertTo<protocol::BrowsePathResult>(result);
+  ASSERT_EQ(proto.target_size(), 1);
+  EXPECT_EQ(ConvertTo<scada::NodeId>(proto.target(0).target_id()),
+            scada::NodeId(1u, 2));
+}
+
+// OPC UA defines attribute ids past the end of the name table; naming one
+// used to read out of bounds.
+TEST(ProtocolUtils, UnknownAttributeIdHasAName) {
+  EXPECT_EQ(ToString(static_cast<scada::AttributeId>(27)), "AttributeId(27)");
+  EXPECT_EQ(ToString(scada::AttributeId::Value), "Value");
 }

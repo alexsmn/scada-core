@@ -379,7 +379,12 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
                 *target.mutable_extension_object_value());
         break;
       default:
-        scada::base::NotReached();
+        // An ExpandedNodeId has no field on this wire. It is a legal value a
+        // node may hold, so reading one must not abort the server, as the
+        // NotReached() here did: it degrades to null, as an unknown type does
+        // on the decoding side.
+        target.Clear();
+        break;
     }
 
   } else {
@@ -438,7 +443,11 @@ void Convert(const scada::Variant& source, protocol::Variant& target) {
                 *target.mutable_extension_object_array());
         break;
       default:
-        scada::base::NotReached();
+        // Arrays of ByteString, QualifiedName, NodeId and ExpandedNodeId (and
+        // the empty-element array) have no field on this wire; as above, they
+        // degrade to null rather than abort the server.
+        target.Clear();
+        break;
     }
   }
 }
@@ -515,8 +524,9 @@ void Convert(const protocol::Event& source, scada::Event& target) {
 }
 
 void Convert(const scada::Event& source, protocol::Event& target) {
-  scada::base::Check(source.event_id != 0);
-
+  // No Check on event_id: an event re-sent by an aggregating proxy carries
+  // whatever id its peer gave it, and a zero there is the peer's fault, not a
+  // reason to abort this process.
   target.set_event_id(source.event_id);
   target.set_time(scada::base::EncodeWireMicroseconds(source.time));
   target.set_severity(source.severity);
@@ -712,7 +722,17 @@ void Convert(const protocol::BrowsePathResult& source,
 void Convert(const scada::BrowsePathResult& source,
              protocol::BrowsePathResult& target) {
   target.set_status_code(static_cast<uint32_t>(source.status_code));
-  Convert(source.targets, *target.mutable_target());
+  // This wire's target id is a plain NodeId. A target on another server, or
+  // named by namespace URI, cannot be expressed on it, and a backend that is
+  // itself a remote OPC UA server may return one; such a target is left out
+  // rather than sent as a local id it is not.
+  for (const scada::BrowsePathTarget& path_target : source.targets) {
+    if (path_target.target_id.server_index() != 0 ||
+        !path_target.target_id.namespace_uri().empty()) {
+      continue;
+    }
+    Convert(path_target, *target.add_target());
+  }
 }
 
 void Convert(const protocol::BrowsePathTarget& source,
@@ -723,8 +743,8 @@ void Convert(const protocol::BrowsePathTarget& source,
 
 void Convert(const scada::BrowsePathTarget& source,
              protocol::BrowsePathTarget& target) {
-  scada::base::Check(source.target_id.server_index() == 0);
-  scada::base::Check(source.target_id.namespace_uri().empty());
+  // Only the node id travels; Convert(BrowsePathResult) leaves out the
+  // targets it cannot express.
   Convert(source.target_id.node_id(), *target.mutable_target_id());
   target.set_remaining_path_index(source.remaining_path_index);
 }
@@ -774,7 +794,9 @@ void Convert(const protocol::ModelChangeEvent& source,
 
 void Convert(const scada::ModelChangeEvent& source,
              protocol::ModelChangeEvent& target) {
-  scada::base::Check(IsValid(source));
+  // Encoded as it is, valid or not. The decoder deliberately accepts an
+  // invalid event and leaves it to consumers (IsValid), so a proxy re-sending
+  // a peer's invalid event must not abort here, as a Check did.
 
   if (!source.node_id.is_null())
     Convert(source.node_id, *target.mutable_node_id());

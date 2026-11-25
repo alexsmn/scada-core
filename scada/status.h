@@ -228,10 +228,15 @@ inline constexpr std::uint16_t GetSubCode(StatusCode code) noexcept {
   return static_cast<unsigned>(code) & ((1 << 14) - 1);
 }
 
+// Both parts are masked to their fields. They arrive from the wire (the gRPC
+// StatusCode message carries a 32-bit sub_code and an open enum severity), and
+// an unmasked sub_code at or above 0x4000 spills into the severity bits, so a
+// peer's Good code could arrive Uncertain or Bad.
 inline constexpr StatusCode MakeStatusCode(StatusSeverity severity,
-                                           std::uint16_t sub_code) noexcept {
-  return static_cast<StatusCode>((static_cast<std::uint32_t>(severity) << 14) |
-                                 sub_code);
+                                           std::uint32_t sub_code) noexcept {
+  return static_cast<StatusCode>(
+      ((static_cast<std::uint32_t>(severity) & 3u) << 14) |
+      (sub_code & ((1u << 14) - 1)));
 }
 
 inline constexpr bool IsGood(StatusCode code) noexcept {
