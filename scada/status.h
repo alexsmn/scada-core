@@ -200,6 +200,14 @@ enum class StatusCode : unsigned {
   // presenting another identity is refused (OPC UA Part 4 §5.7.3.3 Service
   // results, https://reference.opcfoundation.org/Core/Part4/v105/docs/5.7.3.3).
   Bad_IdentityChangeNotSupported = Bad | 66,
+  // A node of that name is already among the parent's children — a file
+  // store's folder already has a file or folder of the name asked for. Maps
+  // to the OPC UA Bad_BrowseNameDuplicated code (0x80610000) — OPC UA Part 4
+  // §5.8.2.4 StatusCodes (Table 24 AddNodes Operation Level Result Codes),
+  // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.8.2 : "The
+  // browse name is not unique among nodes that share the same relationship
+  // with the parent."
+  Bad_BrowseNameDuplicated = Bad | 67,
 };
 
 enum class StatusLimit {
