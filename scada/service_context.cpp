@@ -14,6 +14,7 @@ struct ServiceContext::Rep {
   uint64_t request_id = 0;
   TraceId trace_id;
   std::string peer;
+  NodeId on_behalf_of;
 };
 
 // static
@@ -49,6 +50,21 @@ const std::string& ServiceContext::peer() const {
 
 const std::vector<std::string>& ServiceContext::locale_ids() const {
   return rep_->locale_ids;
+}
+
+const scada::NodeId& ServiceContext::on_behalf_of() const {
+  return rep_->on_behalf_of;
+}
+
+const scada::NodeId& ServiceContext::audit_user_id() const {
+  return rep_->on_behalf_of.is_null() ? rep_->user_id : rep_->on_behalf_of;
+}
+
+ServiceContext ServiceContext::with_on_behalf_of(
+    const scada::NodeId& user_id) const {
+  Rep rep = *rep_;
+  rep.on_behalf_of = user_id;
+  return ServiceContext{std::make_shared<Rep>(std::move(rep))};
 }
 
 ServiceContext ServiceContext::with_user_id(
@@ -94,7 +110,8 @@ std::ostream& operator<<(std::ostream& stream, const ServiceContext& context) {
       .AddField("user_id", ToString(context.rep_->user_id))
       .AddField("locale_ids", base::AsList(context.rep_->locale_ids))
       .AddField("trace_id", ToString(context.rep_->trace_id))
-      .AddField("peer", context.rep_->peer);
+      .AddField("peer", context.rep_->peer)
+      .AddField("on_behalf_of", ToString(context.rep_->on_behalf_of));
   return stream;
 }
 

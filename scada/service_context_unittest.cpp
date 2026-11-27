@@ -54,5 +54,17 @@ TEST(ServiceContextTest, LocaleIdsAreLogged) {
   EXPECT_NE(std::string::npos, stream.str().find("ru"));
 }
 
+// An audit record names the end user a trusted proxy acts for, and the caller
+// when nobody is named (backlog 1183).
+TEST(ServiceContextTest, AuditUserIsOnBehalfOfWhenSet) {
+  const ServiceContext own = ServiceContext{}.with_user_id(NodeId{7});
+  EXPECT_EQ(own.audit_user_id(), NodeId{7});
+  EXPECT_TRUE(own.on_behalf_of().is_null());
+
+  const ServiceContext forwarded = own.with_on_behalf_of(NodeId{42});
+  EXPECT_EQ(forwarded.user_id(), NodeId{7});
+  EXPECT_EQ(forwarded.audit_user_id(), NodeId{42});
+}
+
 }  // namespace
 }  // namespace scada

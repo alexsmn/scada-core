@@ -41,6 +41,14 @@ class [[nodiscard]] ServiceContext {
   // OPC UA Part 4 §5.4 Locale Negotiation,
   // https://reference.opcfoundation.org/Core/Part4/v105/docs/5.4
   const std::vector<std::string>& locale_ids() const SCADA_LIFETIME_BOUND;
+  // The end user a trusted intermediary (the aggregating proxy) is acting
+  // for, carried in the request header; null when the caller acts for itself.
+  // Raw as received: RootNodeManager keeps it only for a caller holding
+  // ConfigureAdmin and clears it otherwise, so authorization never reads it --
+  // it names who an audit record is about, nothing more.
+  const scada::NodeId& on_behalf_of() const SCADA_LIFETIME_BOUND;
+  // The user an audit record names: on_behalf_of() when set, else user_id().
+  const scada::NodeId& audit_user_id() const SCADA_LIFETIME_BOUND;
 
   ServiceContext with_user_id(const scada::NodeId& user_id) const;
   ServiceContext with_user_rights(uint32_t user_rights) const;
@@ -48,6 +56,7 @@ class [[nodiscard]] ServiceContext {
   ServiceContext with_trace_id(const TraceId& trace_id) const;
   ServiceContext with_peer(std::string peer) const;
   ServiceContext with_locale_ids(std::vector<std::string> locale_ids) const;
+  ServiceContext with_on_behalf_of(const scada::NodeId& user_id) const;
 
   friend std::ostream& operator<<(std::ostream& stream,
                                   const ServiceContext& context);
