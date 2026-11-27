@@ -141,6 +141,14 @@ const char* ToCString(scada::StatusCode status_code) {
   return IsGood(status_code) ? "OK" : "Error";
 }
 
+std::optional<scada::StatusCode> StatusCodeFromName(std::string_view name) {
+  for (const Entry& entry : kEntries) {
+    if (name == entry.error_string)
+      return entry.code;
+  }
+  return std::nullopt;
+}
+
 std::string ToString(scada::StatusCode status_code) {
   return std::string{ToCString(status_code)};
 }

@@ -303,3 +303,11 @@ TEST(StatusTest, SeverityIgnoresBitsAboveTheCode) {
   EXPECT_TRUE(scada::IsBad(code));
   EXPECT_FALSE(scada::IsGood(code));
 }
+
+TEST(StatusTest, StatusCodeFromNameInvertsToString) {
+  EXPECT_EQ(StatusCodeFromName("Bad_UserAccessDenied"),
+            scada::StatusCode::Bad_UserAccessDenied);
+  EXPECT_EQ(StatusCodeFromName(ToString(scada::StatusCode::Bad_Timeout)),
+            scada::StatusCode::Bad_Timeout);
+  EXPECT_EQ(StatusCodeFromName("Bad_NoSuchThing"), std::nullopt);
+}

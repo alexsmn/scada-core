@@ -3,8 +3,10 @@
 #include "base/ostream_formatter.h"
 
 #include <cstdint>
+#include <optional>
 #include <ostream>
 #include <string>
+#include <string_view>
 
 namespace scada {
 
@@ -344,6 +346,11 @@ const char* ToCString(scada::StatusCode status_code);
 
 // The symbolic name (`Bad_Timeout`), for logs and diagnostics.
 std::string ToString(scada::StatusCode status_code);
+
+// The code a symbolic name (`Bad_Timeout`) names, the inverse of `ToString`;
+// nullopt for a name the table does not know. For text that carries a status
+// by name — an audit event's message — so the UI can word it.
+std::optional<scada::StatusCode> StatusCodeFromName(std::string_view name);
 
 // Display text: the installed `scada::StatusTextProvider`'s description, or
 // the symbolic name when none is installed — the server, and unit tests.
